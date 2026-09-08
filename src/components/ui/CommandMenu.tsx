@@ -108,7 +108,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
               }}
             >
               <Sparkles className="size-4 text-purple-400" />
-              <span>Mark as Interviewing</span>
+              <span>Mark as Interview</span>
             </Command.Item>
 
             <Command.Item
@@ -118,7 +118,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
               }}
             >
               <Briefcase className="size-4 text-zinc-500" />
-              <span>Mark as Archived / Not Interested</span>
+              <span>Mark as Not Interested</span>
             </Command.Item>
 
             <Command.Item
@@ -214,7 +214,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
             }}
           >
             <span className="size-2 rounded-full bg-purple-400 mr-1" />
-            <span>Filter: Interviewing Roles</span>
+            <span>Filter: Interview Roles</span>
           </Command.Item>
 
           <Command.Item

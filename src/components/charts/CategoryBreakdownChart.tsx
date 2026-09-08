@@ -107,7 +107,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const activeCategory = hoveredIdx !== null ? chartData[hoveredIdx] : topCategory;
 
   return (
-    <div className="glass-panel p-6 lg:p-7 rounded-3xl flex flex-col justify-between space-y-5">
+    <div className="surface-panel p-6 lg:p-7 rounded-3xl flex flex-col justify-between space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

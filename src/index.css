@@ -7,9 +7,6 @@
   --surface-card: #101014;
   --surface-hover: #18181b;
   --hairline-border: rgba(255, 255, 255, 0.08);
-  --glass-surface: #09090b;
-  --glass-surface-subtle: #09090b;
-  --glass-border: rgba(255, 255, 255, 0.08);
   --chart-segment-border: #09090b;
 }
 
@@ -43,13 +40,13 @@
 }
 
 /* Linear / Vercel Hairline Surfaces */
-.glass-panel {
+.surface-panel {
   background: var(--surface-panel);
   border: 1px solid var(--hairline-border);
   box-shadow: none;
 }
 
-.glass-panel-subtle {
+.surface-panel-subtle {
   background: var(--surface-card);
   border: 1px solid var(--hairline-border);
   box-shadow: none;
@@ -83,26 +80,16 @@
   }
 }
 
-.glass-card-hover {
+.surface-card-hover {
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-.glass-card-hover:hover {
+.surface-card-hover:hover {
   background: var(--surface-hover);
   border-color: rgba(255, 255, 255, 0.14);
 }
 
 .metric-value {
   text-shadow: none;
-}
-
-.glass-header {
-  background: var(--surface-bg);
-  border-bottom: 1px solid var(--hairline-border);
-  box-shadow: none;
-}
-
-.static-glass-background {
-  background: #000000;
 }
 
 /* Text Selection (Linear Neutral) */

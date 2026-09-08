@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-white text-neutral-950 hover:bg-neutral-200',
-        glass: 'glass-panel-subtle border border-white/[0.12] text-neutral-200 hover:bg-white/[0.1] hover:text-white',
+        secondary: 'surface-panel-subtle border border-zinc-800 text-zinc-200 hover:bg-zinc-800/80 hover:text-white',
         ghost: 'text-neutral-300 hover:bg-white/[0.08] hover:text-white',
       },
       size: {

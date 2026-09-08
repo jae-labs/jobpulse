@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<
     containerClass: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300 dark:text-emerald-400',
   },
   interviewing: {
-    label: 'Interviewing',
+    label: 'Interview',
     dotClass: 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]',
     containerClass: 'border-purple-500/20 bg-purple-500/10 text-purple-300 dark:text-purple-400',
   },
@@ -33,7 +33,7 @@ const STATUS_CONFIG: Record<
     containerClass: 'border-zinc-700/50 bg-zinc-800/60 text-zinc-300',
   },
   not_interested: {
-    label: 'Archived',
+    label: 'Not Interested',
     dotClass: 'bg-zinc-600',
     containerClass: 'border-zinc-800 bg-zinc-900/60 text-zinc-500',
   },

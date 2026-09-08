@@ -24,7 +24,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`rounded-xl border border-zinc-800/80 bg-zinc-950/80 p-3.5 sm:p-5 glass-card-hover flex flex-col justify-between space-y-2.5 sm:space-y-3 ${
+      className={`rounded-xl border border-zinc-800/80 bg-zinc-950/80 p-3.5 sm:p-5 surface-card-hover flex flex-col justify-between space-y-2.5 sm:space-y-3 ${
         onClick ? 'cursor-pointer hover:border-zinc-700 hover:bg-zinc-900/60 active:scale-[0.99] transition-transform' : ''
       }`}
     >

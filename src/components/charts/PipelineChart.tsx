@@ -89,7 +89,7 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({ jobs, onSelectStat
   };
 
   return (
-    <div className="glass-panel p-6 lg:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between space-y-4">
+    <div className="surface-panel p-6 lg:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium text-neutral-300 tracking-wide">

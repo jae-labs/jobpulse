@@ -49,7 +49,7 @@ export const EmployerWatchlist: React.FC<EmployerWatchlistProps> = ({
   return (
     <div className="space-y-6">
       {/* Header card */}
-      <div className="glass-panel rounded-3xl p-6 lg:p-7 space-y-4">
+      <div className="surface-panel rounded-3xl p-6 lg:p-7 space-y-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-2xl font-bold tracking-tight text-white">
@@ -112,7 +112,7 @@ export const EmployerWatchlist: React.FC<EmployerWatchlistProps> = ({
           return (
             <div
               key={employer.id}
-              className="glass-panel group flex flex-col justify-between rounded-xl p-4 border border-zinc-800/80 transition-colors glass-card-hover space-y-4"
+              className="surface-panel group flex flex-col justify-between rounded-xl p-4 border border-zinc-800/80 transition-colors surface-card-hover space-y-4"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

@@ -288,7 +288,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     }
   }, [layoutMode, selectedJob, visibleJobs, onSelectJob]);
 
-  // Keyboard navigation: j/k to move up/down, a to mark applied, x to mark not interested
+  // Keyboard navigation: j/k to move up/down, Enter to apply, a/i/o/n to update status
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -324,9 +324,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
       } else if (e.key === 'Enter' && selectedJob?.url) {
         e.preventDefault();
         window.open(selectedJob.url, '_blank', 'noopener,noreferrer');
-      } else if (e.key === 'n' && selectedJob && onUpdateStatus) {
-        e.preventDefault();
-        void onUpdateStatus(selectedJob, 'new');
       } else if (e.key === 'a' && selectedJob && onUpdateStatus) {
         e.preventDefault();
         void onUpdateStatus(selectedJob, 'applied');
@@ -336,10 +333,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
       } else if (e.key === 'o' && selectedJob && onUpdateStatus) {
         e.preventDefault();
         void onUpdateStatus(selectedJob, 'offer');
-      } else if (e.key === 'r' && selectedJob && onUpdateStatus) {
-        e.preventDefault();
-        void onUpdateStatus(selectedJob, 'new');
-      } else if (e.key === 'x' && selectedJob && onUpdateStatus) {
+      } else if ((e.key === 'n' || e.key === 'x') && selectedJob && onUpdateStatus) {
         e.preventDefault();
         void onUpdateStatus(selectedJob, 'not_interested');
       } else if (e.key === 'Escape') {
@@ -580,7 +574,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </span>
           <span className="hidden sm:inline-block text-zinc-600">·</span>
           <span className="hidden sm:inline-block text-zinc-500 font-sans">
-            Press <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">j</kbd> / <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">k</kbd> to cycle · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">↵</kbd> to apply · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">n</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">a</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">i</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">o</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">r</kbd> for status
+            Press <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">j</kbd> / <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">k</kbd> to cycle · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">↵</kbd> to apply · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">a</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">i</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">o</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">n</kbd> for status
           </span>
         </div>
 
@@ -619,7 +613,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             {visibleJobs.length < filteredJobs.length && (
               <div className="flex justify-center pt-2 pb-6">
                 <Button
-                  variant="glass"
+                  variant="secondary"
                   onClick={() => setDisplayCount((prev) => prev + 40)}
                   className="px-5 py-2 text-xs text-zinc-300 hover:text-white border-zinc-800 bg-zinc-900/50"
                 >
@@ -652,7 +646,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </div>
           <div className="pt-1">
             <Button
-              variant="glass"
+              variant="secondary"
               onClick={handleResetFilters}
               className="text-xs border-zinc-800"
             >

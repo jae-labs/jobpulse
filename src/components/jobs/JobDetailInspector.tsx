@@ -159,18 +159,18 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
             {[
               { id: 'new', label: 'New', shortLabel: 'New' },
               { id: 'applied', label: 'Applied', shortLabel: 'Applied' },
-              { id: 'interviewing', label: 'Interviewing', shortLabel: 'Interview' },
+              { id: 'interviewing', label: 'Interview', shortLabel: 'Interview' },
               { id: 'offer', label: 'Offer', shortLabel: 'Offer' },
-              { id: 'reset', label: 'Reset', shortLabel: 'Reset' },
+              { id: 'not_interested', label: 'Not Interested', shortLabel: 'Not Interested' },
             ].map(({ id, label, shortLabel }) => {
-              const active = id === 'reset' ? false : job.status === id;
+              const active = job.status === id;
               return (
                 <button
                   key={id}
                   type="button"
                   disabled={isUpdating}
                   onClick={() =>
-                    void onUpdateStatus(job, id === 'reset' ? 'new' : (id as JobStatus))
+                    void onUpdateStatus(job, id as JobStatus)
                   }
                   className={`flex-1 sm:flex-none flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
                     active

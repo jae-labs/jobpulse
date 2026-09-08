@@ -47,7 +47,7 @@ export const RelevanceDistributionChart: React.FC<RelevanceDistributionChartProp
   }, [jobs]);
 
   return (
-    <div className="glass-panel rounded-3xl p-6 border border-white/10 flex flex-col justify-between">
+    <div className="surface-panel rounded-3xl p-6 border border-white/10 flex flex-col justify-between">
       <div className="mb-4">
         <h3 className="text-base font-bold text-white tracking-tight">Relevance Distribution</h3>
         <p className="text-xs text-neutral-400 mt-1">Profile fit tiers across discovered roles</p>

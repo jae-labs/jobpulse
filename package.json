@@ -11,6 +11,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "typecheck": "tsc -b --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "prepare": "lefthook install",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -36,6 +39,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "lefthook": "^2.1.9",
     "oxlint": "^1.79.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",

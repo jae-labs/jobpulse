@@ -37,7 +37,6 @@ import { dashboardNavigation, type DashboardTab } from './components/dashboard/n
 import { SortableWidget } from './components/dashboard/SortableWidget';
 import { StatCard } from './components/ui/StatCard';
 import { Button } from './components/ui/button';
-import { StaticGlassBackground } from './components/effects/StaticGlassBackground';
 import { JobsView } from './components/jobs/JobsView';
 import { CommandMenu } from './components/ui/CommandMenu';
 import { BrandLogo } from './components/ui/BrandLogo';
@@ -472,7 +471,7 @@ export const App: React.FC = () => {
             <StatCard
               title="In Active Pipeline"
               value={(counts.applied || 0) + (counts.interviewing || 0) + (counts.offer || 0)}
-              subValue={`${counts.interviewing || 0} interviewing · ${counts.applied || 0} applied`}
+              subValue={`${counts.interviewing || 0} interview · ${counts.applied || 0} applied`}
               icon={Send}
               onClick={() => {
                 setSelectedStatusFilter('applied');
@@ -535,7 +534,6 @@ export const App: React.FC = () => {
   if (isAuthChecking) {
     return (
       <div className="relative min-h-dvh flex items-center justify-center p-4 text-zinc-100 overflow-hidden bg-black">
-        <StaticGlassBackground />
         <div className="flex flex-col items-center gap-3 relative z-10">
           <BrandLogo size="lg" animate />
           <div className="text-xs text-zinc-400 font-medium">Verifying authorization...</div>
@@ -560,8 +558,6 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative h-dvh overflow-hidden text-neutral-100 selection:bg-white/20">
-      <StaticGlassBackground />
-
       <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto flex min-h-full max-w-[1800px] gap-4 p-3 lg:p-4">
           {/* Main Desktop Sidebar */}
@@ -629,7 +625,7 @@ export const App: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                   <Button
-                    variant="glass"
+                    variant="secondary"
                     onClick={() => void loadData()}
                     className="border-rose-500/40 text-rose-200 hover:bg-rose-500/20 text-xs py-1 px-3"
                   >
@@ -650,7 +646,7 @@ export const App: React.FC = () => {
 
             {/* Initial Loading State */}
             {isLoading && jobs.length === 0 && !dbError && (
-              <div className="glass-panel mb-4 rounded-xl p-10 text-center space-y-2.5 border-zinc-800">
+              <div className="surface-panel mb-4 rounded-xl p-10 text-center space-y-2.5 border-zinc-800">
                 <div className="size-8 mx-auto rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
                   <RefreshCw className="size-4 animate-spin text-zinc-400" />
                 </div>

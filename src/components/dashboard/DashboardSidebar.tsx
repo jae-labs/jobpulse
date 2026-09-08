@@ -21,7 +21,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onSignOut,
 }) => {
   return (
-    <aside className="glass-panel hidden h-[calc(100dvh-2rem)] w-60 shrink-0 flex-col rounded-2xl p-3.5 lg:sticky lg:top-4 lg:flex border-zinc-800/80 bg-zinc-950">
+    <aside className="surface-panel hidden h-[calc(100dvh-2rem)] w-60 shrink-0 flex-col rounded-2xl p-3.5 lg:sticky lg:top-4 lg:flex border-zinc-800/80 bg-zinc-950">
       {/* Brand Header */}
       <div className="flex items-center gap-2.5 px-2 py-1.5">
         <BrandLogo size="md" />
