@@ -20,7 +20,7 @@ const STAGE_CONFIG: Record<JobStatus, { label: string; color: string }> = {
   new: { label: 'New', color: '#38bdf8' },
   applied: { label: 'Applied', color: '#10b981' },
   interviewing: { label: 'Interview', color: '#a855f7' },
-  offer: { label: 'Offer', color: '#ec4899' },
+  interested: { label: 'Interested', color: '#ec4899' },
   not_interested: { label: 'Not Interested', color: '#71717a' },
 };
 
@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus }: any) => {
 
 export const PipelineChart: React.FC<PipelineChartProps> = ({ jobs, onSelectStatus }) => {
   const data = React.useMemo(() => {
-    const keys: JobStatus[] = ['new', 'applied', 'interviewing', 'offer', 'not_interested'];
+    const keys: JobStatus[] = ['new', 'applied', 'interviewing', 'interested', 'not_interested'];
     return keys.map((status) => {
       const config = STAGE_CONFIG[status];
       const count = jobs.filter((j) => j.status === status).length;

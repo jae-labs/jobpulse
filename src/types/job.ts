@@ -2,7 +2,7 @@ export const STATUS_LIST = [
   'new',
   'applied',
   'interviewing',
-  'offer',
+  'interested',
   'not_interested',
 ] as const;
 

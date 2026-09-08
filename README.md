@@ -74,7 +74,7 @@ recruitment funnel analytics across customizable dashboard widgets.
 - **Customizable Analytics Dashboard**: Reorderable bento analytics widgets with drag-and-drop layout persistence
   backed by `@dnd-kit` and local storage.
 - **Keyboard-First Opportunity Pipeline**: Two-pane master-detail list with keyboard cycling (`j`/`k`), quick apply
-  (`Enter`), and rapid status shortcuts (`a`/`i`/`o`/`n` for Applied, Interview, Offer, and Not Interested) with
+  (`Enter`), and rapid status shortcuts (`a`/`i`/`t`/`n` for Applied, Interview, Interested, and Not Interested) with
   real-time Supabase synchronization.
 - **Match Relevance Scoring**: Automatically scores incoming roles based on your skills, target domain,
   seniority, and minimum salary thresholds.
@@ -91,9 +91,11 @@ recruitment funnel analytics across customizable dashboard widgets.
 ## Stack
 
 - **Framework**: React 19 + TypeScript + Vite 8
+- **Server State & Caching**: TanStack Query (`@tanstack/react-query`)
 - **Styling**: Tailwind CSS 4 + Lucide React icons
 - **Dashboard Layout & Reordering**: `@dnd-kit` (core & sortable)
 - **Data & Auth**: Supabase (`@supabase/supabase-js`)
+- **Virtualization**: TanStack Virtual (`@tanstack/react-virtual`)
 - **Visualizations**: Recharts
 - **Command Menu**: `cmdk`
 - **Linting & Type Safety**: Oxlint + TypeScript (`tsc`)
@@ -170,10 +172,14 @@ Requires Node.js `20.19.0` or newer (Node `22.12.0` recommended via `mise`).
 │   │   ├── profile/             # Candidate criteria and scoring weights
 │   │   ├── sources/             # Job board scrapers and ingestion status
 │   │   └── ui/                  # Reusable primitives (buttons, sheets, cmdk)
-│   ├── lib/                     # Supabase client, storage, and profile utils
-│   ├── types/                   # Domain TypeScript definitions (Job, Employer, etc.)
+│   ├── hooks/                   # TanStack query and mutation hooks (useQueries.ts)
+│   ├── lib/                     # Supabase client, query client, storage, and profile utils
+│   ├── types/                   # Domain & database types (job.ts, database.types.ts)
 │   ├── App.tsx                  # Root application shell and view router
 │   └── main.tsx                 # Entrypoint
+├── supabase/                    # Supabase configuration & versioned migrations
+│   ├── config.toml              # Supabase CLI project config
+│   └── migrations/              # SQL schema migrations
 ├── AGENTS.md                    # Operational guidelines for AI agents
 ├── CODEOWNERS                   # Repository code ownership
 ├── lefthook.yml                 # Pre-commit and pre-push Git hook triggers

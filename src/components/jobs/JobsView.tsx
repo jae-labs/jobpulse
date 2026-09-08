@@ -325,9 +325,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
       } else if (e.key === 'i' && selectedJob && onUpdateStatus) {
         e.preventDefault();
         void onUpdateStatus(selectedJob, 'interviewing');
-      } else if (e.key === 'o' && selectedJob && onUpdateStatus) {
+      } else if ((e.key === 't' || e.key === 'o') && selectedJob && onUpdateStatus) {
         e.preventDefault();
-        void onUpdateStatus(selectedJob, 'offer');
+        void onUpdateStatus(selectedJob, 'interested');
       } else if ((e.key === 'n' || e.key === 'x') && selectedJob && onUpdateStatus) {
         e.preventDefault();
         void onUpdateStatus(selectedJob, 'not_interested');
@@ -569,7 +569,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </span>
           <span className="hidden sm:inline-block text-zinc-600">·</span>
           <span className="hidden sm:inline-block text-zinc-500 font-sans">
-            Press <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">j</kbd> / <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">k</kbd> to cycle · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">↵</kbd> to apply · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">a</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">i</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">o</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">n</kbd> for status
+            Press <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">j</kbd> / <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">k</kbd> to cycle · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">↵</kbd> to apply · <kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">a</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">i</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">t</kbd>/<kbd className="rounded border border-zinc-800 bg-zinc-900 px-1 text-[10px] font-mono text-zinc-300">n</kbd> for status
           </span>
         </div>
 

@@ -121,7 +121,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestDataRef = useRef<Profile>(formData);
-  const isInitialMount = useRef(true);
 
   // Load CV metadata when userEmail is ready
   useEffect(() => {
@@ -130,14 +129,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   }, [userEmail]);
 
+  // Synchronize incoming profile changes from other devices or backend
   useEffect(() => {
-    if (profile && isInitialMount.current) {
+    if (!profile) return;
+
+    // If this screen is actively typing/scheduling a debounced save, don't overwrite user input
+    if (debounceTimerRef.current) return;
+
+    // Only update if incoming data is actually different from current local data
+    const incomingStr = JSON.stringify(profile);
+    const currentStr = JSON.stringify(latestDataRef.current);
+
+    if (incomingStr !== currentStr) {
       setFormData(profile);
       latestDataRef.current = profile;
       const parsed = parsePhone(profile.phone);
       setPhoneDial(parsed.dial || '+353');
       setPhoneNumber(parsed.number);
-      isInitialMount.current = false;
     }
   }, [profile]);
 

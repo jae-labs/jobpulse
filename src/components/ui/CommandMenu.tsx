@@ -103,6 +103,16 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
 
             <Command.Item
               onSelect={() => {
+                void onUpdateStatus?.(selectedJob, 'interested');
+                onOpenChange(false);
+              }}
+            >
+              <Sparkles className="size-4 text-sky-400" />
+              <span>Mark as Interested</span>
+            </Command.Item>
+
+            <Command.Item
+              onSelect={() => {
                 void onUpdateStatus?.(selectedJob, 'interviewing');
                 onOpenChange(false);
               }}
@@ -204,6 +214,17 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
           >
             <span className="size-2 rounded-full bg-emerald-400 mr-1" />
             <span>Filter: Applied Roles</span>
+          </Command.Item>
+
+          <Command.Item
+            onSelect={() => {
+              onSelectTab?.('jobs');
+              onFilterStatus?.('interested');
+              onOpenChange(false);
+            }}
+          >
+            <span className="size-2 rounded-full bg-sky-400 mr-1" />
+            <span>Filter: Interested Roles</span>
           </Command.Item>
 
           <Command.Item

@@ -14,7 +14,10 @@
     "typecheck": "tsc -b --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
     "prepare": "lefthook install",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migration": "supabase migration new",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked > src/types/database.types.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -24,6 +27,8 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-slot": "^1.3.3",
     "@supabase/supabase-js": "^2.116.0",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-virtual": "^3.14.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

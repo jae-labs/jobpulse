@@ -156,7 +156,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
               { id: 'new', label: 'New', shortLabel: 'New' },
               { id: 'applied', label: 'Applied', shortLabel: 'Applied' },
               { id: 'interviewing', label: 'Interview', shortLabel: 'Interview' },
-              { id: 'offer', label: 'Offer', shortLabel: 'Offer' },
+              { id: 'interested', label: 'Interested', shortLabel: 'Interested' },
               { id: 'not_interested', label: 'Not Interested', shortLabel: 'Not Interested' },
             ].map(({ id, label, shortLabel }) => {
               const active = job.status === id;

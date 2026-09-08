@@ -22,8 +22,8 @@ const STATUS_CONFIG: Record<
     dotClass: 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]',
     containerClass: 'border-purple-500/20 bg-purple-500/10 text-purple-300 dark:text-purple-400',
   },
-  offer: {
-    label: 'Offer',
+  interested: {
+    label: 'Interested',
     dotClass: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.4)]',
     containerClass: 'border-sky-500/20 bg-sky-500/10 text-sky-300 dark:text-sky-400',
   },

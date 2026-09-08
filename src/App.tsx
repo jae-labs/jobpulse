@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import type { Session, RealtimeChannel } from '@supabase/supabase-js';
 
-import type { Job, Source, Employer, Profile, JobStatus } from './types/job';
+import type { Job, Profile, JobStatus } from './types/job';
 import {
   loadDashboardLayout,
   saveDashboardLayout,
@@ -45,10 +45,19 @@ import { SourcesView } from './components/sources/SourcesView';
 import { ProfileView } from './components/profile/ProfileView';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { DEFAULT_PROFILE } from './lib/defaultProfile';
-import { loadUserProfile, saveUserProfile } from './lib/userProfile';
 import { checkUserAuthorization } from './components/auth/authConfig';
 import { LoginView } from './components/auth/LoginView';
 import { AccessDeniedView } from './components/auth/AccessDeniedView';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useJobsQuery,
+  useSourcesQuery,
+  useEmployersQuery,
+  useProfileQuery,
+  useUpdateJobStatusMutation,
+  useSaveProfileMutation,
+  queryKeys,
+} from './hooks/useQueries';
 const PipelineChart = React.lazy(() =>
   import('./components/charts/PipelineChart').then((m) => ({ default: m.PipelineChart }))
 );
@@ -87,20 +96,15 @@ function isOverviewWidgetOrder(layout: string[]): layout is OverviewWidgetId[] {
 }
 
 export const App: React.FC = () => {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(Boolean(supabase));
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
-  const [_employers, setEmployers] = useState<Employer[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(DEFAULT_PROFILE);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [notice, setNotice] = useState('');
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dbError, setDbError] = useState<string | null>(null);
+  const [customDbError, setCustomDbError] = useState<string | null>(null);
 
   const [overviewWidgetOrder, setOverviewWidgetOrder] = useState<OverviewWidgetId[]>([
     ...overviewWidgetIds,
@@ -111,17 +115,57 @@ export const App: React.FC = () => {
   const [isLayoutReady, setIsLayoutReady] = useState(false);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
 
+  const userEmail = session?.user?.email?.trim().toLowerCase();
+
+  const {
+    data: jobs = [],
+    isLoading: isJobsLoading,
+    error: jobsQueryError,
+    refetch: refetchJobs,
+  } = useJobsQuery(userEmail, isAuthorized);
+
+  const {
+    data: sources = [],
+    isLoading: isSourcesLoading,
+  } = useSourcesQuery(isAuthorized);
+
+  const {
+    data: _employers = [],
+  } = useEmployersQuery(isAuthorized);
+
+  const {
+    data: profile = DEFAULT_PROFILE,
+  } = useProfileQuery(userEmail, isAuthorized);
+
+  const updateJobStatusMutation = useUpdateJobStatusMutation(userEmail);
+  const saveProfileMutation = useSaveProfileMutation(userEmail);
+
+  const selectedJob = useMemo(
+    () => (selectedJobId !== null ? jobs.find((j) => j.id === selectedJobId) ?? null : null),
+    [jobs, selectedJobId]
+  );
+
+  const [isDbErrorDismissed, setIsDbErrorDismissed] = useState(false);
+
+  const isUpdatingStatus = updateJobStatusMutation.isPending;
+  const isLoading = (isJobsLoading || isSourcesLoading) && jobs.length === 0;
+  const dbError =
+    !isDbErrorDismissed &&
+    (customDbError ||
+      (jobsQueryError
+        ? `Unable to connect to Supabase: ${jobsQueryError.message || 'Network error'}. Verify your connection.`
+        : null));
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const isUpdatingStatusRef = useRef(false);
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
 
-  useEffect(() => {
-    isUpdatingStatusRef.current = isUpdatingStatus;
-  }, [isUpdatingStatus]);
+  const handleSelectJob = (job: Job | null) => {
+    setSelectedJobId(job ? job.id : null);
+  };
 
   // Check Supabase Auth session & dynamic authorization in authorized_users table
   useEffect(() => {
@@ -167,99 +211,13 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const loadData = useCallback(
-    async (silent = false) => {
-      await Promise.resolve();
-      if (!silent) {
-        setIsLoading(true);
-        setDbError(null);
-      }
-      try {
-        if (!supabase) {
-          throw new Error('Supabase is not initialized. Check your environment variables.');
-        }
-
-        const userEmail = session?.user?.email?.trim().toLowerCase();
-
-        const [jobsRes, sourcesRes, employersRes, userStatusesRes, profileData] = await Promise.all([
-          supabase.from('jobs').select('*').order('relevance', { ascending: false }),
-          supabase.from('sources').select('*').order('name', { ascending: true }),
-          supabase.from('employers').select('*').order('priority', { ascending: true }),
-          userEmail
-            ? supabase.from('user_job_statuses').select('job_id, status').ilike('user_email', userEmail)
-            : Promise.resolve({ data: [], error: null }),
-          userEmail ? loadUserProfile(userEmail) : Promise.resolve(DEFAULT_PROFILE),
-        ]);
-
-        if (jobsRes.error) throw new Error(jobsRes.error.message);
-        if (sourcesRes.error) throw new Error(sourcesRes.error.message);
-        if (employersRes.error) throw new Error(employersRes.error.message);
-
-        const statusMap = new Map<number, JobStatus>();
-        if (userStatusesRes && 'data' in userStatusesRes && userStatusesRes.data) {
-          for (const row of userStatusesRes.data as { job_id: number; status: JobStatus }[]) {
-            if (row.job_id !== null && row.job_id !== undefined) {
-              statusMap.set(Number(row.job_id), row.status as JobStatus);
-            }
-          }
-        }
-
-        const rawJobs = (jobsRes.data || []) as Job[];
-        const jobsData = rawJobs.map((j: Job) => ({
-          ...j,
-          status: statusMap.get(j.id) || 'new',
-        }));
-        const sourcesData = (sourcesRes.data || []) as Source[];
-        const employersData = (employersRes.data || []) as Employer[];
-
-        setJobs(jobsData);
-        setSources(sourcesData);
-        setEmployers(employersData);
-        setProfile(profileData || DEFAULT_PROFILE);
-
-        setSelectedJob((current) => {
-          if (!current) return null;
-          const fresh = jobsData.find((j: Job) => j.id === current.id);
-          return fresh || current;
-        });
-
-        setDbError(null);
-      } catch (err: any) {
-        if (!silent) {
-          console.error('Failed to load data from Supabase:', err);
-          setDbError(
-            `Unable to connect to Supabase: ${err?.message || 'Network error'}. Verify your connection.`
-          );
-        }
-      } finally {
-        if (!silent) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [session],
-  );
-
-  const handleSelectJob = (job: Job | null) => {
-    setSelectedJob(job);
-  };
-
-  useEffect(() => {
-    if (isAuthorized && session?.user?.email) {
-      const timer = setTimeout(() => {
-        void loadData();
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthorized, session, loadData]);
-
-  // Supabase Realtime Listener and window focus refresh
+  // Supabase Realtime Listener (Peer broadcast + Postgres changes)
   useEffect(() => {
     if (!isAuthorized || !isSupabaseConfigured || !supabase) {
       return;
     }
     let isMounted = true;
-    const userEmail = session?.user?.email?.trim().toLowerCase();
+    const cleanUserEmail = session?.user?.email?.trim().toLowerCase();
 
     // Configure channel with peer broadcast enabled
     const channel = supabase.channel('public:jobs_and_statuses', {
@@ -277,18 +235,15 @@ export const App: React.FC = () => {
       if (!data || data.job_id === undefined || !data.status) return;
 
       const targetEmail = data.user_email ? String(data.user_email).trim().toLowerCase() : null;
-      if (targetEmail && userEmail && targetEmail !== userEmail) {
+      if (targetEmail && cleanUserEmail && targetEmail !== cleanUserEmail) {
         return;
       }
 
       const targetId = Number(data.job_id);
       const nextStatus = data.status as JobStatus;
 
-      setJobs((prev) =>
-        prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j))
-      );
-      setSelectedJob((curr) =>
-        curr && curr.id === targetId ? { ...curr, status: nextStatus } : curr
+      queryClient.setQueryData<Job[]>(queryKeys.jobs(cleanUserEmail), (prev) =>
+        prev ? prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j)) : []
       );
     });
 
@@ -296,34 +251,14 @@ export const App: React.FC = () => {
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'jobs' },
-      (payload) => {
+      () => {
         if (!isMounted) return;
-        if (payload.eventType === 'UPDATE' && payload.new) {
-          const updated = payload.new as Job;
-          const targetId = Number(updated.id);
-          setJobs((prev) =>
-            prev.map((j) => (j.id === targetId ? { ...updated, id: targetId, status: j.status } : j))
-          );
-          setSelectedJob((curr) =>
-            curr && curr.id === targetId ? { ...updated, id: targetId, status: curr.status } : curr
-          );
-        } else if (payload.eventType === 'INSERT' && payload.new) {
-          const newJob = payload.new as Job;
-          const targetId = Number(newJob.id);
-          setJobs((prev) => [{ ...newJob, id: targetId, status: 'new' }, ...prev]);
-        } else if (payload.eventType === 'DELETE' && payload.old) {
-          const deletedId = (payload.old as { id?: number | string }).id;
-          if (deletedId !== undefined) {
-            const targetId = Number(deletedId);
-            setJobs((prev) => prev.filter((j) => j.id !== targetId));
-            setSelectedJob((curr) => (curr && curr.id === targetId ? null : curr));
-          }
-        }
+        void queryClient.invalidateQueries({ queryKey: queryKeys.jobs(cleanUserEmail) });
       }
     );
 
     // 3. Database Postgres Changes on user_job_statuses
-    if (userEmail) {
+    if (cleanUserEmail) {
       channel.on(
         'postgres_changes',
         {
@@ -333,38 +268,12 @@ export const App: React.FC = () => {
         },
         (payload) => {
           if (!isMounted) return;
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const row = payload.new as { job_id?: number | string; status?: JobStatus; user_email?: string };
-            if (row && row.job_id !== undefined && row.status) {
-              const rowEmail = row.user_email ? String(row.user_email).trim().toLowerCase() : null;
-              if (rowEmail && rowEmail !== userEmail) {
-                return;
-              }
-              const targetId = Number(row.job_id);
-              const nextStatus = row.status as JobStatus;
-              setJobs((prev) =>
-                prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j))
-              );
-              setSelectedJob((curr) =>
-                curr && curr.id === targetId ? { ...curr, status: nextStatus } : curr
-              );
-            }
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            const row = payload.old as { job_id?: number | string; user_email?: string };
-            if (row && row.job_id !== undefined) {
-              const rowEmail = row.user_email ? String(row.user_email).trim().toLowerCase() : null;
-              if (rowEmail && rowEmail !== userEmail) {
-                return;
-              }
-              const targetId = Number(row.job_id);
-              setJobs((prev) =>
-                prev.map((j) => (j.id === targetId ? { ...j, status: 'new' } : j))
-              );
-              setSelectedJob((curr) =>
-                curr && curr.id === targetId ? { ...curr, status: 'new' } : curr
-              );
-            }
+          const row = (payload.new || payload.old) as { user_email?: string } | undefined;
+          const rowEmail = row?.user_email ? String(row.user_email).trim().toLowerCase() : null;
+          if (rowEmail && rowEmail !== cleanUserEmail) {
+            return;
           }
+          void queryClient.invalidateQueries({ queryKey: queryKeys.jobs(cleanUserEmail) });
         }
       );
     }
@@ -373,25 +282,9 @@ export const App: React.FC = () => {
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'sources' },
-      (payload) => {
+      () => {
         if (!isMounted) return;
-        if (payload.eventType === 'UPDATE' && payload.new) {
-          const updated = payload.new as Source;
-          const targetId = Number(updated.id);
-          setSources((prev) =>
-            prev.map((s) => (s.id === targetId ? { ...updated, id: targetId } : s))
-          );
-        } else if (payload.eventType === 'INSERT' && payload.new) {
-          const newSource = payload.new as Source;
-          const targetId = Number(newSource.id);
-          setSources((prev) => [...prev.filter((s) => s.id !== targetId), { ...newSource, id: targetId }]);
-        } else if (payload.eventType === 'DELETE' && payload.old) {
-          const deletedId = (payload.old as { id?: number | string }).id;
-          if (deletedId !== undefined) {
-            const targetId = Number(deletedId);
-            setSources((prev) => prev.filter((s) => s.id !== targetId));
-          }
-        }
+        void queryClient.invalidateQueries({ queryKey: queryKeys.sources() });
       }
     );
 
@@ -399,25 +292,9 @@ export const App: React.FC = () => {
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'employers' },
-      (payload) => {
+      () => {
         if (!isMounted) return;
-        if (payload.eventType === 'UPDATE' && payload.new) {
-          const updated = payload.new as Employer;
-          const targetId = Number(updated.id);
-          setEmployers((prev) =>
-            prev.map((e) => (e.id === targetId ? { ...updated, id: targetId } : e))
-          );
-        } else if (payload.eventType === 'INSERT' && payload.new) {
-          const newEmp = payload.new as Employer;
-          const targetId = Number(newEmp.id);
-          setEmployers((prev) => [...prev.filter((e) => e.id !== targetId), { ...newEmp, id: targetId }]);
-        } else if (payload.eventType === 'DELETE' && payload.old) {
-          const deletedId = (payload.old as { id?: number | string }).id;
-          if (deletedId !== undefined) {
-            const targetId = Number(deletedId);
-            setEmployers((prev) => prev.filter((e) => e.id !== targetId));
-          }
-        }
+        void queryClient.invalidateQueries({ queryKey: queryKeys.employers() });
       }
     );
 
@@ -427,11 +304,11 @@ export const App: React.FC = () => {
       const data = payload?.payload;
       if (!data || !data.profile) return;
       const targetEmail = data.user_email ? String(data.user_email).trim().toLowerCase() : null;
-      if (targetEmail && userEmail && targetEmail !== userEmail) return;
-      setProfile(data.profile);
+      if (targetEmail && cleanUserEmail && targetEmail !== cleanUserEmail) return;
+      queryClient.setQueryData(queryKeys.profile(cleanUserEmail), data.profile);
     });
 
-    if (userEmail) {
+    if (cleanUserEmail) {
       channel.on(
         'postgres_changes',
         {
@@ -439,42 +316,21 @@ export const App: React.FC = () => {
           schema: 'public',
           table: 'user_profiles',
         },
-        (payload) => {
+        () => {
           if (!isMounted) return;
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const newProf = payload.new as any;
-            if (newProf) {
-              const profEmail = newProf.user_email ? String(newProf.user_email).trim().toLowerCase() : null;
-              if (profEmail && profEmail !== userEmail) return;
-              setProfile((prev) => ({
-                ...(prev || DEFAULT_PROFILE),
-                ...newProf,
-              }));
-            }
-          }
+          void queryClient.invalidateQueries({ queryKey: queryKeys.profile(cleanUserEmail) });
         }
       );
     }
 
     channel.subscribe();
 
-    const handleFocus = () => {
-      if (document.visibilityState === 'visible' && isMounted) {
-        void loadData(true);
-      }
-    };
-
-    window.addEventListener('visibilitychange', handleFocus);
-    window.addEventListener('focus', handleFocus);
-
     return () => {
       isMounted = false;
       realtimeChannelRef.current = null;
       void supabase.removeChannel(channel);
-      window.removeEventListener('visibilitychange', handleFocus);
-      window.removeEventListener('focus', handleFocus);
     };
-  }, [isAuthorized, session, loadData]);
+  }, [isAuthorized, session, queryClient]);
 
   // Enforce dark mode
   useEffect(() => {
@@ -512,14 +368,6 @@ export const App: React.FC = () => {
   }, [isLayoutReady, overviewWidgetOrder]);
 
   const updateStatus = async (job: Job, status: JobStatus) => {
-    setIsUpdatingStatus(true);
-    const previousStatus = job.status;
-    const updated = { ...job, status };
-    setJobs((items) => items.map((item) => (item.id === job.id ? updated : item)));
-    setSelectedJob(updated);
-
-    const userEmail = session?.user?.email?.trim().toLowerCase();
-
     // Instant Realtime broadcast to other connected screens/devices
     if (realtimeChannelRef.current) {
       void realtimeChannelRef.current.send({
@@ -534,24 +382,8 @@ export const App: React.FC = () => {
     }
 
     try {
-      if (!supabase) throw new Error('Supabase client is not configured');
-      if (!userEmail) throw new Error('Active user session required');
-
-      const { error } = await supabase.from('user_job_statuses').upsert(
-        {
-          user_email: userEmail,
-          job_id: job.id,
-          status,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_email,job_id' }
-      );
-      if (error) throw new Error(error.message);
+      await updateJobStatusMutation.mutateAsync({ job, status });
     } catch (err: any) {
-      const reverted = { ...job, status: previousStatus };
-      setJobs((items) => items.map((item) => (item.id === job.id ? reverted : item)));
-      setSelectedJob(reverted);
-
       // Broadcast rollback if database save failed
       if (realtimeChannelRef.current) {
         void realtimeChannelRef.current.send({
@@ -559,25 +391,20 @@ export const App: React.FC = () => {
           event: 'job_status_updated',
           payload: {
             job_id: job.id,
-            status: previousStatus,
+            status: job.status,
             user_email: userEmail,
           },
         });
       }
 
       setNotice(`Failed to save status update to Supabase: ${err?.message || 'Network error'}`);
-    } finally {
-      setIsUpdatingStatus(false);
     }
   };
 
   const handleSaveProfile = async (updatedProfile: Profile) => {
-    const userEmail = session?.user?.email?.trim().toLowerCase();
-    if (!userEmail) return { success: false, error: 'User email not found in active session.' };
-    const res = await saveUserProfile(userEmail, updatedProfile);
-    if (res.success) {
-      setProfile(updatedProfile);
-      if (realtimeChannelRef.current) {
+    try {
+      const res = await saveProfileMutation.mutateAsync(updatedProfile);
+      if (res.success && realtimeChannelRef.current) {
         void realtimeChannelRef.current.send({
           type: 'broadcast',
           event: 'profile_updated',
@@ -587,8 +414,10 @@ export const App: React.FC = () => {
           },
         });
       }
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to save profile' };
     }
-    return res;
   };
 
   const handleWidgetDragEnd = ({ active, over }: DragEndEvent) => {
@@ -657,7 +486,7 @@ export const App: React.FC = () => {
           <SortableWidget id={widgetId} label="In pipeline" className="sm:col-span-2 md:col-span-4">
             <StatCard
               title="In Active Pipeline"
-              value={(counts.applied || 0) + (counts.interviewing || 0) + (counts.offer || 0)}
+              value={(counts.applied || 0) + (counts.interviewing || 0) + (counts.interested || 0)}
               subValue={`${counts.interviewing || 0} interview · ${counts.applied || 0} applied`}
               icon={Send}
               onClick={() => {
@@ -813,7 +642,11 @@ export const App: React.FC = () => {
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                   <Button
                     variant="secondary"
-                    onClick={() => void loadData()}
+                    onClick={() => {
+                      setIsDbErrorDismissed(false);
+                      setCustomDbError(null);
+                      void refetchJobs();
+                    }}
                     className="border-rose-500/40 text-rose-200 hover:bg-rose-500/20 text-xs py-1 px-3"
                   >
                     <RefreshCw className={`size-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -821,7 +654,7 @@ export const App: React.FC = () => {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => setDbError(null)}
+                    onClick={() => setIsDbErrorDismissed(true)}
                     className="text-neutral-400 hover:text-white p-1 cursor-pointer"
                     aria-label="Dismiss error"
                   >

@@ -69,14 +69,18 @@ npm run check
   - Status badge: `src/components/ui/StatusPill.tsx`
   - Radix wrappers: `button.tsx`, `dialog.tsx`, `sheet.tsx`
 - Data & Types:
-  - Supabase client & connection checks: `src/lib/supabase.ts`
-  - Domain types: `src/types/job.ts` (Canonical statuses: `New`, `Applied`, `Interview`, `Offer`, `Not Interested`)
+  - Supabase CLI migrations & config: `supabase/migrations/`, `supabase/config.toml`
+  - Generated database types: `src/types/database.types.ts` (via `npm run db:types`)
+  - Supabase client: `src/lib/supabase.ts` (typed via `createClient<Database>`)
+  - Server state, queries & mutations: `src/hooks/useQueries.ts`, `src/lib/queryClient.ts` (TanStack Query)
+  - Domain types: `src/types/job.ts` (Canonical statuses: `New`, `Applied`, `Interview`, `Interested`, `Not Interested`)
 
 ## Make Changes Safely
 
 - Prefer small, focused diffs.
 - Preserve component boundaries; avoid inflating `App.tsx` with view-specific state.
-- Keep Supabase database queries and mutations strongly typed via `src/types/job.ts`.
+- Manage server state, caching, optimistic mutations, and background synchronization via TanStack Query hooks in `src/hooks/useQueries.ts` instead of manual `useState`/`useEffect` data fetchers.
+- Keep Supabase database queries and mutations strongly typed via `src/types/database.types.ts` and `src/types/job.ts`.
 - Never expose service role or privileged backend credentials to frontend client code;
   use only `VITE_SUPABASE_*` publishable keys.
 - Preserve accessibility and keyboard shortcuts (e.g., `Cmd+K` / `Ctrl+K` for the Command Menu).
@@ -84,6 +88,8 @@ npm run check
 
 ## Update Triggers
 
+- If database tables, RLS, or schema change: create a migration (`npm run db:migration <name>`), push changes (`npm run db:push`), and regenerate types (`npm run db:types`).
+- If data fetching or mutations change: update `src/hooks/useQueries.ts` and maintain clean query cache invalidation via `queryKeys`.
 - If job models or pipeline stages change: update `src/types/job.ts`, `src/components/jobs/`, and charts together.
 - If profile matching criteria change: update `src/lib/defaultProfile.ts`, `src/lib/userProfile.ts`,
   and `src/components/profile/ProfileView.tsx`.
