@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -90,7 +90,7 @@ export const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(Boolean(supabase));
   const [jobs, setJobs] = useState<Job[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [_employers, setEmployers] = useState<Employer[]>([]);
@@ -125,7 +125,6 @@ export const App: React.FC = () => {
   // Check Supabase Auth session & dynamic authorization in authorized_users table
   useEffect(() => {
     if (!supabase) {
-      setIsAuthChecking(false);
       return;
     }
 
@@ -167,74 +166,78 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const loadData = async (silent = false) => {
-    if (!silent) {
-      setIsLoading(true);
-      setDbError(null);
-    }
-    try {
-      if (!supabase) {
-        throw new Error('Supabase is not initialized. Check your environment variables.');
+  const loadData = useCallback(
+    async (silent = false) => {
+      await Promise.resolve();
+      if (!silent) {
+        setIsLoading(true);
+        setDbError(null);
       }
+      try {
+        if (!supabase) {
+          throw new Error('Supabase is not initialized. Check your environment variables.');
+        }
 
-      const userEmail = session?.user?.email?.trim().toLowerCase();
+        const userEmail = session?.user?.email?.trim().toLowerCase();
 
-      const [jobsRes, sourcesRes, employersRes, userStatusesRes, profileData] = await Promise.all([
-        supabase.from('jobs').select('*').order('relevance', { ascending: false }),
-        supabase.from('sources').select('*').order('name', { ascending: true }),
-        supabase.from('employers').select('*').order('priority', { ascending: true }),
-        userEmail
-          ? supabase.from('user_job_statuses').select('job_id, status').ilike('user_email', userEmail)
-          : Promise.resolve({ data: [], error: null }),
-        userEmail ? loadUserProfile(userEmail) : Promise.resolve(DEFAULT_PROFILE),
-      ]);
+        const [jobsRes, sourcesRes, employersRes, userStatusesRes, profileData] = await Promise.all([
+          supabase.from('jobs').select('*').order('relevance', { ascending: false }),
+          supabase.from('sources').select('*').order('name', { ascending: true }),
+          supabase.from('employers').select('*').order('priority', { ascending: true }),
+          userEmail
+            ? supabase.from('user_job_statuses').select('job_id, status').ilike('user_email', userEmail)
+            : Promise.resolve({ data: [], error: null }),
+          userEmail ? loadUserProfile(userEmail) : Promise.resolve(DEFAULT_PROFILE),
+        ]);
 
-      if (jobsRes.error) throw new Error(jobsRes.error.message);
-      if (sourcesRes.error) throw new Error(sourcesRes.error.message);
-      if (employersRes.error) throw new Error(employersRes.error.message);
+        if (jobsRes.error) throw new Error(jobsRes.error.message);
+        if (sourcesRes.error) throw new Error(sourcesRes.error.message);
+        if (employersRes.error) throw new Error(employersRes.error.message);
 
-      const statusMap = new Map<number, JobStatus>();
-      if (userStatusesRes && 'data' in userStatusesRes && userStatusesRes.data) {
-        for (const row of userStatusesRes.data as { job_id: number; status: JobStatus }[]) {
-          if (row.job_id !== null && row.job_id !== undefined) {
-            statusMap.set(Number(row.job_id), row.status as JobStatus);
+        const statusMap = new Map<number, JobStatus>();
+        if (userStatusesRes && 'data' in userStatusesRes && userStatusesRes.data) {
+          for (const row of userStatusesRes.data as { job_id: number; status: JobStatus }[]) {
+            if (row.job_id !== null && row.job_id !== undefined) {
+              statusMap.set(Number(row.job_id), row.status as JobStatus);
+            }
           }
         }
+
+        const rawJobs = (jobsRes.data || []) as Job[];
+        const jobsData = rawJobs.map((j: Job) => ({
+          ...j,
+          status: statusMap.get(j.id) || 'new',
+        }));
+        const sourcesData = (sourcesRes.data || []) as Source[];
+        const employersData = (employersRes.data || []) as Employer[];
+
+        setJobs(jobsData);
+        setSources(sourcesData);
+        setEmployers(employersData);
+        setProfile(profileData || DEFAULT_PROFILE);
+
+        setSelectedJob((current) => {
+          if (!current) return null;
+          const fresh = jobsData.find((j: Job) => j.id === current.id);
+          return fresh || current;
+        });
+
+        setDbError(null);
+      } catch (err: any) {
+        if (!silent) {
+          console.error('Failed to load data from Supabase:', err);
+          setDbError(
+            `Unable to connect to Supabase: ${err?.message || 'Network error'}. Verify your connection.`
+          );
+        }
+      } finally {
+        if (!silent) {
+          setIsLoading(false);
+        }
       }
-
-      const rawJobs = (jobsRes.data || []) as Job[];
-      const jobsData = rawJobs.map((j: Job) => ({
-        ...j,
-        status: statusMap.get(j.id) || 'new',
-      }));
-      const sourcesData = (sourcesRes.data || []) as Source[];
-      const employersData = (employersRes.data || []) as Employer[];
-
-      setJobs(jobsData);
-      setSources(sourcesData);
-      setEmployers(employersData);
-      setProfile(profileData || DEFAULT_PROFILE);
-
-      setSelectedJob((current) => {
-        if (!current) return null;
-        const fresh = jobsData.find((j: Job) => j.id === current.id);
-        return fresh || current;
-      });
-
-      setDbError(null);
-    } catch (err: any) {
-      if (!silent) {
-        console.error('Failed to load data from Supabase:', err);
-        setDbError(
-          `Unable to connect to Supabase: ${err?.message || 'Network error'}. Verify your connection.`
-        );
-      }
-    } finally {
-      if (!silent) {
-        setIsLoading(false);
-      }
-    }
-  };
+    },
+    [session],
+  );
 
   const handleSelectJob = (job: Job | null) => {
     setSelectedJob(job);
@@ -242,9 +245,12 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (isAuthorized && session?.user?.email) {
-      void loadData();
+      const timer = setTimeout(() => {
+        void loadData();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isAuthorized, session?.user?.email]);
+  }, [isAuthorized, session, loadData]);
 
   // Supabase Realtime Listener and window focus refresh
   useEffect(() => {
@@ -325,7 +331,7 @@ export const App: React.FC = () => {
       window.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [isAuthorized, session?.user?.email]);
+  }, [isAuthorized, session, loadData]);
 
   // Enforce dark mode
   useEffect(() => {

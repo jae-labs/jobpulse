@@ -7,7 +7,7 @@ interface SourcesViewProps {
   notice?: string;
 }
 
-export function getSourceVacancies(source: Source): number {
+function getSourceVacancies(source: Source): number {
   if (typeof source.vacancies_found === 'number' && source.vacancies_found > 0) {
     return source.vacancies_found;
   }
@@ -53,9 +53,18 @@ export const SourcesView: React.FC<SourcesViewProps> = ({
     const list = [...sources];
 
     list.sort((a, b) => {
-      const vA = getSourceVacancies(a);
-      const vB = getSourceVacancies(b);
-      const comparison = vA - vB;
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'synced') {
+        const timeA = a.last_synced_at ? new Date(a.last_synced_at).getTime() : 0;
+        const timeB = b.last_synced_at ? new Date(b.last_synced_at).getTime() : 0;
+        comparison = timeA - timeB;
+      } else {
+        const vA = getSourceVacancies(a);
+        const vB = getSourceVacancies(b);
+        comparison = vA - vB;
+      }
       return sortDir === 'asc' ? comparison : -comparison;
     });
 

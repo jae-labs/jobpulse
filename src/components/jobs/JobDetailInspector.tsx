@@ -1,11 +1,7 @@
 import React from 'react';
 import {
   ExternalLink,
-  MapPin,
   Briefcase,
-  Coins,
-  Calendar,
-  CheckCircle2,
   Sparkles,
   Loader2,
   X,

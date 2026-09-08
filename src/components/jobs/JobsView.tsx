@@ -84,29 +84,32 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
 
-  useEffect(() => {
-    if (initialStatusFilter !== undefined) {
-      setStatusFilter(initialStatusFilter);
-    }
-  }, [initialStatusFilter]);
+  const [prevInitialStatus, setPrevInitialStatus] = useState(initialStatusFilter);
+  if (initialStatusFilter !== prevInitialStatus) {
+    setPrevInitialStatus(initialStatusFilter);
+    setStatusFilter(initialStatusFilter);
+  }
 
-  useEffect(() => {
-    if (initialDomainFilter !== undefined) {
-      setDomainFilter(initialDomainFilter);
-    }
-  }, [initialDomainFilter]);
+  const [prevInitialDomain, setPrevInitialDomain] = useState(initialDomainFilter);
+  if (initialDomainFilter !== prevInitialDomain) {
+    setPrevInitialDomain(initialDomainFilter);
+    setDomainFilter(initialDomainFilter);
+  }
 
-  useEffect(() => {
-    if (initialMinMatch !== undefined) {
-      setMinMatch(initialMinMatch);
-    }
-  }, [initialMinMatch]);
+  const [prevInitialMinMatch, setPrevInitialMinMatch] = useState(initialMinMatch);
+  if (initialMinMatch !== prevInitialMinMatch) {
+    setPrevInitialMinMatch(initialMinMatch);
+    setMinMatch(initialMinMatch);
+  }
 
   const query = controlledSearch !== undefined ? controlledSearch : internalQuery;
 
-  useEffect(() => {
+  const filterSignature = `${statusFilter}-${minMatch}-${query}-${salaryFilter}-${domainFilter}-${locationFilter}-${sortField}-${sortDir}`;
+  const [prevFilterSignature, setPrevFilterSignature] = useState(filterSignature);
+  if (filterSignature !== prevFilterSignature) {
+    setPrevFilterSignature(filterSignature);
     setDisplayCount(40);
-  }, [statusFilter, minMatch, query, salaryFilter, domainFilter, locationFilter, sortField, sortDir]);
+  }
 
   const handleQueryChange = (val: string) => {
     if (setControlledSearch) {
@@ -123,29 +126,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
       setSortField(field);
       setSortDir(field === 'match' || field === 'salary' ? 'desc' : 'asc');
     }
-  };
-
-  const hasActiveFilters = Boolean(
-    query.trim() ||
-    statusFilter !== 'all' ||
-    minMatch > 0 ||
-    locationFilter !== 'all' ||
-    domainFilter !== 'all' ||
-    salaryFilter !== 'all' ||
-    sortField !== 'match' ||
-    sortDir !== 'desc'
-  );
-
-  const handleResetFilters = () => {
-    handleQueryChange('');
-    setStatusFilter('all');
-    setMinMatch(0);
-    setLocationFilter('all');
-    setDomainFilter('all');
-    setSalaryFilter('all');
-    setSortField('match');
-    setSortDir('desc');
-    onFilterReset?.();
   };
 
   const statusCounts = useMemo(() => {
@@ -190,13 +170,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
       .map(([domain, count]) => ({ domain, count }));
   }, [baseFilteredJobs]);
 
-  useEffect(() => {
-    if (domainFilter === 'all') return;
-    const domainValid = availableDomains.some((d) => d.domain === domainFilter);
-    if (!domainValid) {
-      setDomainFilter('all');
-    }
-  }, [availableDomains, domainFilter]);
+  const isDomainValid = domainFilter === 'all' || availableDomains.some((d) => d.domain === domainFilter);
+  const activeDomainFilter = isDomainValid ? domainFilter : 'all';
 
   const availableRegions = useMemo(() => {
     const REGION_DEFS = [
@@ -228,30 +203,50 @@ export const JobsView: React.FC<JobsViewProps> = ({
       .map(([loc, count]) => ({ loc, count }));
   }, [baseFilteredJobs]);
 
-  useEffect(() => {
-    if (locationFilter === 'all') return;
-    const regionValid = availableRegions.some((r) => r.id === locationFilter);
-    const specificValid = availableSpecificLocations.some((s) => s.loc === locationFilter);
-    if (!regionValid && !specificValid) {
-      setLocationFilter('all');
-    }
-  }, [availableRegions, availableSpecificLocations, locationFilter]);
+  const isLocationValid =
+    locationFilter === 'all' ||
+    availableRegions.some((r) => r.id === locationFilter) ||
+    availableSpecificLocations.some((s) => s.loc === locationFilter);
+  const activeLocationFilter = isLocationValid ? locationFilter : 'all';
+
+  const hasActiveFilters = Boolean(
+    query.trim() ||
+    statusFilter !== 'all' ||
+    minMatch > 0 ||
+    activeLocationFilter !== 'all' ||
+    activeDomainFilter !== 'all' ||
+    salaryFilter !== 'all' ||
+    sortField !== 'match' ||
+    sortDir !== 'desc'
+  );
+
+  const handleResetFilters = () => {
+    handleQueryChange('');
+    setStatusFilter('all');
+    setMinMatch(0);
+    setLocationFilter('all');
+    setDomainFilter('all');
+    setSalaryFilter('all');
+    setSortField('match');
+    setSortDir('desc');
+    onFilterReset?.();
+  };
 
   const filteredJobs = useMemo(() => {
     return baseFilteredJobs
       .filter((job) => {
-        if (domainFilter !== 'all' && (job.role_domain || 'General Administration') !== domainFilter) {
+        if (activeDomainFilter !== 'all' && (job.role_domain || 'General Administration') !== activeDomainFilter) {
           return false;
         }
-        if (locationFilter === 'all') return true;
+        if (activeLocationFilter === 'all') return true;
         const locLower = (job.location || '').toLowerCase();
-        if (locationFilter === 'dublin') return locLower.includes('dublin');
-        if (locationFilter === 'kildare') return ['kildare', 'maynooth', 'naas', 'leixlip'].some((k) => locLower.includes(k));
-        if (locationFilter === 'cork') return ['cork', 'ringaskiddy', 'carrigaline'].some((k) => locLower.includes(k));
-        if (locationFilter === 'galway') return locLower.includes('galway');
-        if (locationFilter === 'kilkenny') return locLower.includes('kilkenny');
-        if (locationFilter === 'ireland') return locLower.includes('ireland');
-        return job.location === locationFilter;
+        if (activeLocationFilter === 'dublin') return locLower.includes('dublin');
+        if (activeLocationFilter === 'kildare') return ['kildare', 'maynooth', 'naas', 'leixlip'].some((k) => locLower.includes(k));
+        if (activeLocationFilter === 'cork') return ['cork', 'ringaskiddy', 'carrigaline'].some((k) => locLower.includes(k));
+        if (activeLocationFilter === 'galway') return locLower.includes('galway');
+        if (activeLocationFilter === 'kilkenny') return locLower.includes('kilkenny');
+        if (activeLocationFilter === 'ireland') return locLower.includes('ireland');
+        return job.location === activeLocationFilter;
       })
       .sort((a, b) => {
         let cmp = 0;
@@ -275,7 +270,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
         }
         return b.relevance - a.relevance;
       });
-  }, [baseFilteredJobs, domainFilter, locationFilter, sortField, sortDir]);
+  }, [baseFilteredJobs, activeDomainFilter, activeLocationFilter, sortField, sortDir]);
 
   const visibleJobs = useMemo(() => {
     return filteredJobs.slice(0, displayCount);
@@ -464,7 +459,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="flex items-center rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-2 py-1.5 sm:py-1 w-full sm:w-auto min-w-0">
               <Layers className="size-3 text-purple-400 shrink-0 mr-1.5" />
               <select
-                value={domainFilter}
+                value={activeDomainFilter}
                 onChange={(e) => setDomainFilter(e.target.value)}
                 className="bg-transparent text-xs text-zinc-300 outline-none cursor-pointer w-full sm:max-w-[170px] truncate"
               >
@@ -500,7 +495,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="flex items-center rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-2 py-1.5 sm:py-1 w-full sm:w-auto min-w-0">
               <MapPin className="size-3 text-sky-400 shrink-0 mr-1.5" />
               <select
-                value={locationFilter}
+                value={activeLocationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="bg-transparent text-xs text-zinc-300 outline-none cursor-pointer w-full sm:max-w-[150px] truncate"
               >
