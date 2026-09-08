@@ -25,7 +25,7 @@ import {
   Search,
   LogOut,
 } from 'lucide-react';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, RealtimeChannel } from '@supabase/supabase-js';
 
 import type { Job, Source, Employer, Profile, JobStatus } from './types/job';
 import {
@@ -117,6 +117,7 @@ export const App: React.FC = () => {
   );
 
   const isUpdatingStatusRef = useRef(false);
+  const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     isUpdatingStatusRef.current = isUpdatingStatus;
@@ -260,34 +261,68 @@ export const App: React.FC = () => {
     let isMounted = true;
     const userEmail = session?.user?.email?.trim().toLowerCase();
 
-    const channel = supabase
-      .channel('public:jobs_and_statuses')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'jobs' },
-        (payload) => {
-          if (!isMounted) return;
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            const updated = payload.new as Job;
-            setJobs((prev) =>
-              prev.map((j) => (j.id === updated.id ? { ...updated, status: j.status } : j))
-            );
-            setSelectedJob((curr) =>
-              curr && curr.id === updated.id ? { ...updated, status: curr.status } : curr
-            );
-          } else if (payload.eventType === 'INSERT' && payload.new) {
-            const newJob = payload.new as Job;
-            setJobs((prev) => [{ ...newJob, status: 'new' }, ...prev]);
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            const deletedId = (payload.old as { id?: number }).id;
-            if (deletedId !== undefined) {
-              setJobs((prev) => prev.filter((j) => j.id !== deletedId));
-              setSelectedJob((curr) => (curr && curr.id === deletedId ? null : curr));
-            }
+    // Configure channel with peer broadcast enabled
+    const channel = supabase.channel('public:jobs_and_statuses', {
+      config: {
+        broadcast: { self: false },
+      },
+    });
+
+    realtimeChannelRef.current = channel;
+
+    // 1. Instant Peer Broadcast: synchronizes immediately (<50ms) across multiple devices/tabs
+    channel.on('broadcast', { event: 'job_status_updated' }, (payload) => {
+      if (!isMounted) return;
+      const data = payload?.payload;
+      if (!data || data.job_id === undefined || !data.status) return;
+
+      const targetEmail = data.user_email ? String(data.user_email).trim().toLowerCase() : null;
+      if (targetEmail && userEmail && targetEmail !== userEmail) {
+        return;
+      }
+
+      const targetId = Number(data.job_id);
+      const nextStatus = data.status as JobStatus;
+
+      setJobs((prev) =>
+        prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j))
+      );
+      setSelectedJob((curr) =>
+        curr && curr.id === targetId ? { ...curr, status: nextStatus } : curr
+      );
+    });
+
+    // 2. Jobs table changes (from scraper or admin synchronization)
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'jobs' },
+      (payload) => {
+        if (!isMounted) return;
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const updated = payload.new as Job;
+          const targetId = Number(updated.id);
+          setJobs((prev) =>
+            prev.map((j) => (j.id === targetId ? { ...updated, id: targetId, status: j.status } : j))
+          );
+          setSelectedJob((curr) =>
+            curr && curr.id === targetId ? { ...updated, id: targetId, status: curr.status } : curr
+          );
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          const newJob = payload.new as Job;
+          const targetId = Number(newJob.id);
+          setJobs((prev) => [{ ...newJob, id: targetId, status: 'new' }, ...prev]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          const deletedId = (payload.old as { id?: number | string }).id;
+          if (deletedId !== undefined) {
+            const targetId = Number(deletedId);
+            setJobs((prev) => prev.filter((j) => j.id !== targetId));
+            setSelectedJob((curr) => (curr && curr.id === targetId ? null : curr));
           }
         }
-      );
+      }
+    );
 
+    // 3. Database Postgres Changes on user_job_statuses
     if (userEmail) {
       channel.on(
         'postgres_changes',
@@ -295,19 +330,126 @@ export const App: React.FC = () => {
           event: '*',
           schema: 'public',
           table: 'user_job_statuses',
-          filter: `user_email=eq.${userEmail}`,
         },
         (payload) => {
           if (!isMounted) return;
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const row = payload.new as { job_id: number; status: JobStatus };
-            if (row && row.job_id) {
+            const row = payload.new as { job_id?: number | string; status?: JobStatus; user_email?: string };
+            if (row && row.job_id !== undefined && row.status) {
+              const rowEmail = row.user_email ? String(row.user_email).trim().toLowerCase() : null;
+              if (rowEmail && rowEmail !== userEmail) {
+                return;
+              }
+              const targetId = Number(row.job_id);
+              const nextStatus = row.status as JobStatus;
               setJobs((prev) =>
-                prev.map((j) => (j.id === row.job_id ? { ...j, status: row.status } : j))
+                prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j))
               );
               setSelectedJob((curr) =>
-                curr && curr.id === row.job_id ? { ...curr, status: row.status } : curr
+                curr && curr.id === targetId ? { ...curr, status: nextStatus } : curr
               );
+            }
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const row = payload.old as { job_id?: number | string; user_email?: string };
+            if (row && row.job_id !== undefined) {
+              const rowEmail = row.user_email ? String(row.user_email).trim().toLowerCase() : null;
+              if (rowEmail && rowEmail !== userEmail) {
+                return;
+              }
+              const targetId = Number(row.job_id);
+              setJobs((prev) =>
+                prev.map((j) => (j.id === targetId ? { ...j, status: 'new' } : j))
+              );
+              setSelectedJob((curr) =>
+                curr && curr.id === targetId ? { ...curr, status: 'new' } : curr
+              );
+            }
+          }
+        }
+      );
+    }
+
+    // 4. Data Sources table changes (auto-updates Sources tab when scraper syncs)
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'sources' },
+      (payload) => {
+        if (!isMounted) return;
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const updated = payload.new as Source;
+          const targetId = Number(updated.id);
+          setSources((prev) =>
+            prev.map((s) => (s.id === targetId ? { ...updated, id: targetId } : s))
+          );
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          const newSource = payload.new as Source;
+          const targetId = Number(newSource.id);
+          setSources((prev) => [...prev.filter((s) => s.id !== targetId), { ...newSource, id: targetId }]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          const deletedId = (payload.old as { id?: number | string }).id;
+          if (deletedId !== undefined) {
+            const targetId = Number(deletedId);
+            setSources((prev) => prev.filter((s) => s.id !== targetId));
+          }
+        }
+      }
+    );
+
+    // 5. Employers table changes
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'employers' },
+      (payload) => {
+        if (!isMounted) return;
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const updated = payload.new as Employer;
+          const targetId = Number(updated.id);
+          setEmployers((prev) =>
+            prev.map((e) => (e.id === targetId ? { ...updated, id: targetId } : e))
+          );
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          const newEmp = payload.new as Employer;
+          const targetId = Number(newEmp.id);
+          setEmployers((prev) => [...prev.filter((e) => e.id !== targetId), { ...newEmp, id: targetId }]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          const deletedId = (payload.old as { id?: number | string }).id;
+          if (deletedId !== undefined) {
+            const targetId = Number(deletedId);
+            setEmployers((prev) => prev.filter((e) => e.id !== targetId));
+          }
+        }
+      }
+    );
+
+    // 6. User Profile changes (Instant peer broadcast & Postgres changes)
+    channel.on('broadcast', { event: 'profile_updated' }, (payload) => {
+      if (!isMounted) return;
+      const data = payload?.payload;
+      if (!data || !data.profile) return;
+      const targetEmail = data.user_email ? String(data.user_email).trim().toLowerCase() : null;
+      if (targetEmail && userEmail && targetEmail !== userEmail) return;
+      setProfile(data.profile);
+    });
+
+    if (userEmail) {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+        },
+        (payload) => {
+          if (!isMounted) return;
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const newProf = payload.new as any;
+            if (newProf) {
+              const profEmail = newProf.user_email ? String(newProf.user_email).trim().toLowerCase() : null;
+              if (profEmail && profEmail !== userEmail) return;
+              setProfile((prev) => ({
+                ...(prev || DEFAULT_PROFILE),
+                ...newProf,
+              }));
             }
           }
         }
@@ -327,6 +469,7 @@ export const App: React.FC = () => {
 
     return () => {
       isMounted = false;
+      realtimeChannelRef.current = null;
       void supabase.removeChannel(channel);
       window.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('focus', handleFocus);
@@ -375,9 +518,23 @@ export const App: React.FC = () => {
     setJobs((items) => items.map((item) => (item.id === job.id ? updated : item)));
     setSelectedJob(updated);
 
+    const userEmail = session?.user?.email?.trim().toLowerCase();
+
+    // Instant Realtime broadcast to other connected screens/devices
+    if (realtimeChannelRef.current) {
+      void realtimeChannelRef.current.send({
+        type: 'broadcast',
+        event: 'job_status_updated',
+        payload: {
+          job_id: job.id,
+          status,
+          user_email: userEmail,
+        },
+      });
+    }
+
     try {
       if (!supabase) throw new Error('Supabase client is not configured');
-      const userEmail = session?.user?.email?.trim().toLowerCase();
       if (!userEmail) throw new Error('Active user session required');
 
       const { error } = await supabase.from('user_job_statuses').upsert(
@@ -394,6 +551,20 @@ export const App: React.FC = () => {
       const reverted = { ...job, status: previousStatus };
       setJobs((items) => items.map((item) => (item.id === job.id ? reverted : item)));
       setSelectedJob(reverted);
+
+      // Broadcast rollback if database save failed
+      if (realtimeChannelRef.current) {
+        void realtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'job_status_updated',
+          payload: {
+            job_id: job.id,
+            status: previousStatus,
+            user_email: userEmail,
+          },
+        });
+      }
+
       setNotice(`Failed to save status update to Supabase: ${err?.message || 'Network error'}`);
     } finally {
       setIsUpdatingStatus(false);
@@ -406,6 +577,16 @@ export const App: React.FC = () => {
     const res = await saveUserProfile(userEmail, updatedProfile);
     if (res.success) {
       setProfile(updatedProfile);
+      if (realtimeChannelRef.current) {
+        void realtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'profile_updated',
+          payload: {
+            user_email: userEmail,
+            profile: updatedProfile,
+          },
+        });
+      }
     }
     return res;
   };
