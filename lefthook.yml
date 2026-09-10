@@ -1,0 +1,16 @@
+---
+pre-commit:
+  jobs:
+    - name: lint
+      run: npm run lint
+    - name: typecheck
+      run: npm run typecheck
+    - name: test
+      run: npm run test
+    - name: secrets-scan
+      run: gitleaks protect --staged --redact --verbose
+
+pre-push:
+  jobs:
+    - name: check
+      run: npm run check

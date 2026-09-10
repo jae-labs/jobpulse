@@ -1,0 +1,68 @@
+# Local build artifacts
+/dist/
+/build/
+/tmp/
+
+# Dependencies
+node_modules/
+.npm/
+
+# OS files
+.DS_Store
+__MACOSX/
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Editors and IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*.swn
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Environment, secrets, and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+.doppler/
+
+# Logs and debug output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Coverage and test artifacts
+coverage/
+*.lcov
+test-results/
+
+# Build tool caches
+.vite/
+*.local
+
+# Cloud and deployment tooling
+.wrangler/
+.vercel/
+.netlify/
+
+# Agent and AI tooling state
+.antigravitycli/
+.claude/
+.codex/
+.continue/
+.aider*

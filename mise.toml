@@ -1,0 +1,25 @@
+# Pinned tool versions for JobPulse local development.
+# CI should use this file as the source of truth where possible.
+
+[tools]
+node = "22.12.0"
+lefthook = "2.1.9"
+"aqua:gitleaks/gitleaks" = "8.28.0"
+"npm:markdownlint-cli2" = "0.18.1"
+"pipx:yamllint" = "1.37.1"
+
+[tasks.install-hooks]
+description = "Install Lefthook Git hooks."
+run = "lefthook install"
+
+[tasks.lint]
+description = "Run project lint checks."
+run = """
+npm run lint
+markdownlint-cli2 "**/*.md" "#node_modules"
+lefthook validate
+"""
+
+[tasks.check]
+description = "Run full quality check."
+run = "npm run check"
