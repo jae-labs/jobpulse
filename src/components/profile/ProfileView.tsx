@@ -61,13 +61,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestDataRef = useRef<Profile>(formData);
+  const saveSequenceRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaveCountRef = useRef(0);
+  const queueSaveRef = useRef<(snapshot: Profile) => Promise<void>>(async () => undefined);
 
   // Synchronize incoming profile changes from other devices or backend
   useEffect(() => {
     if (!profile) return;
 
     // If this screen is actively typing/scheduling a debounced save, don't overwrite user input
-    if (debounceTimerRef.current) return;
+    if (debounceTimerRef.current || pendingSaveCountRef.current > 0) return;
 
     // Only update if incoming data is actually different from current local data
     const incomingStr = JSON.stringify(profile);
@@ -102,6 +105,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     [onSaveProfile, t]
   );
 
+  // Persist full-profile snapshots in order. This prevents an older request
+  // from completing after a newer edit and replacing the newer server state.
+  const queueSave = useCallback((snapshot: Profile) => {
+    pendingSaveCountRef.current += 1;
+    const save = saveSequenceRef.current.then(() => performSave(snapshot));
+    saveSequenceRef.current = save.catch(() => undefined).then(() => undefined);
+    void save.finally(() => {
+      pendingSaveCountRef.current -= 1;
+    });
+    return save;
+  }, [performSave]);
+
+  useEffect(() => {
+    queueSaveRef.current = queueSave;
+  }, [queueSave]);
+
   const scheduleAutoSave = useCallback(
     (updatedData: Profile, delay = 800) => {
       latestDataRef.current = updatedData;
@@ -111,23 +130,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setSaveStatus('saving');
       debounceTimerRef.current = setTimeout(() => {
         debounceTimerRef.current = null;
-        void performSave(latestDataRef.current);
+        void queueSave(latestDataRef.current);
       }, delay);
     },
-    [performSave]
+    [queueSave]
   );
-
-  // Kept in sync so the unmount-flush effect below can always call the latest save function
-  const latestOnSaveProfileRef = useRef(onSaveProfile);
-  useEffect(() => {
-    latestOnSaveProfileRef.current = onSaveProfile;
-  }, [onSaveProfile]);
 
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
-        void latestOnSaveProfileRef.current(latestDataRef.current);
+        debounceTimerRef.current = null;
+        void queueSaveRef.current(latestDataRef.current);
       }
     };
   }, []);

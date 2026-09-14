@@ -4,6 +4,8 @@
 [tools]
 node = "22.12.0"
 lefthook = "2.1.9"
+"aqua:BurntSushi/ripgrep" = "14.1.1"
+"aqua:supabase/cli" = "2.45.6"
 "aqua:gitleaks/gitleaks" = "8.28.0"
 "npm:markdownlint-cli2" = "0.18.1"
 "pipx:yamllint" = "1.37.1"

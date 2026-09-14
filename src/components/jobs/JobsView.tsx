@@ -20,9 +20,11 @@ import { JobCard } from './JobCard';
 import { JobDetailInspector } from './JobDetailInspector';
 import { Button, Card, EmptyState, Pill, type PillVariant, TextField } from '../../design-system';
 import { useSearchParams } from 'react-router-dom';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { useJobsInfiniteQuery } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface JobsViewProps {
   jobs?: Job[];
@@ -175,6 +177,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   }, [isDetailFullScreen]);
 
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   const queryParams = useMemo(() => ({
     status: statusFilter,
@@ -190,9 +193,12 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const {
     data: pageQueryData,
     isLoading: isPageLoading,
+    isError: isPageError,
+    error: pageError,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
+    refetch,
   } = useJobsInfiniteQuery(userEmail, queryParams, Boolean(userEmail));
 
   const pageItems = useMemo(() =>
@@ -295,12 +301,13 @@ export const JobsView: React.FC<JobsViewProps> = ({
   );
 
   const handleResetFilters = () => {
-    handleQueryChange('');
-    setStatusFilter('all');
-    setMinMatch(0);
-    setLocationFilter('all');
-    setDomainFilter('all');
-    setSalaryFilter('all');
+    if (setControlledSearch) setControlledSearch('');
+    else setInternalQuery('');
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      for (const key of ['q', 'status', 'match', 'location', 'domain', 'salary']) next.delete(key);
+      return next;
+    }, { replace: true });
     setSortField('match');
     setSortDir('desc');
     onFilterReset?.();
@@ -346,6 +353,12 @@ export const JobsView: React.FC<JobsViewProps> = ({
   }, [pageQueryData, pageItems, filteredJobs]);
   const totalMatchingCount = pageQueryData ? pageTotal : filteredJobs.length;
   const totalCatalogCount = overviewMetrics?.total ?? (jobs.length > 0 ? jobs.length : pageTotal);
+  const virtualizer = useVirtualizer({
+    count: displayedJobs.length,
+    getScrollElement: () => listContainerRef.current,
+    estimateSize: () => 176,
+    overscan: 6,
+  });
 
   // Auto-select job from URL param or default to first in split mode
   useEffect(() => {
@@ -365,8 +378,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
   // Keyboard navigation: j/k to move up/down, Enter to apply, a/i/o/n to update status
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const target = e.target as HTMLElement | null;
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || target?.closest('input, textarea, select, button, a, [contenteditable="true"], [role="button"]')) return;
 
       // In full-screen reading mode, arrow and page keys scroll the active opportunity's details
       if (isDetailFullScreen) {
@@ -577,6 +590,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <div className="flex items-center min-w-0 flex-1">
                 <Sparkles className="size-3 text-ds-warning shrink-0 mr-1.5" />
                 <select
+                  aria-label={t('jobs.minMatch')}
                   value={minMatch}
                   onChange={(e) => setMinMatch(Number(e.target.value))}
                   className="ds-control-focus w-full cursor-pointer bg-transparent text-xs text-ds-text-secondary outline-none"
@@ -605,6 +619,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="ds-field-shell flex min-w-0 w-full items-center rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
               <Layers className="size-3 text-ds-accent shrink-0 mr-1.5" />
               <select
+                aria-label={t('jobs.allDomains')}
                 value={activeDomainFilter}
                 onChange={(e) => setDomainFilter(e.target.value)}
                 className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[170px]"
@@ -624,6 +639,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="ds-field-shell flex min-w-0 w-full items-center rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
               <Banknote className="size-3 text-ds-positive shrink-0 mr-1.5" />
               <select
+                aria-label={t('jobs.allSalaries')}
                 value={salaryFilter}
                 onChange={(e) => setSalaryFilter(e.target.value)}
                 className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[130px]"
@@ -641,6 +657,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="ds-field-shell flex min-w-0 w-full items-center rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
               <MapPin className="size-3 text-ds-status-new shrink-0 mr-1.5" />
               <select
+                aria-label={t('jobs.allLocations')}
                 value={activeLocationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[150px]"
@@ -728,7 +745,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
       </div>
 
       {/* Master-Detail / Two-Pane Area */}
-      {isPageLoading && displayedJobs.length === 0 ? (
+      {isPageError && displayedJobs.length === 0 ? (
+        <EmptyState
+          icon={SlidersHorizontal}
+          title={t('common.error')}
+          description={pageError instanceof Error ? pageError.message : t('jobs.noOpportunitiesPrompt')}
+          action={<Button variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>}
+          className="max-w-md mx-auto p-12"
+        />
+      ) : isPageLoading && displayedJobs.length === 0 ? (
         <div className="rounded-xl border border-ds-border bg-ds-panel p-12 text-center space-y-3 max-w-md mx-auto">
           <RefreshCw className="size-6 animate-spin mx-auto text-ds-text-muted" />
           <div className="text-xs font-medium text-ds-text-secondary">{t('jobs.loadingOpportunities')}</div>
@@ -736,20 +761,36 @@ export const JobsView: React.FC<JobsViewProps> = ({
       ) : displayedJobs.length > 0 ? (
         <div className={`grid gap-3.5 ${layoutMode === 'split' ? 'lg:grid-cols-12' : 'grid-cols-1'}`}>
           {/* Left Pane (Master List) */}
-          <div className={`space-y-2 ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}>
-            <div className="space-y-2">
-              {displayedJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  ref={(el) => {
-                    if (el) cardRefs.current.set(job.id, el);
-                    else cardRefs.current.delete(job.id);
-                  }}
-                  job={job}
-                  isSelected={selectedJob?.id === job.id}
-                  onSelect={handleCardClick}
-                />
-              ))}
+          <div
+            ref={listContainerRef}
+            className={`h-[calc(100vh-9rem)] overflow-y-auto space-y-2 ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
+          >
+            <div
+              className="relative"
+              style={{ height: `${virtualizer.getTotalSize()}px` }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const job = displayedJobs[virtualItem.index];
+                return (
+                  <div
+                    key={job.id}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualItem.index}
+                    className="absolute left-0 top-0 w-full pb-2"
+                    style={{ transform: `translateY(${virtualItem.start}px)` }}
+                  >
+                    <JobCard
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(job.id, el);
+                        else cardRefs.current.delete(job.id);
+                      }}
+                      job={job}
+                      isSelected={selectedJob?.id === job.id}
+                      onSelect={handleCardClick}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {hasNextPage && (
@@ -804,14 +845,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
       )}
 
       {/* Full-Screen Reading Mode (Split mode expanded or List mode selection) */}
+      <DialogPrimitive.Root open={isDetailFullScreen} onOpenChange={setIsDetailFullScreen}>
       {selectedJob && isDetailFullScreen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Job details full screen"
-          id="fullscreen-job-dialog"
-          className="fixed inset-0 z-50 flex flex-col bg-ds-workspace animate-in fade-in-0 duration-150"
-        >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ds-canvas/65" />
+          <DialogPrimitive.Content
+            aria-label={t('jobs.inspector')}
+            id="fullscreen-job-dialog"
+            className="fixed inset-0 z-50 flex flex-col bg-ds-workspace animate-in fade-in-0 duration-150"
+          >
           <div className="flex h-full w-full flex-col overflow-hidden bg-ds-workspace">
             <JobDetailInspector
               job={selectedJob}
@@ -833,8 +875,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
               userEmail={userEmail}
             />
           </div>
-        </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
       )}
+      </DialogPrimitive.Root>
     </div>
   );
 };

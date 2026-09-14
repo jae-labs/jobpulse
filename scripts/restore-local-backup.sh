@@ -3,8 +3,8 @@
 set -euo pipefail
 
 backup_dir="${1:-}"
-if [[ -z "$backup_dir" || ! -f "$backup_dir/data.sql" ]]; then
-  echo "Provide a backup directory containing data.sql." >&2
+if [[ -z "$backup_dir" || ! -f "$backup_dir/data.sql" || ! -f "$backup_dir/.complete" || ! -f "$backup_dir/SHA256SUMS" ]]; then
+  echo "Provide a completed backup directory containing data.sql, SHA256SUMS, and .complete." >&2
   exit 1
 fi
 
@@ -17,6 +17,11 @@ case "$backup_path" in
     exit 1
     ;;
 esac
+
+if ! (cd "$backup_path" && shasum -a 256 -c SHA256SUMS); then
+  echo "Backup integrity verification failed; local data was not changed." >&2
+  exit 1
+fi
 
 echo "Resetting only the local Supabase database..."
 supabase db reset --local --no-seed

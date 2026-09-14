@@ -69,7 +69,7 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
         "Failed to fetch user profile from Supabase:",
         error.message,
       );
-      return DEFAULT_PROFILE;
+      throw new Error(error.message);
     }
 
     if (!data) {
@@ -112,9 +112,9 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
       scoring_rules: (data.scoring_rules as unknown as ScoringRules | null) || undefined,
       avatar_url: data.avatar_url || "",
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error loading user profile:", err);
-    return DEFAULT_PROFILE;
+    throw err;
   }
 }
 
@@ -350,14 +350,16 @@ export async function deleteUserCV(
       if (cvId) query = query.eq("id", cvId);
     }
 
-    const { data: rows } = await query;
+    const { data: rows, error: lookupError } = await query;
+    if (lookupError) return false;
 
     if (rows && rows.length > 0) {
       const paths = (rows as Array<{ storage_path?: string | null }>)
         .map((r) => r.storage_path)
         .filter((p): p is string => Boolean(p));
       if (paths.length > 0) {
-        await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
+        const { error: storageError } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
+        if (storageError) return false;
       }
     }
 
@@ -541,14 +543,16 @@ export async function deleteUserCoverLetter(
       if (coverLetterId) query = query.eq("id", coverLetterId);
     }
 
-    const { data: rows } = await query;
+    const { data: rows, error: lookupError } = await query;
+    if (lookupError) return false;
 
     if (rows && rows.length > 0) {
       const paths = (rows as Array<{ storage_path?: string | null }>)
         .map((r) => r.storage_path)
         .filter((p): p is string => Boolean(p));
       if (paths.length > 0) {
-        await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
+        const { error: storageError } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
+        if (storageError) return false;
       }
     }
 

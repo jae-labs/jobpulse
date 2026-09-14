@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export type TagColorTheme =
   | 'accent'
@@ -64,6 +65,7 @@ export const TagChipInput: React.FC<TagChipInputProps> = ({
   addOnBlur = true,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const [inputVal, setInputVal] = useState('');
   const colors = THEME_CLASSES[theme] || THEME_CLASSES.accent;
 
@@ -101,8 +103,8 @@ export const TagChipInput: React.FC<TagChipInputProps> = ({
             type="button"
             onClick={() => handleRemove(item)}
             className={`cursor-pointer transition-colors ${colors.close}`}
-            title={`Remove ${item}`}
-            aria-label={`Remove ${item}`}
+            title={t('common.removeItem', { item })}
+            aria-label={t('common.removeItem', { item })}
           >
             <X className="size-3" />
           </button>

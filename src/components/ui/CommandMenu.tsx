@@ -18,6 +18,7 @@ import type { Job, JobStatus } from '../../types/job';
 import type { DashboardTab } from '../dashboard/navigation';
 import { StatusPill } from './StatusPill';
 import { useTranslation } from 'react-i18next';
+import { useJobsPageQuery } from '../../hooks/useQueries';
 
 interface CommandMenuProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ interface CommandMenuProps {
   onFilterStatus?: (status: 'all' | JobStatus) => void;
   onSync?: () => void;
   onToggleTheme?: () => void;
+  userEmail?: string | null;
 }
 
 export const CommandMenu: React.FC<CommandMenuProps> = ({
@@ -43,9 +45,22 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   onFilterStatus,
   onSync,
   onToggleTheme,
+  userEmail,
 }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchQuery(searchQuery), 200);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+  const { data: searchResults } = useJobsPageQuery(
+    userEmail,
+    { search: debouncedSearchQuery, limit: 25 },
+    isOpen && Boolean(userEmail),
+  );
+  const commandJobs = searchResults?.items ?? jobs;
 
   // Global shortcut: ⌘K or Ctrl+K
   useEffect(() => {
@@ -85,6 +100,8 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
         <Command.Input
           placeholder={t('command.placeholder')}
           autoFocus
+          value={searchQuery}
+          onValueChange={setSearchQuery}
         />
         <kbd className="hidden sm:inline-block rounded border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted">
           ESC
@@ -296,7 +313,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
 
         {/* Search Job Titles directly */}
         <Command.Group heading={t('command.matchingPositions')}>
-          {jobs.slice(0, 25).map((job) => (
+          {commandJobs.map((job) => (
             <Command.Item
               key={job.id}
               value={`${job.title} ${job.company} ${job.location} ${(job.matched_skills || []).join(' ')}`}

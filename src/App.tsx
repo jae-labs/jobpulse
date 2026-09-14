@@ -84,7 +84,7 @@ export const App: React.FC = () => {
   const userEmail = session?.user?.email?.trim().toLowerCase();
 
   const isOverviewNeeded = activeTab === 'overview' || activeTab === 'jobs';
-  const isJobsNeeded = activeTab === 'profile' || isCommandMenuOpen;
+  const isJobsNeeded = activeTab === 'profile';
 
   const {
     data: overviewMetrics,
@@ -142,7 +142,6 @@ export const App: React.FC = () => {
         : null));
 
   const sharedChannelRef = useRef<RealtimeChannel | null>(null);
-  const userChannelRef = useRef<RealtimeChannel | null>(null);
   const invalidateTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Coalesces bursts of realtime postgres_changes events into a single refetch per query key
@@ -239,11 +238,12 @@ export const App: React.FC = () => {
   // Supabase Realtime Listener (Tenant-isolated peer broadcast + Postgres changes)
   useEffect(() => {
     if (!isAuthorized || !isSupabaseConfigured || !supabase) return;
+    const realtimeClient = supabase;
     let isMounted = true;
     const cleanUserEmail = session?.user?.email?.trim().toLowerCase();
 
     // Public Shared Channel: global jobs & sources tables
-    const sharedChannel = supabase.channel('public:shared_feed');
+    const sharedChannel = realtimeClient.channel('public:shared_feed');
     sharedChannelRef.current = sharedChannel;
 
     sharedChannel.on(
@@ -269,41 +269,6 @@ export const App: React.FC = () => {
 
     sharedChannel.subscribe();
 
-    // Tenant-Isolated Channel: strictly scoped to the authenticated user's email
-    let userChannel: RealtimeChannel | null = null;
-    if (cleanUserEmail) {
-      userChannel = supabase.channel(`user:${cleanUserEmail}`, {
-        config: { broadcast: { self: false } },
-      });
-      userChannelRef.current = userChannel;
-
-      userChannel.on('broadcast', { event: 'job_status_updated' }, (payload) => {
-        if (!isMounted) return;
-        debouncedInvalidate(queryKeys.overviewMetrics(cleanUserEmail));
-        debouncedInvalidate(['jobs-page']);
-        const data = payload?.payload;
-        if (!data || data.job_id === undefined || !data.status) return;
-
-        const targetId = Number(data.job_id);
-        const nextStatus = data.status as JobStatus;
-
-        setSelectedJobState((prev) => (prev && prev.id === targetId ? { ...prev, status: nextStatus } : prev));
-
-        queryClient.setQueryData<Job[]>(queryKeys.jobs(cleanUserEmail), (prev) =>
-          prev ? prev.map((j) => (j.id === targetId ? { ...j, status: nextStatus } : j)) : []
-        );
-      });
-
-      userChannel.on('broadcast', { event: 'profile_updated' }, (payload) => {
-        if (!isMounted) return;
-        const data = payload?.payload;
-        if (!data || !data.profile) return;
-        queryClient.setQueryData(queryKeys.profile(cleanUserEmail), data.profile);
-      });
-
-      userChannel.subscribe();
-    }
-
     const handleOnline = () => {
       if (!isMounted) return;
       debouncedInvalidate(queryKeys.overviewMetrics(cleanUserEmail));
@@ -322,11 +287,7 @@ export const App: React.FC = () => {
       invalidateTimers.clear();
       isMounted = false;
       sharedChannelRef.current = null;
-      userChannelRef.current = null;
-      void supabase.removeChannel(sharedChannel);
-      if (userChannel) {
-        void supabase.removeChannel(userChannel);
-      }
+      void realtimeClient.removeChannel(sharedChannel);
     };
   }, [isAuthorized, session, queryClient, debouncedInvalidate]);
 
@@ -339,25 +300,10 @@ export const App: React.FC = () => {
   const updateStatus = async (job: Job, status: JobStatus) => {
     setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status } : prev));
 
-    if (userChannelRef.current) {
-      void userChannelRef.current.send({
-        type: 'broadcast',
-        event: 'job_status_updated',
-        payload: { job_id: job.id, status, user_email: userEmail },
-      });
-    }
-
     try {
       await updateJobStatusMutation.mutateAsync({ job, status });
     } catch (err: any) {
       setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status: job.status } : prev));
-      if (userChannelRef.current) {
-        void userChannelRef.current.send({
-          type: 'broadcast',
-          event: 'job_status_updated',
-          payload: { job_id: job.id, status: job.status, user_email: userEmail },
-        });
-      }
       setNotice(`Failed to save status update to Supabase: ${err?.message || 'Network error'}`);
     }
   };
@@ -366,19 +312,12 @@ export const App: React.FC = () => {
     async (updatedProfile: Profile) => {
       try {
         const res = await saveProfileMutation.mutateAsync(updatedProfile);
-        if (res.success && userChannelRef.current) {
-          void userChannelRef.current.send({
-            type: 'broadcast',
-            event: 'profile_updated',
-            payload: { user_email: userEmail, profile: updatedProfile },
-          });
-        }
         return res;
       } catch (err: any) {
         return { success: false, error: err?.message || 'Failed to save profile' };
       }
     },
-    [saveProfileMutation, userEmail]
+    [saveProfileMutation]
   );
 
   const activeSection = dashboardNavigation.find((item) => item.id === activeTab);
@@ -643,6 +582,7 @@ export const App: React.FC = () => {
       <CommandMenu
         isOpen={isCommandMenuOpen}
         onOpenChange={setIsCommandMenuOpen}
+        userEmail={userEmail}
         jobs={jobs}
         selectedJob={selectedJob}
         onSelectJob={(job) => {

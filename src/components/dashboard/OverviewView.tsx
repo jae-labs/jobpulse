@@ -109,7 +109,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
     switch (widgetId) {
       case 'tracked-opportunities':
         return (
-          <SortableWidget id={widgetId} label="Monitored opportunities in pool" className="sm:col-span-1 md:col-span-4">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.trackedOpportunities') })} className="sm:col-span-1 md:col-span-4">
             <StatCard
               title={t('overview.trackedOpportunities')}
               value={totalOpportunitiesCount}
@@ -122,7 +122,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'high-fit-opportunities':
         return (
-          <SortableWidget id={widgetId} label="High-fit match opportunities" className="sm:col-span-1 md:col-span-4">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.highFitMatches') })} className="sm:col-span-1 md:col-span-4">
             <StatCard
               title={t('overview.highFitMatches')}
               value={highMatchCount}
@@ -135,7 +135,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'pipeline-progress':
         return (
-          <SortableWidget id={widgetId} label="In pipeline" className="sm:col-span-2 md:col-span-4">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.inActivePipeline') })} className="sm:col-span-2 md:col-span-4">
             <StatCard
               title={t('overview.inActivePipeline')}
               value={(counts.applied || 0) + (counts.interviewing || 0) + (counts.interested || 0)}
@@ -148,7 +148,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'category-breakdown':
         return (
-          <SortableWidget id={widgetId} label="Jobs per category breakdown" className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.categoryBreakdown') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle="Unable to load category breakdown chart">
               <CategoryBreakdownChart
                 jobs={jobs}
@@ -162,7 +162,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'application-pipeline':
         return (
-          <SortableWidget id={widgetId} label="Application pipeline chart" className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.applicationPipeline') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle="Unable to load pipeline chart">
               <PipelineChart
                 jobs={jobs}
@@ -175,7 +175,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'relevance-distribution':
         return (
-          <SortableWidget id={widgetId} label="Match relevance distribution" className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.relevanceDistribution') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle="Unable to load relevance distribution chart">
               <RelevanceDistributionChart
                 jobs={jobs}
@@ -188,7 +188,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       case 'skills-radar':
         return (
-          <SortableWidget id={widgetId} label="Top matched skills" className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.topSkills') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle="Unable to load skills chart">
               <SkillsFrequencyChart
                 jobs={jobs}

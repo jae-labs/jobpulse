@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Job, Source, Profile, JobStatus, SubScores, OverviewMetrics, JobsPageParams, JobsPageResult, UserCVMetadata, UserCoverLetterMetadata } from "../types/job";
 import { DEFAULT_PROFILE } from "../lib/defaultProfile";
@@ -59,7 +59,7 @@ export function useOverviewMetricsQuery(userEmail?: string | null, enabled = tru
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
       const { data, error } = await supabase.rpc("get_overview_metrics", {
-        p_user_email: cleanEmail || null,
+        p_user_email: cleanEmail,
       });
       if (error) throw new Error(error.message);
       return data as unknown as OverviewMetrics;
@@ -74,6 +74,7 @@ export function useJobsPageQuery(
   enabled = true
 ) {
   const cleanEmail = userEmail?.trim().toLowerCase();
+  const pageLimit = Math.min(Math.max(params.limit ?? 40, 1), 100);
 
   return useQuery({
     queryKey: queryKeys.jobsPage(cleanEmail, params),
@@ -83,16 +84,16 @@ export function useJobsPageQuery(
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
       const { data, error } = await supabase.rpc("get_jobs_page", {
-        p_user_email: cleanEmail || null,
+        p_user_email: cleanEmail,
         p_status: params.status || "all",
         p_domain: params.domain || "all",
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || "all",
         p_salary: params.salary || "all",
-        p_search: params.search || null,
+        p_search: params.search || undefined,
         p_sort_by: params.sortBy || "match",
         p_sort_dir: params.sortDir || "desc",
-        p_limit: params.limit ?? 40,
+        p_limit: pageLimit,
         p_offset: params.offset ?? 0,
       });
 
@@ -119,13 +120,13 @@ export function useJobsInfiniteQuery(
     queryFn: async ({ pageParam }): Promise<JobsPageResult> => {
       if (!supabase) throw new Error('Supabase is not initialized. Check your environment variables.');
       const { data, error } = await supabase.rpc('get_jobs_page', {
-        p_user_email: cleanEmail || null,
+        p_user_email: cleanEmail,
         p_status: params.status || 'all',
         p_domain: params.domain || 'all',
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || 'all',
         p_salary: params.salary || 'all',
-        p_search: params.search || null,
+        p_search: params.search || undefined,
         p_sort_by: params.sortBy || 'match',
         p_sort_dir: params.sortDir || 'desc',
         p_limit: PAGE_LIMIT,
@@ -163,20 +164,22 @@ export function useJobsQuery(userEmail?: string | null, enabled = true) {
             .select(
               "id, title, company, location, employment_type, salary_text, url, source, relevance, matched_skills, status, last_seen_at, fit_tier, role_domain, seniority_level"
             )
+            .order("id", { ascending: true })
             .range(from, to)
         ),
         cleanEmail
           ? fetchAllRows<{ job_id: number; status: JobStatus }>((from, to) =>
-              client.from("user_job_statuses").select("job_id, status").ilike("user_email", cleanEmail).range(from, to)
+              client.from("user_job_statuses").select("job_id, status").ilike("user_email", cleanEmail).order("job_id", { ascending: true }).range(from, to)
             )
           : Promise.resolve([]),
         cleanEmail
-          ? fetchAllRows<{ job_id: number; relevance: number; fit_tier: string; matched_skills: unknown }>(
+          ? fetchAllRows<{ job_id: number; relevance: number; fit_tier: string; matched_skills: unknown; ai_analysis: unknown }>(
               (from, to) =>
                 client
                   .from("user_job_evaluations")
-                  .select("job_id, relevance, fit_tier, matched_skills")
+                  .select("job_id, relevance, fit_tier, matched_skills, ai_analysis")
                   .ilike("user_email", cleanEmail)
+                  .order("job_id", { ascending: true })
                   .range(from, to)
             )
           : Promise.resolve([]),
@@ -196,7 +199,7 @@ export function useJobsQuery(userEmail?: string | null, enabled = true) {
             relevance: Number(row.relevance ?? 0),
             fit_tier: row.fit_tier || 'Unassessed',
             matched_skills: Array.isArray(row.matched_skills) ? (row.matched_skills as string[]) : [],
-            sub_scores: (row.sub_scores as unknown as SubScores) || undefined,
+            sub_scores: (row.ai_analysis as { sub_scores?: SubScores } | null)?.sub_scores,
           });
         }
       }
@@ -206,9 +209,9 @@ export function useJobsQuery(userEmail?: string | null, enabled = true) {
         return {
           ...j,
           status: statusMap.get(j.id) || "new",
-          relevance: userEval ? userEval.relevance : (cleanEmail ? 0 : j.relevance),
-          fit_tier: userEval ? userEval.fit_tier : (cleanEmail ? 'Unassessed' : j.fit_tier),
-          matched_skills: userEval ? userEval.matched_skills : (cleanEmail ? [] : j.matched_skills),
+          relevance: userEval ? userEval.relevance : j.relevance,
+          fit_tier: userEval ? userEval.fit_tier : j.fit_tier,
+          matched_skills: userEval ? userEval.matched_skills : j.matched_skills,
           sub_scores: userEval?.sub_scores,
         };
       });
@@ -333,13 +336,16 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
         );
       }
 
-      queryClient.setQueriesData<JobsPageResult>(
+      queryClient.setQueriesData<InfiniteData<JobsPageResult>>(
         { queryKey: ['jobs-page'] },
         (old) => {
           if (!old) return old;
           return {
             ...old,
-            items: old.items.map((j) => (j.id === job.id ? { ...j, status } : j)),
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.map((j) => (j.id === job.id ? { ...j, status } : j)),
+            })),
           };
         }
       );
@@ -513,5 +519,3 @@ export function useSaveAvatarMutation(userEmail?: string | null) {
     },
   });
 }
-
-

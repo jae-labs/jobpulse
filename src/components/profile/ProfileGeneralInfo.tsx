@@ -134,10 +134,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-first-name" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.firstName')}
           </label>
           <TextField
+            id="profile-first-name"
             density="compact"
             type="text"
             value={formData.first_name || ''}
@@ -148,10 +149,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-last-name" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.lastName')}
           </label>
           <TextField
+            id="profile-last-name"
             density="compact"
             type="text"
             value={formData.last_name || ''}
@@ -162,11 +164,12 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-phone-number" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.phoneNumber')}
           </label>
           <div className="flex gap-2">
             <Select
+              aria-label={t('profile.general.selectCountry')}
               density="compact"
               value={phoneDial}
               onChange={(e) => onPhoneChange(e.target.value, phoneNumber)}
@@ -180,6 +183,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
               ))}
             </Select>
             <TextField
+              id="profile-phone-number"
               density="compact"
               type="tel"
               value={phoneNumber}
@@ -191,10 +195,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-linkedin-url" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.linkedinUrl')}
           </label>
           <TextField
+            id="profile-linkedin-url"
             density="compact"
             type="text"
             value={formData.linkedin_url || ''}
@@ -205,10 +210,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-work-authorization" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.workAuthorization')}
           </label>
           <Select
+            id="profile-work-authorization"
             density="compact"
             value={formData.work_authorization || 'EU Citizen'}
             onChange={(e) => onChange('work_authorization', e.target.value)}
@@ -224,10 +230,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-gender" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.general.gender')} <span className="text-ds-text-muted font-normal">({t('common.optional')})</span>
           </label>
           <Select
+            id="profile-gender"
             density="compact"
             value={formData.gender || ''}
             onChange={(e) => onChange('gender', e.target.value)}

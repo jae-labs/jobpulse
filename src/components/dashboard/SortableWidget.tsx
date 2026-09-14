@@ -7,16 +7,16 @@ import { cn } from '../../lib/utils';
 
 interface SortableWidgetProps {
   id: string;
-  label: string;
   className: string;
   children: React.ReactNode;
+  reorderLabel: string;
 }
 
 export const SortableWidget: React.FC<SortableWidgetProps> = ({
   id,
-  label,
   className,
   children,
+  reorderLabel,
 }) => {
   const {
     attributes,
@@ -41,7 +41,7 @@ export const SortableWidget: React.FC<SortableWidgetProps> = ({
       <button
         ref={setActivatorNodeRef}
         type="button"
-        aria-label={`Reorder ${label}`}
+        aria-label={reorderLabel}
         className="absolute right-4 top-4 z-10 flex size-8 cursor-grab items-center justify-center rounded-lg border border-ds-border bg-ds-control/80 text-ds-text-muted opacity-0 transition-opacity hover:text-ds-text-secondary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 active:cursor-grabbing group-hover:opacity-100"
         {...attributes}
         {...listeners}

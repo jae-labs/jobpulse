@@ -32,6 +32,8 @@
     "match": "Compatibilidade",
     "publicSector": "Setor público",
     "remove": "Remover",
+    "removeItem": "Remover {{item}}",
+    "reorder": "Reordenar {{item}}",
     "optional": "Opcional",
     "opensInNewWindow": "abre em nova aba"
   },

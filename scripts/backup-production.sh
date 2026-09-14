@@ -11,5 +11,7 @@ backup_dir="${BACKUP_DIR:-.backups/jobpulse-$(date -u +%Y%m%dT%H%M%SZ)}"
 
 BACKUP_DIR="$backup_dir" bash scripts/dump-production.sh
 BACKUP_DIR="$backup_dir" bash scripts/export-storage.sh
+(cd "$backup_dir" && find . -type f -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS)
+touch "$backup_dir/.complete"
 
 echo "Production backup completed: $backup_dir"

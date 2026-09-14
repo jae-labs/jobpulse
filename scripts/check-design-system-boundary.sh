@@ -4,6 +4,11 @@ set -euo pipefail
 
 design_system_dir="src/design-system"
 
+if ! command -v rg >/dev/null 2>&1; then
+  echo "ripgrep (rg) is required for design-system boundary checks." >&2
+  exit 2
+fi
+
 if rg --line-number --glob '*.{ts,tsx}' "from ['\"]\.\./\.\." "$design_system_dir"; then
   echo "Design-system modules must not import from the application. Use a local module or an external dependency." >&2
   exit 1

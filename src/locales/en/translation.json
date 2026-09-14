@@ -32,6 +32,8 @@
     "match": "Match",
     "publicSector": "Public sector",
     "remove": "Remove",
+    "removeItem": "Remove {{item}}",
+    "reorder": "Reorder {{item}}",
     "optional": "Optional",
     "opensInNewWindow": "opens in new tab"
   },

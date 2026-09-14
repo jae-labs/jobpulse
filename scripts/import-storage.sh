@@ -5,12 +5,12 @@ set -euo pipefail
 backup_dir="${1:-}"
 storage_dir="$backup_dir/storage"
 if [[ -z "$backup_dir" || ! -d "$storage_dir" ]]; then
-  echo "No exported Storage files found; skipping Storage import."
-  exit 0
+  echo "Completed backups must include exported Storage files." >&2
+  exit 1
 fi
 
 if ! find "$storage_dir" -type f -print -quit | grep -q .; then
-  echo "No exported Storage files found; skipping Storage import."
+  echo "No Storage objects to import."
   exit 0
 fi
 

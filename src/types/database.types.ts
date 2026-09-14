@@ -106,6 +106,10 @@ export type Database = {
           matched_skills: Json
           relevance: number
           role_domain: string | null
+          salary_currency: string | null
+          salary_max_amount: number | null
+          salary_min_amount: number | null
+          salary_period: string | null
           salary_text: string | null
           seniority_level: string | null
           source: string
@@ -127,6 +131,10 @@ export type Database = {
           matched_skills?: Json
           relevance?: number
           role_domain?: string | null
+          salary_currency?: string | null
+          salary_max_amount?: number | null
+          salary_min_amount?: number | null
+          salary_period?: string | null
           salary_text?: string | null
           seniority_level?: string | null
           source: string
@@ -148,6 +156,10 @@ export type Database = {
           matched_skills?: Json
           relevance?: number
           role_domain?: string | null
+          salary_currency?: string | null
+          salary_max_amount?: number | null
+          salary_min_amount?: number | null
+          salary_period?: string | null
           salary_text?: string | null
           seniority_level?: string | null
           source?: string
@@ -463,6 +475,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_owns_row: {
+        Args: { row_user_email: string; row_user_id: string }
+        Returns: boolean
+      }
       get_jobs_page: {
         Args: {
           p_domain?: string

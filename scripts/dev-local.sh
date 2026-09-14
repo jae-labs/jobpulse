@@ -7,7 +7,7 @@ supabase start
 latest_backup=""
 shopt -s nullglob
 for backup_dir in .backups/jobpulse-*; do
-  if [[ -f "$backup_dir/data.sql" ]] && [[ -z "$latest_backup" || "$backup_dir/data.sql" -nt "$latest_backup/data.sql" ]]; then
+  if [[ -f "$backup_dir/data.sql" && -f "$backup_dir/.complete" ]] && [[ -z "$latest_backup" || "$backup_dir/data.sql" -nt "$latest_backup/data.sql" ]]; then
     latest_backup="$backup_dir"
   fi
 done
