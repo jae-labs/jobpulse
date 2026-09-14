@@ -1,0 +1,230 @@
+import React, { useMemo, useRef } from 'react';
+import { Camera, User } from 'lucide-react';
+import { Button, Card, Select, TextField } from '../../design-system';
+import type { Profile } from '../../types/job';
+import { COUNTRY_CODES } from './profileConstants';
+import { useTranslation } from 'react-i18next';
+
+interface ProfileGeneralInfoProps {
+  formData: Profile;
+  phoneDial: string;
+  phoneNumber: string;
+  onPhoneChange: (newDial: string, newNumber: string) => void;
+  onChange: (field: keyof Profile, value: string | number | string[]) => void;
+}
+
+export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
+  formData,
+  phoneDial,
+  phoneNumber,
+  onPhoneChange,
+  onChange,
+}) => {
+  const { t, i18n } = useTranslation();
+  const countryNames = useMemo(
+    () => new Intl.DisplayNames([i18n.language], { type: 'region' }),
+    [i18n.language],
+  );
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert(t('profile.general.avatarTooLarge'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      onChange('avatar_url', result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    onChange('avatar_url', '');
+  };
+
+  return (
+    <Card className="space-y-5 p-5 lg:p-6">
+      <div className="border-b border-ds-border pb-3">
+        <h2 className="text-sm font-semibold text-ds-text-primary tracking-tight">
+          {t('profile.general.title')}
+        </h2>
+      </div>
+
+      {/* Profile Photo */}
+      <div className="flex items-center gap-4 pb-4 border-b border-ds-border">
+        <div className="relative group shrink-0">
+          {formData.avatar_url ? (
+            <img
+              src={formData.avatar_url}
+              alt={t('profile.general.avatarAlt')}
+              className="size-16 rounded-full border-2 border-ds-accent object-cover shadow-sm"
+            />
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-full border-2 border-ds-accent bg-ds-accent-subtle text-lg font-bold text-ds-text-primary">
+              {formData.first_name ? formData.first_name[0]?.toUpperCase() : <User className="size-7" />}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            className="absolute inset-0 rounded-full bg-ds-canvas/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-ds-text-primary cursor-pointer"
+            title={t('profile.general.uploadPhoto')}
+            aria-label={t('profile.general.uploadPhoto')}
+          >
+            <Camera className="size-5" />
+          </button>
+        </div>
+
+        <div className="space-y-1">
+          <h3 className="text-xs font-semibold text-ds-text-primary">{t('profile.general.profilePhoto')}</h3>
+          <p className="text-[11px] text-ds-text-secondary">
+            {t('profile.general.photoHelp')}
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => avatarInputRef.current?.click()}
+              className="h-7"
+            >
+              <Camera className="size-3.5" />
+              <span>{formData.avatar_url ? t('profile.general.changePhoto') : t('profile.general.uploadPhoto')}</span>
+            </Button>
+            {formData.avatar_url && (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                className="h-7 cursor-pointer rounded-lg border border-ds-border-strong px-2.5 text-xs font-medium text-ds-text-secondary transition-colors hover:border-ds-negative hover:text-ds-negative"
+              >
+                {t('common.remove')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.firstName')}
+          </label>
+          <TextField
+            density="compact"
+            type="text"
+            value={formData.first_name || ''}
+            onChange={(e) => onChange('first_name', e.target.value)}
+            placeholder={t('profile.general.firstNamePlaceholder')}
+            className="h-9"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.lastName')}
+          </label>
+          <TextField
+            density="compact"
+            type="text"
+            value={formData.last_name || ''}
+            onChange={(e) => onChange('last_name', e.target.value)}
+            placeholder={t('profile.general.lastNamePlaceholder')}
+            className="h-9"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.phoneNumber')}
+          </label>
+          <div className="flex gap-2">
+            <Select
+              density="compact"
+              value={phoneDial}
+              onChange={(e) => onPhoneChange(e.target.value, phoneNumber)}
+              containerClassName="w-40 shrink-0"
+            >
+              <option value="" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.selectCountry')}</option>
+              {COUNTRY_CODES.filter((c) => c.dial).map((c) => (
+                <option key={c.code} value={c.dial} className="bg-ds-panel text-ds-text-secondary">
+                  {c.code ? `${countryNames.of(c.code)} (${c.dial})` : t('profile.general.otherCountry')}
+                </option>
+              ))}
+            </Select>
+            <TextField
+              density="compact"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => onPhoneChange(phoneDial, e.target.value)}
+              placeholder={t('profile.general.phonePlaceholder')}
+              className="h-9 min-w-0 flex-1"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.linkedinUrl')}
+          </label>
+          <TextField
+            density="compact"
+            type="text"
+            value={formData.linkedin_url || ''}
+            onChange={(e) => onChange('linkedin_url', e.target.value)}
+            placeholder={t('profile.general.linkedinPlaceholder')}
+            className="h-9"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.workAuthorization')}
+          </label>
+          <Select
+            density="compact"
+            value={formData.work_authorization || 'EU Citizen'}
+            onChange={(e) => onChange('work_authorization', e.target.value)}
+          >
+            <option value="EU Citizen" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.euCitizen')}</option>
+            <option value="Stamp 4 / Permanent Residency" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.permanentResidence')}</option>
+            <option value="Critical Skills Employment Permit" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.criticalSkillsPermit')}</option>
+            <option value="General Employment Permit" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.generalPermit')}</option>
+            <option value="UK Citizen" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.ukCitizen')}</option>
+            <option value="Visa / Sponsorship Required" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.sponsorshipRequired')}</option>
+            <option value="Other" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.authorization.other')}</option>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-ds-text-secondary">
+            {t('profile.general.gender')} <span className="text-ds-text-muted font-normal">({t('common.optional')})</span>
+          </label>
+          <Select
+            density="compact"
+            value={formData.gender || ''}
+            onChange={(e) => onChange('gender', e.target.value)}
+          >
+            <option value="" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.genderOptions.preferNotToSay')}</option>
+            <option value="Female" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.genderOptions.female')}</option>
+            <option value="Male" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.genderOptions.male')}</option>
+            <option value="Non-binary" className="bg-ds-panel text-ds-text-secondary">{t('profile.general.genderOptions.nonBinary')}</option>
+          </Select>
+        </div>
+      </div>
+    </Card>
+  );
+};
