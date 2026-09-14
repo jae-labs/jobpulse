@@ -25,7 +25,15 @@ interface SkillsFrequencyChartProps {
   onSelectSkill?: (skill: string) => void;
 }
 
-const CustomTooltip = ({ active, payload, label, onSelectSkill }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  onSelectSkill?: (skill: string) => void;
+  t: (key: string, options?: any) => string;
+}
+
+const CustomTooltip = ({ active, payload, label, onSelectSkill, t }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const skillName = data.skill || label;
@@ -39,11 +47,11 @@ const CustomTooltip = ({ active, payload, label, onSelectSkill }: any) => {
         <div className="font-semibold text-ds-text-primary capitalize">{label}</div>
         <div className="flex items-center gap-2 text-ds-text-secondary">
           <span className="size-2 rounded-full inline-block bg-ds-positive" />
-          <span>Present in {data.count} roles ({data.percentage}%)</span>
+          <span>{t('charts.skills.presentIn', { count: data.count, percentage: data.percentage })}</span>
         </div>
         {onSelectSkill && (
           <div className="text-[11px] text-ds-text-muted pt-1 border-t border-ds-border flex items-center gap-1 font-medium">
-            <span>Click to view {label} opportunities →</span>
+            <span>{t('charts.skills.clickToView', { skill: label })}</span>
           </div>
         )}
       </div>
@@ -121,7 +129,7 @@ export const SkillsFrequencyChart: React.FC<SkillsFrequencyChartProps> = ({
               width={110}
             />
             <Tooltip
-              content={<CustomTooltip onSelectSkill={onSelectSkill} />}
+              content={<CustomTooltip onSelectSkill={onSelectSkill} t={t} />}
               cursor={{ fill: 'var(--ds-color-hover)', opacity: 0.5 }}
               wrapperStyle={{ outline: 'none' }}
             />

@@ -30,12 +30,16 @@ interface CustomTooltipProps {
   payload?: Array<{ payload: RelevanceTier }>;
   label?: string;
   onSelectTier?: (minMatch: number) => void;
+  t: (key: string, options?: any) => string;
 }
 
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, onSelectTier }) => {
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, onSelectTier, t }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const minMatch = typeof data.min === 'number' ? data.min : 0;
+    const positionText = data.count === 1
+      ? t('charts.relevance.position', { count: data.count })
+      : t('charts.relevance.positions', { count: data.count });
     return (
       <div
         className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 z-50 select-none ${
@@ -43,14 +47,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, o
         }`}
         onClick={() => onSelectTier?.(minMatch)}
       >
-        <div className="font-semibold text-ds-text-primary">Match Tier: {label}</div>
+        <div className="font-semibold text-ds-text-primary">{t('charts.relevance.tier', { label })}</div>
         <div className="flex items-center gap-2 text-ds-text-secondary">
           <span className="size-2 rounded-full inline-block bg-ds-positive" />
-          <span>{data.count} {data.count === 1 ? 'position' : 'positions'}</span>
+          <span>{positionText}</span>
         </div>
         {onSelectTier && (
           <div className="text-[11px] text-ds-text-muted pt-1 border-t border-ds-border flex items-center gap-1 font-medium">
-            <span>Click to view {label} opportunities →</span>
+            <span>{t('charts.relevance.clickToView', { label })}</span>
           </div>
         )}
       </div>
@@ -150,7 +154,7 @@ export const RelevanceDistributionChart: React.FC<RelevanceDistributionChartProp
               tickLine={false}
             />
             <Tooltip
-              content={<CustomTooltip onSelectTier={onSelectTier} />}
+              content={<CustomTooltip onSelectTier={onSelectTier} t={t} />}
               cursor={{ stroke: 'var(--ds-color-border-strong)', strokeDasharray: '3 3' }}
               wrapperStyle={{ outline: 'none' }}
             />

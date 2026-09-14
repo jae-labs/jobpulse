@@ -8,6 +8,37 @@ import type {
 import { DEFAULT_PROFILE } from "./defaultProfile";
 
 const DOCUMENTS_BUCKET = "user-documents";
+const AVATARS_BUCKET = "avatars";
+
+/**
+ * Uploads a user avatar image to Supabase Storage and returns the public URL.
+ * Replaces any existing avatar for the user.
+ */
+export async function saveUserAvatar(
+  email: string,
+  file: File,
+): Promise<{ url: string } | { error: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !supabase) return { error: "Database unavailable" };
+
+  if (file.size > 2 * 1024 * 1024) {
+    return { error: "Avatar exceeds the 2MB size limit." };
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const storagePath = `${cleanEmail}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(AVATARS_BUCKET)
+    .upload(storagePath, file, { contentType: file.type, upsert: true });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { data } = supabase.storage
+    .from(AVATARS_BUCKET)
+    .getPublicUrl(storagePath);
+  return { url: data.publicUrl };
+}
 
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);

@@ -32,7 +32,8 @@
     "match": "Compatibilidade",
     "publicSector": "Setor público",
     "remove": "Remover",
-    "optional": "Opcional"
+    "optional": "Opcional",
+    "opensInNewWindow": "abre em nova aba"
   },
   "status": {
     "all": "Todos",
@@ -137,7 +138,8 @@
       "selectPrompt": "Selecione uma oportunidade na lista ou pressione",
       "expand": "Expandir para tela cheia (f)",
       "exit": "Sair da tela cheia (f)",
-      "close": "Fechar painel"
+      "close": "Fechar painel",
+      "statusGroup": "Seleção do status da vaga"
     }
   },
   "sources": {
@@ -175,9 +177,10 @@
       "activeRoles": "Vagas Ativas",
       "activeRole": "Vaga Ativa",
       "ofTotalRoles": "do total de vagas",
-      "opportunities": "oportunidades"
-      ,"opportunitiesLabel": "Oportunidades:"
-      ,"averageMatchLabel": "Compatibilidade média:"
+      "opportunities": "oportunidades",
+      "opportunitiesLabel": "Oportunidades:",
+      "averageMatchLabel": "Compatibilidade média:",
+      "clickToView": "Clique para ver oportunidades em {{name}} →"
     },
     "pipeline": {
       "title": "Pipeline de Candidaturas",
@@ -190,12 +193,17 @@
     "relevance": {
       "title": "Distribuição de Compatibilidade",
       "subtitle": "Níveis de aderência ao perfil entre as vagas descobertas",
-      "roles": "vagas"
+      "roles": "vagas",
+      "tier": "Nível de afinidade: {{label}}",
+      "positions": "{{count}} vagas",
+      "position": "{{count}} vaga",
+      "clickToView": "Clique para ver vagas de {{label}} →"
     },
     "skills": {
       "title": "Competências Mais Demandadas",
       "subtitle": "Habilidades mais frequentes entre as vagas encontradas",
-      "presentIn": "Presente em {{count}} vagas ({{percentage}}%)"
+      "presentIn": "Presente em {{count}} vagas ({{percentage}}%)",
+      "clickToView": "Clique para ver oportunidades com {{skill}} →"
     }
   },
   "profile": {
@@ -208,6 +216,7 @@
       "title": "Informações pessoais e de contato",
       "avatarAlt": "Foto de perfil",
       "avatarTooLarge": "A foto de perfil é grande demais. O tamanho máximo é 2 MB.",
+      "avatarUploadError": "Falha ao enviar avatar. Por favor, tente novamente.",
       "profilePhoto": "Foto de perfil",
       "photoHelp": "PNG, JPG ou WebP de até 2 MB. Ela aparece na barra de navegação superior.",
       "uploadPhoto": "Enviar foto",

@@ -15,7 +15,7 @@ import type { Job, JobStatus } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import { useJobDetailQuery } from '../../hooks/useQueries';
 import { formatJobDescription } from '../../lib/formatDescription';
-import { cn } from '../../lib/utils';
+import { cn, toSafeHttpUrl } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../lib/i18n';
 import { EmptyState } from '../../design-system';
@@ -152,22 +152,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
     };
   }, [mergedJob]);
 
-  const jobUrl = job?.url;
-  const safeApplyUrl = React.useMemo(() => {
-    if (!jobUrl) return null;
-    const trimmed = jobUrl.trim();
-    try {
-      const parsed = new URL(trimmed);
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        return parsed.href;
-      }
-    } catch {
-      if (/^https?:\/\//i.test(trimmed)) {
-        return trimmed;
-      }
-    }
-    return null;
-  }, [jobUrl]);
+  const safeApplyUrl = React.useMemo(() => toSafeHttpUrl(job?.url), [job?.url]);
 
   if (!job || !ai) {
     return (
@@ -244,7 +229,11 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
           {/* Action Controls & External Link */}
           <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-ds-border pt-3 flex-wrap sm:flex-nowrap">
             {/* Quick status segment */}
-            <div className="grid grid-cols-5 sm:flex sm:items-center rounded-lg border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto">
+            <div
+              role="group"
+              aria-label={t('jobs.inspector.statusGroup', 'Job status selection')}
+              className="grid grid-cols-5 sm:flex sm:items-center rounded-lg border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto"
+            >
               {[
                 { id: 'new', label: t('status.new'), shortLabel: t('status.short.new', { defaultValue: 'New' }) },
                 { id: 'applied', label: t('status.applied'), shortLabel: t('status.short.applied', { defaultValue: 'Applied' }) },
@@ -286,6 +275,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
               >
                 <span>{t('common.apply')}</span>
                 <ExternalLink className="size-3.5 text-ds-action-primary-text shrink-0" />
+                <span className="sr-only"> ({t('common.opensInNewWindow', 'opens in new tab')})</span>
               </a>
             ) : (
               <button

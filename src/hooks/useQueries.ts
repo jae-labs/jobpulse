@@ -1,8 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Job, Source, Profile, JobStatus, SubScores, OverviewMetrics, JobsPageParams, JobsPageResult } from "../types/job";
+import type { Job, Source, Profile, JobStatus, SubScores, OverviewMetrics, JobsPageParams, JobsPageResult, UserCVMetadata, UserCoverLetterMetadata } from "../types/job";
 import { DEFAULT_PROFILE } from "../lib/defaultProfile";
-import { loadUserProfile, saveUserProfile } from "../lib/userProfile";
+import {
+  loadUserProfile,
+  saveUserProfile,
+  loadUserCVsMetadata,
+  loadUserCoverLettersMetadata,
+  saveUserCV,
+  saveUserCoverLetter,
+  deleteUserCV,
+  deleteUserCoverLetter,
+  saveUserAvatar,
+} from "../lib/userProfile";
 
 export const queryKeys = {
   overviewMetrics: (email?: string | null) => ["overview-metrics", email ? email.trim().toLowerCase() : null] as const,
@@ -12,6 +22,8 @@ export const queryKeys = {
   jobCount: () => ["job-count"] as const,
   sources: () => ["sources"] as const,
   profile: (email?: string | null) => ["profile", email ? email.trim().toLowerCase() : null] as const,
+  userCvs: (email?: string | null) => ["user-cvs", email ? email.trim().toLowerCase() : null] as const,
+  userCoverLetters: (email?: string | null) => ["user-cover-letters", email ? email.trim().toLowerCase() : null] as const,
 };
 
 // Supabase caps each response at 1000 rows by default. Without pagination,
@@ -89,6 +101,44 @@ export function useJobsPageQuery(
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
     placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useJobsInfiniteQuery(
+  userEmail?: string | null,
+  params: Omit<JobsPageParams, 'limit' | 'offset'> = {},
+  enabled = true
+) {
+  const cleanEmail = userEmail?.trim().toLowerCase();
+  const PAGE_LIMIT = 40;
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.jobsPage(cleanEmail, params),
+    initialPageParam: 0,
+    enabled: Boolean(supabase) && enabled,
+    queryFn: async ({ pageParam }): Promise<JobsPageResult> => {
+      if (!supabase) throw new Error('Supabase is not initialized. Check your environment variables.');
+      const { data, error } = await supabase.rpc('get_jobs_page', {
+        p_user_email: cleanEmail || null,
+        p_status: params.status || 'all',
+        p_domain: params.domain || 'all',
+        p_min_match: params.minMatch ?? 0,
+        p_location: params.location || 'all',
+        p_salary: params.salary || 'all',
+        p_search: params.search || null,
+        p_sort_by: params.sortBy || 'match',
+        p_sort_dir: params.sortDir || 'desc',
+        p_limit: PAGE_LIMIT,
+        p_offset: pageParam as number,
+      });
+      if (error) throw new Error(error.message);
+      return data as unknown as JobsPageResult;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const fetched = allPages.reduce((sum, p) => sum + p.items.length, 0);
+      return fetched < lastPage.total ? fetched : undefined;
+    },
+    staleTime: 1000 * 60 * 2,
   });
 }
 
@@ -328,3 +378,140 @@ export function useSaveProfileMutation(userEmail?: string | null) {
     },
   });
 }
+
+export function useUserCvsQuery(userEmail?: string | null, enabled = true) {
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useQuery({
+    queryKey: queryKeys.userCvs(cleanEmail),
+    enabled: Boolean(supabase) && Boolean(cleanEmail) && enabled,
+    queryFn: async (): Promise<UserCVMetadata[]> => {
+      if (!cleanEmail) return [];
+      return loadUserCVsMetadata(cleanEmail);
+    },
+  });
+}
+
+export function useUserCoverLettersQuery(userEmail?: string | null, enabled = true) {
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useQuery({
+    queryKey: queryKeys.userCoverLetters(cleanEmail),
+    enabled: Boolean(supabase) && Boolean(cleanEmail) && enabled,
+    queryFn: async (): Promise<UserCoverLetterMetadata[]> => {
+      if (!cleanEmail) return [];
+      return loadUserCoverLettersMetadata(cleanEmail);
+    },
+  });
+}
+
+export function useSaveCvMutation(userEmail?: string | null) {
+  const queryClient = useQueryClient();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useMutation({
+    mutationFn: async (params: {
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      fileData: File | Blob | string;
+      description?: string;
+    }) => {
+      if (!cleanEmail) throw new Error("Active user session required");
+      return saveUserCV(
+        cleanEmail,
+        params.fileName,
+        params.fileSize,
+        params.mimeType,
+        params.fileData,
+        params.description
+      );
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(cleanEmail) });
+      }
+    },
+  });
+}
+
+export function useDeleteCvMutation(userEmail?: string | null) {
+  const queryClient = useQueryClient();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      return deleteUserCV(id);
+    },
+    onSuccess: (ok) => {
+      if (ok) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(cleanEmail) });
+      }
+    },
+  });
+}
+
+export function useSaveCoverLetterMutation(userEmail?: string | null) {
+  const queryClient = useQueryClient();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useMutation({
+    mutationFn: async (params: {
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      fileData: File | Blob | string;
+      description?: string;
+    }) => {
+      if (!cleanEmail) throw new Error("Active user session required");
+      return saveUserCoverLetter(
+        cleanEmail,
+        params.fileName,
+        params.fileSize,
+        params.mimeType,
+        params.fileData,
+        params.description
+      );
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(cleanEmail) });
+      }
+    },
+  });
+}
+
+export function useDeleteCoverLetterMutation(userEmail?: string | null) {
+  const queryClient = useQueryClient();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      return deleteUserCoverLetter(id);
+    },
+    onSuccess: (ok) => {
+      if (ok) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(cleanEmail) });
+      }
+    },
+  });
+}
+
+export function useSaveAvatarMutation(userEmail?: string | null) {
+  const queryClient = useQueryClient();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      if (!cleanEmail) throw new Error("User email required");
+      const result = await saveUserAvatar(cleanEmail, file);
+      if ("error" in result) throw new Error(result.error);
+      return result.url;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(cleanEmail) });
+    },
+  });
+}
+
+

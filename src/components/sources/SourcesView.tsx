@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronDown, ExternalLink, CheckCircle2, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../lib/i18n';
+import { toSafeHttpUrl } from '../../lib/utils';
 import type { Source } from '../../types/job';
 import { Button, Card, PageHeader, Pill } from '../../design-system';
 
@@ -155,19 +156,27 @@ export const SourcesView: React.FC<SourcesViewProps> = ({
                   </h4>
 
                   <div>
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-ds-text-secondary hover:text-ds-text-primary font-mono transition-colors group/link max-w-full"
-                      title={source.url}
-                    >
-                      <Globe className="size-3 shrink-0 text-ds-text-muted group-hover/link:text-ds-text-secondary" />
-                      <span className="truncate underline decoration-ds-text-muted underline-offset-2 group-hover/link:decoration-ds-text-secondary">
-                        {source.url}
+                    {toSafeHttpUrl(source.url) ? (
+                      <a
+                        href={toSafeHttpUrl(source.url)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-ds-text-secondary hover:text-ds-text-primary font-mono transition-colors group/link max-w-full"
+                        title={source.url}
+                      >
+                        <Globe className="size-3 shrink-0 text-ds-text-muted group-hover/link:text-ds-text-secondary" />
+                        <span className="truncate underline decoration-ds-text-muted underline-offset-2 group-hover/link:decoration-ds-text-secondary">
+                          {source.url}
+                        </span>
+                        <ExternalLink className="size-3 shrink-0 opacity-70 group-hover/link:opacity-100" />
+                        <span className="sr-only"> ({t('common.opensInNewWindow', 'opens in new tab')})</span>
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-ds-text-muted font-mono truncate max-w-full" title={source.url}>
+                        <Globe className="size-3 shrink-0 text-ds-text-muted" />
+                        <span className="truncate">{source.url}</span>
                       </span>
-                      <ExternalLink className="size-3 shrink-0 opacity-70 group-hover/link:opacity-100" />
-                    </a>
+                    )}
                   </div>
                 </div>
               </div>

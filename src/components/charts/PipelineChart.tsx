@@ -51,24 +51,33 @@ const STAGE_CONFIG: Record<
   },
 };
 
-const CustomTooltip = ({ active, payload, label, onSelectStatus }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  onSelectStatus?: (status: JobStatus) => void;
+  t: (key: string, options?: any) => string;
+}
+
+const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    const roleText = data.count === 1 ? t('charts.pipeline.role') : t('charts.pipeline.roles');
     return (
       <div
         className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 cursor-pointer z-50"
         onClick={() => onSelectStatus?.(data.status)}
       >
-        <div className="font-semibold text-ds-text-primary">{label} Stage</div>
+        <div className="font-semibold text-ds-text-primary">{label}</div>
         <div className="flex items-center gap-2 text-ds-text-secondary">
           <span
             className="size-2 rounded-full inline-block shrink-0"
             style={{ backgroundColor: data.fill }}
           />
-          <span>{data.count} {data.count === 1 ? 'role' : 'roles'}</span>
+          <span>{data.count} {roleText}</span>
         </div>
         <div className="text-[11px] text-ds-text-muted pt-1 border-t border-ds-border flex items-center gap-1 font-medium">
-          <span>Click to view {label.toLowerCase()} roles →</span>
+          <span>{t('charts.pipeline.clickToView', { status: label?.toLowerCase() })}</span>
         </div>
       </div>
     );
@@ -162,7 +171,7 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({ jobs = [], counts,
               tickLine={false}
             />
             <Tooltip
-              content={<CustomTooltip onSelectStatus={onSelectStatus} />}
+              content={<CustomTooltip onSelectStatus={onSelectStatus} t={t} />}
               cursor={{ fill: 'var(--ds-color-hover)', opacity: 0.5 }}
             />
             <Bar

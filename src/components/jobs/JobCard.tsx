@@ -51,14 +51,16 @@ export const JobCard = React.forwardRef<HTMLButtonElement, JobCardProps>(
           </div>
 
           {/* Role Title */}
-          <h3
+          <span
+            role="heading"
+            aria-level={3}
             className={cn(
-              'text-sm font-medium tracking-tight transition-colors line-clamp-2 leading-snug',
+              'text-sm font-medium tracking-tight transition-colors line-clamp-2 leading-snug block',
               isSelected ? 'text-ds-text-primary' : 'text-ds-text-primary group-hover:text-ds-text-primary',
             )}
           >
             {job.title}
-          </h3>
+          </span>
 
           {/* Secondary Details: Location, Salary, Domain */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ds-text-secondary font-mono">

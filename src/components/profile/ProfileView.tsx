@@ -238,6 +238,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           phoneNumber={phoneNumber}
           onPhoneChange={handlePhoneChange}
           onChange={handleChange}
+          userEmail={userEmail}
         />
 
         {/* Target Roles, Preferences & Compensation */}

@@ -39,3 +39,22 @@ jobs:
           npm run typecheck
           npm run test:coverage
           npm run build
+
+  migration-lint:
+    name: Supabase Migration Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # ratchet:actions/checkout@v7
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Lint migrations
+        run: supabase db lint --local false
+        # Lints SQL files in supabase/migrations/ for syntax errors and
+        # anti-patterns without requiring a running Postgres instance.
+        # Full integration test (supabase start + db reset) requires Docker
+        # which is not available in standard GitHub Actions runners.

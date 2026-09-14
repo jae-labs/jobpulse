@@ -21,7 +21,7 @@ import { JobDetailInspector } from './JobDetailInspector';
 import { Button, Card, EmptyState, Pill, type PillVariant, TextField } from '../../design-system';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useJobsPageQuery } from '../../hooks/useQueries';
+import { useJobsInfiniteQuery } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
 
 interface JobsViewProps {
@@ -116,7 +116,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const [internalQuery, setInternalQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('match');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [displayCount, setDisplayCount] = useState<number>(40);
   const [layoutMode, setLayoutMode] = useState<'split' | 'list'>('split');
   const [isDetailFullScreen, setIsDetailFullScreen] = useState(false);
 
@@ -139,7 +138,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
     : (searchParams.get('q') ?? internalQuery);
 
   const updateUrlParam = useCallback((key: string, value: string | null) => {
-    setDisplayCount(40);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (!value || value === 'all' || value === '0') {
@@ -187,18 +185,23 @@ export const JobsView: React.FC<JobsViewProps> = ({
     search: query,
     sortBy: sortField,
     sortDir,
-    limit: displayCount,
-    offset: 0,
-  }), [statusFilter, domainFilter, minMatch, locationFilter, salaryFilter, query, sortField, sortDir, displayCount]);
+  }), [statusFilter, domainFilter, minMatch, locationFilter, salaryFilter, query, sortField, sortDir]);
 
-  const { data: pageData, isLoading: isPageLoading } = useJobsPageQuery(
-    userEmail,
-    queryParams,
-    Boolean(userEmail)
+  const {
+    data: pageQueryData,
+    isLoading: isPageLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useJobsInfiniteQuery(userEmail, queryParams, Boolean(userEmail));
+
+  const pageItems = useMemo(() =>
+    pageQueryData?.pages.flatMap(p => p.items) ?? [],
+    [pageQueryData]
   );
+  const pageTotal = pageQueryData?.pages[0]?.total ?? 0;
 
   const handleQueryChange = (val: string) => {
-    setDisplayCount(40);
     if (setControlledSearch) {
       setControlledSearch(val);
     } else {
@@ -208,7 +211,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
   };
 
   const toggleSort = (field: SortField) => {
-    setDisplayCount(40);
     if (sortField === field) {
       setSortDir((prev) => (prev === 'desc' ? 'asc' : 'desc'));
     } else {
@@ -224,17 +226,17 @@ export const JobsView: React.FC<JobsViewProps> = ({
         ...overviewMetrics.counts,
       };
     }
-    const sourceJobs = jobs.length > 0 ? jobs : (pageData?.items || []);
+    const sourceJobs = jobs.length > 0 ? jobs : pageItems;
     const counts: Record<string, number> = { all: sourceJobs.length };
     for (const s of STATUS_LIST) {
       counts[s] = sourceJobs.filter((j) => j.status === s).length;
     }
     return counts;
-  }, [jobs, overviewMetrics, pageData?.items]);
+  }, [jobs, overviewMetrics, pageItems]);
 
   // Jobs matching other active filters
   const baseFilteredJobs = useMemo(() => {
-    const sourceJobs = jobs.length > 0 ? jobs : (pageData?.items || []);
+    const sourceJobs = jobs.length > 0 ? jobs : pageItems;
     return sourceJobs.filter((job) => {
       const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
       const matchesMinMatch = job.relevance >= minMatch;
@@ -245,7 +247,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
       return matchesStatus && matchesMinMatch && matchesQuery && matchesSalary;
     });
-  }, [jobs, pageData?.items, statusFilter, minMatch, query, salaryFilter]);
+  }, [jobs, pageItems, statusFilter, minMatch, query, salaryFilter]);
 
   const availableDomains = useMemo(() => {
     if (overviewMetrics?.categories && overviewMetrics.categories.length > 0) {
@@ -338,15 +340,12 @@ export const JobsView: React.FC<JobsViewProps> = ({
       });
   }, [baseFilteredJobs, activeDomainFilter, activeLocationFilter, sortField, sortDir]);
 
-  const visibleJobs = useMemo(() => {
-    return filteredJobs.slice(0, displayCount);
-  }, [filteredJobs, displayCount]);
 
   const displayedJobs = useMemo(() => {
-    return pageData ? pageData.items : visibleJobs;
-  }, [pageData, visibleJobs]);
-  const totalMatchingCount = pageData ? pageData.total : filteredJobs.length;
-  const totalCatalogCount = overviewMetrics?.total ?? (jobs.length > 0 ? jobs.length : (pageData?.total || 0));
+    return pageQueryData ? pageItems : filteredJobs;
+  }, [pageQueryData, pageItems, filteredJobs]);
+  const totalMatchingCount = pageQueryData ? pageTotal : filteredJobs.length;
+  const totalCatalogCount = overviewMetrics?.total ?? (jobs.length > 0 ? jobs.length : pageTotal);
 
   // Auto-select job from URL param or default to first in split mode
   useEffect(() => {
@@ -753,18 +752,18 @@ export const JobsView: React.FC<JobsViewProps> = ({
               ))}
             </div>
 
-            {displayedJobs.length < totalMatchingCount && (
+            {hasNextPage && (
               <div className="flex justify-center pt-2 pb-6">
                 <Button
                   variant="secondary"
-                  onClick={() => setDisplayCount((prev) => prev + 40)}
-                  disabled={isPageLoading}
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
                   className="px-5 py-2 text-xs text-ds-text-secondary hover:text-ds-text-primary border-ds-border bg-ds-panel"
                 >
-                  {isPageLoading ? (
+                  {isFetchingNextPage ? (
                     <RefreshCw className="size-3 mr-1.5 animate-spin inline" />
                   ) : null}
-                  <span>{t('jobs.loadMore', { count: Math.min(40, totalMatchingCount - displayedJobs.length) })}</span>
+                  <span>{t('jobs.loadMore', { count: 40 })}</span>
                 </Button>
               </div>
             )}

@@ -32,7 +32,8 @@
     "match": "Match",
     "publicSector": "Public sector",
     "remove": "Remove",
-    "optional": "Optional"
+    "optional": "Optional",
+    "opensInNewWindow": "opens in new tab"
   },
   "status": {
     "all": "All",
@@ -137,7 +138,8 @@
       "selectPrompt": "Select an opportunity from the list or press",
       "expand": "Expand to full screen (f)",
       "exit": "Exit full screen (f)",
-      "close": "Close inspector"
+      "close": "Close inspector",
+      "statusGroup": "Job status selection"
     }
   },
   "sources": {
@@ -175,9 +177,10 @@
       "activeRoles": "Active Roles",
       "activeRole": "Active Role",
       "ofTotalRoles": "of total roles",
-      "opportunities": "opportunities"
-      ,"opportunitiesLabel": "Opportunities:"
-      ,"averageMatchLabel": "Average match:"
+      "opportunities": "opportunities",
+      "opportunitiesLabel": "Opportunities:",
+      "averageMatchLabel": "Average match:",
+      "clickToView": "Click to view {{name}} opportunities →"
     },
     "pipeline": {
       "title": "Application Pipeline",
@@ -190,12 +193,17 @@
     "relevance": {
       "title": "Relevance Distribution",
       "subtitle": "Profile fit tiers across discovered roles",
-      "roles": "roles"
+      "roles": "roles",
+      "tier": "Match Tier: {{label}}",
+      "positions": "{{count}} positions",
+      "position": "{{count}} position",
+      "clickToView": "Click to view {{label}} opportunities →"
     },
     "skills": {
       "title": "Top Matched Competencies",
       "subtitle": "Most frequent matching skills across discovered roles",
-      "presentIn": "Present in {{count}} roles ({{percentage}}%)"
+      "presentIn": "Present in {{count}} roles ({{percentage}}%)",
+      "clickToView": "Click to view {{skill}} opportunities →"
     }
   },
   "profile": {
@@ -208,6 +216,7 @@
       "title": "Personal & Contact Information",
       "avatarAlt": "Profile photo",
       "avatarTooLarge": "Profile photo is too large. Maximum size is 2MB.",
+      "avatarUploadError": "Failed to upload avatar. Please try again.",
       "profilePhoto": "Profile Photo",
       "photoHelp": "PNG, JPG, or WebP up to 2MB. Appears in the top navigation bar.",
       "uploadPhoto": "Upload Photo",

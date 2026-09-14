@@ -4,6 +4,7 @@ import { Button, Card, Select, TextField } from '../../design-system';
 import type { Profile } from '../../types/job';
 import { COUNTRY_CODES } from './profileConstants';
 import { useTranslation } from 'react-i18next';
+import { useSaveAvatarMutation } from '../../hooks/useQueries';
 
 interface ProfileGeneralInfoProps {
   formData: Profile;
@@ -11,6 +12,7 @@ interface ProfileGeneralInfoProps {
   phoneNumber: string;
   onPhoneChange: (newDial: string, newNumber: string) => void;
   onChange: (field: keyof Profile, value: string | number | string[]) => void;
+  userEmail?: string | null;
 }
 
 export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
@@ -19,15 +21,17 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
   phoneNumber,
   onPhoneChange,
   onChange,
+  userEmail,
 }) => {
   const { t, i18n } = useTranslation();
+  const saveAvatarMutation = useSaveAvatarMutation(userEmail);
   const countryNames = useMemo(
     () => new Intl.DisplayNames([i18n.language], { type: 'region' }),
     [i18n.language],
   );
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -37,12 +41,20 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      onChange('avatar_url', result);
-    };
-    reader.readAsDataURL(file);
+    if (!userEmail) {
+      // Fallback: store as base64 if no auth context (shouldn't happen in prod)
+      const reader = new FileReader();
+      reader.onload = () => onChange('avatar_url', reader.result as string);
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    try {
+      const url = await saveAvatarMutation.mutateAsync(file);
+      onChange('avatar_url', url);
+    } catch (err: any) {
+      alert(err?.message || t('profile.general.avatarUploadError'));
+    }
   };
 
   const handleRemoveAvatar = () => {
@@ -74,7 +86,8 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
-            className="absolute inset-0 rounded-full bg-ds-canvas/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-ds-text-primary cursor-pointer"
+            disabled={saveAvatarMutation.isPending}
+            className="absolute inset-0 rounded-full bg-ds-canvas/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-ds-text-primary cursor-pointer disabled:cursor-wait"
             title={t('profile.general.uploadPhoto')}
             aria-label={t('profile.general.uploadPhoto')}
           >
@@ -100,6 +113,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
               variant="secondary"
               size="sm"
               onClick={() => avatarInputRef.current?.click()}
+              disabled={saveAvatarMutation.isPending}
               className="h-7"
             >
               <Camera className="size-3.5" />

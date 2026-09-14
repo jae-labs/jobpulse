@@ -70,7 +70,7 @@ const CustomTooltip = ({ active, payload, t, onSelectCategory }: any) => {
         </div>
         {onSelectCategory && (
           <div className="text-[11px] text-ds-text-muted pt-1 border-t border-ds-border flex items-center gap-1 font-medium">
-            <span>Click to view {data.name} opportunities →</span>
+            <span>{t('charts.categoryBreakdown.clickToView', { name: data.name })}</span>
           </div>
         )}
       </div>

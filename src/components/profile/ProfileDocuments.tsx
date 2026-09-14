@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   FileText,
   Download,
@@ -8,17 +8,18 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import type { UserCVMetadata, UserCoverLetterMetadata } from '../../types/job';
 import {
-  loadUserCVsMetadata,
   downloadUserCVBlob,
-  saveUserCV,
-  deleteUserCV,
-  loadUserCoverLettersMetadata,
   downloadUserCoverLetterBlob,
-  saveUserCoverLetter,
-  deleteUserCoverLetter,
 } from '../../lib/userProfile';
+import {
+  useUserCvsQuery,
+  useUserCoverLettersQuery,
+  useSaveCvMutation,
+  useDeleteCvMutation,
+  useSaveCoverLetterMutation,
+  useDeleteCoverLetterMutation,
+} from '../../hooks/useQueries';
 import { formatDate } from '../../lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, TextField, Pill } from '../../design-system';
@@ -213,27 +214,27 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
 
 export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail }) => {
   const { t } = useTranslation();
-  // CV state
-  const [cvList, setCvList] = useState<UserCVMetadata[]>([]);
+
+  const { data: cvList = [] } = useUserCvsQuery(userEmail);
+  const { data: coverLetterList = [] } = useUserCoverLettersQuery(userEmail);
+
+  const saveCvMutation = useSaveCvMutation(userEmail);
+  const deleteCvMutation = useDeleteCvMutation(userEmail);
+  const saveCoverLetterMutation = useSaveCoverLetterMutation(userEmail);
+  const deleteCoverLetterMutation = useDeleteCoverLetterMutation(userEmail);
+
+  // CV local form state
   const [newCvDescription, setNewCvDescription] = useState('');
-  const [isUploadingCv, setIsUploadingCv] = useState(false);
   const [downloadingCvId, setDownloadingCvId] = useState<number | null>(null);
   const [cvNotice, setCvNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Cover letter state
-  const [coverLetterList, setCoverLetterList] = useState<UserCoverLetterMetadata[]>([]);
+  // Cover letter local form state
   const [newCoverLetterDescription, setNewCoverLetterDescription] = useState('');
-  const [isUploadingCoverLetter, setIsUploadingCoverLetter] = useState(false);
   const [downloadingCoverLetterId, setDownloadingCoverLetterId] = useState<number | null>(null);
   const [coverLetterNotice, setCoverLetterNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load CV and Cover letter metadata when userEmail is ready
-  useEffect(() => {
-    if (userEmail) {
-      void loadUserCVsMetadata(userEmail).then((list) => setCvList(list));
-      void loadUserCoverLettersMetadata(userEmail).then((list) => setCoverLetterList(list));
-    }
-  }, [userEmail]);
+  const isUploadingCv = saveCvMutation.isPending;
+  const isUploadingCoverLetter = saveCoverLetterMutation.isPending;
 
   const handleCvUpload = async (file: File) => {
     if (!userEmail) return;
@@ -243,22 +244,18 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
       return;
     }
 
-    setIsUploadingCv(true);
     setCvNotice(null);
 
     try {
-      const res = await saveUserCV(
-        userEmail,
-        file.name,
-        file.size,
-        file.type || 'application/pdf',
-        file,
-        newCvDescription.trim() || undefined
-      );
+      const res = await saveCvMutation.mutateAsync({
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/pdf',
+        fileData: file,
+        description: newCvDescription.trim() || undefined,
+      });
 
       if (res.success) {
-        const list = await loadUserCVsMetadata(userEmail);
-        setCvList(list);
         setNewCvDescription('');
         setCvNotice({ type: 'success', text: t('profile.documents.uploaded', { fileName: file.name }) });
         setTimeout(() => setCvNotice(null), 4000);
@@ -268,8 +265,6 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('profile.documents.processingError');
       setCvNotice({ type: 'error', text: message });
-    } finally {
-      setIsUploadingCv(false);
     }
   };
 
@@ -300,11 +295,14 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
   const handleDeleteCv = async (id?: number, fileName?: string) => {
     if (!id) return;
     if (!confirm(t('profile.documents.removeCvConfirmation', { fileName: fileName || t('profile.documents.thisCv') }))) return;
-    const ok = await deleteUserCV(id);
-    if (ok) {
-      setCvList((prev) => prev.filter((item) => item.id !== id));
-      setCvNotice({ type: 'success', text: t('profile.documents.cvRemoved') });
-      setTimeout(() => setCvNotice(null), 3000);
+    try {
+      const ok = await deleteCvMutation.mutateAsync(id);
+      if (ok) {
+        setCvNotice({ type: 'success', text: t('profile.documents.cvRemoved') });
+        setTimeout(() => setCvNotice(null), 3000);
+      }
+    } catch {
+      setCvNotice({ type: 'error', text: t('profile.documents.deleteFailed', 'Failed to delete document.') });
     }
   };
 
@@ -316,22 +314,18 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
       return;
     }
 
-    setIsUploadingCoverLetter(true);
     setCoverLetterNotice(null);
 
     try {
-      const res = await saveUserCoverLetter(
-        userEmail,
-        file.name,
-        file.size,
-        file.type || 'application/pdf',
-        file,
-        newCoverLetterDescription.trim() || undefined
-      );
+      const res = await saveCoverLetterMutation.mutateAsync({
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/pdf',
+        fileData: file,
+        description: newCoverLetterDescription.trim() || undefined,
+      });
 
       if (res.success) {
-        const list = await loadUserCoverLettersMetadata(userEmail);
-        setCoverLetterList(list);
         setNewCoverLetterDescription('');
         setCoverLetterNotice({ type: 'success', text: t('profile.documents.uploaded', { fileName: file.name }) });
         setTimeout(() => setCoverLetterNotice(null), 4000);
@@ -341,8 +335,6 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('profile.documents.processingError');
       setCoverLetterNotice({ type: 'error', text: message });
-    } finally {
-      setIsUploadingCoverLetter(false);
     }
   };
 
@@ -373,11 +365,14 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
   const handleDeleteCoverLetter = async (id?: number, fileName?: string) => {
     if (!id) return;
     if (!confirm(t('profile.documents.removeCoverLetterConfirmation', { fileName: fileName || t('profile.documents.thisCoverLetter') }))) return;
-    const ok = await deleteUserCoverLetter(id);
-    if (ok) {
-      setCoverLetterList((prev) => prev.filter((item) => item.id !== id));
-      setCoverLetterNotice({ type: 'success', text: t('profile.documents.coverLetterRemoved') });
-      setTimeout(() => setCoverLetterNotice(null), 3000);
+    try {
+      const ok = await deleteCoverLetterMutation.mutateAsync(id);
+      if (ok) {
+        setCoverLetterNotice({ type: 'success', text: t('profile.documents.coverLetterRemoved') });
+        setTimeout(() => setCoverLetterNotice(null), 3000);
+      }
+    } catch {
+      setCoverLetterNotice({ type: 'error', text: t('profile.documents.deleteFailed', 'Failed to delete document.') });
     }
   };
 
