@@ -19,6 +19,7 @@ active; the login screen is skipped only for local Vite development.
 Use `make help` for the complete command list. Common commands are:
 
 ```bash
+make stop
 make db-status
 make db-reset
 make db-restore BACKUP=.backups/jobpulse-<timestamp>

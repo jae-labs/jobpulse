@@ -11,6 +11,7 @@
     "dev": "bash scripts/dev-local.sh",
     "dev:local": "bash scripts/dev-local.sh",
     "dev:hosted": "vite",
+    "stop": "npm run db:stop",
     "build": "tsc -b && vite build",
     "build:analyze": "ANALYZE=true vite build",
     "lint": "oxlint && bash scripts/check-design-system-boundary.sh",

@@ -1,12 +1,15 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup check
+.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 dev: ## Start local Supabase and the Vite development server.
 	npm run dev:local
+
+stop: ## Stop the local development stack.
+	npm run db:stop
 
 db-start: ## Start the local Supabase stack.
 	npm run db:start
