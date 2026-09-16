@@ -1,0 +1,152 @@
+/*
+ * Product-neutral design tokens. Consumers can override these semantic values
+ * to theme the same components without changing component source code.
+ */
+:root {
+  --ds-color-canvas: #000000;
+  --ds-color-workspace: #111215;
+  --ds-color-panel: #16171b;
+  --ds-color-control: #1b1c21;
+  --ds-color-hover: #22242b;
+  --ds-color-selected: rgba(255, 255, 255, 0.12);
+  --ds-color-overlay: rgba(0, 0, 0, 0.7);
+  --ds-color-border: rgba(255, 255, 255, 0.08);
+  --ds-color-border-strong: rgba(255, 255, 255, 0.16);
+  --ds-color-border-control: rgba(255, 255, 255, 0.24);
+  --ds-color-text-primary: #f4f4f5;
+  --ds-color-text-secondary: #d4d4d8;
+  --ds-color-text-muted: #a1a1aa;
+  --ds-color-accent: #818cf8;
+  --ds-color-accent-subtle: rgba(129, 140, 248, 0.14);
+  --ds-color-action-primary: #f4f4f5;
+  --ds-color-action-primary-text: #111215;
+  --ds-color-positive: #34d399;
+  --ds-color-negative: #fb7185;
+  --ds-color-warning: #fbbf24;
+  --ds-color-warning-subtle: rgba(251, 191, 36, 0.12);
+  --ds-color-warning-border: rgba(251, 191, 36, 0.3);
+  --ds-color-warning-muted-bg: rgba(251, 191, 36, 0.06);
+  --ds-color-warning-muted-border: rgba(251, 191, 36, 0.2);
+  --ds-color-status-new: #38bdf8;
+  --ds-color-status-applied: #34d399;
+  --ds-color-status-interviewing: #c084fc;
+  --ds-color-status-interested: #f472b6;
+  --ds-color-status-muted: #a1a1aa;
+  --ds-color-data-1: #38bdf8;
+  --ds-color-data-2: #34d399;
+  --ds-color-data-3: #c084fc;
+  --ds-color-data-4: #f472b6;
+  --ds-color-data-5: #fbbf24;
+  --ds-color-data-6: #06b6d4;
+  --ds-color-data-7: #fb7185;
+  --ds-color-data-8: #14b8a6;
+  --ds-color-data-9: #84cc16;
+  --ds-color-data-10: #6366f1;
+  --ds-color-data-11: #d97706;
+  --ds-color-data-12: #a855f7;
+  --ds-color-data-13: #22c55e;
+  --ds-color-data-14: #ef4444;
+  --ds-color-data-15: #f97316;
+  --ds-color-data-16: #3b82f6;
+  --ds-color-chart-grid: rgba(255, 255, 255, 0.05);
+  --ds-color-chart-axis: rgba(255, 255, 255, 0.2);
+  /* Chart palette */
+  --ds-chart-1: #22d3ee;
+  --ds-chart-2: #a78bfa;
+  --ds-chart-3: #34d399;
+  --ds-chart-4: #f472b6;
+  --ds-chart-5: #fb923c;
+  --ds-chart-6: #60a5fa;
+  --ds-chart-7: #facc15;
+  --ds-chart-8: #818cf8;
+  --ds-radius-control: 0.5rem;
+  --ds-radius-card: 0.75rem;
+  --ds-shadow-overlay: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+@theme {
+  --color-ds-canvas: var(--ds-color-canvas);
+  --color-ds-workspace: var(--ds-color-workspace);
+  --color-ds-panel: var(--ds-color-panel);
+  --color-ds-control: var(--ds-color-control);
+  --color-ds-hover: var(--ds-color-hover);
+  --color-ds-selected: var(--ds-color-selected);
+  --color-ds-border: var(--ds-color-border);
+  --color-ds-border-strong: var(--ds-color-border-strong);
+  --color-ds-border-control: var(--ds-color-border-control);
+  --color-ds-text-primary: var(--ds-color-text-primary);
+  --color-ds-text-secondary: var(--ds-color-text-secondary);
+  --color-ds-text-muted: var(--ds-color-text-muted);
+  --color-ds-accent: var(--ds-color-accent);
+  --color-ds-accent-subtle: var(--ds-color-accent-subtle);
+  --color-ds-action-primary: var(--ds-color-action-primary);
+  --color-ds-action-primary-text: var(--ds-color-action-primary-text);
+  --color-ds-positive: var(--ds-color-positive);
+  --color-ds-negative: var(--ds-color-negative);
+  --color-ds-warning: var(--ds-color-warning);
+  --color-ds-warning-subtle: var(--ds-color-warning-subtle);
+  --color-ds-warning-border: var(--ds-color-warning-border);
+  --color-ds-warning-muted-bg: var(--ds-color-warning-muted-bg);
+  --color-ds-warning-muted-border: var(--ds-color-warning-muted-border);
+  --color-ds-status-new: var(--ds-color-status-new);
+  --color-ds-status-applied: var(--ds-color-status-applied);
+  --color-ds-status-interviewing: var(--ds-color-status-interviewing);
+  --color-ds-status-interested: var(--ds-color-status-interested);
+  --color-ds-status-muted: var(--ds-color-status-muted);
+  --color-ds-data-1: var(--ds-color-data-1);
+  --color-ds-data-2: var(--ds-color-data-2);
+  --color-ds-data-3: var(--ds-color-data-3);
+  --color-ds-data-4: var(--ds-color-data-4);
+  --color-ds-data-5: var(--ds-color-data-5);
+  --color-ds-data-6: var(--ds-color-data-6);
+  --color-ds-data-7: var(--ds-color-data-7);
+  --color-ds-data-8: var(--ds-color-data-8);
+  --color-ds-data-9: var(--ds-color-data-9);
+  --color-ds-data-10: var(--ds-color-data-10);
+  --color-ds-data-11: var(--ds-color-data-11);
+  --color-ds-data-12: var(--ds-color-data-12);
+  --color-ds-data-13: var(--ds-color-data-13);
+  --color-ds-data-14: var(--ds-color-data-14);
+  --color-ds-data-15: var(--ds-color-data-15);
+  --color-ds-data-16: var(--ds-color-data-16);
+  --ds-color-chart-grid: var(--ds-color-chart-grid);
+  --ds-color-chart-axis: var(--ds-color-chart-axis);
+  --color-ds-chart-1: var(--ds-chart-1);
+  --color-ds-chart-2: var(--ds-chart-2);
+  --color-ds-chart-3: var(--ds-chart-3);
+  --color-ds-chart-4: var(--ds-chart-4);
+  --color-ds-chart-5: var(--ds-chart-5);
+  --color-ds-chart-6: var(--ds-chart-6);
+  --color-ds-chart-7: var(--ds-chart-7);
+  --color-ds-chart-8: var(--ds-chart-8);
+}
+
+.ds-focus-ring:focus-visible {
+  outline: 2px solid var(--ds-color-accent);
+  outline-offset: 2px;
+}
+
+/* Shared interaction contract: hover is quiet, focus is explicit, selection is persistent. */
+.ds-interactive-surface {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.ds-interactive-surface:hover {
+  background-color: var(--ds-color-hover);
+  border-color: var(--ds-color-border-strong);
+}
+
+.ds-field-shell {
+  background-color: var(--ds-color-control);
+  border-color: var(--ds-color-border-control);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.ds-field-shell:hover {
+  background-color: var(--ds-color-hover);
+  border-color: var(--ds-color-border-strong);
+}
+
+.ds-field-shell:focus-within {
+  border-color: var(--ds-color-accent);
+}
