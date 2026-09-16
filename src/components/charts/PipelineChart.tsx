@@ -85,6 +85,9 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTool
   return null;
 };
 
+const getCssVar = (name: string) =>
+  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '';
+
 export const PipelineChart: React.FC<PipelineChartProps> = ({ jobs = [], counts, onSelectStatus }) => {
   const { t, i18n } = useTranslation();
   const data = React.useMemo(() => {
@@ -92,11 +95,16 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({ jobs = [], counts,
     return keys.map((status) => {
       const config = STAGE_CONFIG[status];
       const count = counts ? (counts[status] || 0) : jobs.filter((j) => j.status === status).length;
+
+      // Extract the variable name from var(--variable-name)
+      const varMatch = config.color.match(/var\((--[^)]+)\)/);
+      const colorValue = varMatch ? getCssVar(varMatch[1]) : config.color;
+
       return {
         status,
         name: t(`status.${status}` as any) || config.label,
         count,
-        fill: config.color,
+        fill: colorValue || config.color,
       };
     });
   }, [jobs, counts, t]);

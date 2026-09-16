@@ -55,6 +55,8 @@ export interface TagChipInputProps {
   theme?: TagColorTheme;
   addOnBlur?: boolean;
   className?: string;
+  inputId?: string;
+  ariaLabel?: string;
 }
 
 export const TagChipInput: React.FC<TagChipInputProps> = ({
@@ -64,6 +66,8 @@ export const TagChipInput: React.FC<TagChipInputProps> = ({
   theme = 'accent',
   addOnBlur = true,
   className = '',
+  inputId,
+  ariaLabel,
 }) => {
   const { t } = useTranslation();
   const [inputVal, setInputVal] = useState('');
@@ -111,6 +115,8 @@ export const TagChipInput: React.FC<TagChipInputProps> = ({
         </span>
       ))}
       <input
+        id={inputId}
+        aria-label={ariaLabel}
         type="text"
         value={inputVal}
         onChange={(e) => setInputVal(e.target.value)}

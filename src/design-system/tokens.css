@@ -46,6 +46,15 @@
   --ds-color-data-16: #3b82f6;
   --ds-color-chart-grid: rgba(255, 255, 255, 0.05);
   --ds-color-chart-axis: rgba(255, 255, 255, 0.2);
+  /* Chart palette */
+  --ds-chart-1: #22d3ee;
+  --ds-chart-2: #a78bfa;
+  --ds-chart-3: #34d399;
+  --ds-chart-4: #f472b6;
+  --ds-chart-5: #fb923c;
+  --ds-chart-6: #60a5fa;
+  --ds-chart-7: #facc15;
+  --ds-chart-8: #818cf8;
   --ds-radius-control: 0.5rem;
   --ds-radius-card: 0.75rem;
   --ds-shadow-overlay: 0 20px 50px rgba(0, 0, 0, 0.8);
@@ -92,8 +101,16 @@
   --color-ds-data-14: var(--ds-color-data-14);
   --color-ds-data-15: var(--ds-color-data-15);
   --color-ds-data-16: var(--ds-color-data-16);
-  --color-ds-chart-grid: var(--ds-color-chart-grid);
-  --color-ds-chart-axis: var(--ds-color-chart-axis);
+  --ds-color-chart-grid: var(--ds-color-chart-grid);
+  --ds-color-chart-axis: var(--ds-color-chart-axis);
+  --color-ds-chart-1: var(--ds-chart-1);
+  --color-ds-chart-2: var(--ds-chart-2);
+  --color-ds-chart-3: var(--ds-chart-3);
+  --color-ds-chart-4: var(--ds-chart-4);
+  --color-ds-chart-5: var(--ds-chart-5);
+  --color-ds-chart-6: var(--ds-chart-6);
+  --color-ds-chart-7: var(--ds-chart-7);
+  --color-ds-chart-8: var(--ds-chart-8);
 }
 
 .ds-focus-ring:focus-visible {

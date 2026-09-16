@@ -18,30 +18,8 @@ interface CategoryBreakdownChartProps {
   onSelectCategory?: (category: string) => void;
 }
 
-const DOMAIN_COLOR_PALETTE: Record<string, string> = {
-  'General Administration': 'var(--ds-color-data-5)',
-  'Academic Administration & Higher Education': 'var(--ds-color-data-4)',
-  'Public Service & Governance Operations': 'var(--ds-color-data-2)',
-  'Operations & Institutional Administration': 'var(--ds-color-data-12)',
-  'Software, IT & Cybersecurity': 'var(--ds-color-data-1)',
-  'Engineering & Architecture': 'var(--ds-color-data-6)',
-  'Corporate Directors & C-Suite': 'var(--ds-color-data-7)',
-  'Healthcare & Clinical': 'var(--ds-color-data-8)',
-  'Finance, Accounting & Tax': 'var(--ds-color-data-9)',
-  'Aviation Operations': 'var(--ds-color-data-10)',
-  'Hospitality, Catering & Facilities': 'var(--ds-color-data-11)',
-  'Academic Faculty & Professorship': 'var(--ds-color-data-12)',
-  'Scientific & Ecological': 'var(--ds-color-data-13)',
-  'Emergency Services & Armed Defence': 'var(--ds-color-data-14)',
-  'Direct Sales Quotas': 'var(--ds-color-data-15)',
-  'Compliance & Legal Analysis': 'var(--ds-color-data-16)',
-};
-
-const FALLBACK_COLORS = [
-  'var(--ds-color-data-1)', 'var(--ds-color-data-4)', 'var(--ds-color-data-2)', 'var(--ds-color-data-12)',
-  'var(--ds-color-data-6)', 'var(--ds-color-data-7)', 'var(--ds-color-data-8)', 'var(--ds-color-data-9)',
-  'var(--ds-color-data-10)', 'var(--ds-color-data-11)', 'var(--ds-color-data-15)', 'var(--ds-color-status-muted)',
-];
+const getCssVar = (name: string) =>
+  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '';
 
 const CustomTooltip = ({ active, payload, t, onSelectCategory }: any) => {
   if (active && payload && payload.length) {
@@ -89,11 +67,41 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
+  const fallbackColors = useMemo(() => [
+    getCssVar('--ds-chart-1'),
+    getCssVar('--ds-chart-2'),
+    getCssVar('--ds-chart-3'),
+    getCssVar('--ds-chart-4'),
+    getCssVar('--ds-chart-5'),
+    getCssVar('--ds-chart-6'),
+    getCssVar('--ds-chart-7'),
+    getCssVar('--ds-chart-8'),
+  ], []);
+
+  const domainColorPalette = useMemo<Record<string, string>>(() => ({
+    'General Administration': getCssVar('--ds-chart-5'),
+    'Academic Administration & Higher Education': getCssVar('--ds-chart-4'),
+    'Public Service & Governance Operations': getCssVar('--ds-chart-2'),
+    'Operations & Institutional Administration': getCssVar('--ds-chart-8'),
+    'Software, IT & Cybersecurity': getCssVar('--ds-chart-1'),
+    'Engineering & Architecture': getCssVar('--ds-chart-6'),
+    'Corporate Directors & C-Suite': getCssVar('--ds-chart-7'),
+    'Healthcare & Clinical': getCssVar('--ds-chart-3'),
+    'Finance, Accounting & Tax': getCssVar('--ds-chart-5'),
+    'Aviation Operations': getCssVar('--ds-chart-6'),
+    'Hospitality, Catering & Facilities': getCssVar('--ds-chart-4'),
+    'Academic Faculty & Professorship': getCssVar('--ds-chart-8'),
+    'Scientific & Ecological': getCssVar('--ds-chart-3'),
+    'Emergency Services & Armed Defence': getCssVar('--ds-chart-1'),
+    'Direct Sales Quotas': getCssVar('--ds-chart-7'),
+    'Compliance & Legal Analysis': getCssVar('--ds-chart-2'),
+  }), []);
+
   const { chartData, topCategory, totalCategories } = useMemo(() => {
     if (categories && categories.length > 0) {
       const totalCount = controlledTotalJobs || categories.reduce((sum, c) => sum + c.value, 0) || 1;
       const sorted = categories.map((cat, idx) => {
-        const color = DOMAIN_COLOR_PALETTE[cat.name] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+        const color = domainColorPalette[cat.name] || fallbackColors[idx % fallbackColors.length];
         const percentage = ((cat.value / totalCount) * 100).toFixed(1);
         return {
           name: cat.name,
@@ -124,7 +132,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     const totalJobs = jobs.length || 1;
     const sorted = Array.from(categoryMap.entries())
       .map(([name, stats], idx) => {
-        const color = DOMAIN_COLOR_PALETTE[name] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+        const color = domainColorPalette[name] || fallbackColors[idx % fallbackColors.length];
         const percentage = ((stats.count / totalJobs) * 100).toFixed(1);
         const avgMatch = Math.round(stats.totalScore / stats.count);
         return {
@@ -142,7 +150,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       topCategory: sorted[0],
       totalCategories: sorted.length,
     };
-  }, [jobs, categories, controlledTotalJobs]);
+  }, [jobs, categories, controlledTotalJobs, fallbackColors, domainColorPalette]);
 
   const activeIdx = hoveredIdx ?? selectedIdx;
   const activeCategory = activeIdx !== null ? chartData[activeIdx] : topCategory;

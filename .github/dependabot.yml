@@ -10,6 +10,12 @@ updates:
       - "npm"
     assignees:
       - "luiz1361"
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -19,3 +25,4 @@ updates:
       - "github-actions"
     assignees:
       - "luiz1361"
+    open-pull-requests-limit: 5

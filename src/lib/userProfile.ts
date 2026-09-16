@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { reportError } from "./logger";
 import type {
   Profile,
   UserCVMetadata,
@@ -61,7 +62,7 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
     const { data, error } = await supabase
       .from("user_profiles")
       .select("*")
-      .ilike("user_email", cleanEmail)
+      .eq("user_email", cleanEmail)
       .maybeSingle();
 
     if (error) {
@@ -113,7 +114,7 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
       avatar_url: data.avatar_url || "",
     };
   } catch (err: unknown) {
-    console.error("Error loading user profile:", err);
+    reportError(err);
     throw err;
   }
 }
@@ -183,8 +184,9 @@ export async function saveUserProfile(
     }
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || "Failed to save profile" };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMessage || "Failed to save profile" };
   }
 }
 
@@ -201,13 +203,14 @@ export async function loadUserCVsMetadata(
     const { data, error } = await supabase
       .from("user_cvs")
       .select("id, user_email, file_name, file_size, mime_type, description, uploaded_at")
-      .ilike("user_email", cleanEmail)
+      .eq("user_email", cleanEmail)
       .order("uploaded_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw new Error(error.message);
+    if (!data) return [];
     return data as UserCVMetadata[];
-  } catch {
-    return [];
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Failed to load CV metadata");
   }
 }
 
@@ -230,7 +233,7 @@ export async function downloadUserCVBlob(
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return null;
-      query = query.ilike("user_email", cleanEmail);
+      query = query.eq("user_email", cleanEmail);
       if (cvId) {
         query = query.eq("id", cvId);
       } else {
@@ -324,8 +327,9 @@ export async function saveUserCV(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || "Failed to save CV" };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMessage || "Failed to save CV" };
   }
 }
 
@@ -346,7 +350,7 @@ export async function deleteUserCV(
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return false;
-      query = query.ilike("user_email", cleanEmail);
+      query = query.eq("user_email", cleanEmail);
       if (cvId) query = query.eq("id", cvId);
     }
 
@@ -368,7 +372,7 @@ export async function deleteUserCV(
     if (typeof emailOrId === "number") {
       delQuery = delQuery.eq("id", emailOrId);
     } else {
-      delQuery = delQuery.ilike("user_email", emailOrId.trim().toLowerCase());
+      delQuery = delQuery.eq("user_email", emailOrId.trim().toLowerCase());
       if (cvId) delQuery = delQuery.eq("id", cvId);
     }
 
@@ -392,13 +396,14 @@ export async function loadUserCoverLettersMetadata(
     const { data, error } = await supabase
       .from("user_cover_letters")
       .select("id, user_email, file_name, file_size, mime_type, description, uploaded_at")
-      .ilike("user_email", cleanEmail)
+      .eq("user_email", cleanEmail)
       .order("uploaded_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw new Error(error.message);
+    if (!data) return [];
     return data as UserCoverLetterMetadata[];
-  } catch {
-    return [];
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Failed to load cover-letter metadata");
   }
 }
 
@@ -421,7 +426,7 @@ export async function downloadUserCoverLetterBlob(
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return null;
-      query = query.ilike("user_email", cleanEmail);
+      query = query.eq("user_email", cleanEmail);
       if (coverLetterId) {
         query = query.eq("id", coverLetterId);
       } else {
@@ -512,10 +517,11 @@ export async function saveUserCoverLetter(
       return { success: false, error: error.message };
     }
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
     return {
       success: false,
-      error: err?.message || "Failed to save cover letter",
+      error: errorMessage || "Failed to save cover letter",
     };
   }
 }
@@ -539,7 +545,7 @@ export async function deleteUserCoverLetter(
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return false;
-      query = query.ilike("user_email", cleanEmail);
+      query = query.eq("user_email", cleanEmail);
       if (coverLetterId) query = query.eq("id", coverLetterId);
     }
 
@@ -561,7 +567,7 @@ export async function deleteUserCoverLetter(
     if (typeof emailOrId === "number") {
       delQuery = delQuery.eq("id", emailOrId);
     } else {
-      delQuery = delQuery.ilike("user_email", emailOrId.trim().toLowerCase());
+      delQuery = delQuery.eq("user_email", emailOrId.trim().toLowerCase());
       if (coverLetterId) delQuery = delQuery.eq("id", coverLetterId);
     }
 

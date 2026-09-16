@@ -52,8 +52,8 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
     try {
       const url = await saveAvatarMutation.mutateAsync(file);
       onChange('avatar_url', url);
-    } catch (err: any) {
-      alert(err?.message || t('profile.general.avatarUploadError'));
+    } catch (err: unknown) {
+      alert((err instanceof Error ? err.message : undefined) || t('profile.general.avatarUploadError'));
     }
   };
 

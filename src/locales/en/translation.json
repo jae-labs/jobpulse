@@ -13,6 +13,18 @@
     ,"collapseSidebar": "Collapse sidebar"
   },
   "common": {
+    "verifyingAuth": "Verifying authorization...",
+    "connectingToDb": "Connecting to database...",
+    "networkError": "Network error",
+    "statusSaveFailed": "Failed to save status update: {{message}}",
+    "loadingAnalytics": "Loading analytics from Supabase",
+    "loadingOpportunities": "Loading opportunities from Supabase",
+    "loadingView": "Loading view...",
+    "loadingWidgets": "Loading analytics widgets...",
+    "dismiss": "Dismiss",
+    "dismissError": "Dismiss error",
+    "dbConnectionError": "Supabase Connection Error",
+    "dbConnectionDetail": "Unable to connect to Supabase: {{message}}. Verify your connection.",
     "apply": "Apply",
     "search": "Search...",
     "loading": "Loading...",
@@ -101,6 +113,12 @@
     "categoryBreakdown": "Domain Category Breakdown"
   },
   "jobs": {
+    "salary50k": "€50k+",
+    "salary60k": "€60k+",
+    "salary70k": "€70k+",
+    "salary80k": "€80k+",
+    "regionalHubs": "Regional Hubs",
+    "discoveredLocations": "Discovered Locations",
     "searchPlaceholder": "Search by title, company, skills, or location... (Cmd+K)",
     "allSalaries": "All Salaries",
     "disclosedOnly": "Disclosed only",
@@ -126,6 +144,7 @@
     "loadingOpportunities": "Loading opportunities...",
     "inspector": {
       "matchFit": "Match Fit",
+      "matchedCompetencies": "Matched Candidate Competencies",
       "location": "Location",
       "salary": "Salary / Benchmark",
       "employmentType": "Employment Type",
@@ -141,7 +160,17 @@
       "expand": "Expand to full screen (f)",
       "exit": "Exit full screen (f)",
       "close": "Close inspector",
-      "statusGroup": "Job status selection"
+      "statusGroup": "Job status selection",
+      "detailLoadError": "The job details could not be loaded.",
+      "generated": {
+        "highAlignment": "High alignment ({{score}}%): Strongly matches target domain ({{domain}}) and seniority profile ({{seniority}}). Evaluated against target criteria and compensation benchmark.",
+        "goodAlignment": "Good alignment ({{score}}%): Compatible role in {{domain}} at {{seniority}} tier.",
+        "moderateAlignment": "Moderate alignment ({{score}}%): Partial synergy in {{domain}}.",
+        "compatibilityScore": "Compatibility score: {{score}}% for {{domain}}.",
+        "matchesCriteria": "Matches target criteria in {{domain}}.",
+        "disclosedCompensation": "Disclosed compensation: {{salary}}.",
+        "coreSkills": "Core skills identified: {{skills}}"
+      }
     }
   },
   "sources": {
@@ -214,6 +243,7 @@
     "autoSaveFailed": "Auto-save failed",
     "autoSaveNotice": "Auto-save notice",
     "autoSaveError": "Failed to auto-save your profile.",
+    "loadError": "We couldn't load your profile. Refresh the page and try again.",
     "general": {
       "title": "Personal & Contact Information",
       "avatarAlt": "Profile photo",
@@ -296,6 +326,7 @@
       "fileCount_other": "{{count}} files",
       "noResumes": "No resumes uploaded yet.",
       "noCoverLetters": "No cover letters uploaded yet.",
+      "loadDocumentsFailed": "Your documents could not be loaded.",
       "cvDescriptionPlaceholder": "Description (e.g. Senior Product Manager CV, DevOps Tailored)",
       "coverLetterDescriptionPlaceholder": "Description (e.g. Fintech Cover Letter, Startup Pitch)",
       "uploadResume": "Upload New Resume / CV",
@@ -344,5 +375,17 @@
     "databaseSetupNeeded": "Database setup needed",
     "databaseSetupInstructions": "The <1>authorized_users</1> table is not yet created in Supabase. Apply the database migrations in <3>supabase/migrations</3> via <5>npm run db:push</5>.",
     "signOut": "Log out"
+  },
+  "errorBoundary": {
+    "unableToDisplayComponent": "Unable to display component",
+    "unexpectedRenderingError": "An unexpected error occurred while rendering this section.",
+    "unableToLoadOverview": "Unable to load overview dashboard",
+    "unableToLoadOpportunities": "Unable to load opportunities pipeline",
+    "unableToLoadSources": "Unable to load data sources",
+    "unableToLoadProfile": "Unable to load profile settings",
+    "unableToLoadCategoryChart": "Unable to load category breakdown chart",
+    "unableToLoadPipelineChart": "Unable to load pipeline chart",
+    "unableToLoadRelevanceChart": "Unable to load relevance distribution chart",
+    "unableToLoadSkillsChart": "Unable to load skills chart"
   }
 }

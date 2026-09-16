@@ -29,10 +29,11 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+            <label htmlFor="profile-education" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.qualifications.education')}
             </label>
             <TextField
+              id="profile-education"
               density="compact"
               type="text"
               value={formData.education || ''}
@@ -43,7 +44,7 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
 
           {/* Certifications Tag Box */}
           <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+            <label htmlFor="profile-certifications" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.qualifications.certifications')}
             </label>
             <TagChipInput
@@ -51,12 +52,13 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
               onChange={(next) => onChange('certifications', next.join(', '))}
               placeholder={t('profile.qualifications.addCertificationPlaceholder')}
               theme="positive"
+              inputId="profile-certifications"
             />
           </div>
 
           {/* Languages Tag Box */}
           <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+            <label htmlFor="profile-languages" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.qualifications.languages')}
             </label>
             <TagChipInput
@@ -64,6 +66,7 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
               onChange={(next) => onChange('languages', next)}
               placeholder={t('profile.qualifications.addLanguagePlaceholder')}
               theme="accent"
+              inputId="profile-languages"
             />
           </div>
         </div>
@@ -82,6 +85,7 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
           onChange={(next) => onChange('tools_software', next)}
           placeholder={t('profile.qualifications.addToolPlaceholder')}
           theme="status-new"
+          ariaLabel={t('profile.qualifications.toolsTitle')}
         />
       </Card>
 
@@ -102,6 +106,7 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
               : t('profile.qualifications.addKeywordPlaceholder')
           }
           theme="warning"
+          ariaLabel={t('profile.qualifications.keywordsTitle')}
         />
       </Card>
 
@@ -114,7 +119,9 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
         </div>
 
         <div className="space-y-1.5">
+          <label htmlFor="profile-summary" className="sr-only">{t('profile.qualifications.summaryTitle')}</label>
           <Textarea
+            id="profile-summary"
             density="compact"
             rows={6}
             value={formData.summary || ''}

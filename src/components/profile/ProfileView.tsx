@@ -12,6 +12,8 @@ import { Card, PageHeader } from '../../design-system';
 
 interface ProfileViewProps {
   profile: Profile | null;
+  isLoading?: boolean;
+  loadError?: string | null;
   userEmail?: string | null;
   onSaveProfile: (profile: Profile) => Promise<{ success: boolean; error?: string }>;
   jobs?: Job[];
@@ -19,6 +21,8 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   profile,
+  isLoading = false,
+  loadError = null,
   userEmail,
   onSaveProfile,
   jobs,
@@ -195,6 +199,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       return next;
     });
   };
+
+  if (isLoading || loadError || !profile) {
+    return (
+      <Card className="mx-auto max-w-xl p-6 text-center">
+        {isLoading ? (
+          <RefreshCw className="mx-auto size-5 animate-spin text-ds-text-muted" aria-label={t('common.loading')} />
+        ) : (
+          <>
+            <AlertCircle className="mx-auto size-5 text-ds-negative" />
+            <p role="alert" className="mt-3 text-sm text-ds-negative">{loadError || t('profile.loadError')}</p>
+          </>
+        )}
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-16 max-w-5xl mx-auto">

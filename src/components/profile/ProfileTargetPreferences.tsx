@@ -32,10 +32,11 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
         </div>
 
         <div className="space-y-1.5 w-full">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-current-role" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.target.currentJobTitle')}
           </label>
           <TextField
+            id="profile-current-role"
             density="compact"
             type="text"
             value={formData.current_role || ''}
@@ -56,7 +57,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
 
         {/* Target Role(s) Tag Box */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-target-roles" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.target.roleTitles')}
           </label>
           <TagChipInput
@@ -64,12 +65,13 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
             onChange={(next) => onChange('target_roles', next)}
             placeholder={t('profile.target.addRolePlaceholder')}
             theme="accent"
+            inputId="profile-target-roles"
           />
         </div>
 
         {/* Target Locations Tag Box */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-ds-text-secondary">
+          <label htmlFor="profile-target-locations" className="text-xs font-medium text-ds-text-secondary">
             {t('profile.target.locations')}
           </label>
           <TagChipInput
@@ -77,15 +79,16 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
             onChange={(next) => onChange('target_locations', next)}
             placeholder={t('profile.target.addLocationPlaceholder')}
             theme="accent"
+            inputId="profile-target-locations"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           {/* Work Mode Preferences: Multi-select */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+          <fieldset className="space-y-1.5">
+            <legend className="text-xs font-medium text-ds-text-secondary">
               {t('profile.target.workModes')}
-            </label>
+            </legend>
             <div className="flex flex-wrap gap-2">
               {WORK_MODE_OPTIONS.map((mode) => {
                 const active = currentWorkModes.includes(mode);
@@ -93,6 +96,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
                   <button
                     key={mode}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => onToggleWorkMode(mode)}
                     className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors cursor-pointer ${
                       active
@@ -106,14 +110,15 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
                 );
               })}
             </div>
-          </div>
+          </fieldset>
 
           {/* Employment Type */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+            <label htmlFor="profile-employment" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.target.employmentType')}
             </label>
             <Select
+              id="profile-employment"
               density="compact"
               value={formData.employment || 'Permanent only'}
               onChange={(e) => onChange('employment', e.target.value)}
@@ -127,7 +132,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
 
           {/* Minimum Expected Salary (€ / yr) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-ds-text-secondary">
+            <label htmlFor="profile-minimum-salary" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.target.minimumSalary')}
             </label>
             <div className="relative">
@@ -135,6 +140,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
                 €
               </span>
               <TextField
+                id="profile-minimum-salary"
                 density="compact"
                 type="number"
                 step="1000"

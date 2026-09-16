@@ -32,7 +32,7 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Custom Fail Title')).toBeInTheDocument();
     expect(screen.getByText('Exploded unexpectedly')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
 
     consoleSpy.mockRestore();
   });
@@ -47,7 +47,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     expect(handleReset).toHaveBeenCalledTimes(1);
 
     consoleSpy.mockRestore();

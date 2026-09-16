@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { reportError, warn } from '../../lib/logger';
 
 export interface AuthorizationResult {
   isAuthorized: boolean;
@@ -26,11 +27,11 @@ export async function checkUserAuthorization(
     const { data, error } = await supabase
       .from('authorized_users')
       .select('email, role')
-      .ilike('email', cleanEmail)
+      .eq('email', cleanEmail)
       .maybeSingle();
 
     if (error) {
-      console.warn('Authorization lookup check error:', error.message);
+      warn('Authorization lookup check error:', error.message);
       return { isAuthorized: false, error: error.message };
     }
 
@@ -39,8 +40,8 @@ export async function checkUserAuthorization(
     }
 
     return { isAuthorized: true, role: data.role };
-  } catch (err: any) {
-    console.error('Unexpected error during authorization check:', err);
-    return { isAuthorized: false, error: err?.message || 'Authorization check failed' };
+  } catch (err: unknown) {
+    reportError(err, { operation: 'check-user-authorization' });
+    return { isAuthorized: false, error: err instanceof Error ? err.message : 'Authorization check failed' };
   }
 }

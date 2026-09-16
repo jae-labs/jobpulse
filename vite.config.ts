@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id: string) {
@@ -41,13 +42,33 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    // Strip localhost/127.0.0.1 from CSP connect-src in production builds
+    {
+      name: 'strip-localhost-csp',
+      transformIndexHtml(html, ctx) {
+        if (ctx.server) return html; // keep localhost in dev
+        return html.replace(
+          / http:\/\/127\.0\.0\.1:\* ws:\/\/127\.0\.0\.1:\* http:\/\/localhost:\* ws:\/\/localhost:\*/g,
+          ''
+        );
+      },
+    },
+    react(),
+    tailwindcss(),
+  ],
   test: {
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     coverage: {
       provider: "v8",
+      thresholds: {
+        statements: 20,
+        branches: 20,
+        functions: 20,
+        lines: 20,
+      },
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/**/*.test.{ts,tsx}",

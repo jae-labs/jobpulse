@@ -22,8 +22,9 @@ import { Button, Card, EmptyState, Pill, type PillVariant, TextField } from '../
 import { useSearchParams } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
-import { useJobsInfiniteQuery } from '../../hooks/useQueries';
+import { useJobByIdQuery, useJobsInfiniteQuery } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
+import { toSafeHttpUrl } from '../../lib/utils';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface JobsViewProps {
@@ -113,6 +114,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
   onOpenCommandMenu,
   userEmail,
 }) => {
+  // TanStack Virtual mutates a stable Virtualizer instance as scroll state
+  // changes. React Compiler must not memoize this component around that API.
+  "use no memo";
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation('translation');
   const [internalQuery, setInternalQuery] = useState('');
@@ -134,6 +138,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const locationFilter = searchParams.get('location') || 'all';
   const salaryFilter = searchParams.get('salary') || 'all';
   const urlJobId = searchParams.get('job') ? Number(searchParams.get('job')) : null;
+  const { data: linkedJob } = useJobByIdQuery(urlJobId, userEmail, Boolean(urlJobId));
 
   const query = controlledSearch !== undefined
     ? controlledSearch
@@ -362,18 +367,21 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   // Auto-select job from URL param or default to first in split mode
   useEffect(() => {
-    if (displayedJobs.length === 0) return;
     if (urlJobId !== null) {
-      const match = displayedJobs.find((j) => j.id === urlJobId);
+      const match = displayedJobs.find((j) => j.id === urlJobId) ?? linkedJob;
       if (match && match.id !== selectedJob?.id) {
         onSelectJob(match);
-        return;
       }
+      if (match && (layoutMode === 'list' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
+        setIsDetailFullScreen(true);
+      }
+      return;
     }
+    if (displayedJobs.length === 0) return;
     if (layoutMode === 'split' && !selectedJob && typeof window !== 'undefined' && window.innerWidth >= 1024) {
       onSelectJob(displayedJobs[0]);
     }
-  }, [urlJobId, layoutMode, selectedJob, displayedJobs, onSelectJob]);
+  }, [urlJobId, layoutMode, selectedJob, displayedJobs, linkedJob, onSelectJob]);
 
   // Keyboard navigation: j/k to move up/down, Enter to apply, a/i/o/n to update status
   const handleKeyDown = useCallback(
@@ -432,8 +440,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           if (window.scrollY < 70) {
             window.scrollTo({ top: 80, behavior: 'smooth' });
           }
-          const el = cardRefs.current.get(target.id);
-          el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          virtualizer.scrollToIndex(nextIndex, { align: 'auto', behavior: 'smooth' });
         }
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -446,12 +453,12 @@ export const JobsView: React.FC<JobsViewProps> = ({
           if (window.scrollY < 70) {
             window.scrollTo({ top: 80, behavior: 'smooth' });
           }
-          const el = cardRefs.current.get(target.id);
-          el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          virtualizer.scrollToIndex(prevIndex, { align: 'auto', behavior: 'smooth' });
         }
       } else if (e.key === 'Enter' && selectedJob) {
-        if (selectedJob.url) {
-          window.open(selectedJob.url, '_blank', 'noopener,noreferrer');
+        const safeUrl = toSafeHttpUrl(selectedJob.url);
+        if (safeUrl) {
+          window.open(safeUrl, '_blank', 'noopener,noreferrer');
         }
       } else if (e.key === 'a' && selectedJob && onUpdateStatus) {
         e.preventDefault();
@@ -485,7 +492,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
         }
       }
     },
-    [displayedJobs, selectedJob, onSelectJob, onUpdateStatus, isDetailFullScreen, layoutMode, updateUrlParam],
+    [displayedJobs, selectedJob, onSelectJob, onUpdateStatus, isDetailFullScreen, layoutMode, updateUrlParam, virtualizer],
   );
 
   useEffect(() => {

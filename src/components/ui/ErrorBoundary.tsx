@@ -1,6 +1,8 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button, Card } from '../../design-system';
+import { reportError } from '../../lib/logger';
+import i18n from '../../lib/i18n';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -25,7 +27,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Unhandled error captured by ErrorBoundary:', error, errorInfo);
+    reportError(error, { componentStack: errorInfo?.componentStack });
   }
 
   handleReset = (): void => {
@@ -41,12 +43,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <AlertTriangle className="size-5" />
           </div>
           <h3 className="text-sm font-semibold text-ds-negative">
-            {this.props.fallbackTitle || 'Unable to display component'}
+            {this.props.fallbackTitle || i18n.t('errorBoundary.unableToDisplayComponent')}
           </h3>
           <p className="mt-1 text-xs text-ds-negative/80 max-w-md mx-auto">
             {this.props.fallbackMessage ||
               this.state.error?.message ||
-              'An unexpected error occurred while rendering this section.'}
+              i18n.t('errorBoundary.unexpectedRenderingError')}
           </p>
           <div className="mt-4 flex justify-center">
             <Button
@@ -55,7 +57,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               onClick={this.handleReset}
             >
               <RefreshCw className="size-3.5 mr-1.5" />
-              <span>Retry</span>
+              <span>{i18n.t('common.retry')}</span>
             </Button>
           </div>
         </Card>

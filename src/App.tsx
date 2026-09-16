@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
   X,
 } from 'lucide-react';
-import type { Session, RealtimeChannel } from '@supabase/supabase-js';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
@@ -32,32 +32,26 @@ const SourcesView = React.lazy(() =>
 const ProfileView = React.lazy(() =>
   import('./components/profile/ProfileView').then((m) => ({ default: m.ProfileView }))
 );
-import { supabase, isSupabaseConfigured } from './lib/supabase';
-import { isLocalDevelopmentAuthBypass, localDevelopmentCredentials } from './lib/localDevAuth';
+import { supabase } from './lib/supabase';
 import { DEFAULT_PROFILE } from './lib/defaultProfile';
-import { checkUserAuthorization } from './components/auth/authConfig';
 import { LoginView } from './components/auth/LoginView';
 import { AccessDeniedView } from './components/auth/AccessDeniedView';
-import { useQueryClient } from '@tanstack/react-query';
 import { clearAppCache } from './lib/queryClient';
+import { useAuthSession } from './hooks/useAuthSession';
+import { useSupabaseRealtime } from './hooks/useSupabaseRealtime';
 import {
   useOverviewMetricsQuery,
-  useJobsQuery,
+  useScoringPreviewJobsQuery,
   useSourcesQuery,
   useProfileQuery,
   useUpdateJobStatusMutation,
   useSaveProfileMutation,
-  queryKeys,
 } from './hooks/useQueries';
 import { recalculateJobs } from './lib/scoreCalculator';
 
 export const App: React.FC = () => {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(Boolean(supabase));
+  const { session, isAuthorized, authError, isAuthChecking } = useAuthSession();
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -98,7 +92,7 @@ export const App: React.FC = () => {
     isLoading: isJobsLoading,
     error: jobsQueryError,
     refetch: refetchJobs,
-  } = useJobsQuery(userEmail, isAuthorized && isJobsNeeded);
+  } = useScoringPreviewJobsQuery(userEmail, isAuthorized && isJobsNeeded);
 
   const isSourcesNeeded = activeTab === 'sources';
 
@@ -108,8 +102,11 @@ export const App: React.FC = () => {
   } = useSourcesQuery(isAuthorized && isSourcesNeeded);
 
   const {
-    data: profile = DEFAULT_PROFILE,
+    data: loadedProfile,
+    isLoading: isProfileLoading,
+    error: profileQueryError,
   } = useProfileQuery(userEmail, isAuthorized);
+  const profile = loadedProfile ?? DEFAULT_PROFILE;
 
   const jobs = useMemo(() => {
     return recalculateJobs(rawJobs, profile.scoring_rules?.weights);
@@ -138,29 +135,12 @@ export const App: React.FC = () => {
     !isDbErrorDismissed &&
     (customDbError ||
       (activeQueryError
-        ? `Unable to connect to Supabase: ${activeQueryError.message || 'Network error'}. Verify your connection.`
+        ? t('common.dbConnectionDetail', {
+            message: activeQueryError.message || t('common.networkError'),
+          })
         : null));
 
-  const sharedChannelRef = useRef<RealtimeChannel | null>(null);
-  const invalidateTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-
-  // Coalesces bursts of realtime postgres_changes events into a single refetch per query key
-  const debouncedInvalidate = useCallback(
-    (queryKey: readonly unknown[], delay = 750) => {
-      const timers = invalidateTimersRef.current;
-      const key = JSON.stringify(queryKey);
-      const existing = timers.get(key);
-      if (existing) clearTimeout(existing);
-      timers.set(
-        key,
-        setTimeout(() => {
-          timers.delete(key);
-          void queryClient.invalidateQueries({ queryKey });
-        }, delay)
-      );
-    },
-    [queryClient]
-  );
+  useSupabaseRealtime(session, isAuthorized);
 
   // Redirect the root path to /overview
   useEffect(() => {
@@ -175,121 +155,7 @@ export const App: React.FC = () => {
     setSelectedJobId(job ? job.id : null);
   };
 
-  // Check Supabase Auth session & dynamic authorization in authorized_users table
-  useEffect(() => {
-    if (!supabase) return;
 
-    let isMounted = true;
-
-    const verifySession = async (currentSession: Session | null) => {
-      setIsAuthChecking(true);
-      setSession(currentSession);
-
-      if (!currentSession?.user?.email) {
-        if (isMounted) {
-          setIsAuthorized(false);
-          setIsAuthChecking(false);
-        }
-        return;
-      }
-
-      const { isAuthorized: authorized, error } = await checkUserAuthorization(currentSession.user.email);
-      if (isMounted) {
-        setIsAuthorized(authorized);
-        setAuthError(error || null);
-        setIsAuthChecking(false);
-      }
-    };
-
-    if (isLocalDevelopmentAuthBypass) {
-      void supabase.auth
-        .signInWithPassword(localDevelopmentCredentials)
-        .then(({ data: { session }, error }) => {
-          if (error) {
-            if (isMounted) {
-              setAuthError(`Local development sign-in failed: ${error.message}`);
-              setIsAuthChecking(false);
-            }
-            return;
-          }
-          void verifySession(session);
-        });
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        void verifySession(session);
-      });
-    }
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        clearAppCache();
-      }
-      void verifySession(session);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Supabase Realtime Listener (Tenant-isolated peer broadcast + Postgres changes)
-  useEffect(() => {
-    if (!isAuthorized || !isSupabaseConfigured || !supabase) return;
-    const realtimeClient = supabase;
-    let isMounted = true;
-    const cleanUserEmail = session?.user?.email?.trim().toLowerCase();
-
-    // Public Shared Channel: global jobs & sources tables
-    const sharedChannel = realtimeClient.channel('public:shared_feed');
-    sharedChannelRef.current = sharedChannel;
-
-    sharedChannel.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'jobs' },
-      () => {
-        if (!isMounted) return;
-        debouncedInvalidate(queryKeys.overviewMetrics(cleanUserEmail));
-        debouncedInvalidate(queryKeys.jobs(cleanUserEmail));
-        debouncedInvalidate(queryKeys.jobCount());
-        debouncedInvalidate(['jobs-page']);
-      }
-    );
-
-    sharedChannel.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'sources' },
-      () => {
-        if (!isMounted) return;
-        void queryClient.invalidateQueries({ queryKey: queryKeys.sources() });
-      }
-    );
-
-    sharedChannel.subscribe();
-
-    const handleOnline = () => {
-      if (!isMounted) return;
-      debouncedInvalidate(queryKeys.overviewMetrics(cleanUserEmail));
-      debouncedInvalidate(['jobs-page']);
-      debouncedInvalidate(queryKeys.jobs(cleanUserEmail));
-      debouncedInvalidate(queryKeys.jobCount());
-      debouncedInvalidate(queryKeys.sources());
-    };
-    window.addEventListener('online', handleOnline);
-
-    const invalidateTimers = invalidateTimersRef.current;
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      for (const timer of invalidateTimers.values()) clearTimeout(timer);
-      invalidateTimers.clear();
-      isMounted = false;
-      sharedChannelRef.current = null;
-      void realtimeClient.removeChannel(sharedChannel);
-    };
-  }, [isAuthorized, session, queryClient, debouncedInvalidate]);
 
   // Enforce dark mode
   useEffect(() => {
@@ -302,9 +168,9 @@ export const App: React.FC = () => {
 
     try {
       await updateJobStatusMutation.mutateAsync({ job, status });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status: job.status } : prev));
-      setNotice(`Failed to save status update to Supabase: ${err?.message || 'Network error'}`);
+      setNotice(t('common.statusSaveFailed', { message: err instanceof Error ? err.message : t('common.networkError') }));
     }
   };
 
@@ -313,8 +179,8 @@ export const App: React.FC = () => {
       try {
         const res = await saveProfileMutation.mutateAsync(updatedProfile);
         return res;
-      } catch (err: any) {
-        return { success: false, error: err?.message || 'Failed to save profile' };
+      } catch (err: unknown) {
+        return { success: false, error: err instanceof Error ? err.message : 'Failed to save profile' };
       }
     },
     [saveProfileMutation]
@@ -334,7 +200,7 @@ export const App: React.FC = () => {
       <div className="relative min-h-dvh flex items-center justify-center p-4 text-ds-text-primary overflow-hidden bg-ds-canvas">
         <div className="flex flex-col items-center gap-3 relative z-10">
           <BrandLogo size="lg" animate />
-          <div className="text-xs text-ds-text-muted font-medium">Verifying authorization...</div>
+          <div className="text-xs text-ds-text-muted font-medium">{t('common.verifyingAuth')}</div>
         </div>
       </div>
     );
@@ -402,7 +268,7 @@ export const App: React.FC = () => {
                     <AlertTriangle className="size-4" />
                   </div>
                   <div>
-                    <div className="font-semibold text-ds-negative">Supabase Connection Error</div>
+                    <div className="font-semibold text-ds-negative">{t('common.dbConnectionError')}</div>
                     <div className="text-ds-negative/80 mt-0.5">{dbError}</div>
                   </div>
                 </div>
@@ -418,13 +284,13 @@ export const App: React.FC = () => {
                     }}
                   >
                     <RefreshCw className={`size-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span>Retry</span>
+                    <span>{t('common.retry')}</span>
                   </Button>
                   <button
                     type="button"
                     onClick={() => setIsDbErrorDismissed(true)}
                     className="text-ds-text-muted hover:text-ds-text-primary p-1 cursor-pointer"
-                    aria-label="Dismiss error"
+                    aria-label={t('common.dismissError')}
                   >
                     <X className="size-4" />
                   </button>
@@ -438,9 +304,9 @@ export const App: React.FC = () => {
                 <div className="size-8 mx-auto rounded-lg bg-ds-control border border-ds-border flex items-center justify-center">
                   <RefreshCw className="size-4 animate-spin text-ds-text-muted" />
                 </div>
-                <div className="text-xs font-semibold text-ds-text-secondary">Connecting to database...</div>
+                <div className="text-xs font-semibold text-ds-text-secondary">{t('common.connectingToDb')}</div>
                 <div className="text-[11px] text-ds-text-muted">
-                  {isOverviewNeeded ? 'Loading analytics from Supabase' : 'Loading opportunities from Supabase'}
+                  {isOverviewNeeded ? t('common.loadingAnalytics') : t('common.loadingOpportunities')}
                 </div>
               </Card>
             )}
@@ -457,7 +323,7 @@ export const App: React.FC = () => {
                   onClick={() => setNotice('')}
                   className="text-ds-text-muted hover:text-ds-text-primary ml-3 font-semibold cursor-pointer"
                 >
-                  Dismiss
+                  {t('common.dismiss')}
                 </button>
               </div>
             )}
@@ -467,12 +333,12 @@ export const App: React.FC = () => {
               fallback={
                 <div className="flex h-64 items-center justify-center text-xs text-ds-text-muted">
                   <RefreshCw className="mr-2 size-4 animate-spin text-ds-text-muted" />
-                  Loading view...
+                  {t('common.loadingView')}
                 </div>
               }
             >
               {activeTab === 'overview' && (
-                <ErrorBoundary fallbackTitle="Unable to load overview dashboard">
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadOverview')}>
                   <OverviewView
                     jobs={jobs}
                     overviewMetrics={overviewMetrics}
@@ -493,7 +359,7 @@ export const App: React.FC = () => {
               )}
 
               {activeTab === 'jobs' && (
-                <ErrorBoundary fallbackTitle="Unable to load opportunities pipeline">
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadOpportunities')}>
                   <JobsView
                     key={`${selectedStatusFilter}-${selectedDomainFilter}-${selectedMinMatch}-${location.search}`}
                     jobs={jobs}
@@ -517,7 +383,7 @@ export const App: React.FC = () => {
               )}
 
               {activeTab === 'sources' && (
-                <ErrorBoundary fallbackTitle="Unable to load data sources">
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadSources')}>
                   <SourcesView
                     sources={sources}
                     notice={notice}
@@ -526,9 +392,11 @@ export const App: React.FC = () => {
               )}
 
               {activeTab === 'profile' && (
-                <ErrorBoundary fallbackTitle="Unable to load profile settings">
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadProfile')}>
                   <ProfileView
-                    profile={profile}
+                    profile={loadedProfile ?? null}
+                    isLoading={isProfileLoading}
+                    loadError={profileQueryError instanceof Error ? profileQueryError.message : null}
                     userEmail={session.user.email}
                     onSaveProfile={handleSaveProfile}
                     jobs={rawJobs}
@@ -586,8 +454,8 @@ export const App: React.FC = () => {
         jobs={jobs}
         selectedJob={selectedJob}
         onSelectJob={(job) => {
-          setActiveTab('jobs');
-          void handleSelectJob(job);
+          handleSelectJob(job);
+          navigate(`/opportunities?job=${job.id}`);
         }}
         onUpdateStatus={updateStatus}
         onSelectTab={(tab) => setActiveTab(tab)}

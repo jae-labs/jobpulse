@@ -113,7 +113,7 @@ master-detail view, and tracking recruitment funnel progress across an interacti
 
 ## Quick Start
 
-Requires Node.js `20.19.0` or newer (Node `22.12.0` recommended via `mise`).
+Requires Node.js `22.12.0` or newer (pinned through `mise`).
 
 1. **Install pinned tooling:**
 

@@ -215,8 +215,8 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
 export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail }) => {
   const { t } = useTranslation();
 
-  const { data: cvList = [] } = useUserCvsQuery(userEmail);
-  const { data: coverLetterList = [] } = useUserCoverLettersQuery(userEmail);
+  const { data: cvList = [], error: cvLoadError, refetch: refetchCvs } = useUserCvsQuery(userEmail);
+  const { data: coverLetterList = [], error: coverLetterLoadError, refetch: refetchCoverLetters } = useUserCoverLettersQuery(userEmail);
 
   const saveCvMutation = useSaveCvMutation(userEmail);
   const deleteCvMutation = useDeleteCvMutation(userEmail);
@@ -235,6 +235,7 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
 
   const isUploadingCv = saveCvMutation.isPending;
   const isUploadingCoverLetter = saveCoverLetterMutation.isPending;
+  const documentLoadError = cvLoadError || coverLetterLoadError;
 
   const handleCvUpload = async (file: File) => {
     if (!userEmail) return;
@@ -388,6 +389,15 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
           </p>
         </div>
       </div>
+
+      {documentLoadError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative">
+          <span>{t('profile.documents.loadDocumentsFailed')}</span>
+          <Button size="sm" variant="secondary" onClick={() => { void refetchCvs(); void refetchCoverLetters(); }}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {/* RESUMES / CVS */}

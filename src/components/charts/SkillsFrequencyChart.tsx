@@ -60,12 +60,26 @@ const CustomTooltip = ({ active, payload, label, onSelectSkill, t }: CustomToolt
   return null;
 };
 
+const getCssVar = (name: string) =>
+  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '';
+
 export const SkillsFrequencyChart: React.FC<SkillsFrequencyChartProps> = ({
   jobs = [],
   topSkills,
   onSelectSkill,
 }) => {
   const { t } = useTranslation();
+
+  const chartColors = React.useMemo(() => ({
+    positive: getCssVar('--ds-chart-3') || '#34d399',
+    secondary: getCssVar('--ds-chart-2') || '#a78bfa',
+    axis: getCssVar('--ds-color-chart-axis'),
+    grid: getCssVar('--ds-color-chart-grid'),
+    text: getCssVar('--ds-color-text-primary'),
+    muted: getCssVar('--ds-color-text-muted'),
+    hover: getCssVar('--ds-color-hover')
+  }), []);
+
   const data = React.useMemo(() => {
     if (topSkills && topSkills.length > 0) {
       return topSkills;
@@ -110,34 +124,34 @@ export const SkillsFrequencyChart: React.FC<SkillsFrequencyChartProps> = ({
             margin={{ top: 5, right: 20, left: 30, bottom: 5 }}
           >
             <CartesianGrid
-              stroke="var(--ds-color-chart-grid)"
+              stroke={chartColors.grid}
               strokeDasharray="3 3"
               horizontal={false}
             />
             <XAxis
               type="number"
-              stroke="var(--ds-color-chart-axis)"
-              tick={{ fill: 'var(--ds-color-text-muted)', fontSize: 11 }}
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.muted, fontSize: 11 }}
               tickLine={false}
             />
             <YAxis
               type="category"
               dataKey="skill"
-              stroke="var(--ds-color-chart-axis)"
-              tick={{ fill: 'var(--ds-color-text-muted)', fontSize: 11 }}
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.muted, fontSize: 11 }}
               tickLine={false}
               width={110}
             />
             <Tooltip
               content={<CustomTooltip onSelectSkill={onSelectSkill} t={t} />}
-              cursor={{ fill: 'var(--ds-color-hover)', opacity: 0.5 }}
+              cursor={{ fill: chartColors.hover, opacity: 0.5 }}
               wrapperStyle={{ outline: 'none' }}
             />
             <Bar
               dataKey="count"
               radius={[0, 6, 6, 0]}
               activeBar={{
-                stroke: 'var(--ds-color-text-primary)',
+                stroke: chartColors.text,
                 strokeWidth: 1.5,
                 fillOpacity: 1,
               }}
@@ -150,7 +164,7 @@ export const SkillsFrequencyChart: React.FC<SkillsFrequencyChartProps> = ({
               {data.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={index === 0 ? 'var(--ds-color-positive)' : 'var(--ds-color-data-2)'}
+                  fill={index === 0 ? chartColors.positive : chartColors.secondary}
                   fillOpacity={0.85 - index * 0.1}
                 />
               ))}

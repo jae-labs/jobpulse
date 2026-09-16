@@ -63,12 +63,25 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, o
   return null;
 };
 
+const getCssVar = (name: string) =>
+  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '';
+
 export const RelevanceDistributionChart: React.FC<RelevanceDistributionChartProps> = ({
   jobs = [],
   distribution,
   onSelectTier,
 }) => {
   const { t } = useTranslation();
+
+  const chartColors = React.useMemo(() => ({
+    positive: getCssVar('--ds-chart-3') || '#34d399',
+    axis: getCssVar('--ds-color-chart-axis'),
+    grid: getCssVar('--ds-color-chart-grid'),
+    text: getCssVar('--ds-color-text-primary'),
+    muted: getCssVar('--ds-color-text-muted'),
+    border: getCssVar('--ds-color-border-strong')
+  }), []);
+
   const data = React.useMemo(() => {
     if (distribution && distribution.length > 0) {
       return distribution;
@@ -131,45 +144,45 @@ export const RelevanceDistributionChart: React.FC<RelevanceDistributionChartProp
           >
             <defs>
               <linearGradient id="relevanceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--ds-color-positive)" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="var(--ds-color-positive)" stopOpacity={0.0} />
+                <stop offset="5%" stopColor={chartColors.positive} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={chartColors.positive} stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <CartesianGrid
-              stroke="var(--ds-color-chart-grid)"
+              stroke={chartColors.grid}
               strokeDasharray="3 3"
               vertical={false}
             />
             <XAxis
               dataKey="range"
-              stroke="var(--ds-color-chart-axis)"
-              tick={{ fill: 'var(--ds-color-text-muted)', fontSize: 10 }}
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.muted, fontSize: 10 }}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               allowDecimals={false}
-              stroke="var(--ds-color-chart-axis)"
-              tick={{ fill: 'var(--ds-color-text-muted)', fontSize: 11 }}
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.muted, fontSize: 11 }}
               tickLine={false}
             />
             <Tooltip
               content={<CustomTooltip onSelectTier={onSelectTier} t={t} />}
-              cursor={{ stroke: 'var(--ds-color-border-strong)', strokeDasharray: '3 3' }}
+              cursor={{ stroke: chartColors.border, strokeDasharray: '3 3' }}
               wrapperStyle={{ outline: 'none' }}
             />
             <Area
               type="monotone"
               dataKey="count"
-              stroke="var(--ds-color-positive)"
+              stroke={chartColors.positive}
               strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#relevanceGradient)"
-              dot={{ r: 2.5, fill: 'var(--ds-color-positive)', strokeWidth: 0, cursor: onSelectTier ? 'pointer' : undefined }}
+              dot={{ r: 2.5, fill: chartColors.positive, strokeWidth: 0, cursor: onSelectTier ? 'pointer' : undefined }}
               activeDot={{
                 r: 5,
-                fill: 'var(--ds-color-positive)',
-                stroke: 'var(--ds-color-text-primary)',
+                fill: chartColors.positive,
+                stroke: chartColors.text,
                 strokeWidth: 2,
                 cursor: onSelectTier ? 'pointer' : undefined,
               }}

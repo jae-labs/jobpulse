@@ -27,6 +27,14 @@ describe('useQueries queryKeys', () => {
     ]);
   });
 
+  it('keeps finite command search results separate from infinite job pages', () => {
+    expect(queryKeys.jobsSearchPage('TEST@domain.com', { search: 'designer' })).toEqual([
+      'jobs-search-page',
+      'test@domain.com',
+      { search: 'designer' },
+    ]);
+  });
+
   it('generates static keys for jobCount and sources', () => {
     expect(queryKeys.jobCount()).toEqual(['job-count']);
     expect(queryKeys.sources()).toEqual(['sources']);

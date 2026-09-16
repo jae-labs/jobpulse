@@ -149,7 +149,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       case 'category-breakdown':
         return (
           <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.categoryBreakdown') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
-            <ErrorBoundary fallbackTitle="Unable to load category breakdown chart">
+            <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadCategoryChart')}>
               <CategoryBreakdownChart
                 jobs={jobs}
                 categories={overviewMetrics?.categories}
@@ -163,7 +163,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       case 'application-pipeline':
         return (
           <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.applicationPipeline') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
-            <ErrorBoundary fallbackTitle="Unable to load pipeline chart">
+            <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadPipelineChart')}>
               <PipelineChart
                 jobs={jobs}
                 counts={counts}
@@ -176,7 +176,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       case 'relevance-distribution':
         return (
           <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.relevanceDistribution') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
-            <ErrorBoundary fallbackTitle="Unable to load relevance distribution chart">
+            <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadRelevanceChart')}>
               <RelevanceDistributionChart
                 jobs={jobs}
                 distribution={overviewMetrics?.relevance_distribution}
@@ -189,7 +189,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       case 'skills-radar':
         return (
           <SortableWidget id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.topSkills') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
-            <ErrorBoundary fallbackTitle="Unable to load skills chart">
+            <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadSkillsChart')}>
               <SkillsFrequencyChart
                 jobs={jobs}
                 topSkills={overviewMetrics?.top_skills}
@@ -216,7 +216,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             fallback={
               <div className="col-span-12 p-8 text-center text-xs text-ds-text-muted">
                 <RefreshCw className="size-4 animate-spin inline mr-2 text-ds-text-muted" />
-                Loading analytics widgets...
+                {t('common.loadingWidgets')}
               </div>
             }
           >

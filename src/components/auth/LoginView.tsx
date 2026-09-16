@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { BrandLogo } from '../ui/BrandLogo';
+import { reportError } from '../../lib/logger';
 import { Button } from '../../design-system';
 
 interface LoginViewProps {
@@ -38,7 +39,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSignInError }) => {
         throw signInError;
       }
     } catch (err: unknown) {
-      console.error('Google sign-in error:', err);
+      reportError(err);
       const message = err instanceof Error ? err.message : t('auth.signInErrorDefault', 'Unable to sign in with Google');
       setError(message);
       onSignInError?.(message);

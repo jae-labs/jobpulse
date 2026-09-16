@@ -19,6 +19,7 @@ import type { DashboardTab } from '../dashboard/navigation';
 import { StatusPill } from './StatusPill';
 import { useTranslation } from 'react-i18next';
 import { useJobsPageQuery } from '../../hooks/useQueries';
+import { toSafeHttpUrl } from '../../lib/utils';
 
 interface CommandMenuProps {
   isOpen: boolean;
@@ -156,8 +157,9 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
 
             <Command.Item
               onSelect={() => {
-                if (selectedJob.url) {
-                  window.open(selectedJob.url, '_blank', 'noopener,noreferrer');
+                const safeUrl = toSafeHttpUrl(selectedJob.url);
+                if (safeUrl) {
+                  window.open(safeUrl, '_blank', 'noopener,noreferrer');
                   onOpenChange(false);
                 }
               }}
@@ -168,8 +170,9 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
 
             <Command.Item
               onSelect={() => {
-                if (selectedJob.url) {
-                  handleCopyUrl(selectedJob.url);
+                const safeUrl = toSafeHttpUrl(selectedJob.url);
+                if (safeUrl) {
+                  handleCopyUrl(safeUrl);
                 }
               }}
             >

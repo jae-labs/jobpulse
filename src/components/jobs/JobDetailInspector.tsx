@@ -51,7 +51,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const needsDetail = Boolean(job?.id) && (!job?.description || !job?.ai_analysis);
-  const { data: detail, isLoading: isLoadingDetail } = useJobDetailQuery(
+  const { data: detail, isLoading: isLoadingDetail, isError: isDetailError, refetch: refetchDetail } = useJobDetailQuery(
     job?.id,
     userEmail,
     needsDetail
@@ -111,13 +111,13 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
     let reasoning = aiObj.reasoning;
     if (!reasoning) {
       if (mergedJob.relevance >= 75) {
-        reasoning = `High alignment (${mergedJob.relevance}%): Strongly matches target domain (${roleDomain}) and seniority profile (${seniorityLevel}). Evaluated against target criteria and compensation benchmark.`;
+        reasoning = t('jobs.inspector.generated.highAlignment', { score: mergedJob.relevance, domain: roleDomain, seniority: seniorityLevel });
       } else if (mergedJob.relevance >= 50) {
-        reasoning = `Good alignment (${mergedJob.relevance}%): Compatible role in ${roleDomain} at ${seniorityLevel} tier.`;
+        reasoning = t('jobs.inspector.generated.goodAlignment', { score: mergedJob.relevance, domain: roleDomain, seniority: seniorityLevel });
       } else if (mergedJob.relevance >= 20) {
-        reasoning = `Moderate alignment (${mergedJob.relevance}%): Partial synergy in ${roleDomain}.`;
+        reasoning = t('jobs.inspector.generated.moderateAlignment', { score: mergedJob.relevance, domain: roleDomain });
       } else {
-        reasoning = `Compatibility score: ${mergedJob.relevance}% for ${roleDomain}.`;
+        reasoning = t('jobs.inspector.generated.compatibilityScore', { score: mergedJob.relevance, domain: roleDomain });
       }
     }
 
@@ -127,12 +127,12 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
       .map((item: string) => item.trim());
 
     if (alignments.length === 0 && mergedJob.relevance >= 20) {
-      alignments.push(`Matches target criteria in ${roleDomain}.`);
+      alignments.push(t('jobs.inspector.generated.matchesCriteria', { domain: roleDomain }));
       if (mergedJob.salary_text) {
-        alignments.push(`Disclosed compensation: ${mergedJob.salary_text}.`);
+        alignments.push(t('jobs.inspector.generated.disclosedCompensation', { salary: mergedJob.salary_text }));
       }
       if (mergedJob.matched_skills && mergedJob.matched_skills.length > 0) {
-        alignments.push(`Core skills identified: ${mergedJob.matched_skills.slice(0, 4).join(', ')}`);
+        alignments.push(t('jobs.inspector.generated.coreSkills', { skills: mergedJob.matched_skills.slice(0, 4).join(', ') }));
       }
     }
 
@@ -150,7 +150,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
       alignments,
       mismatchFlags,
     };
-  }, [mergedJob]);
+  }, [mergedJob, t]);
 
   const safeApplyUrl = React.useMemo(() => toSafeHttpUrl(job?.url), [job?.url]);
 
@@ -270,7 +270,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
                 href={safeApplyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-md border border-ds-border-strong bg-ds-action-primary hover:bg-ds-text-secondary active:scale-[0.98] px-3.5 py-1.5 text-xs font-semibold text-ds-action-primary-text transition-all cursor-pointer shadow-xs"
+                className="w-full sm:w-auto shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-md border border-ds-border-strong bg-ds-action-primary hover:bg-ds-hover active:scale-[0.98] px-3.5 py-1.5 text-xs font-semibold text-ds-action-primary-text transition-all cursor-pointer shadow-xs"
                 title="Open application page"
               >
                 <span>{t('common.apply')}</span>
@@ -419,6 +419,13 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
                 <div className="flex flex-col items-center justify-center py-8 text-ds-text-muted space-y-2">
                   <Loader2 className="size-4 animate-spin text-ds-text-muted" />
                   <span className="text-xs">{t('jobs.inspector.loadingDescription')}</span>
+                </div>
+              ) : isDetailError ? (
+                <div role="alert" className="py-6 text-center text-xs text-ds-negative">
+                  <p>{t('jobs.inspector.detailLoadError')}</p>
+                  <button type="button" onClick={() => void refetchDetail()} className="mt-2 text-ds-accent underline">
+                    {t('common.retry')}
+                  </button>
                 </div>
               ) : (
                 <div className="py-6 text-center text-xs text-ds-text-muted">

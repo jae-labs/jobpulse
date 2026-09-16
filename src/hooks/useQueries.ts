@@ -17,7 +17,9 @@ import {
 export const queryKeys = {
   overviewMetrics: (email?: string | null) => ["overview-metrics", email ? email.trim().toLowerCase() : null] as const,
   jobsPage: (email?: string | null, params?: unknown) => ["jobs-page", email ? email.trim().toLowerCase() : null, params] as const,
+  jobsSearchPage: (email?: string | null, params?: unknown) => ["jobs-search-page", email ? email.trim().toLowerCase() : null, params] as const,
   jobs: (email?: string | null) => ["jobs", email ? email.trim().toLowerCase() : null] as const,
+  scoringPreviewJobs: (email?: string | null) => ["scoring-preview-jobs", email ? email.trim().toLowerCase() : null] as const,
   jobDetail: (id?: number | null, email?: string | null) => ["job-detail", id, email ? email.trim().toLowerCase() : null] as const,
   jobCount: () => ["job-count"] as const,
   sources: () => ["sources"] as const,
@@ -25,28 +27,6 @@ export const queryKeys = {
   userCvs: (email?: string | null) => ["user-cvs", email ? email.trim().toLowerCase() : null] as const,
   userCoverLetters: (email?: string | null) => ["user-cover-letters", email ? email.trim().toLowerCase() : null] as const,
 };
-
-// Supabase caps each response at 1000 rows by default. Without pagination,
-// tables that exceed that (jobs, user_job_evaluations) get silently
-// truncated to an arbitrary 1000-row subset per request, so a job present
-// in one truncated batch can be missing from another, breaking the join.
-const PAGE_SIZE = 1000;
-
-async function fetchAllRows<T>(
-  buildQuery: (from: number, to: number) => PromiseLike<{ data: any; error: { message: string } | null }>
-): Promise<T[]> {
-  const allRows: T[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(error.message);
-    const rows: T[] = data || [];
-    allRows.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-  }
-  return allRows;
-}
 
 export function useOverviewMetricsQuery(userEmail?: string | null, enabled = true) {
   const cleanEmail = userEmail?.trim().toLowerCase();
@@ -77,7 +57,7 @@ export function useJobsPageQuery(
   const pageLimit = Math.min(Math.max(params.limit ?? 40, 1), 100);
 
   return useQuery({
-    queryKey: queryKeys.jobsPage(cleanEmail, params),
+    queryKey: queryKeys.jobsSearchPage(cleanEmail, params),
     enabled: Boolean(supabase) && enabled,
     queryFn: async (): Promise<JobsPageResult> => {
       if (!supabase) {
@@ -143,81 +123,42 @@ export function useJobsInfiniteQuery(
   });
 }
 
-export function useJobsQuery(userEmail?: string | null, enabled = true) {
+/** A bounded preview for profile scoring. The editor only renders the three
+ * strongest scored examples, so downloading the complete job catalog is both
+ * unnecessary and unsafe at production catalog sizes. */
+export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = true) {
   const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useQuery({
-    queryKey: queryKeys.jobs(cleanEmail),
+    queryKey: queryKeys.scoringPreviewJobs(cleanEmail),
     enabled: Boolean(supabase) && enabled,
     queryFn: async (): Promise<Job[]> => {
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
-      const client = supabase;
+      if (!cleanEmail) return [];
+      const { data, error } = await supabase
+        .from("user_job_evaluations")
+        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, url, source, status, last_seen_at, role_domain, seniority_level)")
+        .eq("user_email", cleanEmail)
+        .order("relevance", { ascending: false })
+        .limit(100);
+      if (error) throw new Error(error.message);
 
-      // Notice: description and ai_analysis are deferred to useJobDetailQuery
-      // to avoid downloading megabytes of text across 1,500+ records on initial load.
-      const [rawJobsData, userStatuses, userEvals] = await Promise.all([
-        fetchAllRows<Job>((from, to) =>
-          client
-            .from("jobs")
-            .select(
-              "id, title, company, location, employment_type, salary_text, url, source, relevance, matched_skills, status, last_seen_at, fit_tier, role_domain, seniority_level"
-            )
-            .order("id", { ascending: true })
-            .range(from, to)
-        ),
-        cleanEmail
-          ? fetchAllRows<{ job_id: number; status: JobStatus }>((from, to) =>
-              client.from("user_job_statuses").select("job_id, status").ilike("user_email", cleanEmail).order("job_id", { ascending: true }).range(from, to)
-            )
-          : Promise.resolve([]),
-        cleanEmail
-          ? fetchAllRows<{ job_id: number; relevance: number; fit_tier: string; matched_skills: unknown; ai_analysis: unknown }>(
-              (from, to) =>
-                client
-                  .from("user_job_evaluations")
-                  .select("job_id, relevance, fit_tier, matched_skills, ai_analysis")
-                  .ilike("user_email", cleanEmail)
-                  .order("job_id", { ascending: true })
-                  .range(from, to)
-            )
-          : Promise.resolve([]),
-      ]);
-
-      const statusMap = new Map<number, JobStatus>();
-      for (const row of userStatuses) {
-        if (row.job_id !== null && row.job_id !== undefined) {
-          statusMap.set(Number(row.job_id), row.status);
-        }
-      }
-
-      const evalMap = new Map<number, { relevance: number; fit_tier: string; matched_skills: string[]; sub_scores?: SubScores }>();
-      for (const row of userEvals) {
-        if (row.job_id !== null && row.job_id !== undefined) {
-          evalMap.set(Number(row.job_id), {
-            relevance: Number(row.relevance ?? 0),
-            fit_tier: row.fit_tier || 'Unassessed',
-            matched_skills: Array.isArray(row.matched_skills) ? (row.matched_skills as string[]) : [],
-            sub_scores: (row.ai_analysis as { sub_scores?: SubScores } | null)?.sub_scores,
-          });
-        }
-      }
-
-      const mappedJobs = rawJobsData.map((j: Job) => {
-        const userEval = evalMap.get(j.id);
-        return {
-          ...j,
-          status: statusMap.get(j.id) || "new",
-          relevance: userEval ? userEval.relevance : j.relevance,
-          fit_tier: userEval ? userEval.fit_tier : j.fit_tier,
-          matched_skills: userEval ? userEval.matched_skills : j.matched_skills,
-          sub_scores: userEval?.sub_scores,
-        };
+      return (data ?? []).flatMap((evaluation) => {
+        const job = evaluation.jobs;
+        if (!job) return [];
+        return [{
+          ...job,
+          relevance: Number(evaluation.relevance ?? 0),
+          fit_tier: evaluation.fit_tier || 'Unassessed',
+          matched_skills: Array.isArray(evaluation.matched_skills) ? evaluation.matched_skills as string[] : [],
+          ai_analysis: evaluation.ai_analysis as unknown as Job['ai_analysis'],
+          sub_scores: (evaluation.ai_analysis as { sub_scores?: SubScores } | null)?.sub_scores,
+        } as Job];
       });
-
-      return mappedJobs.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
     },
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -227,17 +168,17 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
   return useQuery({
     queryKey: queryKeys.jobDetail(jobId, cleanEmail),
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
-    queryFn: async (): Promise<{ description?: string; ai_analysis?: any }> => {
+    queryFn: async (): Promise<{ description?: string; ai_analysis?: Record<string, unknown> }> => {
       if (!supabase || !jobId) throw new Error("Supabase is not initialized or invalid jobId");
 
       const [jobRes, evalRes] = await Promise.all([
-        supabase.from("jobs").select("description, ai_analysis").eq("id", jobId).single(),
+        supabase.from("jobs").select("description, ai_analysis").eq("id", jobId).maybeSingle(),
         cleanEmail
           ? supabase
               .from("user_job_evaluations")
               .select("ai_analysis")
               .eq("job_id", jobId)
-              .ilike("user_email", cleanEmail)
+              .eq("user_email", cleanEmail)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
@@ -248,10 +189,46 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
 
       return {
         description: jobRes.data?.description ?? undefined,
-        ai_analysis: aiAnalysis ?? undefined,
+        ai_analysis: (aiAnalysis as Record<string, unknown> | null) ?? undefined,
       };
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/** Fetches one job independently of the paginated catalog so bookmarked URLs
+ * continue to work after filtering or when the item falls outside loaded pages. */
+export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null, enabled = true) {
+  const cleanEmail = userEmail?.trim().toLowerCase();
+  return useQuery({
+    queryKey: ['job-by-id', jobId, cleanEmail] as const,
+    enabled: Boolean(supabase) && Boolean(jobId) && enabled,
+    queryFn: async (): Promise<Job | null> => {
+      if (!supabase || !jobId) return null;
+      const [jobResult, statusResult, evaluationResult] = await Promise.all([
+        supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
+        cleanEmail
+          ? supabase.from('user_job_statuses').select('status').eq('job_id', jobId).eq('user_email', cleanEmail).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        cleanEmail
+          ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_email', cleanEmail).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (jobResult.error) throw new Error(jobResult.error.message);
+      if (statusResult.error) throw new Error(statusResult.error.message);
+      if (evaluationResult.error) throw new Error(evaluationResult.error.message);
+      if (!jobResult.data) return null;
+      const evaluation = evaluationResult.data;
+      return {
+        ...jobResult.data,
+        status: statusResult.data?.status ?? jobResult.data.status ?? 'new',
+        relevance: evaluation?.relevance ?? jobResult.data.relevance,
+        fit_tier: evaluation?.fit_tier ?? jobResult.data.fit_tier,
+        matched_skills: evaluation?.matched_skills ?? jobResult.data.matched_skills,
+        ai_analysis: evaluation?.ai_analysis ?? jobResult.data.ai_analysis,
+      } as unknown as Job;
+    },
+    staleTime: 1000 * 60 * 10,
   });
 }
 
@@ -279,7 +256,7 @@ export function useSourcesQuery(enabled = true) {
       if (!supabase) {
         throw new Error("Supabase is not initialized.");
       }
-      const { data, error } = await supabase.from("sources").select("*").order("name", { ascending: true });
+      const { data, error } = await supabase.from("sources").select("*").order("name", { ascending: true }).limit(200);
       if (error) throw new Error(error.message);
       return (data || []) as Source[];
     },
@@ -325,7 +302,8 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
     onMutate: async ({ job, status }) => {
       const qk = queryKeys.jobs(cleanEmail);
       await queryClient.cancelQueries({ queryKey: qk });
-      await queryClient.cancelQueries({ queryKey: ['jobs-page'] });
+      await queryClient.cancelQueries({ queryKey: ['jobs-page', cleanEmail] });
+      await queryClient.cancelQueries({ queryKey: ['jobs-search-page', cleanEmail] });
 
       const previousJobs = queryClient.getQueryData<Job[]>(qk);
 
@@ -337,7 +315,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       }
 
       queryClient.setQueriesData<InfiniteData<JobsPageResult>>(
-        { queryKey: ['jobs-page'] },
+        { queryKey: ['jobs-page', cleanEmail] },
         (old) => {
           if (!old) return old;
           return {
@@ -350,19 +328,32 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
         }
       );
 
+      queryClient.setQueriesData<JobsPageResult>(
+        { queryKey: ['jobs-search-page', cleanEmail] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((j) => (j.id === job.id ? { ...j, status } : j)),
+          };
+        }
+      );
+
       return { previousJobs, qk };
     },
     onError: (_err, _variables, context) => {
       if (context?.previousJobs && context.qk) {
         queryClient.setQueryData(context.qk, context.previousJobs);
       }
-      void queryClient.invalidateQueries({ queryKey: ['jobs-page'] });
+      void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
+      void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });
     },
     onSettled: (_data, _error, _variables, context) => {
       if (context?.qk) {
         void queryClient.invalidateQueries({ queryKey: context.qk });
       }
-      void queryClient.invalidateQueries({ queryKey: ['jobs-page'] });
+      void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
+      void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(cleanEmail) });
     },
   });

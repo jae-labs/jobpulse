@@ -13,6 +13,18 @@
     ,"collapseSidebar": "Recolher barra lateral"
   },
   "common": {
+    "verifyingAuth": "Verificando autorização...",
+    "connectingToDb": "Conectando ao banco de dados...",
+    "networkError": "Erro de rede",
+    "statusSaveFailed": "Não foi possível salvar a atualização de status: {{message}}",
+    "loadingAnalytics": "Carregando análises do Supabase",
+    "loadingOpportunities": "Carregando oportunidades do Supabase",
+    "loadingView": "Carregando visualização...",
+    "loadingWidgets": "Carregando widgets de análise...",
+    "dismiss": "Dispensar",
+    "dismissError": "Dispensar erro",
+    "dbConnectionError": "Erro de Conexão com Supabase",
+    "dbConnectionDetail": "Não foi possível conectar ao Supabase: {{message}}. Verifique sua conexão.",
     "apply": "Candidatar-se",
     "search": "Buscar...",
     "loading": "Carregando...",
@@ -101,6 +113,12 @@
     "categoryBreakdown": "Distribuição por Domínio"
   },
   "jobs": {
+    "salary50k": "€50k+",
+    "salary60k": "€60k+",
+    "salary70k": "€70k+",
+    "salary80k": "€80k+",
+    "regionalHubs": "Centros Regionais",
+    "discoveredLocations": "Locais Descobertos",
     "searchPlaceholder": "Buscar por cargo, empresa, habilidades ou local... (Cmd+K)",
     "allSalaries": "Todas as Faixas Salariais",
     "disclosedOnly": "Apenas divulgados",
@@ -126,6 +144,7 @@
     "loadingOpportunities": "Carregando oportunidades...",
     "inspector": {
       "matchFit": "Compatibilidade",
+      "matchedCompetencies": "Competências Correspondentes",
       "location": "Localização",
       "salary": "Salário / Parâmetro",
       "employmentType": "Regime de Contratação",
@@ -141,7 +160,17 @@
       "expand": "Expandir para tela cheia (f)",
       "exit": "Sair da tela cheia (f)",
       "close": "Fechar painel",
-      "statusGroup": "Seleção do status da vaga"
+      "statusGroup": "Seleção do status da vaga",
+      "detailLoadError": "Não foi possível carregar os detalhes da vaga.",
+      "generated": {
+        "highAlignment": "Alta compatibilidade ({{score}}%): forte aderência ao domínio-alvo ({{domain}}) e ao nível de senioridade ({{seniority}}). Avaliada segundo os critérios-alvo e a faixa de remuneração.",
+        "goodAlignment": "Boa compatibilidade ({{score}}%): cargo compatível em {{domain}} no nível {{seniority}}.",
+        "moderateAlignment": "Compatibilidade moderada ({{score}}%): sinergia parcial em {{domain}}.",
+        "compatibilityScore": "Pontuação de compatibilidade: {{score}}% para {{domain}}.",
+        "matchesCriteria": "Corresponde aos critérios-alvo em {{domain}}.",
+        "disclosedCompensation": "Remuneração divulgada: {{salary}}.",
+        "coreSkills": "Competências principais identificadas: {{skills}}"
+      }
     }
   },
   "sources": {
@@ -214,6 +243,7 @@
     "autoSaveFailed": "Falha ao salvar automaticamente",
     "autoSaveNotice": "Aviso de salvamento automático",
     "autoSaveError": "Não foi possível salvar seu perfil automaticamente.",
+    "loadError": "Não foi possível carregar seu perfil. Atualize a página e tente novamente.",
     "general": {
       "title": "Informações pessoais e de contato",
       "avatarAlt": "Foto de perfil",
@@ -296,6 +326,7 @@
       "fileCount_other": "{{count}} arquivos",
       "noResumes": "Nenhum currículo enviado ainda.",
       "noCoverLetters": "Nenhuma carta de apresentação enviada ainda.",
+      "loadDocumentsFailed": "Não foi possível carregar seus documentos.",
       "cvDescriptionPlaceholder": "Descrição (ex.: currículo para gerente de produto, versão DevOps)",
       "coverLetterDescriptionPlaceholder": "Descrição (ex.: carta para fintech, apresentação para startup)",
       "uploadResume": "Enviar novo currículo",
@@ -344,5 +375,17 @@
     "databaseSetupNeeded": "Configuração de banco de dados necessária",
     "databaseSetupInstructions": "A tabela <1>authorized_users</1> ainda não foi criada no Supabase. Aplique as migrações em <3>supabase/migrations</3> via <5>npm run db:push</5>.",
     "signOut": "Sair da conta"
+  },
+  "errorBoundary": {
+    "unableToDisplayComponent": "Não foi possível exibir o componente",
+    "unexpectedRenderingError": "Ocorreu um erro inesperado ao renderizar esta seção.",
+    "unableToLoadOverview": "Não foi possível carregar o painel geral",
+    "unableToLoadOpportunities": "Não foi possível carregar o pipeline de oportunidades",
+    "unableToLoadSources": "Não foi possível carregar as fontes de dados",
+    "unableToLoadProfile": "Não foi possível carregar as configurações de perfil",
+    "unableToLoadCategoryChart": "Não foi possível carregar o gráfico de categorias",
+    "unableToLoadPipelineChart": "Não foi possível carregar o gráfico de pipeline",
+    "unableToLoadRelevanceChart": "Não foi possível carregar o gráfico de distribuição de relevância",
+    "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências"
   }
 }
