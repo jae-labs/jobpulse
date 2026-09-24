@@ -27,6 +27,7 @@ export const queryKeys = {
   jobsSearchPage: (email?: string | null, params?: unknown) => ["jobs-search-page", email ? email.trim().toLowerCase() : null, params] as const,
   jobs: (email?: string | null) => ["jobs", email ? email.trim().toLowerCase() : null] as const,
   scoringPreviewJobs: (email?: string | null) => ["scoring-preview-jobs", email ? email.trim().toLowerCase() : null] as const,
+  jobById: (id?: number | null, email?: string | null) => ["job-by-id", id, email ? email.trim().toLowerCase() : null] as const,
   jobDetail: (id?: number | null, email?: string | null) => ["job-detail", id, email ? email.trim().toLowerCase() : null] as const,
   jobCount: () => ["job-count"] as const,
   sources: () => ["sources"] as const,
@@ -286,7 +287,7 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
 export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null, enabled = true) {
   const cleanEmail = userEmail?.trim().toLowerCase();
   return useQuery({
-    queryKey: ['job-by-id', jobId, cleanEmail] as const,
+    queryKey: queryKeys.jobById(jobId, cleanEmail),
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<Job | null> => {
       if (!supabase || !jobId) return null;
@@ -398,11 +399,14 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
     },
     onMutate: async ({ job, status }) => {
       const qk = queryKeys.jobs(cleanEmail);
+      const jobByIdKey = queryKeys.jobById(job.id, cleanEmail);
       await queryClient.cancelQueries({ queryKey: qk });
+      await queryClient.cancelQueries({ queryKey: jobByIdKey });
       await queryClient.cancelQueries({ queryKey: ['jobs-page', cleanEmail] });
       await queryClient.cancelQueries({ queryKey: ['jobs-search-page', cleanEmail] });
 
       const previousJobs = queryClient.getQueryData<Job[]>(qk);
+      const previousJobById = queryClient.getQueryData<Job | null>(jobByIdKey);
 
       if (previousJobs) {
         queryClient.setQueryData<Job[]>(
@@ -410,6 +414,11 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
           previousJobs.map((j) => (j.id === job.id ? { ...j, status } : j))
         );
       }
+
+      queryClient.setQueryData<Job | null>(
+        jobByIdKey,
+        (old) => (old ? { ...old, status } : old)
+      );
 
       queryClient.setQueriesData<InfiniteData<JobsPageResult>>(
         { queryKey: ['jobs-page', cleanEmail] },
@@ -436,11 +445,17 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
         }
       );
 
-      return { previousJobs, qk };
+      return { previousJobs, qk, previousJobById, jobByIdKey };
     },
     onError: (_err, _variables, context) => {
       if (context?.previousJobs && context.qk) {
         queryClient.setQueryData(context.qk, context.previousJobs);
+      }
+      if (context?.previousJobById !== undefined && context.jobByIdKey) {
+        queryClient.setQueryData(context.jobByIdKey, context.previousJobById);
+      }
+      if (context?.jobByIdKey) {
+        void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
       void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
       void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });
@@ -448,6 +463,9 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
     onSettled: (_data, _error, _variables, context) => {
       if (context?.qk) {
         void queryClient.invalidateQueries({ queryKey: context.qk });
+      }
+      if (context?.jobByIdKey) {
+        void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
       void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
       void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });

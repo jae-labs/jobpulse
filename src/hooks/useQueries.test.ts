@@ -19,6 +19,14 @@ describe('useQueries queryKeys', () => {
     ]);
   });
 
+  it('normalizes email in jobById query key', () => {
+    expect(queryKeys.jobById(123, 'TEST@domain.com')).toEqual([
+      'job-by-id',
+      123,
+      'test@domain.com',
+    ]);
+  });
+
   it('generates consistent keys for documents', () => {
     expect(queryKeys.userCvs('Alice@Work.com')).toEqual(['user-cvs', 'alice@work.com']);
     expect(queryKeys.userCoverLetters('Alice@Work.com')).toEqual([

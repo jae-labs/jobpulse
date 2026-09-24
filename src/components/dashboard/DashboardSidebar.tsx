@@ -36,7 +36,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* Navigation Section */}
       <div className="w-full flex-1 pt-1">
-        <nav className="space-y-0.5" aria-label="Dashboard navigation">
+        <nav className="space-y-0.5" aria-label={t('nav.dashboardNavigation')}>
           {navItems.map(({ id, label, icon: Icon, path }) => {
             const isActive = activeTab === id;
             const displayLabel = getNavLabel(t, id, label);

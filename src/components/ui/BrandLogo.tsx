@@ -4,6 +4,7 @@ interface BrandLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   animate?: boolean;
+  ariaLabel?: string;
 }
 
 const sizeMap = {
@@ -18,6 +19,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
   className = '',
   animate = false,
+  ariaLabel = 'JobPulse logo',
 }) => {
   const { box, svg, stroke } = sizeMap[size] || sizeMap.md;
 
@@ -26,7 +28,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       className={`flex items-center justify-center rounded-full bg-ds-action-primary text-ds-action-primary-text shadow-sm shrink-0 select-none ${box} ${className} ${
         animate ? 'animate-pulse' : ''
       }`}
-      aria-label="JobPulse logo"
+      aria-label={ariaLabel}
       role="img"
     >
       <svg

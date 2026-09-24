@@ -7,10 +7,11 @@
     "profile": "Perfil",
     "signOut": "Sair",
     "project": "Projeto Pessoal",
-    "language": "Idioma"
-    ,"mobileNavigation": "Navegação móvel"
-    ,"expandSidebar": "Expandir barra lateral"
-    ,"collapseSidebar": "Recolher barra lateral"
+    "language": "Idioma",
+    "mobileNavigation": "Navegação móvel",
+    "dashboardNavigation": "Navegação do painel",
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Recolher barra lateral"
   },
   "common": {
     "verifyingAuth": "Verificando autorização...",
@@ -165,6 +166,8 @@
       "expand": "Expandir para tela cheia (f)",
       "exit": "Sair da tela cheia (f)",
       "close": "Fechar painel",
+      "openApplication": "Abrir página de candidatura",
+      "noApplicationUrl": "Nenhum link de candidatura disponível",
       "statusGroup": "Seleção do status da vaga",
       "detailLoadError": "Não foi possível carregar os detalhes da vaga.",
       "generated": {

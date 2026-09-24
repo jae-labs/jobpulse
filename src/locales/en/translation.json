@@ -7,10 +7,11 @@
     "profile": "Profile",
     "signOut": "Sign Out",
     "project": "Personal Project",
-    "language": "Language"
-    ,"mobileNavigation": "Mobile navigation"
-    ,"expandSidebar": "Expand sidebar"
-    ,"collapseSidebar": "Collapse sidebar"
+    "language": "Language",
+    "mobileNavigation": "Mobile navigation",
+    "dashboardNavigation": "Dashboard navigation",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "common": {
     "verifyingAuth": "Verifying authorization...",
@@ -165,6 +166,8 @@
       "expand": "Expand to full screen (f)",
       "exit": "Exit full screen (f)",
       "close": "Close inspector",
+      "openApplication": "Open application page",
+      "noApplicationUrl": "No application URL available",
       "statusGroup": "Job status selection",
       "detailLoadError": "The job details could not be loaded.",
       "generated": {

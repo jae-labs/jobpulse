@@ -275,7 +275,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
                   href={safeApplyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Open application page"
+                  title={t('jobs.inspector.openApplication')}
                 >
                   <span>{t('common.apply')}</span>
                   <ExternalLink className="size-3.5 text-ds-action-primary-text shrink-0" />
@@ -287,7 +287,7 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
                 size="sm"
                 disabled
                 className="w-full sm:w-auto shrink-0 whitespace-nowrap border-ds-border bg-ds-control text-xs font-semibold text-ds-text-muted shadow-xs"
-                title="No valid application URL"
+                title={t('jobs.inspector.noApplicationUrl')}
               >
                 <span>{t('common.apply')}</span>
                 <ExternalLink className="size-3.5 text-ds-text-muted shrink-0" />
