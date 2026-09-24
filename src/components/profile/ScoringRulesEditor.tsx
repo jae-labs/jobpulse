@@ -37,10 +37,13 @@ const EMPTY_RULES: ScoringRules = {
   weights: DEFAULT_WEIGHTS,
 };
 
+import { useScoringPreviewJobsQuery } from '../../hooks/useQueries';
+
 interface ScoringRulesEditorProps {
   value: ScoringRules | undefined;
   onChange: (rules: ScoringRules) => void;
   jobs?: Job[];
+  userEmail?: string | null;
 }
 
 const labelClass = 'text-xs font-medium text-ds-text-secondary';
@@ -244,7 +247,17 @@ function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
-export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({ value, onChange, jobs }) => {
+export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
+  value,
+  onChange,
+  jobs: providedJobs,
+  userEmail,
+}) => {
+  const { data: queriedJobs = [] } = useScoringPreviewJobsQuery(
+    userEmail,
+    !providedJobs && Boolean(userEmail)
+  );
+  const jobs = providedJobs ?? queriedJobs;
   const { t } = useTranslation();
   const rules = value || EMPTY_RULES;
 

@@ -41,4 +41,18 @@ describe('logger', () => {
     // Clean up
     setErrorReporter(() => {});
   });
+
+  it('falls back to console.error when no custom reporter is registered', () => {
+    // Reset customReporter by passing a no-op or testing null state
+    const consoleSpy = vi.spyOn(console, 'error');
+    // Force custom reporter to throw or be unassigned
+    setErrorReporter(() => {
+      throw new Error('Reporter broken');
+    });
+
+    const testError = new Error('Fallback test error');
+    reportError(testError, { detail: 'fallback' });
+
+    expect(consoleSpy).toHaveBeenCalledWith('[JobPulse]', testError, { detail: 'fallback' });
+  });
 });

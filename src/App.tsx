@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   CheckCircle2,
@@ -41,19 +41,16 @@ import { clearAppCache } from './lib/queryClient';
 import { useAuthSession } from './hooks/useAuthSession';
 import {
   useOverviewMetricsQuery,
-  useScoringPreviewJobsQuery,
   useSourcesQuery,
   useProfileQuery,
   useUpdateJobStatusMutation,
   useSaveProfileMutation,
 } from './hooks/useQueries';
-import { recalculateJobs } from './lib/scoreCalculator';
 
 export const App: React.FC = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { session, isAuthorized, authError, isAuthChecking } = useAuthSession();
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab: DashboardTab =
@@ -79,7 +76,6 @@ export const App: React.FC = () => {
   const userEmail = session?.user?.email?.trim().toLowerCase();
 
   const isOverviewNeeded = activeTab === 'overview' || activeTab === 'jobs';
-  const isJobsNeeded = activeTab === 'profile';
 
   const {
     data: overviewMetrics,
@@ -87,13 +83,6 @@ export const App: React.FC = () => {
     error: overviewQueryError,
     refetch: refetchOverview,
   } = useOverviewMetricsQuery(userEmail, isAuthorized && isOverviewNeeded);
-
-  const {
-    data: rawJobs = [],
-    isLoading: isJobsLoading,
-    error: jobsQueryError,
-    refetch: refetchJobs,
-  } = useScoringPreviewJobsQuery(userEmail, isAuthorized && isJobsNeeded);
 
   const isSourcesNeeded = activeTab === 'sources';
 
@@ -109,29 +98,20 @@ export const App: React.FC = () => {
   } = useProfileQuery(userEmail, isAuthorized);
   const profile = loadedProfile ?? DEFAULT_PROFILE;
 
-  const jobs = useMemo(() => {
-    return recalculateJobs(rawJobs, profile.scoring_rules?.weights);
-  }, [rawJobs, profile.scoring_rules?.weights]);
-
   const updateJobStatusMutation = useUpdateJobStatusMutation(userEmail);
   const saveProfileMutation = useSaveProfileMutation(userEmail);
 
   const [selectedJobState, setSelectedJobState] = useState<Job | null>(null);
-  const selectedJob =
-    selectedJobId !== null && jobs.length > 0
-      ? jobs.find((j) => j.id === selectedJobId) ?? selectedJobState
-      : selectedJobState;
+  const selectedJob = selectedJobState;
 
   const [isDbErrorDismissed, setIsDbErrorDismissed] = useState(false);
 
   const isUpdatingStatus = updateJobStatusMutation.isPending;
   const isLoading = isOverviewNeeded
     ? isOverviewLoading && !overviewMetrics
-    : isJobsNeeded
-      ? isJobsLoading && jobs.length === 0
-      : isSourcesNeeded && isSourcesLoading;
+    : isSourcesNeeded && isSourcesLoading;
 
-  const activeQueryError = isOverviewNeeded ? overviewQueryError : jobsQueryError;
+  const activeQueryError = overviewQueryError;
   const dbError =
     !isDbErrorDismissed &&
     (customDbError ||
@@ -151,7 +131,6 @@ export const App: React.FC = () => {
 
   const handleSelectJob = (job: Job | null) => {
     setSelectedJobState(job);
-    setSelectedJobId(job ? job.id : null);
   };
 
 
@@ -288,7 +267,6 @@ export const App: React.FC = () => {
                       setIsDbErrorDismissed(false);
                       setCustomDbError(null);
                       void refetchOverview();
-                      void refetchJobs();
                     }}
                   >
                     <RefreshCw className={`size-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -350,7 +328,6 @@ export const App: React.FC = () => {
                   <OverviewView
                     key={session.user.id}
                     userId={session.user.id}
-                    jobs={jobs}
                     overviewMetrics={overviewMetrics}
                     onNavigateToJobs={(filters) => {
                       const params = new URLSearchParams();
@@ -371,7 +348,6 @@ export const App: React.FC = () => {
               {activeTab === 'jobs' && (
                 <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadOpportunities')}>
                   <JobsView
-                    jobs={jobs}
                     overviewMetrics={overviewMetrics}
                     selectedJob={selectedJob}
                     onSelectJob={handleSelectJob}
@@ -408,7 +384,6 @@ export const App: React.FC = () => {
                     loadError={profileQueryError instanceof Error ? profileQueryError.message : null}
                     userEmail={session.user.email}
                     onSaveProfile={handleSaveProfile}
-                    jobs={rawJobs}
                   />
                 </ErrorBoundary>
               )}
@@ -460,7 +435,6 @@ export const App: React.FC = () => {
         isOpen={isCommandMenuOpen}
         onOpenChange={setIsCommandMenuOpen}
         userEmail={userEmail}
-        jobs={jobs}
         selectedJob={selectedJob}
         onSelectJob={(job) => {
           handleSelectJob(job);

@@ -18,6 +18,7 @@ export const JobCard = React.forwardRef<HTMLButtonElement, JobCardProps>(
       <button
         ref={ref}
         type="button"
+        data-job-card="true"
         onClick={() => onSelect(job)}
         aria-pressed={isSelected}
         className={cn(

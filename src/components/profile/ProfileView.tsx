@@ -304,6 +304,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             value={formData.scoring_rules}
             onChange={handleScoringRulesChange}
             jobs={jobs}
+            userEmail={userEmail}
           />
         </Card>
       </form>

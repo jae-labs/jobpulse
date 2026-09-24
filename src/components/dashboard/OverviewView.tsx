@@ -65,7 +65,7 @@ function loadWidgetOrder(storageKey: string | null): OverviewWidgetId[] {
 
 
 interface OverviewViewProps {
-  jobs: Job[];
+  jobs?: Job[];
   userId?: string;
   overviewMetrics?: OverviewMetrics;
   onNavigateToJobs: (filters?: {
@@ -77,7 +77,7 @@ interface OverviewViewProps {
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
-  jobs,
+  jobs = [],
   userId,
   overviewMetrics,
   onNavigateToJobs,

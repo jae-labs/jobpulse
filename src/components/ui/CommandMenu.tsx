@@ -24,7 +24,7 @@ import { toSafeHttpUrl } from '../../lib/utils';
 interface CommandMenuProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  jobs: Job[];
+  jobs?: Job[];
   selectedJob?: Job | null;
   onSelectJob: (job: Job) => void;
   onUpdateStatus?: (job: Job, status: JobStatus) => Promise<void>;
@@ -38,7 +38,7 @@ interface CommandMenuProps {
 export const CommandMenu: React.FC<CommandMenuProps> = ({
   isOpen,
   onOpenChange,
-  jobs,
+  jobs = [],
   selectedJob,
   onSelectJob,
   onUpdateStatus,

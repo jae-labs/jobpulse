@@ -19,15 +19,18 @@ export function setErrorReporter(reporter: ErrorReporter): void {
 
 /** Report a captured error with optional context metadata. */
 export function reportError(error: unknown, context?: Record<string, unknown>): void {
+  let reported = false;
   if (customReporter) {
     try {
       customReporter(error, context);
+      reported = true;
     } catch {
       // Prevent recursion
     }
   }
 
-  if (!IS_PRODUCTION) {
+  // Always log to console in non-production, or in production as fallback when no custom reporter is registered
+  if (!IS_PRODUCTION || !reported) {
     console.error('[JobPulse]', error, context);
   }
 }

@@ -137,6 +137,29 @@ $$;
 ROLLBACK;
 
 BEGIN;
+INSERT INTO storage.objects (bucket_id, name)
+VALUES
+  ('avatars', 'admin@example.com/legacy-avatar.png'),
+  ('avatars', '11111111-1111-1111-1111-111111111111/avatar.png');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"admin@example.com"}', true);
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM storage.objects WHERE bucket_id = 'avatars' AND name = '11111111-1111-1111-1111-111111111111/avatar.png') <> 1 THEN
+    RAISE EXCEPTION 'owner avatar metadata read was denied';
+  END IF;
+  IF (SELECT count(*) FROM storage.objects WHERE bucket_id = 'avatars' AND name = 'admin@example.com/legacy-avatar.png') <> 0 THEN
+    RAISE EXCEPTION 'legacy email-named avatar metadata was readable';
+  END IF;
+END;
+$$;
+ROLLBACK;
+
+BEGIN;
+INSERT INTO storage.objects (bucket_id, name)
+VALUES
+  ('avatars', 'admin@example.com/legacy-avatar.png'),
+  ('avatars', '11111111-1111-1111-1111-111111111111/avatar.png');
 SET LOCAL ROLE authenticated;
 -- Same email with a different Auth ID must not inherit an invitation or data.
 SELECT set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated","email":"admin@example.com"}', true);
@@ -148,6 +171,9 @@ BEGIN
   IF (SELECT count(*) FROM public.user_job_statuses) <> 0 THEN RAISE EXCEPTION 'other statuses visible'; END IF;
   IF public.owns_document_object('11111111-1111-1111-1111-111111111111/cv/security-test-1.pdf') THEN
     RAISE EXCEPTION 'other document authorized';
+  END IF;
+  IF (SELECT count(*) FROM storage.objects WHERE bucket_id = 'avatars') <> 0 THEN
+    RAISE EXCEPTION 'other avatar metadata visible to reused email';
   END IF;
 END;
 $$;

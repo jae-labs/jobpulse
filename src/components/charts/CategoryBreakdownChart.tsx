@@ -18,8 +18,30 @@ interface CategoryBreakdownChartProps {
   onSelectCategory?: (category: string) => void;
 }
 
-const getCssVar = (name: string) =>
-  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '';
+const CHART_FALLBACK_COLORS = [
+  '#22d3ee',
+  '#a78bfa',
+  '#34d399',
+  '#f472b6',
+  '#fb923c',
+  '#60a5fa',
+  '#facc15',
+  '#818cf8',
+];
+
+const getCssVar = (name: string, fallback: string = ''): string =>
+  typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback : fallback;
+
+function getCategoryColor(name: string, palette: string[], fallbackIndex: number): string {
+  if (!name) return palette[fallbackIndex % palette.length];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % palette.length;
+  return palette[index];
+}
 
 interface CategoryDataPoint {
   name: string;
@@ -82,41 +104,22 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  const fallbackColors = useMemo(() => [
-    getCssVar('--ds-chart-1'),
-    getCssVar('--ds-chart-2'),
-    getCssVar('--ds-chart-3'),
-    getCssVar('--ds-chart-4'),
-    getCssVar('--ds-chart-5'),
-    getCssVar('--ds-chart-6'),
-    getCssVar('--ds-chart-7'),
-    getCssVar('--ds-chart-8'),
+  const palette = useMemo(() => [
+    getCssVar('--ds-chart-1', CHART_FALLBACK_COLORS[0]),
+    getCssVar('--ds-chart-2', CHART_FALLBACK_COLORS[1]),
+    getCssVar('--ds-chart-3', CHART_FALLBACK_COLORS[2]),
+    getCssVar('--ds-chart-4', CHART_FALLBACK_COLORS[3]),
+    getCssVar('--ds-chart-5', CHART_FALLBACK_COLORS[4]),
+    getCssVar('--ds-chart-6', CHART_FALLBACK_COLORS[5]),
+    getCssVar('--ds-chart-7', CHART_FALLBACK_COLORS[6]),
+    getCssVar('--ds-chart-8', CHART_FALLBACK_COLORS[7]),
   ], []);
-
-  const domainColorPalette = useMemo<Record<string, string>>(() => ({
-    'General Administration': getCssVar('--ds-chart-5'),
-    'Academic Administration & Higher Education': getCssVar('--ds-chart-4'),
-    'Public Service & Governance Operations': getCssVar('--ds-chart-2'),
-    'Operations & Institutional Administration': getCssVar('--ds-chart-8'),
-    'Software, IT & Cybersecurity': getCssVar('--ds-chart-1'),
-    'Engineering & Architecture': getCssVar('--ds-chart-6'),
-    'Corporate Directors & C-Suite': getCssVar('--ds-chart-7'),
-    'Healthcare & Clinical': getCssVar('--ds-chart-3'),
-    'Finance, Accounting & Tax': getCssVar('--ds-chart-5'),
-    'Aviation Operations': getCssVar('--ds-chart-6'),
-    'Hospitality, Catering & Facilities': getCssVar('--ds-chart-4'),
-    'Academic Faculty & Professorship': getCssVar('--ds-chart-8'),
-    'Scientific & Ecological': getCssVar('--ds-chart-3'),
-    'Emergency Services & Armed Defence': getCssVar('--ds-chart-1'),
-    'Direct Sales Quotas': getCssVar('--ds-chart-7'),
-    'Compliance & Legal Analysis': getCssVar('--ds-chart-2'),
-  }), []);
 
   const { chartData, topCategory, totalCategories } = useMemo(() => {
     if (categories && categories.length > 0) {
       const totalCount = controlledTotalJobs || categories.reduce((sum, c) => sum + c.value, 0) || 1;
       const sorted = categories.map((cat, idx) => {
-        const color = domainColorPalette[cat.name] || fallbackColors[idx % fallbackColors.length];
+        const color = getCategoryColor(cat.name, palette, idx);
         const percentage = ((cat.value / totalCount) * 100).toFixed(1);
         return {
           name: cat.name,
@@ -147,7 +150,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
     const totalJobs = jobs.length || 1;
     const sorted = Array.from(categoryMap.entries())
       .map(([name, stats], idx) => {
-        const color = domainColorPalette[name] || fallbackColors[idx % fallbackColors.length];
+        const color = getCategoryColor(name, palette, idx);
         const percentage = ((stats.count / totalJobs) * 100).toFixed(1);
         const avgMatch = Math.round(stats.totalScore / stats.count);
         return {
@@ -165,7 +168,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
       topCategory: sorted[0],
       totalCategories: sorted.length,
     };
-  }, [jobs, categories, controlledTotalJobs, fallbackColors, domainColorPalette]);
+  }, [jobs, categories, controlledTotalJobs, palette]);
 
   const activeIdx = hoveredIdx ?? selectedIdx;
   const activeCategory = activeIdx !== null ? chartData[activeIdx] : topCategory;

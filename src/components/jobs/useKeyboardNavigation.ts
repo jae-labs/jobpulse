@@ -31,14 +31,20 @@ export function useKeyboardNavigation({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
+      const isInput = target?.closest(
+        'input, textarea, select, [contenteditable="true"]'
+      );
+      const isInteractiveElement = target?.closest(
+        'button:not([data-job-card]), a, [role="button"]:not([data-job-card])'
+      );
+
       if (
         e.defaultPrevented ||
         e.metaKey ||
         e.ctrlKey ||
         e.altKey ||
-        target?.closest(
-          'input, textarea, select, button, a, [contenteditable="true"], [role="button"]'
-        )
+        isInput ||
+        isInteractiveElement
       ) {
         return;
       }

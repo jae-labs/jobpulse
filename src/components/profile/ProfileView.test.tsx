@@ -13,6 +13,7 @@ vi.mock('../../hooks/useQueries', () => ({
   useSaveCoverLetterMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteCoverLetterMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useSaveAvatarMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useScoringPreviewJobsQuery: () => ({ data: [], isLoading: false }),
 }));
 
 const mockProfile: Profile = {
@@ -136,5 +137,25 @@ describe('ProfileView', () => {
       },
       { timeout: 2000 }
     );
+  });
+
+  it('displays inline accessible alert when avatar file exceeds size limit', async () => {
+    const windowAlertSpy = vi.spyOn(window, 'alert');
+    renderProfileView();
+
+    const fileInput = document.querySelector('input[type="file"][accept="image/*"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+
+    const largeFile = new File(['x'.repeat(100)], 'huge.png', { type: 'image/png' });
+    Object.defineProperty(largeFile, 'size', { value: 3 * 1024 * 1024 });
+
+    fireEvent.change(fileInput, { target: { files: [largeFile] } });
+
+    expect(windowAlertSpy).not.toHaveBeenCalled();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(/2MB/i);
+
+    windowAlertSpy.mockRestore();
   });
 });

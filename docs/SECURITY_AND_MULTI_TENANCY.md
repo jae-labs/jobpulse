@@ -1,9 +1,10 @@
 # Security and Multi-Tenancy
 
 JobPulse stores candidate profiles, application status, resumes, and cover letters. The database and private Storage
-bucket enforce access for an invite-only product. The latest forward migration is
-`20260924000001_bind_invites_and_documents_to_user_ids.sql`; run a local migration reset and direct API policy tests
-before applying it to a hosted project.
+bucket enforce access for an invite-only product. The latest forward migrations are
+`20260924000001_bind_invites_and_documents_to_user_ids.sql`, `20260924000002_harden_candidate_writes_search_and_avatars.sql`,
+and `20260924000003_remove_email_avatar_ownership.sql`; run a local migration reset and direct API policy tests
+before applying them to a hosted project.
 
 ## Identity and invitations
 

@@ -56,6 +56,7 @@ describe('JobCard', () => {
     const card = screen.getByRole('button', { name: /principal software engineer/i });
     expect(card).toHaveAttribute('type', 'button');
     expect(card).toHaveAttribute('aria-pressed', 'true');
+    expect(card).toHaveAttribute('data-job-card', 'true');
   });
 
   it('renders fallback company when company is empty or dot', () => {

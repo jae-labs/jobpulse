@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { isLocalDevelopmentAuthBypass, localDevelopmentCredentials } from '../lib/localDevAuth';
@@ -9,20 +9,32 @@ export function useAuthSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(Boolean(supabase));
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(Boolean(supabase));
+  const activeUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
 
     let isMounted = true;
 
-    const verifySession = async (currentSession: Session | null) => {
-      setIsAuthChecking(true);
-      setSession(currentSession);
+    const verifySession = async (currentSession: Session | null, isInitial = false) => {
+      const newUserId = currentSession?.user?.id ?? null;
+      const userChanged = newUserId !== activeUserIdRef.current;
+
+      if (userChanged) {
+        clearAppCache();
+        activeUserIdRef.current = newUserId;
+      }
+
+      if (isInitial || userChanged) {
+        setIsAuthChecking(true);
+      }
 
       if (!currentSession?.user?.email) {
         if (isMounted) {
+          setSession(null);
           setIsAuthorized(false);
+          setAuthError(null);
           setIsAuthChecking(false);
         }
         return;
@@ -30,6 +42,10 @@ export function useAuthSession() {
 
       const { isAuthorized: authorized, error } = await checkUserAuthorization(currentSession.user.email);
       if (isMounted) {
+        if (!authorized) {
+          clearAppCache();
+        }
+        setSession(currentSession);
         setIsAuthorized(authorized);
         setAuthError(error || null);
         setIsAuthChecking(false);
@@ -47,11 +63,11 @@ export function useAuthSession() {
             }
             return;
           }
-          void verifySession(session);
+          void verifySession(session, true);
         });
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        void verifySession(session);
+        void verifySession(session, true);
       });
     }
 
@@ -60,8 +76,9 @@ export function useAuthSession() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         clearAppCache();
+        activeUserIdRef.current = null;
       }
-      void verifySession(session);
+      void verifySession(session, false);
     });
 
     return () => {

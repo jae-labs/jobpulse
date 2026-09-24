@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Camera, User } from 'lucide-react';
 import { Button, Card, Select, TextField } from '../../design-system';
 import type { Profile } from '../../types/job';
@@ -27,6 +27,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
   const { t, i18n } = useTranslation();
   const saveAvatarMutation = useSaveAvatarMutation(userEmail);
   const avatarUrl = useAvatarUrl(formData.avatar_url);
+  const [avatarNotice, setAvatarNotice] = useState<string | null>(null);
   const countryNames = useMemo(
     () => new Intl.DisplayNames([i18n.language], { type: 'region' }),
     [i18n.language],
@@ -39,21 +40,23 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert(t('profile.general.avatarTooLarge'));
+      setAvatarNotice(t('profile.general.avatarTooLarge'));
       return;
     }
 
     if (!userEmail) return;
 
     try {
+      setAvatarNotice(null);
       const path = await saveAvatarMutation.mutateAsync(file);
       onChange('avatar_url', path);
     } catch (err: unknown) {
-      alert((err instanceof Error ? err.message : undefined) || t('profile.general.avatarUploadError'));
+      setAvatarNotice((err instanceof Error ? err.message : undefined) || t('profile.general.avatarUploadError'));
     }
   };
 
   const handleRemoveAvatar = () => {
+    setAvatarNotice(null);
     onChange('avatar_url', '');
   };
 
@@ -64,6 +67,22 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
           {t('profile.general.title')}
         </h2>
       </div>
+
+      {avatarNotice && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-lg border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative"
+        >
+          <span>{avatarNotice}</span>
+          <button
+            type="button"
+            onClick={() => setAvatarNotice(null)}
+            className="text-ds-negative hover:underline shrink-0 text-[11px] font-medium cursor-pointer"
+          >
+            {t('common.dismiss', 'Dismiss')}
+          </button>
+        </div>
+      )}
 
       {/* Profile Photo */}
       <div className="flex items-center gap-4 pb-4 border-b border-ds-border">
