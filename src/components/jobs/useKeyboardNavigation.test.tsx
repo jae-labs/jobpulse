@@ -91,6 +91,49 @@ describe('useKeyboardNavigation', () => {
     document.body.removeChild(cardButton);
   });
 
+  it('transfers DOM focus to next card and blurs previous card when navigating with ArrowDown', () => {
+    const card1 = document.createElement('button');
+    card1.setAttribute('data-job-card', 'true');
+    const card2 = document.createElement('button');
+    card2.setAttribute('data-job-card', 'true');
+    document.body.appendChild(card1);
+    document.body.appendChild(card2);
+
+    const cardMap = new Map<number, HTMLElement>([
+      [mockJobs[0].id, card1],
+      [mockJobs[1].id, card2],
+    ]);
+    const cardRefs = { current: cardMap };
+
+    renderHook(() =>
+      useKeyboardNavigation({
+        displayedJobs: mockJobs,
+        selectedJob: mockJobs[0],
+        onSelectJob,
+        onUpdateStatus,
+        isDetailFullScreen: false,
+        setIsDetailFullScreen,
+        layoutMode: 'split',
+        updateUrlParam,
+        scrollToIndex,
+        cardRefs,
+      })
+    );
+
+    card1.focus();
+    expect(document.activeElement).toBe(card1);
+
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+    card1.dispatchEvent(event);
+
+    expect(onSelectJob).toHaveBeenCalledWith(mockJobs[1]);
+    expect(document.activeElement).toBe(card2);
+    expect(card1).not.toBe(document.activeElement);
+
+    document.body.removeChild(card1);
+    document.body.removeChild(card2);
+  });
+
   it('updates job status when focused on job card and pressing status shortcut keys', () => {
     renderHook(() =>
       useKeyboardNavigation({

@@ -18,7 +18,8 @@ Record links to those external systems here when they exist.
   migration. Audit any public URL caches from the earlier bucket mode.
 - **Data access:** Run RLS and Storage policy tests as `anon`, an uninvited authenticated user, an invited user, and
   another invited user. Include direct Storage API uploads and concurrent attempts to exceed document quotas.
-- **Privacy:** Confirm the production CSP and authorized origins, production error reporter, PII redaction, data
+- **Privacy:** Confirm the production CSP and authorized origins (including Sentry ingestion domains if configured),
+  production error reporter ([Error Tracking & Monitoring](ERROR_TRACKING_AND_MONITORING.md)), PII redaction, data
   retention, and user-data deletion procedure. Use publishable Supabase keys only in the frontend.
 - **Scale:** Run the catalog-query and refresh-load tests described in [Performance and Scalability](PERFORMANCE_AND_SCALABILITY.md)
   against an agreed catalog size and peak concurrent session target. Record p95/p99 latency, error rate, and the
@@ -26,8 +27,9 @@ Record links to those external systems here when they exist.
 - **Recovery:** Define recovery point and time objectives. Enable managed database recovery and encrypted,
   access-controlled offsite Storage copies with a retention schedule. Restore both into an isolated project, verify
   row and object counts plus access policies, and record the date and result.
-- **Operations:** Name the owner, alert route, and escalation path for Auth errors, database latency, Storage
-  failures, browser errors, and deployment failures. Set a staged rollout and rollback decision threshold.
+- **Operations:** Name the owner, alert route (e.g. Sentry alerts, Slack/email notifications), and escalation path for
+  Auth errors, database latency, Storage failures, browser errors, and deployment failures. Set a staged rollout and
+  rollback decision threshold.
 
 ## Release procedure
 

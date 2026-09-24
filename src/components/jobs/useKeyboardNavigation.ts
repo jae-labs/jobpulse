@@ -15,6 +15,7 @@ interface UseKeyboardNavigationOptions {
     index: number,
     options?: { align?: 'auto' | 'start' | 'center' | 'end'; behavior?: 'auto' | 'smooth' }
   ) => void;
+  cardRefs?: React.RefObject<Map<number, HTMLElement>>;
 }
 
 export function useKeyboardNavigation({
@@ -27,6 +28,7 @@ export function useKeyboardNavigation({
   layoutMode,
   updateUrlParam,
   scrollToIndex,
+  cardRefs,
 }: UseKeyboardNavigationOptions) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -100,6 +102,13 @@ export function useKeyboardNavigation({
             window.scrollTo({ top: 80, behavior: 'smooth' });
           }
           scrollToIndex?.(nextIndex, { align: 'auto', behavior: 'smooth' });
+
+          const nextEl = cardRefs?.current?.get(nextJob.id);
+          if (nextEl) {
+            nextEl.focus({ preventScroll: true });
+          } else if (target instanceof HTMLElement && target.dataset.jobCard === 'true') {
+            target.blur();
+          }
         }
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -113,6 +122,13 @@ export function useKeyboardNavigation({
             window.scrollTo({ top: 80, behavior: 'smooth' });
           }
           scrollToIndex?.(prevIndex, { align: 'auto', behavior: 'smooth' });
+
+          const prevEl = cardRefs?.current?.get(prevJob.id);
+          if (prevEl) {
+            prevEl.focus({ preventScroll: true });
+          } else if (target instanceof HTMLElement && target.dataset.jobCard === 'true') {
+            target.blur();
+          }
         }
       } else if (e.key === 'Enter' && selectedJob) {
         const safeUrl = toSafeHttpUrl(selectedJob.url);
@@ -161,6 +177,7 @@ export function useKeyboardNavigation({
       layoutMode,
       updateUrlParam,
       scrollToIndex,
+      cardRefs,
     ]
   );
 

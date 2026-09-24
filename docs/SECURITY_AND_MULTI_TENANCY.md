@@ -50,6 +50,10 @@ signatures, but a caller cannot use that parameter to read another candidate's r
 `public/_headers` sets `nosniff`, frame denial, a referrer policy, a permissions policy, and a Content Security
 Policy. The source header and `index.html` allow same-origin connections and images by default. The build adds the
 configured Supabase HTTP(S) origin to `connect-src` and `img-src`, and its matching WS(S) origin to `connect-src`.
+If an external error tracking service such as Sentry is enabled, its ingestion origin (e.g. `https://*.ingest.sentry.io`)
+must be explicitly allowed in `connect-src` within `index.html`, `public/_headers`, and the `vite.config.ts` CSP
+transform. Furthermore, error reports must strictly redact candidate PII (emails, resume buffers, and API credentials)
+as described in [Error Tracking & Monitoring](ERROR_TRACKING_AND_MONITORING.md).
 Check the built artifacts and test Auth, PostgREST, and Storage against the deployed policy. The current frontend
 does not open a Realtime catalog subscription.
 

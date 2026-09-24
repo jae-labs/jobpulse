@@ -289,6 +289,31 @@ The application is intentionally not indexed by search engines because it is an 
 See [Quality, Accessibility & Compatibility](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) for the accessibility,
 locale, browser-support, security-header, performance, and release-validation standards.
 
+## Documentation
+
+JobPulse technical documentation is organized for progressive discovery—start with the high-level architecture or jump directly to the specific guide matching your domain:
+
+### Architecture & Design
+- **[Architecture Overview](docs/ARCHITECTURE.md)**: High-level system topology, runtime boundaries, TanStack Query data flow, and Mermaid sequence diagrams.
+- **[Component Hierarchy](docs/COMPONENTS.md)**: Component tree, master-detail layout, UI boundaries, props contracts, and refactoring guidelines.
+- **[Design System](docs/DESIGN_SYSTEM.md)**: Semantic visual tokens (`--ds-*`), hairline dark primitives, accessibility contract, and standalone extraction boundaries.
+
+### Data & Security
+- **[Database Schema & Migrations](docs/DATABASE_SCHEMA.md)**: PostgreSQL tables, versioned migrations, server RPC functions, and entity-relationship models.
+- **[Security & Multi-Tenancy](docs/SECURITY_AND_MULTI_TENANCY.md)**: Row-Level Security (RLS) enforcement, Supabase Storage isolation, tenant boundaries, and PII protection.
+
+### Engineering & Quality
+- **[Engineering Standards & Conventions](docs/STANDARDS_AND_CONVENTIONS.md)**: TypeScript guidelines, TanStack Query caching conventions, Git lifecycle hooks, and automated verification gates.
+- **[Quality, Accessibility & Compatibility](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md)**: WCAG 2.1 AA baseline, keyboard navigation cycling, i18n/l10n standards, and browser support.
+- **[Performance & Scalability](docs/PERFORMANCE_AND_SCALABILITY.md)**: Read paths, TanStack Virtual list tuning, query caching strategies, and invite-only benchmarks.
+
+### Operations, Observability & Delivery
+- **[Local Development, Backups & Restore](docs/LOCAL_DEVELOPMENT.md)**: Local Supabase Docker stack, migration parity, production backup, and Storage restore commands.
+- **[Error Tracking & Monitoring](docs/ERROR_TRACKING_AND_MONITORING.md)**: Sentry error reporting architecture, Content Security Policy integration, user context, and PII safeguards.
+- **[Release and Recovery Checklist](docs/RELEASE_AND_RECOVERY.md)**: Launch gates, staged rollout, backup and restore readiness, and incident response runbooks.
+
+See [docs/README.md](docs/README.md) for the central documentation index.
+
 ## Contributing
 
 See [Engineering Standards and Conventions](docs/STANDARDS_AND_CONVENTIONS.md) and

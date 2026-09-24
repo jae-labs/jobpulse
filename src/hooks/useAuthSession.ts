@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { isLocalDevelopmentAuthBypass, localDevelopmentCredentials } from '../lib/localDevAuth';
 import { checkUserAuthorization } from '../components/auth/authConfig';
 import { clearAppCache } from '../lib/queryClient';
+import { setSentryUser } from '../lib/sentry';
 
 export function useAuthSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -24,6 +25,7 @@ export function useAuthSession() {
       if (userChanged) {
         clearAppCache();
         activeUserIdRef.current = newUserId;
+        setSentryUser(newUserId);
       }
 
       if (isInitial || userChanged) {
@@ -77,6 +79,7 @@ export function useAuthSession() {
       if (event === 'SIGNED_OUT' || !session) {
         clearAppCache();
         activeUserIdRef.current = null;
+        setSentryUser(null);
       }
       void verifySession(session, false);
     });

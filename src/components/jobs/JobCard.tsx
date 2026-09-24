@@ -9,23 +9,25 @@ interface JobCardProps {
   job: Job;
   onSelect: (job: Job) => void;
   isSelected?: boolean;
+  tabIndex?: number;
 }
 
 export const JobCard = React.forwardRef<HTMLButtonElement, JobCardProps>(
-  ({ job, onSelect, isSelected = false }, ref) => {
+  ({ job, onSelect, isSelected = false, tabIndex = isSelected ? 0 : -1 }, ref) => {
     const { t } = useTranslation();
     return (
       <button
         ref={ref}
         type="button"
         data-job-card="true"
+        tabIndex={tabIndex}
         onClick={() => onSelect(job)}
         aria-pressed={isSelected}
         className={cn(
           'group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-xl border p-3.5 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
           isSelected
             ? 'border-ds-accent bg-ds-selected shadow-xs ring-1 ring-ds-accent/30'
-            : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-accent focus-visible:ring-1 focus-visible:ring-ds-accent/30',
+            : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-border-strong focus-visible:ring-1 focus-visible:ring-ds-border-strong',
         )}
       >
         <div className="flex flex-col gap-2">

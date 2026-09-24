@@ -17,7 +17,10 @@ function addSupabaseCspOrigins(content: string, apiUrl: string): string {
   websocketUrl.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return content
     .replace("img-src 'self' data: blob:;", `img-src 'self' data: blob: ${url.origin};`)
-    .replace("connect-src 'self';", `connect-src 'self' ${url.origin} ${websocketUrl.origin};`);
+    .replace(
+      /connect-src\s+([^;]+);/,
+      (_, origins) => `connect-src ${origins} ${url.origin} ${websocketUrl.origin};`
+    );
 }
 
 // https://vite.dev/config/
@@ -56,6 +59,9 @@ export default defineConfig(({ mode }) => {
             }
             if (id.includes("@dnd-kit")) {
               return "dnd";
+            }
+            if (id.includes("@sentry")) {
+              return "sentry";
             }
           }
         },

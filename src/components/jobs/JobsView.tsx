@@ -291,13 +291,21 @@ export const JobsView: React.FC<JobsViewProps> = ({
   }, [pageQueryData, pageItems, filteredJobs]);
   const totalMatchingCount = pageQueryData ? pageTotal : filteredJobs.length;
   const totalCatalogCount = overviewMetrics?.total ?? (jobs.length > 0 ? jobs.length : pageTotal);
+  const hasMoreRow = Boolean(hasNextPage);
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
-    count: displayedJobs.length,
+    count: displayedJobs.length + (hasMoreRow ? 1 : 0),
     getScrollElement: () => listContainerRef.current,
-    estimateSize: () => 176,
+    estimateSize: () => 124,
     overscan: 6,
+    getItemKey: (index) => {
+      if (index >= displayedJobs.length) return 'load-more-row';
+      return displayedJobs[index]?.id ?? index;
+    },
   });
+
+  // Track whether deep link has been handled so toggling layoutMode doesn't trigger full-screen
+  const initialDeepLinkHandledRef = useRef<number | null>(null);
 
   // Auto-select job from URL param or default to first in split mode
   useEffect(() => {
@@ -306,11 +314,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
       if (match && match.id !== selectedJob?.id) {
         onSelectJob(match);
       }
-      if (match && (layoutMode === 'list' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
-        setIsDetailFullScreen(true);
+      // Only open full-screen once on initial deep-link arrival, not when simply toggling layoutMode
+      if (initialDeepLinkHandledRef.current !== urlJobId) {
+        initialDeepLinkHandledRef.current = urlJobId;
+        if (match && (layoutMode === 'list' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
+          setIsDetailFullScreen(true);
+        }
       }
       return;
     }
+    initialDeepLinkHandledRef.current = null;
     if (displayedJobs.length === 0) return;
     if (layoutMode === 'split' && !selectedJob && typeof window !== 'undefined' && window.innerWidth >= 1024) {
       onSelectJob(displayedJobs[0]);
@@ -327,11 +340,25 @@ export const JobsView: React.FC<JobsViewProps> = ({
     layoutMode,
     updateUrlParam,
     scrollToIndex: (index, options) => virtualizer.scrollToIndex(index, options),
+    cardRefs,
   });
+
+  // Ensure DOM focus moves to the selected card when keyboard navigation changes selectedJob
+  useEffect(() => {
+    if (!selectedJob) return;
+    const activeEl = document.activeElement;
+    if (activeEl instanceof HTMLElement && activeEl.dataset.jobCard === 'true') {
+      const targetCard = cardRefs.current.get(selectedJob.id);
+      if (targetCard && targetCard !== activeEl) {
+        targetCard.focus({ preventScroll: true });
+      }
+    }
+  }, [selectedJob]);
 
   const handleCardClick = (job: Job) => {
     onSelectJob(job);
     updateUrlParam('job', String(job.id));
+    initialDeepLinkHandledRef.current = job.id;
     if (layoutMode === 'list') {
       setIsDetailFullScreen(true);
     } else if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -601,14 +628,44 @@ export const JobsView: React.FC<JobsViewProps> = ({
           {/* Left Pane (Master List) */}
           <div
             ref={listContainerRef}
-            className={`h-[calc(100vh-9rem)] overflow-y-auto space-y-2 ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
+            className={`h-[calc(100vh-9rem)] overflow-y-auto ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
           >
             <div
               className="relative"
               style={{ height: `${virtualizer.getTotalSize()}px` }}
             >
               {virtualizer.getVirtualItems().map((virtualItem) => {
+                const isLoaderRow = virtualItem.index >= displayedJobs.length;
+
+                if (isLoaderRow) {
+                  return (
+                    <div
+                      key="load-more-row"
+                      ref={virtualizer.measureElement}
+                      data-index={virtualItem.index}
+                      className="absolute left-0 top-0 w-full flex justify-center pt-2 pb-6"
+                      style={{ transform: `translateY(${virtualItem.start}px)` }}
+                    >
+                      <Button
+                        variant="secondary"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="px-5 py-2 text-xs text-ds-text-secondary hover:text-ds-text-primary border-ds-border bg-ds-panel"
+                      >
+                        {isFetchingNextPage ? (
+                          <RefreshCw className="size-3 mr-1.5 animate-spin inline" />
+                        ) : null}
+                        <span>{t('jobs.loadMore', { count: 40 })}</span>
+                      </Button>
+                    </div>
+                  );
+                }
+
                 const job = displayedJobs[virtualItem.index];
+                if (!job) return null;
+
+                const isCardSelected = selectedJob?.id === job.id;
+                const isCardFocusable = selectedJob ? isCardSelected : virtualItem.index === 0;
                 return (
                   <div
                     key={job.id}
@@ -623,29 +680,14 @@ export const JobsView: React.FC<JobsViewProps> = ({
                         else cardRefs.current.delete(job.id);
                       }}
                       job={job}
-                      isSelected={selectedJob?.id === job.id}
+                      isSelected={isCardSelected}
+                      tabIndex={isCardFocusable ? 0 : -1}
                       onSelect={handleCardClick}
                     />
                   </div>
                 );
               })}
             </div>
-
-            {hasNextPage && (
-              <div className="flex justify-center pt-2 pb-6">
-                <Button
-                  variant="secondary"
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="px-5 py-2 text-xs text-ds-text-secondary hover:text-ds-text-primary border-ds-border bg-ds-panel"
-                >
-                  {isFetchingNextPage ? (
-                    <RefreshCw className="size-3 mr-1.5 animate-spin inline" />
-                  ) : null}
-                  <span>{t('jobs.loadMore', { count: 40 })}</span>
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Right Pane (Detail Inspector in 2-Pane Mode) */}

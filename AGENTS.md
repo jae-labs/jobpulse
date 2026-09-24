@@ -85,6 +85,26 @@ npm run check
   - Server state, queries & mutations: `src/hooks/useQueries.ts`, `src/lib/queryClient.ts` (TanStack Query)
   - Domain types: `src/types/job.ts` (Canonical statuses: `new`, `applied`, `interviewing`, `interested`, `not_interested`)
 
+## Documentation & Progressive Discovery
+
+Consult specialized documentation in `docs/` progressively based on the task domain:
+
+| Domain / Task | Document | Read When / Trigger | Key Invariants |
+| --- | --- | --- | --- |
+| **System Architecture** | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Altering runtime boundaries, state topology, or auth flow | Keep `App.tsx` shell lean; manage server state via TanStack Query. |
+| **Component Hierarchy** | [`docs/COMPONENTS.md`](docs/COMPONENTS.md) | Adding views, modifying master-detail, or refactoring layouts | Preserve component boundaries; avoid prop drilling; keep views modular. |
+| **Design System & Tokens** | [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | Adding UI components, modifying colors, or adjusting tokens | Use `--ds-*` tokens; zero domain/Supabase imports in `src/design-system/`. |
+| **Database & Migrations** | [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Modifying tables, RPC functions, or database triggers | Forward migrations only; never edit applied migrations; regenerate types. |
+| **Security & Multi-Tenancy** | [`docs/SECURITY_AND_MULTI_TENANCY.md`](docs/SECURITY_AND_MULTI_TENANCY.md) | Updating RLS policies, storage buckets, or auth boundaries | Ensure RLS on every table; isolate storage objects by `auth.uid()`. |
+| **Error Tracking & Monitoring** | [`docs/ERROR_TRACKING_AND_MONITORING.md`](docs/ERROR_TRACKING_AND_MONITORING.md) | Touching error handling, Sentry config, or CSP headers | Never log PII; ensure CSP connect-src permits ingest endpoints. |
+| **Performance & Scalability** | [`docs/PERFORMANCE_AND_SCALABILITY.md`](docs/PERFORMANCE_AND_SCALABILITY.md) | Tuning list virtualization, pagination, or query caching | TanStack Virtual count/size accuracy; memoize stable callbacks. |
+| **Standards & Conventions** | [`docs/STANDARDS_AND_CONVENTIONS.md`](docs/STANDARDS_AND_CONVENTIONS.md) | Reviewing code style, TanStack Query patterns, or git hooks | Strict TypeScript; no `any`; typed query keys; automated git hooks. |
+| **Accessibility & Quality** | [`docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md`](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) | Modifying keyboard navigation, focus management, or i18n | WCAG 2.1 AA baseline; keyboard shortcuts (`↑`/`↓`, `Cmd+K`); full i18n strings. |
+| **Local Workflow & Backups** | [`docs/LOCAL_DEVELOPMENT.md`](docs/LOCAL_DEVELOPMENT.md) | Working with local Supabase, Docker, seed data, or backups | Use local credentials; never commit `.backups/` or secrets. |
+| **Release & Recovery** | [`docs/RELEASE_AND_RECOVERY.md`](docs/RELEASE_AND_RECOVERY.md) | Pre-deployment verification, launch gates, or incident response | Run `npm run check`; verify backup snapshots before schema changes. |
+
+Progressive discovery entry point: [`docs/README.md`](docs/README.md).
+
 ## Make Changes Safely
 
 - Prefer small, focused diffs.
@@ -128,6 +148,8 @@ npm run check
 
 ## Notes For Agents
 
-- Read `README.md`, `docs/LOCAL_DEVELOPMENT.md`, `mise.toml`, `lefthook.yml`, and `package.json` before altering developer workflows.
+- Read `README.md`, `docs/README.md`, `docs/LOCAL_DEVELOPMENT.md`, `mise.toml`, `lefthook.yml`, and `package.json` before altering developer workflows.
+- Consult the relevant document in `docs/` (see [Documentation & Progressive Discovery](#documentation--progressive-discovery)) before modifying domain subsystems.
 - Always run `npm run check` and verify zero errors before reporting completion.
 - Keep generated artifacts out of git reviews.
+

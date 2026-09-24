@@ -13,6 +13,11 @@ vi.mock('../components/auth/authConfig', () => ({
   checkUserAuthorization: (...args: unknown[]) => mockCheckUserAuthorization(...args),
 }));
 
+const mockSetSentryUser = vi.fn();
+vi.mock('../lib/sentry', () => ({
+  setSentryUser: (userId: string | null) => mockSetSentryUser(userId),
+}));
+
 let authStateChangeCallback: ((event: string, session: Session | null) => void) | null = null;
 let mockGetSession: () => Promise<{ data: { session: Session | null } }>;
 
@@ -72,6 +77,7 @@ describe('useAuthSession', () => {
     expect(result.current.session).toEqual(userSession);
     expect(result.current.isAuthorized).toBe(true);
     expect(mockClearAppCache).toHaveBeenCalledTimes(1);
+    expect(mockSetSentryUser).toHaveBeenCalledWith('user-1');
   });
 
   it('clears cache and sets unauthorized when user is not on allowlist', async () => {
@@ -150,5 +156,6 @@ describe('useAuthSession', () => {
     });
 
     expect(mockClearAppCache).toHaveBeenCalled();
+    expect(mockSetSentryUser).toHaveBeenCalledWith(null);
   });
 });

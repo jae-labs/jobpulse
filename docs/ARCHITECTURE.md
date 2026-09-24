@@ -112,3 +112,16 @@ JobPulse features a decoupled internationalization and localization architecture
 - **Locale-Aware Formatting**: Unified utility functions (`formatDate`, `formatNumber`) leverage the
   ECMAScript `Intl` API dynamically bound to the candidate's active language choice (`en` vs `pt-BR`), ensuring
   correct date formats (e.g. `10/09/2026`) and number separators (e.g. `8.478`).
+
+## Error Tracking & Observability Subsystem
+
+JobPulse isolates error reporting through a centralized, pluggable logger in `src/lib/logger.ts`:
+
+- **Decoupled Call Sites**: Components (`ErrorBoundary`), Supabase mutation handlers, and authentication services
+  route errors exclusively through `reportError(error, context)`.
+- **Pluggable Reporter**: Production telemetry providers such as Sentry register a capture handler via
+  `setErrorReporter(reporter)` without altering application call sites.
+- **Global Error Interception**: `initGlobalErrorLogging()` captures unhandled promise rejections and window-level
+  uncaught errors.
+- **Step-by-Step Enablement**: For Sentry installation, CSP updates, user context tracking, and PII protection rules,
+  see [Error Tracking & Monitoring](ERROR_TRACKING_AND_MONITORING.md).
