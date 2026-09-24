@@ -219,15 +219,17 @@ function RuleCard({
     <Card className="space-y-3.5 p-4 sm:p-5 shadow-xs">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-3.5">{children}</div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onRemove}
-          className="mt-0.5 text-ds-text-muted hover:text-ds-negative transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-ds-hover"
+          className="size-8 text-ds-text-muted hover:text-ds-negative hover:bg-ds-hover"
           title={t('profile.scoring.removeRule', 'Remove rule')}
           aria-label={t('profile.scoring.removeRule', 'Remove rule')}
         >
           <Trash2 className="size-4" />
-        </button>
+        </Button>
       </div>
     </Card>
   );

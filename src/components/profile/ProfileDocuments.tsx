@@ -143,11 +143,13 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => onDownload(item.id, item.file_name)}
                   disabled={downloadingId === item.id}
-                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover hover:bg-ds-hover text-ds-text-secondary flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover hover:bg-ds-hover text-ds-text-secondary"
                   title={downloadTitle}
                   aria-label={downloadTitle}
                 >
@@ -156,16 +158,18 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
                   ) : (
                     <Download className="size-3" />
                   )}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => onDelete(item.id, item.file_name)}
-                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover/80 text-ds-text-secondary hover:text-ds-negative hover:border-ds-negative/40 flex items-center justify-center transition-colors cursor-pointer"
+                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover/80 text-ds-text-secondary hover:text-ds-negative hover:border-ds-negative/40"
                   title={deleteTitle}
                   aria-label={deleteTitle}
                 >
                   <Trash2 className="size-3" />
-                </button>
+                </Button>
               </div>
             </div>
           ))

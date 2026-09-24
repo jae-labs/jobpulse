@@ -33,7 +33,7 @@ export const StatCard: React.FC<StatCardProps> = ({
             onClick();
           }
         }}
-        className={`flex flex-col justify-between space-y-2.5 p-3.5 sm:space-y-3 sm:p-5 ds-interactive-surface cursor-pointer active:scale-[0.99] transition-transform rounded-[var(--ds-radius-card)] bg-ds-panel border border-ds-border shadow-sm overflow-hidden text-left w-full h-full`}
+        className={`flex flex-col justify-between space-y-2.5 p-3.5 sm:space-y-3 sm:p-5 ds-interactive-surface ds-focus-ring cursor-pointer active:scale-[0.99] transition-transform rounded-[var(--ds-radius-card)] bg-ds-panel border border-ds-border shadow-sm overflow-hidden text-left w-full h-full`}
       >
         <div className="space-y-1">
           <div className="flex items-center justify-between w-full">

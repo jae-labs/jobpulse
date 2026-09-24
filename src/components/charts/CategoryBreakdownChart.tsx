@@ -18,15 +18,15 @@ interface CategoryBreakdownChartProps {
   onSelectCategory?: (category: string) => void;
 }
 
-const CHART_FALLBACK_COLORS = [
-  '#22d3ee',
-  '#a78bfa',
-  '#34d399',
-  '#f472b6',
-  '#fb923c',
-  '#60a5fa',
-  '#facc15',
-  '#818cf8',
+const CHART_TOKENS = [
+  '--ds-chart-1',
+  '--ds-chart-2',
+  '--ds-chart-3',
+  '--ds-chart-4',
+  '--ds-chart-5',
+  '--ds-chart-6',
+  '--ds-chart-7',
+  '--ds-chart-8',
 ];
 
 const getCssVar = (name: string, fallback: string = ''): string =>
@@ -104,16 +104,10 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  const palette = useMemo(() => [
-    getCssVar('--ds-chart-1', CHART_FALLBACK_COLORS[0]),
-    getCssVar('--ds-chart-2', CHART_FALLBACK_COLORS[1]),
-    getCssVar('--ds-chart-3', CHART_FALLBACK_COLORS[2]),
-    getCssVar('--ds-chart-4', CHART_FALLBACK_COLORS[3]),
-    getCssVar('--ds-chart-5', CHART_FALLBACK_COLORS[4]),
-    getCssVar('--ds-chart-6', CHART_FALLBACK_COLORS[5]),
-    getCssVar('--ds-chart-7', CHART_FALLBACK_COLORS[6]),
-    getCssVar('--ds-chart-8', CHART_FALLBACK_COLORS[7]),
-  ], []);
+  const palette = useMemo(
+    () => CHART_TOKENS.map((token) => getCssVar(token, `var(${token})`)),
+    []
+  );
 
   const { chartData, topCategory, totalCategories } = useMemo(() => {
     if (categories && categories.length > 0) {
@@ -231,7 +225,7 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
           <button
             type="button"
             onClick={() => onSelectCategory?.(activeCategory.name)}
-            className={`absolute z-0 max-w-[140px] px-4 text-center rounded-xl transition-transform ${
+            className={`absolute z-0 max-w-[140px] px-4 text-center rounded-xl transition-transform ds-focus-ring ${
               onSelectCategory ? 'cursor-pointer hover:scale-105 active:scale-95' : 'pointer-events-none'
             }`}
             title={onSelectCategory ? `View ${activeCategory.name} opportunities` : undefined}

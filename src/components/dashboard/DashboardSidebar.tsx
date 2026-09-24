@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dashboardNavigation, getNavLabel, type DashboardTab } from './navigation';
 import { ProjectSwitcher } from './ProjectSwitcher';
+import { Button } from '../../design-system';
 
 interface DashboardSidebarProps {
   activeTab: DashboardTab;
@@ -68,10 +69,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* Collapse / Expand Toggle Button at Bottom */}
       <div className={`pt-2 border-t border-ds-border w-full flex ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="icon"
           onClick={handleToggle}
-          className="rounded-lg p-1.5 text-ds-text-muted hover:bg-ds-hover hover:text-ds-text-secondary border border-ds-border bg-ds-control transition-colors cursor-pointer"
+          className="size-8"
           title={isCollapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
           aria-label={isCollapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
         >
@@ -80,7 +83,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           ) : (
             <PanelLeftClose className="size-3.5" />
           )}
-        </button>
+        </Button>
       </div>
     </aside>
   );

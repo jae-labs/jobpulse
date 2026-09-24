@@ -98,7 +98,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
                     type="button"
                     aria-pressed={active}
                     onClick={() => onToggleWorkMode(mode)}
-                    className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors cursor-pointer ${
+                    className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors cursor-pointer ds-focus-ring ${
                       active
                         ? 'border-ds-accent bg-ds-accent-subtle text-ds-text-primary shadow-sm'
                         : 'border-ds-border bg-ds-control text-ds-text-secondary hover:border-ds-border-strong hover:bg-ds-hover hover:text-ds-text-primary'

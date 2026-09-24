@@ -135,13 +135,15 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
               <span>{formData.avatar_url ? t('profile.general.changePhoto') : t('profile.general.uploadPhoto')}</span>
             </Button>
             {formData.avatar_url && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleRemoveAvatar}
-                className="h-7 cursor-pointer rounded-lg border border-ds-border-strong px-2.5 text-xs font-medium text-ds-text-secondary transition-colors hover:border-ds-negative hover:text-ds-negative"
+                className="h-7 border border-ds-border-strong px-2.5 text-xs font-medium text-ds-text-secondary hover:border-ds-negative hover:text-ds-negative"
               >
                 {t('common.remove')}
-              </button>
+              </Button>
             )}
           </div>
         </div>

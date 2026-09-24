@@ -18,7 +18,7 @@ import { formatJobDescription } from '../../lib/formatDescription';
 import { cn, toSafeHttpUrl } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../lib/i18n';
-import { EmptyState } from '../../design-system';
+import { Button, EmptyState } from '../../design-system';
 
 interface AiAnalysisData {
   fit_tier?: string;
@@ -266,27 +266,32 @@ export const JobDetailInspector: React.FC<JobDetailInspectorProps> = ({
             </div>
 
             {safeApplyUrl ? (
-              <a
-                href={safeApplyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-md border border-ds-border-strong bg-ds-action-primary hover:bg-ds-hover active:scale-[0.98] px-3.5 py-1.5 text-xs font-semibold text-ds-action-primary-text transition-all cursor-pointer shadow-xs"
-                title="Open application page"
+              <Button
+                asChild
+                size="sm"
+                className="w-full sm:w-auto shrink-0 whitespace-nowrap bg-ds-action-primary hover:bg-ds-hover active:scale-[0.98] text-ds-action-primary-text border border-ds-border-strong text-xs font-semibold shadow-xs"
               >
-                <span>{t('common.apply')}</span>
-                <ExternalLink className="size-3.5 text-ds-action-primary-text shrink-0" />
-                <span className="sr-only"> ({t('common.opensInNewWindow', 'opens in new tab')})</span>
-              </a>
+                <a
+                  href={safeApplyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open application page"
+                >
+                  <span>{t('common.apply')}</span>
+                  <ExternalLink className="size-3.5 text-ds-action-primary-text shrink-0" />
+                  <span className="sr-only"> ({t('common.opensInNewWindow', 'opens in new tab')})</span>
+                </a>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
+                size="sm"
                 disabled
-                className="w-full sm:w-auto shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-md border border-ds-border bg-ds-control opacity-50 px-3.5 py-1.5 text-xs font-semibold text-ds-text-muted cursor-not-allowed shadow-xs"
+                className="w-full sm:w-auto shrink-0 whitespace-nowrap border-ds-border bg-ds-control text-xs font-semibold text-ds-text-muted shadow-xs"
                 title="No valid application URL"
               >
                 <span>{t('common.apply')}</span>
                 <ExternalLink className="size-3.5 text-ds-text-muted shrink-0" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
