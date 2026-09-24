@@ -9,6 +9,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { Job, Profile, JobStatus } from './types/job';
 import { DashboardSidebar } from './components/dashboard/DashboardSidebar';
@@ -38,7 +39,6 @@ import { LoginView } from './components/auth/LoginView';
 import { AccessDeniedView } from './components/auth/AccessDeniedView';
 import { clearAppCache } from './lib/queryClient';
 import { useAuthSession } from './hooks/useAuthSession';
-import { useSupabaseRealtime } from './hooks/useSupabaseRealtime';
 import {
   useOverviewMetricsQuery,
   useScoringPreviewJobsQuery,
@@ -51,6 +51,7 @@ import { recalculateJobs } from './lib/scoreCalculator';
 
 export const App: React.FC = () => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { session, isAuthorized, authError, isAuthChecking } = useAuthSession();
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const location = useLocation();
@@ -139,8 +140,6 @@ export const App: React.FC = () => {
             message: activeQueryError.message || t('common.networkError'),
           })
         : null));
-
-  useSupabaseRealtime(session, isAuthorized);
 
   // Redirect the root path to /overview
   useEffect(() => {
@@ -248,6 +247,15 @@ export const App: React.FC = () => {
 
           {/* Right: User Profile Menu */}
           <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void queryClient.invalidateQueries({ refetchType: 'active' })}
+              aria-label={t('common.refreshData')}
+              title={t('common.refreshData')}
+            >
+              <RefreshCw className="size-3.5" />
+            </Button>
             <UserProfileMenu
               userEmail={session.user.email}
               profile={profile}
@@ -340,6 +348,8 @@ export const App: React.FC = () => {
               {activeTab === 'overview' && (
                 <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadOverview')}>
                   <OverviewView
+                    key={session.user.id}
+                    userId={session.user.id}
                     jobs={jobs}
                     overviewMetrics={overviewMetrics}
                     onNavigateToJobs={(filters) => {

@@ -1,98 +1,57 @@
-# Security & Multi-Tenancy Architecture
+# Security and Multi-Tenancy
 
-JobPulse handles sensitive candidate career documents (resumes, cover letters, compensation targets, contact info).
-This document details the multi-tenant defense-in-depth model implemented across the frontend and database layers.
+JobPulse stores candidate profiles, application status, resumes, and cover letters. The database and private Storage
+bucket enforce access for an invite-only product. The latest forward migration is
+`20260924000001_bind_invites_and_documents_to_user_ids.sql`; run a local migration reset and direct API policy tests
+before applying it to a hosted project.
 
-## Multi-Tenant Security Boundaries
+## Identity and invitations
 
-```mermaid
-flowchart TD
-    subgraph Public["Public Internet (Unauthenticated)"]
-        AnonReq["Anonymous Requests"]
-    end
+- `authorized_users` is the invitation list. A confirmed Supabase Auth email claims an unbound invitation; the
+  invitation is then bound to that account's immutable `auth.users.id` in `authorized_users.user_id`.
+- `is_authorized_user()` requires the bound ID and a confirmed email. Changing or re-registering an email does not
+  transfer an already-bound invitation. An administrator must explicitly review any invitation transfer.
+- The visible login form is not the security boundary. Verify hosted Auth email-confirmation settings and test
+  direct Auth API calls. Local development settings alone do not establish hosted behavior.
+- `anon` cannot read private tables or execute the catalog RPCs. Authorized users can read the shared jobs and
+  sources catalogs.
 
-    subgraph AuthLayer["Authentication Layer (Supabase Auth)"]
-        AuthProvider["Email/password or configured OAuth / PKCE provider"]
-        JWT["Cryptographically Signed JWT"]
-    end
+## Candidate rows
 
-    subgraph RLS["Row-Level Security (PostgreSQL)"]
-        AuthCheck{"is_authorized_user()?"}
-        TenantPolicy{"lower(user_email) == lower(auth.jwt.email)?"}
-        Reject["403 Forbidden / Zero Rows"]
-        AllowShared["Allow Read: jobs, sources"]
-        AllowPrivate["Allow Read/Write: own profile & documents"]
-    end
+`user_profiles`, `user_job_statuses`, `user_job_evaluations`, `user_cvs`, and `user_cover_letters` use the caller's
+`auth.uid()` as the owner for candidate reads. Write policies also require the authenticated owner. Existing rows with a null
+`user_id` remain in the database for reviewed recovery, but they are not readable through an email fallback. Backfill
+legacy rows only after checking the original owner; assigning them by current email alone could expose another
+person's data after address reassignment.
+On authenticated candidate writes, a database trigger sets both `user_id` and the legacy `user_email` from the
+current Auth account. Client-supplied email values cannot reserve another user's unique profile email.
 
-    AnonReq -->|Blocked| Reject
-    AuthProvider --> JWT
-    JWT --> AuthCheck
-    AuthCheck -->|No| Reject
-    AuthCheck -->|Yes| TenantPolicy
-    TenantPolicy -->|Shared Catalogs| AllowShared
-    TenantPolicy -->|Personal Data| AllowPrivate
-```
+Server RPCs validate the authorized caller. The frontend sends an email for compatibility with their current
+signatures, but a caller cannot use that parameter to read another candidate's records.
 
-## Security Guardrails
+## Documents and avatars
 
-### 1. Zero Trust for Anonymous Clients (`anon`)
+- `user-documents` is private and caps each object at 10 MB with an allowed MIME list. A document metadata row
+  reserves its exact `storage_path` before upload. Storage SELECT, UPDATE, and DELETE require a metadata row owned
+  by `auth.uid()` for that exact path. INSERT also requires the first path segment to be that UID. Email-prefixed
+  legacy objects cannot be uploaded anew, and an object without owned metadata cannot be read through the client.
+- Database triggers serialize reservations per user and enforce a maximum of ten CV metadata rows and ten cover
+  letter metadata rows. Failed uploads must remove their reservations; operational cleanup should also detect stale
+  reservations and orphaned Storage objects.
+- Avatars use a separate private bucket. The browser stores a UID-prefixed object path and requests a signed URL
+  with a 15-minute lifetime for display. Email-prefixed legacy objects cannot be read through client RLS; migrate
+  or remove them with an owner-reviewed Storage API operation. Previously issued public URLs may remain in caches
+  until they expire, so treat the bucket transition as a privacy migration rather than immediate revocation of
+  every cached copy.
 
-- The anonymous Supabase role (`anon`) has zero select, insert, update, or delete permissions across all tables.
-- All stored procedure RPCs (`get_overview_metrics`, `get_jobs_page`) have execute privileges revoked from `anon`.
+## Browser and repository controls
 
-### 2. Whitelist-Based Access Control (`authorized_users`)
+`public/_headers` sets `nosniff`, frame denial, a referrer policy, a permissions policy, and a Content Security
+Policy. The source header and `index.html` allow same-origin connections and images by default. The build adds the
+configured Supabase HTTP(S) origin to `connect-src` and `img-src`, and its matching WS(S) origin to `connect-src`.
+Check the built artifacts and test Auth, PostgREST, and Storage against the deployed policy. The current frontend
+does not open a Realtime catalog subscription.
 
-- After successful Supabase Auth sign-in, the user's email is evaluated against `public.authorized_users` via the
-  `public.is_authorized_user()` function.
-- The `is_authorized_user()` function runs with `SECURITY DEFINER` and `SET search_path = public` to avoid search
-  path hijacking and circular RLS recursion.
-- Non-whitelisted authenticated users receive an access-denied state and cannot query any job data.
-
-### 3. Strict Tenant Row Isolation
-
-Every candidate-specific table implements strict isolation policies:
-
-- `user_profiles`: `lower(user_email) = lower(auth.jwt() ->> 'email')`
-- `user_job_statuses`: `lower(user_email) = lower(auth.jwt() ->> 'email')`
-- `user_job_evaluations`: `lower(user_email) = lower(auth.jwt() ->> 'email')`
-- `user_cvs`: `lower(user_email) = lower(auth.jwt() ->> 'email')`
-- `user_cover_letters`: `lower(user_email) = lower(auth.jwt() ->> 'email')`
-
-Even if an authenticated attacker modifies the frontend query to target another user's email, PostgreSQL silently
-filters the query to return zero rows.
-
-### 4. Supabase Storage Object Isolation (`user-documents`)
-
-Resumes and cover letters are stored in the private `user-documents` Supabase Storage bucket.
-
-- **Path Convention**: Document objects must follow the naming pattern:
-  `{user_email}/cv/{timestamp}_{filename}` or `{user_email}/cover-letter/{timestamp}_{filename}`.
-- **Storage RLS Policies**: Storage operations enforce that the first path segment matches the caller's JWT email:
-  `lower(split_part(name, '/', 1)) = lower(auth.jwt() ->> 'email')`.
-- Candidates cannot download, inspect, or overwrite documents belonging to another candidate.
-
-### 5. Quota Enforcement & Abuse Protection
-
-- **Document Size Cap**: 10MB maximum file size enforced at the bucket level and validated on the frontend.
-- **MIME Type Allowlist**: Restricted to `application/pdf`, `application/msword`, `docx`, and `text/plain`.
-- **Count Quotas**: PostgreSQL database triggers (`trg_check_user_cv_limit` and `trg_check_user_cover_letter_limit`)
-  strictly enforce a maximum limit of 10 CVs and 10 Cover Letters per user.
-
-### 6. PII Sanitization Guidelines
-
-- No personal phone numbers, private email addresses, home addresses, or credentials should ever be hardcoded
-  into codebase files or documentation.
-- Test seeds and documentation examples must strictly use RFC 2606 reserved domains (e.g. `@example.com`).
-- The repository pre-commit hook runs `gitleaks protect --staged` to catch any accidental credential leaks.
-- `.backups/` is Git-ignored because database dumps and Storage exports can contain personal data. Local backup
-  restores must never be pointed at a hosted Supabase URL.
-
-### 7. Browser Security Headers
-
-`public/_headers` is deployed by Cloudflare Pages and applies defense-in-depth browser controls:
-
-- A Content Security Policy limits executable code to same-origin assets, disallows plugins and framing, and permits
-  only HTTPS/WebSocket API connections required by Supabase.
-- `X-Content-Type-Options: nosniff`, frame denial, a strict referrer policy, and a restrictive permissions policy
-  reduce exposure to MIME confusion, clickjacking, referrer leakage, and unused browser capabilities.
-- Links opened in a new tab use `noopener,noreferrer` so an external destination cannot control the opener page.
+Never commit service-role credentials, personal data, or `.backups/`. The frontend uses only publishable
+`VITE_SUPABASE_*` credentials. The pre-commit hook runs `gitleaks` on staged changes. Local backups can contain
+personal data and are not a replacement for encrypted offsite recovery; see [Release and Recovery](RELEASE_AND_RECOVERY.md).

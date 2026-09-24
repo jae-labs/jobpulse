@@ -5,6 +5,7 @@ import type { Profile } from '../../types/job';
 import { COUNTRY_CODES } from './profileConstants';
 import { useTranslation } from 'react-i18next';
 import { useSaveAvatarMutation } from '../../hooks/useQueries';
+import { useAvatarUrl } from '../../hooks/useAvatarUrl';
 
 interface ProfileGeneralInfoProps {
   formData: Profile;
@@ -25,6 +26,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const saveAvatarMutation = useSaveAvatarMutation(userEmail);
+  const avatarUrl = useAvatarUrl(formData.avatar_url);
   const countryNames = useMemo(
     () => new Intl.DisplayNames([i18n.language], { type: 'region' }),
     [i18n.language],
@@ -41,17 +43,11 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
       return;
     }
 
-    if (!userEmail) {
-      // Fallback: store as base64 if no auth context (shouldn't happen in prod)
-      const reader = new FileReader();
-      reader.onload = () => onChange('avatar_url', reader.result as string);
-      reader.readAsDataURL(file);
-      return;
-    }
+    if (!userEmail) return;
 
     try {
-      const url = await saveAvatarMutation.mutateAsync(file);
-      onChange('avatar_url', url);
+      const path = await saveAvatarMutation.mutateAsync(file);
+      onChange('avatar_url', path);
     } catch (err: unknown) {
       alert((err instanceof Error ? err.message : undefined) || t('profile.general.avatarUploadError'));
     }
@@ -72,9 +68,9 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
       {/* Profile Photo */}
       <div className="flex items-center gap-4 pb-4 border-b border-ds-border">
         <div className="relative group shrink-0">
-          {formData.avatar_url ? (
+          {avatarUrl ? (
             <img
-              src={formData.avatar_url}
+              src={avatarUrl}
               alt={t('profile.general.avatarAlt')}
               className="size-16 rounded-full border-2 border-ds-accent object-cover shadow-sm"
             />

@@ -11,14 +11,21 @@ import { DEFAULT_PROFILE } from "./defaultProfile";
 const DOCUMENTS_BUCKET = "user-documents";
 const AVATARS_BUCKET = "avatars";
 
+async function getCurrentUserId(): Promise<string> {
+  if (!supabase) throw new Error("Database unavailable");
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.user.id) throw new Error("Active user session required");
+  return session.user.id;
+}
+
 /**
- * Uploads a user avatar image to Supabase Storage and returns the public URL.
+ * Uploads a user avatar image to private Supabase Storage and returns its path.
  * Replaces any existing avatar for the user.
  */
 export async function saveUserAvatar(
   email: string,
   file: File,
-): Promise<{ url: string } | { error: string }> {
+): Promise<{ path: string } | { error: string }> {
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail || !supabase) return { error: "Database unavailable" };
 
@@ -26,19 +33,17 @@ export async function saveUserAvatar(
     return { error: "Avatar exceeds the 2MB size limit." };
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const storagePath = `${cleanEmail}/avatar.${ext}`;
+  try {
+    const storagePath = `${await getCurrentUserId()}/avatar`;
+    const { error: uploadError } = await supabase.storage
+      .from(AVATARS_BUCKET)
+      .upload(storagePath, file, { contentType: file.type, upsert: true });
+    if (uploadError) return { error: uploadError.message };
 
-  const { error: uploadError } = await supabase.storage
-    .from(AVATARS_BUCKET)
-    .upload(storagePath, file, { contentType: file.type, upsert: true });
-
-  if (uploadError) return { error: uploadError.message };
-
-  const { data } = supabase.storage
-    .from(AVATARS_BUCKET)
-    .getPublicUrl(storagePath);
-  return { url: data.publicUrl };
+    return { path: storagePath };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Avatar upload failed" };
+  }
 }
 
 function base64ToBytes(base64: string): Uint8Array {
@@ -59,10 +64,11 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
   }
 
   try {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from("user_profiles")
       .select("*")
-      .eq("user_email", cleanEmail)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (error) {
@@ -141,7 +147,9 @@ export async function saveUserProfile(
       : profile.name || "";
 
   try {
+    const userId = await getCurrentUserId();
     const payload: Record<string, any> = {
+      user_id: userId,
       user_email: cleanEmail,
       name: fullName,
       first_name: profile.first_name || "",
@@ -176,7 +184,7 @@ export async function saveUserProfile(
     }
 
     const { error } = await supabase.from("user_profiles").upsert(payload, {
-      onConflict: "user_email",
+      onConflict: "user_id",
     });
 
     if (error) {
@@ -200,10 +208,11 @@ export async function loadUserCVsMetadata(
   if (!cleanEmail || !supabase) return [];
 
   try {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from("user_cvs")
       .select("id, user_email, file_name, file_size, mime_type, description, uploaded_at")
-      .eq("user_email", cleanEmail)
+      .eq("user_id", userId)
       .order("uploaded_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -224,16 +233,17 @@ export async function downloadUserCVBlob(
   if (!supabase) return null;
 
   try {
+    const userId = await getCurrentUserId();
     let query = supabase
       .from("user_cvs")
-      .select("file_name, mime_type, storage_path");
+      .select("file_name, mime_type, storage_path")
+      .eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       query = query.eq("id", emailOrId);
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return null;
-      query = query.eq("user_email", cleanEmail);
       if (cvId) {
         query = query.eq("id", cvId);
       } else {
@@ -285,11 +295,12 @@ export async function saveUserCV(
   }
 
   try {
+    const userId = await getCurrentUserId();
     // Check quota before attempting storage upload
     const { count, error: countErr } = await supabase
       .from("user_cvs")
       .select("*", { count: "exact", head: true })
-      .eq("user_email", cleanEmail);
+      .eq("user_id", userId);
 
     if (!countErr && (count || 0) >= MAX_DOCUMENTS_PER_TYPE) {
       return {
@@ -298,20 +309,11 @@ export async function saveUserCV(
       };
     }
 
-    const timestamp = Date.now();
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${cleanEmail}/cv/${timestamp}_${sanitizedFileName}`;
+    const storagePath = `${userId}/cv/${crypto.randomUUID()}_${sanitizedFileName}`;
     const uploadBody = typeof fileData === "string" ? base64ToBytes(fileData) : fileData;
-    const { error: uploadError } = await supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .upload(storagePath, uploadBody, {
-        contentType: mimeType,
-        upsert: true,
-      });
-
-    if (uploadError) return { success: false, error: uploadError.message };
-
-    const { error } = await supabase.from("user_cvs").insert({
+    const { data: reservation, error } = await supabase.from("user_cvs").insert({
+      user_id: userId,
       user_email: cleanEmail,
       file_name: fileName,
       file_size: fileSize,
@@ -319,12 +321,22 @@ export async function saveUserCV(
       storage_path: storagePath,
       description: description.trim(),
       uploaded_at: new Date().toISOString(),
-    });
+    }).select("id").single();
+    if (error) return { success: false, error: error.message };
 
-    if (error) {
-      // Rollback newly uploaded file from storage to prevent orphan storage accumulation
-      await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
-      return { success: false, error: error.message };
+    let uploadFailure: string | null = null;
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .upload(storagePath, uploadBody, { contentType: mimeType, upsert: false });
+      uploadFailure = uploadError?.message ?? null;
+    } catch (uploadError) {
+      uploadFailure = uploadError instanceof Error ? uploadError.message : "CV upload failed";
+    }
+    if (uploadFailure) {
+      const { error: cleanupError } = await supabase.from("user_cvs").delete().eq("id", reservation.id).eq("user_id", userId);
+      if (cleanupError) reportError(new Error(`CV reservation cleanup failed: ${cleanupError.message}`));
+      return { success: false, error: uploadFailure };
     }
     return { success: true };
   } catch (err: unknown) {
@@ -343,14 +355,14 @@ export async function deleteUserCV(
   if (!supabase) return false;
 
   try {
-    let query = supabase.from("user_cvs").select("storage_path");
+    const userId = await getCurrentUserId();
+    let query = supabase.from("user_cvs").select("storage_path").eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       query = query.eq("id", emailOrId);
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return false;
-      query = query.eq("user_email", cleanEmail);
       if (cvId) query = query.eq("id", cvId);
     }
 
@@ -367,12 +379,11 @@ export async function deleteUserCV(
       }
     }
 
-    let delQuery = supabase.from("user_cvs").delete();
+    let delQuery = supabase.from("user_cvs").delete().eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       delQuery = delQuery.eq("id", emailOrId);
     } else {
-      delQuery = delQuery.eq("user_email", emailOrId.trim().toLowerCase());
       if (cvId) delQuery = delQuery.eq("id", cvId);
     }
 
@@ -393,10 +404,11 @@ export async function loadUserCoverLettersMetadata(
   if (!cleanEmail || !supabase) return [];
 
   try {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from("user_cover_letters")
       .select("id, user_email, file_name, file_size, mime_type, description, uploaded_at")
-      .eq("user_email", cleanEmail)
+      .eq("user_id", userId)
       .order("uploaded_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -417,16 +429,17 @@ export async function downloadUserCoverLetterBlob(
   if (!supabase) return null;
 
   try {
+    const userId = await getCurrentUserId();
     let query = supabase
       .from("user_cover_letters")
-      .select("file_name, mime_type, storage_path");
+      .select("file_name, mime_type, storage_path")
+      .eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       query = query.eq("id", emailOrId);
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return null;
-      query = query.eq("user_email", cleanEmail);
       if (coverLetterId) {
         query = query.eq("id", coverLetterId);
       } else {
@@ -475,11 +488,12 @@ export async function saveUserCoverLetter(
   }
 
   try {
+    const userId = await getCurrentUserId();
     // Check quota before attempting storage upload
     const { count, error: countErr } = await supabase
       .from("user_cover_letters")
       .select("*", { count: "exact", head: true })
-      .eq("user_email", cleanEmail);
+      .eq("user_id", userId);
 
     if (!countErr && (count || 0) >= MAX_DOCUMENTS_PER_TYPE) {
       return {
@@ -488,20 +502,11 @@ export async function saveUserCoverLetter(
       };
     }
 
-    const timestamp = Date.now();
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${cleanEmail}/cover-letter/${timestamp}_${sanitizedFileName}`;
+    const storagePath = `${userId}/cover-letter/${crypto.randomUUID()}_${sanitizedFileName}`;
     const uploadBody = typeof fileData === "string" ? base64ToBytes(fileData) : fileData;
-    const { error: uploadError } = await supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .upload(storagePath, uploadBody, {
-        contentType: mimeType,
-        upsert: true,
-      });
-
-    if (uploadError) return { success: false, error: uploadError.message };
-
-    const { error } = await supabase.from("user_cover_letters").insert({
+    const { data: reservation, error } = await supabase.from("user_cover_letters").insert({
+      user_id: userId,
       user_email: cleanEmail,
       file_name: fileName,
       file_size: fileSize,
@@ -509,12 +514,22 @@ export async function saveUserCoverLetter(
       storage_path: storagePath,
       description: description.trim(),
       uploaded_at: new Date().toISOString(),
-    });
+    }).select("id").single();
+    if (error) return { success: false, error: error.message };
 
-    if (error) {
-      // Rollback newly uploaded file from storage to prevent orphan storage accumulation
-      await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
-      return { success: false, error: error.message };
+    let uploadFailure: string | null = null;
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .upload(storagePath, uploadBody, { contentType: mimeType, upsert: false });
+      uploadFailure = uploadError?.message ?? null;
+    } catch (uploadError) {
+      uploadFailure = uploadError instanceof Error ? uploadError.message : "Cover letter upload failed";
+    }
+    if (uploadFailure) {
+      const { error: cleanupError } = await supabase.from("user_cover_letters").delete().eq("id", reservation.id).eq("user_id", userId);
+      if (cleanupError) reportError(new Error(`Cover-letter reservation cleanup failed: ${cleanupError.message}`));
+      return { success: false, error: uploadFailure };
     }
     return { success: true };
   } catch (err: unknown) {
@@ -536,16 +551,17 @@ export async function deleteUserCoverLetter(
   if (!supabase) return false;
 
   try {
+    const userId = await getCurrentUserId();
     let query = supabase
       .from("user_cover_letters")
-      .select("storage_path");
+      .select("storage_path")
+      .eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       query = query.eq("id", emailOrId);
     } else {
       const cleanEmail = emailOrId.trim().toLowerCase();
       if (!cleanEmail) return false;
-      query = query.eq("user_email", cleanEmail);
       if (coverLetterId) query = query.eq("id", coverLetterId);
     }
 
@@ -562,12 +578,11 @@ export async function deleteUserCoverLetter(
       }
     }
 
-    let delQuery = supabase.from("user_cover_letters").delete();
+    let delQuery = supabase.from("user_cover_letters").delete().eq("user_id", userId);
 
     if (typeof emailOrId === "number") {
       delQuery = delQuery.eq("id", emailOrId);
     } else {
-      delQuery = delQuery.eq("user_email", emailOrId.trim().toLowerCase());
       if (coverLetterId) delQuery = delQuery.eq("id", coverLetterId);
     }
 

@@ -1,50 +1,46 @@
-# Performance & Scalability Architecture
+# Performance and Scalability
 
-JobPulse is designed to scale to hundreds of thousands of open opportunities and thousands of concurrent candidates
-without performance degradation.
+This document describes the current implementation. The repository does not contain a representative concurrent load
+test or published production latency measurements. Catalog size and concurrency limits are therefore unverified.
 
-## Scalability Challenges & Solutions
+A single-session local Docker probe on 24 September 2026 inserted 100,000 synthetic jobs inside a rolled-back
+transaction. `EXPLAIN (ANALYZE, BUFFERS, TIMING OFF)` measured 99 ms for a 40-item `get_jobs_page` request and
+90 ms for `get_overview_metrics`. The respective plans used about 2,066 and 3,156 temporary blocks read. These
+figures describe one developer machine with a synthetic, uniform catalog and no competing traffic. They are not
+production latency estimates or capacity evidence; the temporary I/O is a reason to measure sort and aggregate
+cost under realistic filters and concurrency.
 
-### 1. In-Memory Catalog vs. Server-Side Pagination
+## Current read path
 
-| Strategy | Catalog Size | Initial Transfer | Browser Memory | Scalability Ceiling |
-| :--- | :--- | :--- | :--- | :--- |
-| **Legacy In-Memory (`useJobsQuery`)** | 5,000 jobs | ~2.5 MB | ~35 MB | ~10,000 jobs (UI freezes, OOM risks) |
-| **Server-Side RPC (`useJobsPageQuery`)** | 100,000+ jobs | ~25 KB (40 items) | < 2 MB | **Unlimited** (O(1) client footprint) |
+- `useJobsInfiniteQuery` requests 40 rows at a time from `get_jobs_page`; `useJobsPageQuery` caps a request at 100 rows.
+  Both use offset pagination. TanStack Query retains fetched pages in the browser until the query is removed.
+- `get_jobs_page` joins jobs with candidate evaluations and statuses, filters and sorts the result, and computes an
+  exact total for every request. A small response does not guarantee a small database scan or sort.
+- `get_overview_metrics` computes dashboard aggregates in PostgreSQL. Its latency depends on catalog size, indexes,
+  concurrent load, and the query plan; no latency target has been verified in this repository.
+- `@tanstack/react-virtual` limits mounted job cards to those near the viewport. It does not cap retained query data
+  or database work. Chart components are loaded on demand.
+- The discovered-location menu reports counts only for loaded, currently filtered results. Fixed regional choices
+  remain available independently. Those local counts are not global catalog facets.
+- The jobs RPC rejects search and location terms over 80 characters and treats `%` and `_` literally. This prevents
+  wildcard amplification, but it does not eliminate the exact count and sort cost for broad legitimate searches.
+- The frontend does not subscribe to catalog changes. TanStack Query refetches stale active queries when the window
+  regains focus; the header's **Refresh data** button invalidates and refetches active queries on demand. Mutations
+  invalidate affected queries. Catalog updates may therefore remain unseen while a candidate keeps the page open
+  and in focus without refreshing.
 
-- **Recommendation**:
-  Phased deprecation of `useJobsQuery`'s `fetchAllRows` loop. Use `useJobsPageQuery` everywhere in `JobsView`, and
-  use server-side search directly in `CommandMenu.tsx` instead of loading all jobs into memory when pressing `Cmd+K`.
+## Before scaling a public invite-only rollout
 
-### 2. Overview Metric Server Aggregation (`get_overview_metrics`)
+1. Establish a representative catalog, candidate count, job-update rate, and peak concurrent-session target.
+2. Benchmark `get_jobs_page` and `get_overview_metrics` with `EXPLAIN (ANALYZE, BUFFERS)` for common filters,
+   broad search, deep pages, and concurrent sessions. Record p50/p95/p99 latency, rows examined, and database CPU.
+3. Use the results to choose indexes or a dedicated search/read model. Evaluate seek pagination, bounded or
+   approximate counts, and precomputed metrics where their measured cost warrants them.
+4. Measure data freshness during a representative catalog update burst and normal user sessions. If the product
+   needs automatic updates while a page stays in focus, evaluate bounded polling or coarse catalog-version
+   notifications with a measured API budget.
+5. Measure browser memory after many pages are loaded, initial bundle transfer, and interaction responsiveness on
+   lower-end mobile devices. Run the test again after query or cache changes.
 
-- Computing funnel distributions across 50,000 jobs on the client requires parsing thousands of JSON rows.
-- The `get_overview_metrics` PostgreSQL RPC computes category histograms, score distributions, and top skills
-  in a single server pass in < 50ms, returning a lightweight ~2KB JSON response.
-
-### 3. List Virtualization (`@tanstack/react-virtual`)
-
-- Rendering thousands of DOM nodes causes memory bloat and scroll stutter.
-- JobPulse uses `@tanstack/react-virtual` to ensure only visible job cards in the viewport (typically 10-15 nodes)
-  are rendered in the DOM tree, keeping scroll framerates at a constant 60 FPS.
-
-### 4. Production Code-Splitting & Bundle Optimization
-
-Vite bundle chunking is configured in `vite.config.ts` via `manualChunks`:
-
-- **`vendor`**: Core React runtime and routing (~215 KB).
-- **`supabase`**: Supabase authentication and database client (~214 KB).
-- **`query`**: TanStack Query cache management (~39 KB).
-- **`dnd`**: Drag-and-drop sortable engine for dashboard widgets (~54 KB).
-- **`index`**: Pure application logic and UI components. Its exact compressed size is intentionally not documented;
-  inspect the production build output when assessing bundle changes.
-- **Lazy Visualizations**: Heavy Recharts dependencies are dynamically imported on demand (`React.lazy`),
-  preventing chart libraries from blocking the initial page paint.
-
-### 5. Realtime Change Event Debouncing
-
-When background ingestion processes insert hundreds of job records simultaneously, PostgreSQL change-data-capture
-(CDC) emits a high-frequency burst of WebSocket messages.
-
-- The client wraps query invalidations in a debounced scheduler (`debouncedInvalidate` with a 750ms window).
-- This coalesces bursts of 100+ row events into a single query cache invalidation, preventing network storms.
+Bundle sizes and performance numbers should be reported from a named build, dataset, device, and test date rather
+than presented here as fixed properties of the architecture.

@@ -3,6 +3,7 @@ import { User, LogOut, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportedLanguages } from '../../lib/i18n';
 import type { Profile } from '../../types/job';
+import { useAvatarUrl } from '../../hooks/useAvatarUrl';
 
 interface UserProfileMenuProps {
   userEmail?: string | null;
@@ -47,7 +48,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
     userEmail?.split('@')[0] ||
     'User';
 
-  const avatarUrl = profile?.avatar_url;
+  const avatarUrl = useAvatarUrl(profile?.avatar_url);
 
   return (
     <div className="relative inline-flex items-center" ref={menuRef}>

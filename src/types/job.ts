@@ -47,6 +47,10 @@ export interface Job {
   location: string;
   employment_type: string;
   salary_text: string | null;
+  salary_min_amount?: number | null;
+  salary_max_amount?: number | null;
+  salary_currency?: string | null;
+  salary_period?: string | null;
   description?: string;
   url: string;
   source: string;

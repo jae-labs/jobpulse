@@ -42,12 +42,14 @@ ES2020-level browser support, which are present in those browsers.
 
 ## Security and Performance Controls
 
-- Cloudflare Pages headers set a restrictive Content Security Policy, `nosniff`, frame denial, referrer policy, and
-  a restrictive permissions policy. Production CSP permits the configured hosted Supabase endpoints; local Vite
-  development uses the local Supabase HTTP and WebSocket endpoints.
+- Cloudflare Pages headers set a Content Security Policy, `nosniff`, frame denial, referrer policy, and a
+  restrictive permissions policy. `public/_headers` and `index.html` default to same-origin network and image
+  access. At build time, `vite.config.ts` adds only the configured `VITE_SUPABASE_URL` origin to image and network
+  access, plus its matching WebSocket origin to network access. Verify the built `dist/_headers` and HTML against
+  the deployed Supabase URL, then smoke test Auth, database, and Storage flows.
 - External application links must include `noopener,noreferrer` to prevent reverse-tabnabbing.
-- Production bundles use vendor chunking and lazy-loaded charts. Query invalidations are debounced to protect the
-  browser and API during ingestion bursts.
+- Production bundles use vendor chunking and lazy-loaded charts. The frontend refetches stale active queries on
+  window focus and on manual **Refresh data**. Measure concurrent refresh traffic during rollout.
 
 ## Release Gate
 

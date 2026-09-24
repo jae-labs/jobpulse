@@ -8,8 +8,8 @@ export interface AuthorizationResult {
 }
 
 /**
- * Checks whether the given user email is registered in the 'authorized_users'
- * table on Supabase. No hardcoded emails exist in the frontend code.
+ * Reads the invitation bound to the active verified Auth user. RLS uses the
+ * immutable Auth user ID; the display email is not an authorization key.
  */
 export async function checkUserAuthorization(
   email?: string | null
@@ -26,8 +26,7 @@ export async function checkUserAuthorization(
   try {
     const { data, error } = await supabase
       .from('authorized_users')
-      .select('email, role')
-      .eq('email', cleanEmail)
+      .select('role')
       .maybeSingle();
 
     if (error) {

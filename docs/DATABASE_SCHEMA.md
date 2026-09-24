@@ -10,6 +10,7 @@ erDiagram
     AUTHORIZED_USERS {
         bigint id PK
         text email UK
+        uuid user_id UK
         text role
         timestamptz created_at
     }
@@ -38,6 +39,7 @@ erDiagram
 
     USER_PROFILES {
         bigint id PK
+        uuid user_id
         text user_email UK
         text name
         text first_name
@@ -66,6 +68,7 @@ erDiagram
 
     USER_JOB_STATUSES {
         bigint id PK
+        uuid user_id
         text user_email
         bigint job_id FK
         text status
@@ -74,6 +77,7 @@ erDiagram
 
     USER_JOB_EVALUATIONS {
         bigint id PK
+        uuid user_id
         text user_email
         bigint job_id FK
         integer relevance
@@ -85,6 +89,7 @@ erDiagram
 
     USER_CVS {
         bigint id PK
+        uuid user_id
         text user_email
         text file_name
         integer file_size
@@ -97,6 +102,7 @@ erDiagram
 
     USER_COVER_LETTERS {
         bigint id PK
+        uuid user_id
         text user_email
         text file_name
         integer file_size
@@ -128,12 +134,19 @@ erDiagram
 | :--- | :--- | :--- |
 | `jobs` | Global catalog of open opportunities | Shared read for authorized users |
 | `sources` | Opportunity feed health and sync telemetry | Shared read for authorized users |
-| `authorized_users` | Access whitelist and role mapping | Self-lookup only (`email = jwt.email`) |
-| `user_profiles` | Candidate career preferences, skills, and resume data | Strictly isolated (`user_email = jwt.email`) |
-| `user_job_statuses` | Candidate pipeline stages (`new`, `applied`, etc.) | Strictly isolated (`user_email = jwt.email`) |
-| `user_job_evaluations` | Candidate-specific relevance scores and AI reasoning | Strictly isolated (`user_email = jwt.email`) |
-| `user_cvs` | Metadata and storage pointers for uploaded resumes | Strictly isolated (`user_email = jwt.email`) |
-| `user_cover_letters` | Metadata and storage pointers for cover letters | Strictly isolated (`user_email = jwt.email`) |
+| `authorized_users` | Invite-only access list and role mapping | Confirmed Auth account bound to `user_id`; self-lookup by UID |
+| `user_profiles` | Candidate career preferences, skills, and resume data | Candidate reads by `user_id = auth.uid()` |
+| `user_job_statuses` | Candidate pipeline stages (`new`, `applied`, etc.) | Candidate reads by `user_id = auth.uid()` |
+| `user_job_evaluations` | Candidate-specific relevance scores and AI reasoning | Candidate reads by `user_id = auth.uid()` |
+| `user_cvs` | Metadata and storage pointers for uploaded resumes | Candidate reads by `user_id = auth.uid()` |
+| `user_cover_letters` | Metadata and storage pointers for cover letters | Candidate reads by `user_id = auth.uid()` |
+
+Legacy rows with null `user_id` are held for owner-reviewed recovery. They should not be assigned to a new account
+based only on the current holder of an email address. Document objects require an exact, UID-owned metadata path;
+new document uploads use UID-prefixed paths.
+New `user_profiles.avatar_url` values store private avatar object paths, despite the legacy column name. The
+frontend resolves those paths to short-lived signed URLs. Older public avatar URLs are parsed for their object
+path during the transition.
 
 ## Server-Side Stored Procedures (RPCs)
 
@@ -141,15 +154,19 @@ erDiagram
 
 - **Purpose**: Computes funnel status counts, match score distributions, category breakdowns, and top skills
   in a single query run directly on the PostgreSQL server.
-- **Security**: Defined with `SECURITY DEFINER`. Enforces `public.is_authorized_user()` and checks that the caller
-  JWT email matches `p_user_email`. Unauthenticated access (`anon`) is revoked.
+- **Security**: Defined with `SECURITY DEFINER`. Requires a bound, verified invitation, checks that a caller cannot
+  request another email, and reads candidate-specific data by the caller's UID. Unauthenticated access (`anon`)
+  is revoked.
 
 ### 2. `get_jobs_page(...)`
 
-- **Purpose**: High-speed paginated query for the opportunities view. Applies search, domain, compensation,
-  and match filters at the database level and returns `{ total: number, items: Job[] }`.
-- **Security**: Defined with `SECURITY DEFINER`. Validates that caller is authorized and cannot request data
-  for other user emails.
+- **Purpose**: Bounded paginated query for the opportunities view. Applies search, domain, compensation,
+  and match filters at the database level and returns `{ total: number, items: Job[] }`. The numeric `50k`–`80k`
+  compensation thresholds require normalized annual EUR salary data. A disclosed-salary filter is separate;
+  unknown currencies or periods do not satisfy an annual EUR threshold. The Jobs view applies the same rule when
+  filtering locally loaded fallback data.
+- **Security**: Defined with `SECURITY DEFINER`. Validates that the caller is authorized, cannot request another
+  email, and joins candidate-specific data by UID.
 
 ## Migration Parity & Type Generation
 

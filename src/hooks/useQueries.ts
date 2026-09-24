@@ -14,6 +14,13 @@ import {
   saveUserAvatar,
 } from "../lib/userProfile";
 
+async function currentUserId(): Promise<string> {
+  if (!supabase) throw new Error("Supabase is not initialized");
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.user.id) throw new Error("Active user session required");
+  return session.user.id;
+}
+
 export const queryKeys = {
   overviewMetrics: (email?: string | null) => ["overview-metrics", email ? email.trim().toLowerCase() : null] as const,
   jobsPage: (email?: string | null, params?: unknown) => ["jobs-page", email ? email.trim().toLowerCase() : null, params] as const,
@@ -79,6 +86,10 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
       location: String(item.location ?? ''),
       employment_type: String(item.employment_type ?? ''),
       salary_text: item.salary_text ? String(item.salary_text) : null,
+      salary_min_amount: typeof item.salary_min_amount === 'number' ? item.salary_min_amount : null,
+      salary_max_amount: typeof item.salary_max_amount === 'number' ? item.salary_max_amount : null,
+      salary_currency: typeof item.salary_currency === 'string' ? item.salary_currency : null,
+      salary_period: typeof item.salary_period === 'string' ? item.salary_period : null,
       description: item.description ? String(item.description) : undefined,
       url: String(item.url ?? ''),
       source: String(item.source ?? ''),
@@ -209,10 +220,11 @@ export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = 
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
       if (!cleanEmail) return [];
+      const userId = await currentUserId();
       const { data, error } = await supabase
         .from("user_job_evaluations")
-        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, url, source, status, last_seen_at, role_domain, seniority_level)")
-        .eq("user_email", cleanEmail)
+        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, status, last_seen_at, role_domain, seniority_level)")
+        .eq("user_id", userId)
         .order("relevance", { ascending: false })
         .limit(100);
       if (error) throw new Error(error.message);
@@ -242,15 +254,16 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<{ description?: string; ai_analysis?: Record<string, unknown> }> => {
       if (!supabase || !jobId) throw new Error("Supabase is not initialized or invalid jobId");
+      const userId = cleanEmail ? await currentUserId() : null;
 
       const [jobRes, evalRes] = await Promise.all([
         supabase.from("jobs").select("description, ai_analysis").eq("id", jobId).maybeSingle(),
-        cleanEmail
+        userId
           ? supabase
               .from("user_job_evaluations")
               .select("ai_analysis")
               .eq("job_id", jobId)
-              .eq("user_email", cleanEmail)
+              .eq("user_id", userId)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
@@ -277,13 +290,14 @@ export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<Job | null> => {
       if (!supabase || !jobId) return null;
+      const userId = cleanEmail ? await currentUserId() : null;
       const [jobResult, statusResult, evaluationResult] = await Promise.all([
         supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
-        cleanEmail
-          ? supabase.from('user_job_statuses').select('status').eq('job_id', jobId).eq('user_email', cleanEmail).maybeSingle()
+        userId
+          ? supabase.from('user_job_statuses').select('status').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
-        cleanEmail
-          ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_email', cleanEmail).maybeSingle()
+        userId
+          ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
       if (jobResult.error) throw new Error(jobResult.error.message);
@@ -366,15 +380,17 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
     mutationFn: async ({ job, status }: { job: Job; status: JobStatus }) => {
       if (!supabase) throw new Error("Supabase client is not configured");
       if (!cleanEmail) throw new Error("Active user session required");
+      const userId = await currentUserId();
 
       const { error } = await supabase.from("user_job_statuses").upsert(
         {
+          user_id: userId,
           user_email: cleanEmail,
           job_id: job.id,
           status,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "user_email,job_id" }
+        { onConflict: "user_id,job_id" }
       );
 
       if (error) throw new Error(error.message);
@@ -584,9 +600,10 @@ export function useSaveAvatarMutation(userEmail?: string | null) {
       if (!cleanEmail) throw new Error("User email required");
       const result = await saveUserAvatar(cleanEmail, file);
       if ("error" in result) throw new Error(result.error);
-      return result.url;
+      return result.path;
     },
-    onSuccess: () => {
+    onSuccess: (path) => {
+      void queryClient.invalidateQueries({ queryKey: ['avatar-url', path] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.profile(cleanEmail) });
     },
   });

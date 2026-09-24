@@ -63,7 +63,7 @@
   </a>
   <a href="https://vitest.dev">
     <img
-      src="https://img.shields.io/badge/Tests-40_passed-brightgreen?logo=vitest&logoColor=white"
+      src="https://img.shields.io/badge/Tests-Vitest-brightgreen?logo=vitest&logoColor=white"
       alt="Automated tests"
     />
   </a>
@@ -77,11 +77,13 @@ master-detail view, and tracking recruitment funnel progress across an interacti
 
 **Why JobPulse?**
 
-- **Customizable Analytics Dashboard**: Reorderable bento analytics widgets with drag-and-drop layout persistence
-  backed by `@dnd-kit` and local storage.
+- **Customizable Analytics Dashboard**: Reorderable bento analytics widgets backed by `@dnd-kit`. Widget order
+  persists in this browser's local storage under the authenticated user's ID; it does not sync across devices.
 - **Keyboard-First Opportunity Pipeline**: Two-pane master-detail list with keyboard cycling (`↑`/`↓` or `j`/`k`),
   full-screen reading (`f`), quick apply (`Enter`), and rapid status shortcuts (`a`/`i`/`t`/`n` for Applied,
-  Interview, Interested, and Not Interested) with real-time Supabase synchronization.
+  Interview, Interested, and Not Interested) with Supabase-backed status storage.
+- **Catalog Refresh**: Refresh active data from the header, or return to a window after queries have become stale.
+  The frontend does not receive live catalog change events.
 - **Tailored Compatibility Scoring**: Automatically evaluates opportunities against your specific skills, target
   domains, seniority preferences, and compensation criteria.
 - **Connected Opportunity Feeds**: Live status and telemetry across connected opportunity feeds and employer boards.
@@ -240,7 +242,6 @@ schema, run `npm run db:diff`; review its output before creating a migration.
 │   │   ├── auth/                # Supabase login and access control
 │   │   ├── charts/              # Pipeline, relevance, and skill charts
 │   │   ├── dashboard/           # Sidebar, navigation, and sortable widgets
-│   │   ├── employers/           # Employer watchlist management
 │   │   ├── jobs/                # Master-detail split, list view, and detail inspector
 │   │   ├── profile/             # Candidate criteria and scoring weights
 │   │   ├── sources/             # Data sources and connected feed status
@@ -281,13 +282,17 @@ npm run build
 npm run check
 ```
 
+For an invite-only release, use the [Release and Recovery Checklist](docs/RELEASE_AND_RECOVERY.md). The repository's
+`make backup` command creates a manual local export; it does not configure scheduled production recovery.
+
 The application is intentionally not indexed by search engines because it is an authenticated personal dashboard.
 See [Quality, Accessibility & Compatibility](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) for the accessibility,
 locale, browser-support, security-header, performance, and release-validation standards.
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/jae-labs/template?tab=contributing-ov-file).
+See [Engineering Standards and Conventions](docs/STANDARDS_AND_CONVENTIONS.md) and
+[Local Development](docs/LOCAL_DEVELOPMENT.md).
 
 ## Agent Notes
 

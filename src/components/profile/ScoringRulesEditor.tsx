@@ -361,6 +361,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({ value, o
                     {cfg.min}
                   </span>
                   <Range
+                    aria-label={t(`profile.scoring.weights.${cfg.key}.title`, { defaultValue: cfg.title })}
                     min={cfg.min}
                     max={cfg.max}
                     step={cfg.step || 1}

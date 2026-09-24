@@ -3,8 +3,9 @@
 ## Default Development Workflow
 
 JobPulse runs Supabase locally in Docker for normal development. This keeps
-browser database, Auth, Realtime, and Storage requests on `127.0.0.1` rather
-than the hosted project.
+browser database, Auth, and Storage requests on `127.0.0.1` rather than the
+hosted project. The local stack also starts Supabase Realtime, but the current
+frontend does not subscribe to catalog changes.
 
 ```bash
 mise install

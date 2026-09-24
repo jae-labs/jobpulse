@@ -70,7 +70,7 @@ describe('JobsView Search Input', () => {
   it('allows user to type without losing focus or cursor jumping', async () => {
     renderJobsView();
 
-    const searchInput = screen.getByPlaceholderText(/search by title, company/i) as HTMLInputElement;
+    const searchInput = screen.getByRole('searchbox', { name: 'Search opportunities' }) as HTMLInputElement;
     expect(searchInput).toBeInTheDocument();
 
     // Type "devops" letter by letter
@@ -87,7 +87,7 @@ describe('JobsView Search Input', () => {
   it('shows clear button when search has text and clears on click', async () => {
     renderJobsView();
 
-    const searchInput = screen.getByPlaceholderText(/search by title, company/i) as HTMLInputElement;
+    const searchInput = screen.getByRole('searchbox', { name: 'Search opportunities' }) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'platform' } });
     expect(searchInput.value).toBe('platform');
 
@@ -97,5 +97,14 @@ describe('JobsView Search Input', () => {
     fireEvent.click(clearBtn);
     expect(searchInput.value).toBe('');
     expect(screen.queryByRole('button', { name: /clear search query/i })).not.toBeInTheDocument();
+  });
+
+  it('labels the location groups and keeps regional filters available', () => {
+    renderJobsView();
+
+    const locations = screen.getByRole('combobox', { name: 'All Locations' });
+    expect(locations.querySelector('optgroup[label="Regional Hubs"]')).not.toBeNull();
+    expect(locations.querySelector('optgroup[label="Locations in loaded results"]')).not.toBeNull();
+    expect(screen.getByRole('option', { name: 'Ireland (National / Remote)' })).toBeInTheDocument();
   });
 });

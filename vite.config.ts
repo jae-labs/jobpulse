@@ -1,12 +1,29 @@
 import { defineConfig } from "vitest/config";
+import { loadEnv } from "vite";
 import { fileURLToPath, URL } from "node:url";
+import { readFile, writeFile } from "node:fs/promises";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 import { visualizer } from "rollup-plugin-visualizer";
 
+function addSupabaseCspOrigins(content: string, apiUrl: string): string {
+  if (!apiUrl) return content;
+  const url = new URL(apiUrl);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('VITE_SUPABASE_URL must use HTTP or HTTPS');
+  }
+  const websocketUrl = new URL(url.origin);
+  websocketUrl.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return content
+    .replace("img-src 'self' data: blob:;", `img-src 'self' data: blob: ${url.origin};`)
+    .replace("connect-src 'self';", `connect-src 'self' ${url.origin} ${websocketUrl.origin};`);
+}
+
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL || '';
+  return {
   server: {
     port: 5173,
     strictPort: true,
@@ -46,15 +63,16 @@ export default defineConfig({
     },
   },
   plugins: [
-    // Strip localhost/127.0.0.1 from CSP connect-src in production builds
+    // Scope network and image access to the one configured Supabase project.
     {
-      name: 'strip-localhost-csp',
-      transformIndexHtml(html, ctx) {
-        if (ctx.server) return html; // keep localhost in dev
-        return html.replace(
-          / http:\/\/127\.0\.0\.1:\* ws:\/\/127\.0\.0\.1:\* http:\/\/localhost:\* ws:\/\/localhost:\*/g,
-          ''
-        );
+      name: 'supabase-csp-origins',
+      transformIndexHtml(html) {
+        return addSupabaseCspOrigins(html, supabaseUrl);
+      },
+      async closeBundle() {
+        const headersPath = fileURLToPath(new URL('./dist/_headers', import.meta.url));
+        const headers = await readFile(headersPath, 'utf8');
+        await writeFile(headersPath, addSupabaseCspOrigins(headers, supabaseUrl));
       },
     },
     react(),
@@ -92,4 +110,5 @@ export default defineConfig({
       ],
     },
   },
+  };
 });

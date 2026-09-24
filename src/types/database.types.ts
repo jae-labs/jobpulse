@@ -40,18 +40,21 @@ export type Database = {
           email: string
           id: number
           role: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           id?: number
           role?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           id?: number
           role?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -497,6 +500,11 @@ export type Database = {
       }
       get_overview_metrics: { Args: { p_user_email?: string }; Returns: Json }
       is_authorized_user: { Args: never; Returns: boolean }
+      jobpulse_literal_search_pattern: {
+        Args: { input: string }
+        Returns: string
+      }
+      owns_document_object: { Args: { object_name: string }; Returns: boolean }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

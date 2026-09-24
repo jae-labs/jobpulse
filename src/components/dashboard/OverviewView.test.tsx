@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { OverviewView } from './OverviewView';
 import type { OverviewMetrics, Job } from '../../types/job';
 
@@ -46,6 +46,29 @@ const mockJobs: Job[] = [
 ];
 
 describe('OverviewView', () => {
+  afterEach(() => window.localStorage.clear());
+
+  it('restores widget order for the signed-in user', async () => {
+    window.localStorage.setItem(
+      'jobpulse:overview-widget-order:test-user',
+      JSON.stringify(['high-fit-opportunities', 'tracked-opportunities']),
+    );
+    render(
+      <Suspense fallback={<div>Loading...</div>}>
+        <OverviewView
+          userId="test-user"
+          overviewMetrics={mockMetrics}
+          jobs={mockJobs}
+          onNavigateToJobs={vi.fn()}
+        />
+      </Suspense>
+    );
+
+    const highFit = await screen.findByText('High-Fit Matches');
+    const tracked = await screen.findByText('Tracked Opportunities');
+    expect(highFit.compareDocumentPosition(tracked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('renders summary stat cards with correct metrics', async () => {
     const handleNavigate = vi.fn();
     render(

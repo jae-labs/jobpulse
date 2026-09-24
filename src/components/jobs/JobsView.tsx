@@ -48,25 +48,15 @@ interface JobsViewProps {
   userEmail?: string | null;
 }
 
-const parseSalaryMax = (salaryText: string | null | undefined): number | null => {
-  if (!salaryText) return null;
-  const matches = salaryText.match(/\d[\d,]*/g);
-  if (!matches) return null;
-  const nums = matches
-    .map((m) => {
-      let val = parseInt(m.replace(/,/g, ''), 10);
-      if (val < 1000) val *= 1000;
-      return val;
-    })
-    .filter((n) => !isNaN(n) && n >= 15000);
-  if (nums.length === 0) return null;
-  return Math.max(...nums);
+const annualEurSalaryMax = (job: Job): number | null => {
+  if (job.salary_currency !== 'EUR' || job.salary_period !== 'annual') return null;
+  return job.salary_max_amount ?? job.salary_min_amount ?? null;
 };
 
-const matchesSalaryFilter = (salaryText: string | null | undefined, filter: string): boolean => {
+const matchesSalaryFilter = (job: Job, filter: string): boolean => {
   if (filter === 'all') return true;
-  if (filter === 'disclosed') return Boolean(salaryText && salaryText.trim());
-  const maxSal = parseSalaryMax(salaryText);
+  if (filter === 'disclosed') return job.salary_max_amount != null;
+  const maxSal = annualEurSalaryMax(job);
   if (filter === '50k') return maxSal !== null && maxSal >= 50000;
   if (filter === '60k') return maxSal !== null && maxSal >= 60000;
   if (filter === '70k') return maxSal !== null && maxSal >= 70000;
@@ -95,7 +85,7 @@ const REGIONAL_LOCATIONS = [
   { id: 'kildare', label: 'Kildare' },
   { id: 'laois', label: 'Laois' },
   { id: 'kilkenny', label: 'Kilkenny' },
-  { id: 'ireland', label: 'Ireland (National / Remote)' },
+  { id: 'ireland', label: 'Ireland' },
 ] as const;
 
 export const JobsView: React.FC<JobsViewProps> = ({
@@ -205,7 +195,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
       const text = `${job.title} ${job.company} ${job.location} ${(job.matched_skills || []).join(' ')}`.toLowerCase();
       const matchesQuery = !activeSearch.trim() || text.includes(activeSearch.toLowerCase());
 
-      const matchesSalary = matchesSalaryFilter(job.salary_text, salaryFilter);
+      const matchesSalary = matchesSalaryFilter(job, salaryFilter);
 
       return matchesStatus && matchesMinMatch && matchesQuery && matchesSalary;
     });
@@ -278,8 +268,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
           return sortDir === 'desc' ? cmp : -cmp;
         }
         if (sortField === 'salary') {
-          const salA = parseSalaryMax(a.salary_text) ?? (sortDir === 'desc' ? -1 : 99999999);
-          const salB = parseSalaryMax(b.salary_text) ?? (sortDir === 'desc' ? -1 : 99999999);
+          const salA = annualEurSalaryMax(a) ?? (sortDir === 'desc' ? -1 : 99999999);
+          const salB = annualEurSalaryMax(b) ?? (sortDir === 'desc' ? -1 : 99999999);
           cmp = salB - salA || b.relevance - a.relevance;
           return sortDir === 'desc' ? cmp : -cmp;
         }
@@ -363,6 +353,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-ds-text-muted" />
             <TextField
               type="search"
+              aria-label={t('jobs.searchLabel')}
               value={inputDisplayValue}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
@@ -374,7 +365,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 type="button"
                 onClick={() => handleQueryChange('')}
                 className="absolute right-12 top-1/2 -translate-y-1/2 rounded p-0.5 text-ds-text-muted hover:text-ds-text-primary"
-                aria-label="Clear search query"
+                aria-label={t('jobs.clearSearch')}
               >
                 <X className="size-3" />
               </button>
@@ -384,7 +375,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 type="button"
                 onClick={onOpenCommandMenu}
                 className="hidden sm:inline-flex absolute right-2 top-1/2 -translate-y-1/2 items-center rounded border border-ds-border bg-ds-panel px-1.5 py-0.5 font-mono text-[10px] text-ds-text-muted hover:border-ds-border-strong hover:text-ds-text-secondary cursor-pointer"
-                title="Open Command Menu (⌘K)"
+                title={t('jobs.openCommandMenu')}
+                aria-label={t('jobs.openCommandMenu')}
               >
                 ⌘K
               </button>
@@ -491,10 +483,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[130px]"
               >
                 <option value="all" className="bg-ds-panel text-ds-text-secondary">{t('jobs.allSalaries')}</option>
-                <option value="50k" className="bg-ds-panel text-ds-text-secondary">€50k+</option>
-                <option value="60k" className="bg-ds-panel text-ds-text-secondary">€60k+</option>
-                <option value="70k" className="bg-ds-panel text-ds-text-secondary">€70k+</option>
-                <option value="80k" className="bg-ds-panel text-ds-text-secondary">€80k+</option>
+                <option value="50k" className="bg-ds-panel text-ds-text-secondary">{t('jobs.salary50k')}</option>
+                <option value="60k" className="bg-ds-panel text-ds-text-secondary">{t('jobs.salary60k')}</option>
+                <option value="70k" className="bg-ds-panel text-ds-text-secondary">{t('jobs.salary70k')}</option>
+                <option value="80k" className="bg-ds-panel text-ds-text-secondary">{t('jobs.salary80k')}</option>
                 <option value="disclosed" className="bg-ds-panel text-ds-text-secondary">{t('jobs.disclosedOnly')}</option>
               </select>
             </div>
@@ -511,15 +503,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 <option value="all" className="bg-ds-panel text-ds-text-secondary">
                   {t('jobs.allLocations')} ({totalCatalogCount})
                 </option>
-                <optgroup label="Regional Hubs" className="bg-ds-panel text-ds-text-muted">
+                <optgroup label={t('jobs.regionalHubs')} className="bg-ds-panel text-ds-text-muted">
                   {REGIONAL_LOCATIONS.map((region) => (
                     <option key={region.id} value={region.id} className="bg-ds-panel text-ds-text-secondary">
-                      {region.label}
+                      {region.id === 'ireland' ? t('jobs.irelandNationalRemote') : region.label}
                     </option>
                   ))}
                 </optgroup>
                 {availableLocations.length > 0 && (
-                  <optgroup label="Discovered Locations" className="bg-ds-panel text-ds-text-muted">
+                  <optgroup label={t('jobs.discoveredLocations')} className="bg-ds-panel text-ds-text-muted">
                     {availableLocations
                       .filter((l) => !REGIONAL_LOCATIONS.some((r) => r.id === l.loc.toLowerCase()))
                       .map(({ loc, count }) => (

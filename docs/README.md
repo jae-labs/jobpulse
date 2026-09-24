@@ -14,7 +14,7 @@ personalized opportunity discovery and candidate pipeline tracking.
 4. [Security & Multi-Tenancy](SECURITY_AND_MULTI_TENANCY.md)
    - Row-Level Security (RLS) enforcement, Supabase Storage isolation, tenant boundaries, and PII protection.
 5. [Performance & Scalability](PERFORMANCE_AND_SCALABILITY.md)
-   - Scaling to 100,000+ opportunities, server-side pagination, bundle optimization, and caching strategies.
+   - Current read path, unverified limits, and the benchmark plan for an invite-only rollout.
 6. [Engineering Standards & Conventions](STANDARDS_AND_CONVENTIONS.md)
    - TypeScript guidelines, TanStack Query conventions, Git lifecycle hooks, and automated verification gates.
 7. [Quality, Accessibility & Compatibility](QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md)
@@ -24,6 +24,8 @@ personalized opportunity discovery and candidate pipeline tracking.
    - Local Supabase workflow, migration parity, production backup, and Storage restore commands.
 9. [Design System](DESIGN_SYSTEM.md)
    - Semantic visual tokens, reusable UI primitives, accessibility baseline, and extraction contract.
+10. [Release and Recovery Checklist](RELEASE_AND_RECOVERY.md)
+    - Launch gates, staged rollout, backup and restore readiness, and incident response steps.
 
 ## Target Audience
 

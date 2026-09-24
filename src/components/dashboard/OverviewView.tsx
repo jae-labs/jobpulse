@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -51,9 +51,22 @@ const overviewWidgetIds = [
 
 type OverviewWidgetId = typeof overviewWidgetIds[number];
 
+function loadWidgetOrder(storageKey: string | null): OverviewWidgetId[] {
+  if (!storageKey) return [...overviewWidgetIds];
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
+    if (!Array.isArray(stored)) return [...overviewWidgetIds];
+    const known = stored.filter((id): id is OverviewWidgetId => overviewWidgetIds.includes(id));
+    return [...new Set(known), ...overviewWidgetIds.filter((id) => !known.includes(id))];
+  } catch {
+    return [...overviewWidgetIds];
+  }
+}
+
 
 interface OverviewViewProps {
   jobs: Job[];
+  userId?: string;
   overviewMetrics?: OverviewMetrics;
   onNavigateToJobs: (filters?: {
     status?: 'all' | JobStatus;
@@ -65,12 +78,21 @@ interface OverviewViewProps {
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
   jobs,
+  userId,
   overviewMetrics,
   onNavigateToJobs,
 }) => {
-  const [overviewWidgetOrder, setOverviewWidgetOrder] = useState<OverviewWidgetId[]>([
-    ...overviewWidgetIds,
-  ]);
+  const storageKey = userId ? `jobpulse:overview-widget-order:${userId}` : null;
+  const [overviewWidgetOrder, setOverviewWidgetOrder] = useState<OverviewWidgetId[]>(() => loadWidgetOrder(storageKey));
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(overviewWidgetOrder));
+    } catch {
+      // Storage may be disabled; the current layout still works in memory.
+    }
+  }, [overviewWidgetOrder, storageKey]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

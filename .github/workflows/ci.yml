@@ -63,3 +63,6 @@ jobs:
         # Apply every forward migration to a disposable database before
         # invoking the database linter. GitHub-hosted Linux runners support
         # Docker, which Supabase CLI uses for its local stack.
+
+      - name: Verify tenant and document policies
+        run: docker exec -i supabase_db_jobpulse psql --set ON_ERROR_STOP=1 --username postgres --dbname postgres < supabase/tests/security.sql
