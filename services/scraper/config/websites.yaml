@@ -1,0 +1,2920 @@
+websites:
+- name: Kildare County Council
+  sector: Public service
+  priority: 100
+  careers_url: https://kildarecoco.ie/AllServices/CareerOpportunities/
+  enabled: true
+  scraper: kildare
+  scraper_type: core
+- name: Laois County Council
+  sector: Public service
+  priority: 100
+  careers_url: https://laois.ie/job-vacancies
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Maynooth University
+  sector: Higher education
+  priority: 100
+  careers_url: https://www.maynoothuniversity.ie/human-resources/vacancies
+  enabled: true
+  scraper: corehr
+  scraper_type: core
+- name: PublicJobs.ie
+  sector: Public service portal
+  priority: 99
+  careers_url: https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/
+  enabled: true
+  scraper: publicjobs
+  scraper_type: core
+- name: Anthropic
+  sector: Artificial Intelligence
+  priority: 97
+  careers_url: https://boards.greenhouse.io/anthropic
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: OpenAI
+  sector: Artificial Intelligence
+  priority: 97
+  careers_url: https://jobs.ashbyhq.com/openai
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Intel Ireland
+  sector: Technology
+  priority: 96
+  careers_url: https://jobs.intel.com/en/search-jobs/Ireland/599/2/2963597/53/8/50/2
+  enabled: true
+  scraper: intel
+  scraper_type: core
+- name: Stripe
+  sector: FinTech and Payments
+  priority: 96
+  careers_url: https://boards.greenhouse.io/stripe
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Amazon Ireland
+  sector: Cloud and E-commerce
+  priority: 95
+  careers_url: https://www.amazon.jobs/en/search.json?country=IRL
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AWS (Amazon Web Services)
+  sector: Cloud Computing & AI
+  priority: 96
+  careers_url: https://www.amazon.jobs/en/search.json?business_category[]=amazon-web-services&country=IRL
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Apple Ireland
+  sector: Consumer Technology
+  priority: 95
+  careers_url: https://jobs.apple.com/en-ie/search?location=ireland-IRL
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Google
+  sector: Technology
+  priority: 95
+  careers_url: https://www.google.com/about/careers/applications/jobs/results/?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Meta Ireland
+  sector: Social Media and Technology
+  priority: 95
+  careers_url: https://www.metacareers.com/jobs?locations[0]=Dublin%2C%20Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Microsoft Ireland
+  sector: Technology
+  priority: 95
+  careers_url: https://jobs.careers.microsoft.com/global/en/search?lc=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Grafana Labs
+  sector: Observability and Cloud
+  priority: 95
+  careers_url: https://job-boards.greenhouse.io/grafanalabs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bloomberg
+  sector: Financial Technology
+  priority: 95
+  careers_url: https://bloomberg.avature.net/careers/SearchJobs/dublin
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Autodesk
+  sector: Engineering and Design Software
+  priority: 94
+  careers_url: https://autodesk.wd1.myworkdayjobs.com/Ext
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Crusoe
+  sector: AI Cloud and Infrastructure
+  priority: 95
+  careers_url: https://jobs.ashbyhq.com/crusoe
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Kraken
+  sector: Crypto and FinTech
+  priority: 94
+  careers_url: https://jobs.ashbyhq.com/kraken.com
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: nineDots
+  sector: Technology Recruitment
+  priority: 90
+  careers_url: https://ninedots.io/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Databricks
+  sector: Data and AI Platform
+  priority: 94
+  careers_url: https://boards.greenhouse.io/databricks
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Riot Games Dublin
+  sector: Video Games and Esports
+  priority: 94
+  careers_url: https://boards.greenhouse.io/riotgames
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Technological University Dublin
+  sector: Higher education
+  priority: 94
+  careers_url: https://www.tudublin.ie/for-staff/human-resources/vacancies/
+  enabled: true
+  scraper: corehr
+  scraper_type: core
+- name: Trinity College Dublin
+  sector: Higher education
+  priority: 94
+  careers_url: https://www.tcd.ie/hr/vacancies/
+  enabled: true
+  scraper: corehr
+  scraper_type: core
+- name: University College Dublin
+  sector: Higher education
+  priority: 94
+  careers_url: https://my.corehr.com/pls/ucdrecruit/erq_search_package.search_form?p_company=1&p_internal_external=E
+  enabled: true
+  scraper: corehr
+  scraper_type: core
+- name: Adyen
+  sector: FinTech and Payments
+  priority: 93
+  careers_url: https://boards.greenhouse.io/adyen
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Arm
+  sector: Semiconductor Architecture
+  priority: 93
+  careers_url: https://careers.arm.com/location/ireland-jobs/33099/2963597/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cloudflare
+  sector: Internet Security and CDN
+  priority: 93
+  careers_url: https://boards.greenhouse.io/cloudflare
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: CrowdStrike
+  sector: Cybersecurity
+  priority: 93
+  careers_url: https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Datadog
+  sector: Cloud Observability
+  priority: 93
+  careers_url: https://boards.greenhouse.io/datadog
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Demonware (Activision)
+  sector: Online Software and Gaming Services
+  priority: 93
+  careers_url: https://careers.activisionblizzard.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dublin City University
+  sector: Higher education
+  priority: 93
+  careers_url: https://my.corehr.com/pls/dcurecruit/erq_search_package.search_form?p_company=1&p_internal_external=E
+  enabled: true
+  scraper: corehr
+  scraper_type: core
+- name: Figma
+  sector: Collaborative Interface Design
+  priority: 93
+  careers_url: https://boards.greenhouse.io/figma
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: GitHub (Microsoft)
+  sector: Software Development Platform
+  priority: 93
+  careers_url: https://jobs.careers.microsoft.com/global/en/search?q=GitHub
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Indeed Ireland
+  sector: Job Search Engine
+  priority: 93
+  careers_url: https://careers.indeed.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Notion
+  sector: Connected Workspace
+  priority: 93
+  careers_url: https://jobs.ashbyhq.com/notion
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Revolut Ireland
+  sector: FinTech and Digital Banking
+  priority: 93
+  careers_url: https://www.revolut.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Salesforce
+  sector: Enterprise Software
+  priority: 93
+  careers_url: https://salesforce.wd12.myworkdayjobs.com/External_Career_Site
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Snowflake
+  sector: Data Cloud Platform
+  priority: 93
+  careers_url: https://careers.snowflake.com/us/en/search-results
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Spotify
+  sector: Music and Podcast Streaming
+  priority: 93
+  careers_url: https://jobs.lever.co/spotify
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Tines
+  sector: Security Workflow Automation
+  priority: 93
+  careers_url: https://boards.greenhouse.io/tines
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Activision Blizzard
+  sector: Interactive Entertainment
+  priority: 92
+  careers_url: https://careers.activisionblizzard.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AIB (Allied Irish Banks)
+  sector: Banking and Financial Services
+  priority: 92
+  careers_url: https://jobs.aib.ie/aib/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Airbnb Ireland
+  sector: Travel and Marketplaces
+  priority: 92
+  careers_url: https://boards.greenhouse.io/airbnb
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AMD Ireland
+  sector: Semiconductors and Computing
+  priority: 92
+  careers_url: https://careers-amd.icims.com/jobs/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Analog Devices (ADI)
+  sector: Semiconductors
+  priority: 92
+  careers_url: https://analogdevices.wd1.myworkdayjobs.com/External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Checkout.com
+  sector: FinTech and Payments
+  priority: 92
+  careers_url: https://boards.greenhouse.io/checkout
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Deloitte Ireland
+  sector: Professional Services and Advisory
+  priority: 92
+  careers_url: https://deloitteie.wd3.myworkdayjobs.com/Early_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: GitLab
+  sector: DevSecOps Platform
+  priority: 92
+  careers_url: https://boards.greenhouse.io/gitlab
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Griffith College
+  sector: Higher education
+  priority: 92
+  careers_url: https://griffith.bamboohr.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: HubSpot
+  sector: CRM and Marketing Software
+  priority: 92
+  careers_url: https://www.hubspot.com/careers/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fin (formerly Intercom)
+  sector: AI Customer Support & Messaging
+  priority: 95
+  careers_url: https://boards.greenhouse.io/intercom
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: LinkedIn Ireland
+  sector: Professional Network
+  priority: 92
+  careers_url: https://www.linkedin.com/jobs/search?keywords=LinkedIn&location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Mastercard
+  sector: FinTech and Payments
+  priority: 92
+  careers_url: https://mastercard.wd1.myworkdayjobs.com/CorporateCareers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Monzo Bank
+  sector: FinTech and Digital Banking
+  priority: 92
+  careers_url: https://boards.greenhouse.io/monzo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Palo Alto Networks
+  sector: Cybersecurity
+  priority: 92
+  careers_url: https://paloaltonetworks.wd5.myworkdayjobs.com/en-US/panwexternalcareers/introduceYourself?clientRequestID=06f06ca6dae2441d99391ed600fc2265
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: PayPal Ireland
+  sector: FinTech and Payments
+  priority: 92
+  careers_url: https://paypal.wd1.myworkdayjobs.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Qualcomm Ireland
+  sector: Semiconductors and Wireless
+  priority: 92
+  careers_url: https://careers.qualcomm.com/careers/*/cork_ireland?domain=qualcomm.com
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Replit
+  sector: AI-Powered Software Creation
+  priority: 92
+  careers_url: https://jobs.ashbyhq.com/replit
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SIG (Susquehanna)
+  sector: Quantitative Trading
+  priority: 92
+  careers_url: https://careers.sig.com/job-search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TikTok Ireland
+  sector: Social Media and Video
+  priority: 92
+  careers_url: https://lifeattiktok.com/search?region=Europe&country=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Version 1
+  sector: Digital Transformation and IT
+  priority: 92
+  careers_url: https://careers.smartrecruiters.com/Version1
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ASML
+  sector: Semiconductor Lithography
+  priority: 91
+  careers_url: https://www.asml.com/en/careers/find-your-job
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Atlassian
+  sector: Collaboration Software
+  priority: 91
+  careers_url: https://www.atlassian.com/company/careers/all-jobs?location=Remote%20-%20Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Booking.com
+  sector: Travel and Accommodations
+  priority: 91
+  careers_url: https://priceline.wd1.myworkdayjobs.com/BookingHoldings
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Braze
+  sector: Customer Engagement Platform
+  priority: 91
+  careers_url: https://boards.greenhouse.io/braze
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Confluent
+  sector: Data Streaming Platform
+  priority: 91
+  careers_url: https://www.confluent.io/careers/open-roles/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Distilled (Daft.ie / DoneDeal / Adverts.ie)
+  sector: Online Marketplaces
+  priority: 91
+  careers_url: https://distilled.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Distilled SCH
+  sector: Digital Marketplaces
+  priority: 91
+  careers_url: https://distilled.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Electronic Arts (EA Ireland)
+  sector: Video Games
+  priority: 91
+  careers_url: https://jobs.ea.com/en_US/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Flutter Entertainment
+  sector: Global Sports Betting
+  priority: 91
+  careers_url: https://flutterbe.wd3.myworkdayjobs.com/FlutterInt_External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: HashiCorp (IBM)
+  sector: Cloud Infrastructure Automation
+  priority: 91
+  careers_url: https://www.hashicorp.com/careers/open-positions
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Havok (Microsoft)
+  sector: Game Physics and Tech
+  priority: 91
+  careers_url: https://jobs.careers.microsoft.com/global/en/search?q=Havok
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Intuit
+  sector: Financial Management Software
+  priority: 91
+  careers_url: https://jobs.intuit.com/search-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: KPMG Ireland
+  sector: Professional Services and Audit
+  priority: 91
+  careers_url: https://kpmg.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Okta
+  sector: Identity and Access Management
+  priority: 91
+  careers_url: https://boards.greenhouse.io/okta
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Optum Ireland
+  sector: Healthcare Technology
+  priority: 91
+  careers_url: https://careers.unitedhealthgroup.com/job-search-results/?keyword=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Quality and Qualifications Ireland
+  sector: Education regulator
+  priority: 91
+  careers_url: https://www.qqi.ie/about-us/current-vacancies
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Rubrik
+  sector: Zero Trust Data Security
+  priority: 91
+  careers_url: https://boards.greenhouse.io/rubrik
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ServiceNow
+  sector: Enterprise Cloud Workflow
+  priority: 91
+  careers_url: https://careers.servicenow.com/jobs/?search=&location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Slack (Salesforce)
+  sector: Collaboration Software
+  priority: 91
+  careers_url: https://salesforce.wd12.myworkdayjobs.com/External_Career_Site
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Snyk
+  sector: Developer Security
+  priority: 91
+  careers_url: https://jobs.ashbyhq.com/snyk
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: The Housing Agency
+  sector: Public service
+  priority: 91
+  careers_url: https://www.housingagency.ie/careers/
+  enabled: true
+  scraper: housing_agency
+  scraper_type: core
+- name: TrueLayer
+  sector: Open Banking and Payments
+  priority: 91
+  careers_url: https://boards.greenhouse.io/truelayer
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: UnitedHealth Group (Optum)
+  sector: Healthcare and Health Tech
+  priority: 91
+  careers_url: https://careers.unitedhealthgroup.com/job-search-results/?keyword=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zscaler
+  sector: Cloud Security
+  priority: 91
+  careers_url: https://job-boards.greenhouse.io/zscaler
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Airtable
+  sector: App Creation Platform
+  priority: 90
+  careers_url: https://boards.greenhouse.io/airtable
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Asana
+  sector: Work Management Platform
+  priority: 90
+  careers_url: https://boards.greenhouse.io/asana
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bank of Ireland
+  sector: Banking and Financial Services
+  priority: 90
+  careers_url: https://careers.bankofireland.com/search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Broadcom
+  sector: Semiconductors and Infrastructure
+  priority: 90
+  careers_url: https://broadcom.wd1.myworkdayjobs.com/External_Career
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Canva
+  sector: Visual Communication Platform
+  priority: 90
+  careers_url: https://www.canva.com/careers/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Citi Ireland
+  sector: Financial Services
+  priority: 90
+  careers_url: https://citi.wd5.myworkdayjobs.com/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Elastic
+  sector: Search and Observability
+  priority: 90
+  careers_url: https://boards.greenhouse.io/elastic
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ESB
+  sector: Energy and Utilities
+  priority: 90
+  careers_url: https://careers.esb.ie/search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Expedia Group
+  sector: Travel Technology Platform
+  priority: 90
+  careers_url: https://expedia.wd108.myworkdayjobs.com/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fenergo
+  sector: Client Lifecycle Management RegTech
+  priority: 90
+  careers_url: https://boards.greenhouse.io/fenergo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fidelity Investments Ireland
+  sector: Financial Services
+  priority: 90
+  careers_url: https://fmr.wd1.myworkdayjobs.com/FidelityCareers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fivetran
+  sector: Automated Data Integration
+  priority: 90
+  careers_url: https://boards.greenhouse.io/fivetran
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Glassdoor
+  sector: Workplace Transparency Platform
+  priority: 90
+  careers_url: https://www.glassdoor.com/Jobs/Glassdoor-Jobs-E100431.htm
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Gong
+  sector: Revenue Intelligence AI
+  priority: 90
+  careers_url: https://boards.greenhouse.io/gong
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: JPMorgan Chase
+  sector: Financial Services
+  priority: 90
+  careers_url: https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Klarna
+  sector: FinTech and Payments
+  priority: 90
+  careers_url: https://careers.smartrecruiters.com/Klarna
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Klaviyo
+  sector: Marketing Automation
+  priority: 90
+  careers_url: https://boards.greenhouse.io/klaviyo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Laois and Offaly ETB
+  sector: Education and training
+  priority: 90
+  careers_url: https://www.loetb.ie/vacancies/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Mailchimp (Intuit)
+  sector: Marketing and Email Platform
+  priority: 90
+  careers_url: https://jobs.intuit.com/search-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Medtronic
+  sector: Medical Technology and Solutions
+  priority: 90
+  careers_url: https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Miro
+  sector: Visual Workspace
+  priority: 90
+  careers_url: https://jobs.ashbyhq.com/miro
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Monday.com
+  sector: Work Operating System
+  priority: 90
+  careers_url: https://boards.greenhouse.io/monday
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: MongoDB
+  sector: Database and Cloud
+  priority: 90
+  careers_url: https://boards.greenhouse.io/mongodb
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: N26
+  sector: Mobile Banking
+  priority: 90
+  careers_url: https://boards.greenhouse.io/n26
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Paddy Power (Flutter)
+  sector: Sports Betting and Entertainment
+  priority: 90
+  careers_url: https://flutterbe.wd3.myworkdayjobs.com/FlutterInt_External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ryanair
+  sector: Aviation and Travel
+  priority: 90
+  careers_url: https://careers.ryanair.com/search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SentinelOne
+  sector: Autonomous Cybersecurity
+  priority: 90
+  careers_url: https://boards.greenhouse.io/sentinelone
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SOLAS
+  sector: Education and training
+  priority: 90
+  careers_url: https://www.solas.ie/careers-in-solas/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SumUp Ireland
+  sector: FinTech and Payments
+  priority: 90
+  careers_url: https://boards.greenhouse.io/sumup
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Teamwork.com
+  sector: Project Management Software
+  priority: 90
+  careers_url: https://boards.greenhouse.io/teamwork
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Toast
+  sector: Restaurant Management Software
+  priority: 90
+  careers_url: https://job-boards.greenhouse.io/toast
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Twilio
+  sector: Cloud Communications
+  priority: 90
+  careers_url: https://job-boards.greenhouse.io/twilio
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Uber Ireland
+  sector: Mobility and Technology
+  priority: 90
+  careers_url: https://www.uber.com/us/en/careers/list/?location=IRL-County%20Dublin-Dublin
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zendesk
+  sector: Customer Service Software
+  priority: 90
+  careers_url: https://zendesk.wd1.myworkdayjobs.com/zendesk
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Aer Lingus
+  sector: Aviation and Travel
+  priority: 89
+  careers_url: https://aerlingus-career.talent-soft.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Akamai Technologies
+  sector: Content Delivery and Cloud
+  priority: 89
+  careers_url: https://jobs.akamai.com/en/sites/CX_1/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AMCS Group
+  sector: Environmental and Waste Software
+  priority: 89
+  careers_url: https://amcsgroup.hirehive.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Arista Networks
+  sector: Cloud Networking
+  priority: 89
+  careers_url: https://careers.smartrecruiters.com/aristanetworks
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BearingPoint Ireland
+  sector: Management and Technology Consulting
+  priority: 89
+  careers_url: https://www.bearingpoint.com/en-ie/about-us/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Betfair (Flutter)
+  sector: Betting Exchange Technology
+  priority: 89
+  careers_url: https://flutterbe.wd3.myworkdayjobs.com/FlutterInt_External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BNY Mellon Ireland
+  sector: Investment Banking and Custody
+  priority: 89
+  careers_url: https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Boston Scientific Ireland
+  sector: Medical Devices
+  priority: 89
+  careers_url: https://bostonscientific.eightfold.ai/careers?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bristol Myers Squibb (BMS)
+  sector: Biopharmaceuticals
+  priority: 89
+  careers_url: https://bristolmyerssquibb.wd5.myworkdayjobs.com/BMS
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cadence Design Systems
+  sector: Electronic Design Automation
+  priority: 89
+  careers_url: https://cadence.wd1.myworkdayjobs.com/External_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: daa (Dublin Airport Authority)
+  sector: Airport Operations and Travel Retail
+  priority: 89
+  careers_url: https://jobs-daa.icims.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dell Technologies
+  sector: Hardware and Cloud
+  priority: 89
+  careers_url: https://jobs.dell.com/search-jobs/Ireland/375/2/2963597/53/8/50/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: DocuSign
+  sector: Digital Signature Platform
+  priority: 89
+  careers_url: https://hubcareers-docusign.icims.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dropbox
+  sector: Cloud Storage and Collaboration
+  priority: 89
+  careers_url: https://boards.greenhouse.io/dropbox
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dublin and Dún Laoghaire ETB
+  sector: Education and training
+  priority: 89
+  careers_url: https://etbvacancies.thehirelab.com/Etb/Jobs?etbName=DDL
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: EdgeTier
+  sector: AI Customer Service Analytics
+  priority: 89
+  careers_url: https://apply.workable.com/edgetier/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Education and Training Boards Ireland
+  sector: Education and training
+  priority: 89
+  careers_url: https://www.etbi.ie/recruitment/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: EirGrid Group
+  sector: Electricity Transmission Grid Operator
+  priority: 89
+  careers_url: https://www.eirgrid.ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ESB Networks
+  sector: Electricity Distribution Network
+  priority: 89
+  careers_url: https://careers.esb.ie/search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Eventbrite Ireland
+  sector: Ticketing and Event Technology
+  priority: 89
+  careers_url: https://boards.greenhouse.io/eventbrite
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Grant Thornton Ireland
+  sector: Professional Services and Advisory
+  priority: 89
+  careers_url: https://grantthornton.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Guidewire Software
+  sector: Property and Casualty Cloud
+  priority: 89
+  careers_url: https://careers.guidewire.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Irish Life
+  sector: Insurance and Pensions
+  priority: 89
+  careers_url: https://life-careers.com/irishlife/go/irishlife/3805801/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Irish Rail
+  sector: Public Transport and Rail Infrastructure
+  priority: 89
+  careers_url: https://www.irishrail.ie/en-ie/about-us/company-information/career-opportunities
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Iterable
+  sector: Cross-Channel Marketing Platform
+  priority: 89
+  careers_url: https://boards.greenhouse.io/iterable
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Kildare and Wicklow ETB
+  sector: Education and training
+  priority: 89
+  careers_url: https://kwetb.ie/recruitment/current-vacancies/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Northern Trust Ireland
+  sector: Asset Servicing and Banking
+  priority: 89
+  careers_url: https://ntrs.wd1.myworkdayjobs.com/northerntrust
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Oracle
+  sector: Enterprise Software
+  priority: 89
+  careers_url: https://careers.oracle.com/en/sites/jobsearch/jobs?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Pinterest Ireland
+  sector: Social Media and Visual Discovery
+  priority: 89
+  careers_url: https://job-boards.greenhouse.io/pinterest
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Pure Storage
+  sector: Enterprise Storage
+  priority: 89
+  careers_url: https://job-boards.greenhouse.io/purestorage
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Rapid7 Ireland
+  sector: Cybersecurity and SecOps
+  priority: 89
+  careers_url: https://careers.rapid7.com/jobs/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Red Hat
+  sector: Open Source Software
+  priority: 89
+  careers_url: https://redhat.wd5.myworkdayjobs.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SAP
+  sector: Enterprise Software
+  priority: 89
+  careers_url: https://jobs.sap.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Scopely
+  sector: Mobile Gaming
+  priority: 89
+  careers_url: https://boards.greenhouse.io/scopely
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Splunk (Cisco)
+  sector: Data and Observability
+  priority: 89
+  careers_url: https://jobs.cisco.com/jobs/SearchJobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Squarespace
+  sector: Website Building and Commerce
+  priority: 89
+  careers_url: https://boards.greenhouse.io/squarespace
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: State Street
+  sector: Financial Services and Custody
+  priority: 89
+  careers_url: https://statestreet.wd1.myworkdayjobs.com/Global
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Synopsys Ireland
+  sector: Silicon to Software EDA
+  priority: 89
+  careers_url: https://careers.synopsys.com/location/ireland-jobs/44408/2963597/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ticketmaster Ireland
+  sector: Live Entertainment Ticketing
+  priority: 89
+  careers_url: https://livenation.wd503.myworkdayjobs.com/TMExternalSite
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zoom
+  sector: Video and Work Platform
+  priority: 89
+  careers_url: https://zoom.wd5.myworkdayjobs.com/Zoom
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Allstate Ireland
+  sector: Insurance and Technology
+  priority: 88
+  careers_url: https://allstate.wd5.myworkdayjobs.com/allstate_careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: An Post
+  sector: Postal and Financial Services
+  priority: 88
+  careers_url: https://fa-ewnd-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2001/?mode=location
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Aon Ireland
+  sector: Risk and Financial Services
+  priority: 88
+  careers_url: https://jobs.aon.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Aviva Ireland
+  sector: Insurance and Pensions
+  priority: 88
+  careers_url: https://aviva.wd1.myworkdayjobs.com/External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AXA Ireland
+  sector: Insurance and Financial Services
+  priority: 88
+  careers_url: https://jobs.axa/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BDO Ireland
+  sector: Professional Services and Audit
+  priority: 88
+  careers_url: https://bdo.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BNP Paribas Ireland
+  sector: Banking and Financial Services
+  priority: 88
+  careers_url: https://group.bnpparibas/en/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Capgemini Ireland
+  sector: Consulting and Technology
+  priority: 88
+  careers_url: https://www.capgemini.com/ie-en/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Charles River Development (State Street)
+  sector: Investment Management Software
+  priority: 88
+  careers_url: https://statestreet.wd1.myworkdayjobs.com/Global
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cisco Systems
+  sector: Networking and Cloud
+  priority: 88
+  careers_url: https://careers.cisco.com/global/en/search-results?keywords=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cognizant Ireland
+  sector: IT Services and Consulting
+  priority: 88
+  careers_url: https://www.cognizant.com/ie/en/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cohesity
+  sector: AI-Powered Data Security
+  priority: 88
+  careers_url: https://www.cohesity.com/careers/open-positions/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Couchbase
+  sector: Distributed NoSQL Database
+  priority: 88
+  careers_url: https://boards.greenhouse.io/couchbase
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: CyberArk
+  sector: Privileged Access Management
+  priority: 88
+  careers_url: https://www.cyberark.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: DICE
+  sector: Live Music Discovery and Ticketing
+  priority: 88
+  careers_url: https://boards.greenhouse.io/dice
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dynatrace
+  sector: Application Observability
+  priority: 88
+  careers_url: https://careers.dynatrace.com/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: eBay
+  sector: E-commerce and Marketplaces
+  priority: 88
+  careers_url: https://ebay.wd5.myworkdayjobs.com/apply
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Elavon Ireland (U.S. Bank)
+  sector: Merchant Payment Solutions
+  priority: 88
+  careers_url: https://usbank.wd1.myworkdayjobs.com/US_Bank_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: EPAM Systems
+  sector: Digital Platform Engineering
+  priority: 88
+  careers_url: https://www.epam.com/careers/job-listings
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Equinix Ireland
+  sector: Digital Infrastructure and Data Centers
+  priority: 88
+  careers_url: https://equinix.wd1.myworkdayjobs.com/External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ergo
+  sector: IT Services and Cloud Transformation
+  priority: 88
+  careers_url: https://www.ergogroup.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ericsson Ireland
+  sector: Telecommunications
+  priority: 88
+  careers_url: https://jobs.ericsson.com/en/search-results?keyword=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Etsy
+  sector: E-commerce and Marketplaces
+  priority: 88
+  careers_url: https://careers.etsy.com/global/en/search-results
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fastly
+  sector: Edge Cloud Platform
+  priority: 88
+  careers_url: https://boards.greenhouse.io/fastly
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: FD Technologies (First Derivatives)
+  sector: Capital Markets Technology
+  priority: 88
+  careers_url: https://fdtechnologies.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fexco
+  sector: FinTech and Business Solutions
+  priority: 88
+  careers_url: https://apply.workable.com/fexco/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: First Data (Fiserv)
+  sector: Payment Processing
+  priority: 88
+  careers_url: https://fiserv.wd5.myworkdayjobs.com/EXT
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fiserv Ireland
+  sector: FinTech and Financial Services
+  priority: 88
+  careers_url: https://fiserv.wd5.myworkdayjobs.com/EXT
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fortinet
+  sector: Network Security
+  priority: 88
+  careers_url: https://www.fortinet.com/corporate/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Freshworks
+  sector: Business Software
+  priority: 88
+  careers_url: https://careers.smartrecruiters.com/Freshworks
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Gartner
+  sector: Research and Advisory
+  priority: 88
+  careers_url: https://gartner.wd5.myworkdayjobs.com/EXT
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Gas Networks Ireland
+  sector: Natural Gas Infrastructure
+  priority: 88
+  careers_url: https://www.gasnetworks.ie/about-us/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Genesys Ireland
+  sector: Call Center and AI Cloud
+  priority: 88
+  careers_url: https://genesys.wd1.myworkdayjobs.com/Genesys
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Global-e
+  sector: Cross-Border E-commerce
+  priority: 88
+  careers_url: https://boards.greenhouse.io/globale
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: GoDaddy
+  sector: Web Hosting and Domains
+  priority: 88
+  careers_url: https://careers.godaddy.com/jobs/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: IBM Ireland
+  sector: Technology and Cloud
+  priority: 88
+  careers_url: https://www.ibm.com/careers/search?q=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Infineon Technologies
+  sector: Semiconductors
+  priority: 88
+  careers_url: https://jobs.infineon.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Juniper Networks (HPE)
+  sector: AI Networking and Security
+  priority: 88
+  careers_url: https://hpe.wd5.myworkdayjobs.com/ACJobSite
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Keywords Studios
+  sector: Video Game Services
+  priority: 88
+  careers_url: https://www.keywordsstudios.com/en/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Lam Research
+  sector: Semiconductor Equipment
+  priority: 88
+  careers_url: https://careers.lamresearch.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Marsh McLennan Ireland
+  sector: Risk and Professional Services
+  priority: 88
+  careers_url: https://mmc.wd1.myworkdayjobs.com/MMC
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Mercer Ireland
+  sector: HR and Health Consulting
+  priority: 88
+  careers_url: https://mmc.wd1.myworkdayjobs.com/MMC
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Musgrave
+  sector: Food Wholesaling and Retail
+  priority: 88
+  careers_url: https://www.musgrave.ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: New Relic
+  sector: Observability Platform
+  priority: 88
+  careers_url: https://job-boards.greenhouse.io/newrelic
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Nutanix
+  sector: Hybrid Cloud Infrastructure
+  priority: 88
+  careers_url: https://careers.nutanix.com/en/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Pantheon
+  sector: WebOps Cloud Platform
+  priority: 88
+  careers_url: https://boards.greenhouse.io/pantheon
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Paymentology
+  sector: Next-Gen Card Issuing
+  priority: 88
+  careers_url: https://boards.greenhouse.io/paymentology
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Permanent TSB (PTSB)
+  sector: Banking and Financial Services
+  priority: 88
+  careers_url: https://www.ptsb.ie/about-us/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Qualtrics
+  sector: Experience Management Software
+  priority: 88
+  careers_url: https://www.qualtrics.com/careers/us/en/search-results
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Readdle
+  sector: Productivity Applications
+  priority: 88
+  careers_url: https://readdle.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SeatGeek
+  sector: Mobile Ticketing Platform
+  priority: 88
+  careers_url: https://boards.greenhouse.io/seatgeek
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SendGrid (Twilio)
+  sector: Email Delivery and Marketing
+  priority: 88
+  careers_url: https://job-boards.greenhouse.io/twilio
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SiteMinder
+  sector: Hotel Commerce Platform
+  priority: 88
+  careers_url: https://boards.greenhouse.io/siteminder
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Smartsheet
+  sector: Enterprise Work Management
+  priority: 88
+  careers_url: https://boards.greenhouse.io/smartsheet
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SoundCloud
+  sector: Audio Creation and Streaming
+  priority: 88
+  careers_url: https://boards.greenhouse.io/soundcloud
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: South Dublin County Council
+  sector: Public service
+  priority: 88
+  careers_url: https://sdccjobs.ie/Home/_JobCard
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Sportsbet (Flutter)
+  sector: Sports Betting Technology
+  priority: 88
+  careers_url: https://flutterbe.wd3.myworkdayjobs.com/FlutterInt_External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Sprinklr
+  sector: Unified Customer Experience Management
+  priority: 88
+  careers_url: https://boards.greenhouse.io/sprinklr
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Tata Consultancy Services (TCS)
+  sector: IT Services and Consulting
+  priority: 88
+  careers_url: https://www.tcs.com/careers/ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Tenable Ireland
+  sector: Vulnerability Management
+  priority: 88
+  careers_url: https://boards.greenhouse.io/tenableinc/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TIDAL (Block)
+  sector: Music Streaming and Artist Platform
+  priority: 88
+  careers_url: https://jobs.smartrecruiters.com/Square/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TransferMate Global Payments
+  sector: FinTech and B2B Payments
+  priority: 88
+  careers_url: https://transfermate.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Uisce Éireann (Irish Water)
+  sector: Water and Wastewater Utility
+  priority: 88
+  careers_url: https://www.water.ie/about/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: VHI Healthcare
+  sector: Health Insurance and Medical Services
+  priority: 88
+  careers_url: https://www1.vhi.ie/about/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: VMware (Broadcom)
+  sector: Virtualization and Cloud
+  priority: 88
+  careers_url: https://broadcom.wd1.myworkdayjobs.com/External_Career
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Worldpay
+  sector: Global Payment Processing
+  priority: 88
+  careers_url: https://worldpay.wd5.myworkdayjobs.com/Worldpay_External_Careers_Site
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: WTW (Willis Towers Watson)
+  sector: Insurance and Advisory
+  priority: 88
+  careers_url: https://careers.willistowerswatson.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zurich Ireland
+  sector: Insurance and Financial Services
+  priority: 88
+  careers_url: https://www.zurich.ie/careers/career-opportunities/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ActiveCampaign
+  sector: Marketing Automation
+  priority: 87
+  careers_url: https://jobs.lever.co/activecampaign
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bentley Systems
+  sector: Infrastructure Engineering Software
+  priority: 87
+  careers_url: https://jobs.bentley.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bord Gáis Energy
+  sector: Energy and Home Services
+  priority: 87
+  careers_url: https://www.bordgaisenergy.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Box
+  sector: Cloud Content Management
+  priority: 87
+  careers_url: https://job-boards.greenhouse.io/boxinc/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BT Ireland
+  sector: Telecommunications and IT Services
+  priority: 87
+  careers_url: https://www.bt.com/careers/search-and-apply
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Carzone (Auto Trader)
+  sector: Automotive Marketplace
+  priority: 87
+  careers_url: https://careers.autotrader.co.uk/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: CGI Ireland
+  sector: IT and Business Consulting
+  priority: 87
+  careers_url: https://cgi.njoyn.com/cl4/xweb/xweb.asp?tbtoken=Z1haRB4XCBt3FAV1Q1UicCBBdWBEcFZaBUgjUVt9ExZRW0MeKjAYcWEbc0EYWBI&chk=dFlbQEJf&clid=21001&Page=JobListing
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Checkmarx
+  sector: Application Security
+  priority: 87
+  careers_url: https://checkmarx.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ciena
+  sector: Optical and Routing Systems
+  priority: 87
+  careers_url: https://ciena.wd5.myworkdayjobs.com/Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cloud Software Group (Citrix)
+  sector: Virtualization and Networking
+  priority: 87
+  careers_url: https://careers.cloud.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Cvent
+  sector: Event Management Software
+  priority: 87
+  careers_url: https://careers.cvent.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Digital Realty Ireland
+  sector: Data Center Solutions
+  priority: 87
+  careers_url: https://hdep.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Drift (Salesloft)
+  sector: Conversational AI and Sales
+  priority: 87
+  careers_url: https://jobs.lever.co/salesloft
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dublin City Council
+  sector: Public service
+  priority: 87
+  careers_url: https://careers.dublincity.ie/Home/_JobCard
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dunnes Stores
+  sector: Fashion and Food Retail
+  priority: 87
+  careers_url: https://dunnes.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-ead445f9eb4e/candidate/jobboard/vacancy/3/adv/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: eir Ireland
+  sector: Telecommunications
+  priority: 87
+  careers_url: https://www.eir.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Energia Group
+  sector: Green Energy and Utility
+  priority: 87
+  careers_url: https://energiagroup.current-vacancies.com/Careers/Energia-External-VSP-1964/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: F5
+  sector: Application Delivery and Security
+  priority: 87
+  careers_url: https://ffive.wd5.myworkdayjobs.com/f5jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: FICO
+  sector: Analytics and Credit Scoring
+  priority: 87
+  careers_url: https://fico.wd1.myworkdayjobs.com/External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fingal County Council
+  sector: Public service
+  priority: 87
+  careers_url: https://careers.fingal.ie/Home/_JobCard
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Forvis Mazars Ireland
+  sector: Professional Services and Audit
+  priority: 87
+  careers_url: https://www.mazars.ie/Home/Join-us
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: GE Aerospace
+  sector: Aviation and Engineering
+  priority: 87
+  careers_url: https://www.geaerospace.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Global Payments Ireland
+  sector: Payment Technology
+  priority: 87
+  careers_url: https://tsys.wd1.myworkdayjobs.com/TSYS
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: HCLTech Ireland
+  sector: IT Services and Engineering
+  priority: 87
+  careers_url: https://www.hcltech.com/careers/Careers-in-ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Hewlett Packard Enterprise
+  sector: Enterprise Hardware and Cloud
+  priority: 87
+  careers_url: https://hpe.wd5.myworkdayjobs.com/Jobsathpe
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Hitachi Vantara
+  sector: Data Storage and Hybrid Cloud
+  priority: 87
+  careers_url: https://hitachi.wd1.myworkdayjobs.com/hitachi
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Infor
+  sector: Industry Cloud Solutions
+  priority: 87
+  careers_url: https://careers.infor.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Infosys Ireland
+  sector: IT Services and Consulting
+  priority: 87
+  careers_url: https://www.infosys.com/careers.html
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Kaseya
+  sector: IT Management Software
+  priority: 87
+  careers_url: https://jobs.lever.co/kaseya
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Kerry Group
+  sector: Food and technology
+  priority: 87
+  careers_url: https://jobs.kerry.com/
+  enabled: true
+  scraper: kerry
+  scraper_type: core
+- name: Liberty Insurance Ireland
+  sector: Insurance and Financial Services
+  priority: 87
+  careers_url: https://searchjobs.libertymutualgroup.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: M-KOPA
+  sector: FinTech and Connected Asset Financing
+  priority: 87
+  careers_url: https://boards.greenhouse.io/mkopa
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: NetApp
+  sector: Intelligent Data Infrastructure
+  priority: 87
+  careers_url: https://careers.netapp.com/search-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: NTT DATA
+  sector: IT Infrastructure and Services
+  priority: 87
+  careers_url: https://careers.services.global.ntt/global/en
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: onsemi
+  sector: Intelligent Power and Sensing
+  priority: 87
+  careers_url: https://hctz.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: OpenText
+  sector: Information Management Software
+  priority: 87
+  careers_url: https://careers.opentext.com/us/en/search-results?keywords=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Oracle Health (Cerner)
+  sector: Healthcare Information Technology
+  priority: 87
+  careers_url: https://careers.oracle.com/en/sites/jobsearch/jobs?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Pandora (SiriusXM)
+  sector: Digital Audio and Streaming
+  priority: 87
+  careers_url: https://careers.siriusxm.com/careers/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Penneys
+  sector: Global Fashion Retail
+  priority: 87
+  careers_url: https://careers.primark.com/en/ireland-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Playrix
+  sector: Mobile Game Development
+  priority: 87
+  careers_url: https://jobs.lever.co/playrix
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Prudential Financial
+  sector: Insurance and Investment
+  priority: 87
+  careers_url: https://prudential.wd3.myworkdayjobs.com/prudential
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: RingCentral
+  sector: AI-First Communications
+  priority: 87
+  careers_url: https://ringcentral.wd1.myworkdayjobs.com/RingCentral_Careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Societe Generale Ireland
+  sector: Investment Banking
+  priority: 87
+  careers_url: https://careers.societegenerale.com/search-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Sprout Social
+  sector: Social Media Software
+  priority: 87
+  careers_url: https://boards.greenhouse.io/sproutsocial
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Standard Life Ireland
+  sector: Pensions and Long-Term Savings
+  priority: 87
+  careers_url: https://abrdn.wd3.myworkdayjobs.com/en-US/abrdn
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: StubHub
+  sector: Live Event Marketplace
+  priority: 87
+  careers_url: https://boards.greenhouse.io/stubhub
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Taxback Group
+  sector: FinTech and Tax Solutions
+  priority: 87
+  careers_url: https://taxback.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TripAdvisor
+  sector: Travel Guidance Platform
+  priority: 87
+  careers_url: https://job-boards.greenhouse.io/tripadvisor
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TSYS (Global Payments)
+  sector: Payment Processing Systems
+  priority: 87
+  careers_url: https://tsys.wd1.myworkdayjobs.com/TSYS
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Viridian (Energia Group)
+  sector: Energy Supply and Renewables
+  priority: 87
+  careers_url: https://energiagroup.current-vacancies.com/Careers/Energia-External-VSP-1964/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Wipro Ireland
+  sector: Technology Services and AI
+  priority: 87
+  careers_url: https://careers.wipro.com/careers-home/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Alcon Ireland
+  sector: Medical Technology
+  priority: 86
+  careers_url: https://alcon.wd5.myworkdayjobs.com/careers_alcon
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Applegreen
+  sector: Forecourt and Convenience Retail
+  priority: 86
+  careers_url: https://applegreenstores.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bandsintown
+  sector: Concert Discovery Platform
+  priority: 86
+  careers_url: https://boards.greenhouse.io/bandsintown
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Baxter International
+  sector: Healthcare and Medical Devices
+  priority: 86
+  careers_url: https://baxter.wd1.myworkdayjobs.com/baxter
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BidX1
+  sector: Digital Property Marketplace
+  priority: 86
+  careers_url: https://bidx1.com/en/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BoyleSports
+  sector: Sports Betting and Gaming
+  priority: 86
+  careers_url: https://boylesports.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Brevo
+  sector: CRM and Marketing Suite
+  priority: 86
+  careers_url: https://jobs.lever.co/brevo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Clavis Insight (Ascential)
+  sector: E-commerce Analytics
+  priority: 86
+  careers_url: https://careers.smartrecruiters.com/InformaGroupPlc
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Commvault
+  sector: Enterprise Data Protection
+  priority: 86
+  careers_url: https://commvault.wd1.myworkdayjobs.com/commvault
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Crowe Ireland
+  sector: Audit, Tax and Advisory
+  priority: 86
+  careers_url: https://www.crowe.com/ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: CurrencyFair
+  sector: FinTech and FX
+  priority: 86
+  careers_url: https://currencyfair.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Deezer
+  sector: Music Streaming Platform
+  priority: 86
+  careers_url: https://careers.smartrecruiters.com/Deezer
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Five9
+  sector: Intelligent CX Platform
+  priority: 86
+  careers_url: https://job-boards.greenhouse.io/five9
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Hootsuite
+  sector: Social Media Management
+  priority: 86
+  careers_url: https://boards.greenhouse.io/hootsuite
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Jabil Ireland
+  sector: Manufacturing and Engineering
+  priority: 86
+  careers_url: https://jabil.wd5.myworkdayjobs.com/Jabil_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Kit (ConvertKit)
+  sector: Creator Marketing Platform
+  priority: 86
+  careers_url: https://jobs.ashbyhq.com/kit
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: LivePerson
+  sector: Conversational AI
+  priority: 86
+  careers_url: https://boards.greenhouse.io/liveperson
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: LTIMindtree
+  sector: Technology Consulting and Digital
+  priority: 86
+  careers_url: https://www.ltimindtree.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: NICE
+  sector: Customer Experience AI
+  priority: 86
+  careers_url: https://boards.eu.greenhouse.io/nice
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: PFH Technology Group
+  sector: IT Services and Infrastructure
+  priority: 86
+  careers_url: https://careersatricoh.com/gb/en/search-results?keywords=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Rain
+  sector: Financial Wellness and Earned Wage Access
+  priority: 86
+  careers_url: https://boards.greenhouse.io/rain
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Re-Leased
+  sector: Commercial Property Management Software
+  priority: 86
+  careers_url: https://jobs.lever.co/re-leased
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Renesas (Dialog Semiconductor)
+  sector: Power Management Semiconductors
+  priority: 86
+  careers_url: https://careers.smartrecruiters.com/renesaselectronics
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: RSM Ireland
+  sector: Professional Services and Advisory
+  priority: 86
+  careers_url: https://www.rsm.global/ireland/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Songkick (Warner Music)
+  sector: Live Music and Concert Discovery
+  priority: 86
+  careers_url: https://boards.greenhouse.io/songkick
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Sopra Steria Ireland
+  sector: Digital Transformation Consulting
+  priority: 86
+  careers_url: https://www.soprasteria.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Talkdesk
+  sector: AI-Powered Customer Experience
+  priority: 86
+  careers_url: https://boards.greenhouse.io/talkdesk
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: TuneIn
+  sector: Live Audio and Radio Streaming
+  priority: 86
+  careers_url: https://boards.greenhouse.io/tunein
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Viagogo
+  sector: Live Event Ticketing
+  priority: 86
+  careers_url: https://boards.greenhouse.io/viagogo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Vivid Seats
+  sector: Online Ticket Marketplace
+  priority: 86
+  careers_url: https://boards.greenhouse.io/vividseats
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Vonage (Ericsson)
+  sector: Communications APIs
+  priority: 86
+  careers_url: https://jobs.ericsson.com/en/search-results
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zoho
+  sector: Software Suite for Business
+  priority: 86
+  careers_url: https://www.zoho.com/careers/jobopenings.html
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: 8x8
+  sector: Integrated Cloud Communications
+  priority: 85
+  careers_url: https://8x8inc.wd5.myworkdayjobs.com/8x8_External_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Atos
+  sector: Digital Transformation and Cybersecurity
+  priority: 85
+  careers_url: https://atos.net/en/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: BlackBerry (Cylance)
+  sector: Cybersecurity and IoT
+  priority: 85
+  careers_url: https://bb.wd3.myworkdayjobs.com/BlackBerry/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Campaign Monitor (Marigold)
+  sector: Email Marketing
+  priority: 85
+  careers_url: https://boards.greenhouse.io/marigold
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Circle K Ireland
+  sector: Retail and Forecourt Services
+  priority: 85
+  careers_url: https://workwithus.circlek.com/en-US/search?facetcountry=ie&orderby=date
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Constant Contact
+  sector: Online Marketing
+  priority: 85
+  careers_url: https://boards.greenhouse.io/constantcontact
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Idiro Analytics
+  sector: AI and Network Analytics
+  priority: 85
+  careers_url: https://idiro.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: iHeartMedia
+  sector: Audio Media and Entertainment
+  priority: 85
+  careers_url: https://iheartmedia.wd5.myworkdayjobs.com/External_iHM/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Iron Mountain Ireland
+  sector: Information Management Services
+  priority: 85
+  careers_url: https://ironmountain.wd5.myworkdayjobs.com/iron-mountain-jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Omnisend
+  sector: E-commerce Email Marketing
+  priority: 85
+  careers_url: https://jobs.lever.co/omnisend
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Resident Advisor
+  sector: Electronic Music Platform
+  priority: 85
+  careers_url: https://apply.workable.com/residentadvisor/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Sailthru (Marigold)
+  sector: Omnichannel Marketing
+  priority: 85
+  careers_url: https://boards.greenhouse.io/marigold
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Staycity Aparthotels
+  sector: Hospitality Technology
+  priority: 85
+  careers_url: https://staycity.applytojob.com/apply
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Tech Mahindra
+  sector: Digital Transformation Services
+  priority: 85
+  careers_url: https://careers.techmahindra.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Verint
+  sector: The Customer Engagement Company
+  priority: 85
+  careers_url: https://fa-epcb-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Veritas Technologies
+  sector: Data Protection
+  priority: 85
+  careers_url: https://www.veritas.com/company/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Wicklow County Council
+  sector: Public service
+  priority: 85
+  careers_url: https://www.wicklow.ie/Living/Your-Council/Job-Vacancies
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Yahoo
+  sector: Digital Media and Technology
+  priority: 85
+  careers_url: https://ouryahoo.wd5.myworkdayjobs.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Digiweb
+  sector: Telecommunications and Broadband
+  priority: 84
+  careers_url: https://www.digiweb.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Emma (Marigold)
+  sector: Email Marketing Platform
+  priority: 84
+  careers_url: https://boards.greenhouse.io/marigold
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Enterprise Ireland
+  sector: Public service
+  priority: 84
+  careers_url: https://www.rezoomo.com/company/enterprise-ireland/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: GetResponse
+  sector: Inbound Marketing Automation
+  priority: 84
+  careers_url: https://www.getresponse.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Hexaware Technologies
+  sector: IT and BPO Services
+  priority: 84
+  careers_url: https://jobs.hexaware.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: MailerLite
+  sector: Email Marketing Software
+  priority: 84
+  careers_url: https://www.mailerlite.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Mphasis
+  sector: Applied Technology and Cloud
+  priority: 84
+  careers_url: https://careers.mphasis.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AWeber
+  sector: Email Marketing Platform
+  priority: 83
+  careers_url: https://www.aweber.com/careers.htm
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Drip
+  sector: E-commerce Marketing Automation
+  priority: 83
+  careers_url: https://www.drip.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Health Service Executive
+  sector: Healthcare
+  priority: 83
+  careers_url: https://about.hse.ie/jobs/job-search/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Moosend (Sitecore)
+  sector: Email Marketing
+  priority: 83
+  careers_url: https://jobs.lever.co/sitecore
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Benchmark Email
+  sector: Email Marketing and CRM
+  priority: 82
+  careers_url: https://www.benchmarkemail.com/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Liberty IT
+  sector: Technology
+  priority: 82
+  careers_url: https://careerslit-libertymutual.icims.com/jobs/search?ss=1&searchRelation=keyword_all&in_iframe=1
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Mad Mimi (GoDaddy)
+  sector: Simple Email Marketing
+  priority: 82
+  careers_url: https://careers.godaddy.com/jobs/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Teleperformance Ireland
+  sector: Digital Business Services
+  priority: 82
+  careers_url: https://www.tp.com/en-us/careers/job-opportunities/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Children's Health Ireland
+  sector: Healthcare
+  priority: 81
+  careers_url: https://www.rezoomo.com/company/childrens-health-ireland/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: IDA Ireland
+  sector: Public service / Enterprise
+  priority: 81
+  careers_url: https://www.idaireland.com/careers-at-ida-ireland/open-roles
+  enabled: true
+  scraper: ida
+  scraper_type: core
+- name: Crossover
+  sector: Remote Tech Talent
+  priority: 80
+  careers_url: https://www.crossover.com/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Leisureplex
+  sector: Entertainment and Leisure
+  priority: 80
+  careers_url: https://www.leisureplex.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Robly
+  sector: Email Marketing
+  priority: 80
+  careers_url: https://robly.com/about/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: VerticalResponse (Deluxe)
+  sector: Email Marketing
+  priority: 80
+  careers_url: https://bydeluxe.wd5.myworkdayjobs.com/Deluxe_External
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Vhi
+  sector: Healthcare
+  priority: 80
+  careers_url: https://www.candidatemanager.net/cm/p/pJobs.aspx?mid=YGTGTU&sid=YCXAZF
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Allianz Ireland
+  sector: Financial services
+  priority: 78
+  careers_url: https://careers.allianz.com/ie/en/search-results
+  enabled: true
+  scraper: allianz
+  scraper_type: core
+- name: AIB
+  sector: Financial services
+  priority: 77
+  careers_url: https://aib.ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fidelity International
+  sector: Financial services
+  priority: 76
+  careers_url: https://jobs.fidelity.com/ie/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Dublin Business School
+  sector: Higher education
+  priority: 75
+  careers_url: https://ghc.wd1.myworkdayjobs.com/DBS_Career
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Irish Universities Association
+  sector: Higher education
+  priority: 75
+  careers_url: https://www.iua.ie/about/vacancies/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: National College of Ireland
+  sector: Higher education
+  priority: 75
+  careers_url: https://www.vacancies.ncirl.ie/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Accenture
+  sector: Professional services
+  priority: 74
+  careers_url: https://www.accenture.com/ie-en/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Deloitte
+  sector: Professional services
+  priority: 73
+  careers_url: https://www.deloitte.ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: EY Ireland
+  sector: Professional services
+  priority: 73
+  careers_url: https://www.ey.com/en_ie/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: PwC Ireland
+  sector: Professional services
+  priority: 73
+  careers_url: https://pwc.wd3.myworkdayjobs.com/Global_Experienced_Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Workday
+  sector: Technology
+  priority: 73
+  careers_url: https://workday.wd5.myworkdayjobs.com/Workday
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: AbbVie Ireland
+  sector: Life sciences
+  priority: 72
+  careers_url: https://careers.abbvie.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Johnson & Johnson
+  sector: Life sciences
+  priority: 72
+  careers_url: https://www.careers.jnj.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Pfizer Ireland
+  sector: Life sciences
+  priority: 72
+  careers_url: https://pfizer.wd1.myworkdayjobs.com/PfizerCareers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Alexion
+  sector: Life sciences
+  priority: 71
+  careers_url: https://careers.astrazeneca.com/search-jobs/Ireland/7684/2/2963597/53/8/50/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Amgen Ireland
+  sector: Life sciences
+  priority: 71
+  careers_url: https://amgen.wd1.myworkdayjobs.com/Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Takeda Ireland
+  sector: Life sciences
+  priority: 71
+  careers_url: https://jobs.takeda.com/search-jobs/Ireland/1113/2/2963597/53/8/50/2
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Boston Scientific
+  sector: Medical devices
+  priority: 70
+  careers_url: https://bostonscientific.eightfold.ai/careers?location=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Stryker
+  sector: Medical devices
+  priority: 70
+  careers_url: https://careers.stryker.com/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bord na Móna
+  sector: Energy
+  priority: 69
+  careers_url: https://www.bnm.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: EirGrid
+  sector: Energy
+  priority: 69
+  careers_url: https://www.candidatemanager.net/cm/p/pJobs.aspx?mid=YGTAZW&sid=BEVDEV
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Central Bank of Ireland
+  sector: Public service
+  priority: 68
+  careers_url: https://www.candidatemanager.net/cm/p/pJobs.aspx?mid=YUYF&sid=BDCXCX
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Coillte
+  sector: Public service
+  priority: 68
+  careers_url: https://www.coillte.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Department of Education
+  sector: Public service
+  priority: 68
+  careers_url: https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Department of Further and Higher Education
+  sector: Public service
+  priority: 68
+  careers_url: https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Fáilte Ireland
+  sector: Public service
+  priority: 68
+  careers_url: https://www.join-us.failteireland.ie/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: National Gallery of Ireland
+  sector: Culture
+  priority: 68
+  careers_url: https://www.rezoomo.com/company/national-gallery-of-ireland/jobs/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: National Museum of Ireland
+  sector: Culture
+  priority: 68
+  careers_url: https://www.museum.ie/en-IE/About/Careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Revenue Commissioners
+  sector: Public service
+  priority: 68
+  careers_url: https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SSE Airtricity
+  sector: Energy
+  priority: 68
+  careers_url: https://careers.sse.com/jobs/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Teagasc
+  sector: Public service
+  priority: 68
+  careers_url: https://www.teagasc.ie/about/opportunities/current-vacancies/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Bus Éireann
+  sector: Transport
+  priority: 67
+  careers_url: https://careers.buseireann.ie/jobs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Concern Worldwide
+  sector: Non-profit
+  priority: 67
+  careers_url: https://jobs.concern.net/jobsireland/home/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: CRH
+  sector: Manufacturing
+  priority: 67
+  careers_url: https://jobs.crh.com/search/?q=&locationsearch=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Glanbia
+  sector: Food and nutrition
+  priority: 67
+  careers_url: https://careers.glanbia.com/search/?createNewAlert=false&q=&locationsearch=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Irish Red Cross
+  sector: Non-profit
+  priority: 67
+  careers_url: https://www.redcross.ie/about-us/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Ornua
+  sector: Food and nutrition
+  priority: 67
+  careers_url: https://careers.ornua.com/search/?createNewAlert=false&q=&locationsearch=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Smurfit Westrock
+  sector: Manufacturing
+  priority: 67
+  careers_url: https://www.smurfitwestrock.com/careers
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Trócaire
+  sector: Non-profit
+  priority: 67
+  careers_url: https://apply.workable.com/trocaire/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: daa
+  sector: Aviation & transport
+  priority: 66
+  careers_url: https://fa-etol-saasfaprod1.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=CX_1
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: FBD Insurance
+  sector: Financial services
+  priority: 66
+  careers_url: https://careers.fbdgroup.com/search/?
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Lidl Ireland
+  sector: Retail
+  priority: 66
+  careers_url: https://jobs.lidl.ie/api/v1/search
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Permanent TSB
+  sector: Financial services
+  priority: 66
+  careers_url: https://www.permanenttsbgroup.ie/careers/
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Tesco Ireland
+  sector: Retail
+  priority: 66
+  careers_url: https://careers.tesco.com/en_GB/careersmarketplace/SearchJobs?semanticSearch=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Aramark Ireland
+  sector: Facilities
+  priority: 64
+  careers_url: https://careers.aramark.com/search/?searchby=location&createNewAlert=false&q=&locationsearch=Ireland
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Aldi Ireland
+  sector: Retail & supply chain
+  priority: 60
+  careers_url: https://www.aldirecruitment.ie/roles/stores
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Workato
+  sector: Enterprise Automation
+  priority: 88
+  careers_url: https://boards.greenhouse.io/workato
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Linear
+  sector: Software & Product Management
+  priority: 93
+  careers_url: https://jobs.ashbyhq.com/linear
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Perplexity AI
+  sector: Artificial Intelligence
+  priority: 95
+  careers_url: https://jobs.ashbyhq.com/perplexity
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Deliveroo Ireland
+  sector: E-commerce and Logistics
+  priority: 88
+  careers_url: https://boards.greenhouse.io/deliveroo
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Supabase
+  sector: Developer Tools & Database
+  priority: 95
+  careers_url: https://jobs.ashbyhq.com/supabase
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Resend
+  sector: Developer Tools & Email
+  priority: 93
+  careers_url: https://jobs.ashbyhq.com/resend
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Zapier
+  sector: Workflow Automation
+  priority: 91
+  careers_url: https://jobs.ashbyhq.com/zapier
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: New Relic Ireland
+  sector: Cloud Observability
+  priority: 92
+  careers_url: https://boards.greenhouse.io/newrelic
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Railway
+  sector: Cloud Infrastructure
+  priority: 91
+  careers_url: https://jobs.ashbyhq.com/railway
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Udemy Ireland
+  sector: EdTech
+  priority: 90
+  careers_url: https://boards.greenhouse.io/udemy
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: LaunchDarkly
+  sector: Feature Management & DevOps
+  priority: 90
+  careers_url: https://boards.greenhouse.io/launchdarkly
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Coinbase Ireland
+  sector: FinTech and Crypto
+  priority: 91
+  careers_url: https://boards.greenhouse.io/coinbase
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ServiceNow Ireland
+  sector: Enterprise Cloud
+  priority: 92
+  careers_url: https://careers.smartrecruiters.com/ServiceNow
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Coursera
+  sector: EdTech & Online Learning
+  priority: 89
+  careers_url: https://boards.greenhouse.io/coursera
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Render
+  sector: Cloud Application Hosting
+  priority: 90
+  careers_url: https://jobs.ashbyhq.com/render
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: ElevenLabs
+  sector: Artificial Intelligence & Audio Tech
+  priority: 93
+  careers_url: https://jobs.ashbyhq.com/elevenlabs
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Harvey
+  sector: Legal AI & Enterprise Automation
+  priority: 91
+  careers_url: https://jobs.ashbyhq.com/harvey
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Rent the Runway
+  sector: E-Commerce Tech & Fashion
+  priority: 89
+  careers_url: https://boards.greenhouse.io/renttherunway
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: Reddit
+  sector: Social Media & Community
+  priority: 92
+  careers_url: https://boards.greenhouse.io/reddit
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist
+- name: SumUp
+  sector: FinTech & Payments
+  priority: 90
+  careers_url: https://job-boards.greenhouse.io/sumup
+  enabled: true
+  scraper: generic_crawler
+  scraper_type: watchlist

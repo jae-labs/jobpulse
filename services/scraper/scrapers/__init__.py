@@ -1,0 +1,55 @@
+"""Scrapers package containing core specialized scrapers and generic watchlist crawlers."""
+
+from scrapers.core import (
+    extract_housing_agency_jobs,
+    extract_intel_ireland_jobs,
+    extract_kerry_job_details,
+    extract_maynooth_jobs,
+    extract_publicjobs_detail,
+    intel_ireland_facets,
+    sync_allianz,
+    sync_corehr,
+    sync_housing_agency,
+    sync_ida,
+    sync_intel,
+    sync_kerry,
+    sync_kildare,
+    sync_maynooth,
+    sync_publicjobs,
+    sync_trinity,
+    sync_tu_dublin,
+)
+from scrapers.generic import (
+    discover_employer_careers,
+    extract_jobs_from_listing,
+    sync_single_employer,
+    sync_watchlist_employers,
+)
+from scrapers.registry import CORE_SCRAPERS, find_core_scraper_by_name, get_core_scrapers
+
+__all__ = [
+    "CORE_SCRAPERS",
+    "get_core_scrapers",
+    "find_core_scraper_by_name",
+    "sync_kildare",
+    "sync_publicjobs",
+    "extract_publicjobs_detail",
+    "sync_housing_agency",
+    "extract_housing_agency_jobs",
+    "sync_corehr",
+    "extract_maynooth_jobs",
+    "sync_maynooth",
+    "sync_tu_dublin",
+    "sync_trinity",
+    "sync_intel",
+    "extract_intel_ireland_jobs",
+    "intel_ireland_facets",
+    "sync_kerry",
+    "extract_kerry_job_details",
+    "sync_ida",
+    "sync_allianz",
+    "discover_employer_careers",
+    "extract_jobs_from_listing",
+    "sync_single_employer",
+    "sync_watchlist_employers",
+]

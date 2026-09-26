@@ -1,0 +1,116 @@
+---
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Code Quality & Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # ratchet:actions/setup-node@v7.0.0
+        with:
+          node-version: "22.12.0"
+      - name: Install pnpm
+        run: npm install --global pnpm@10.29.3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run code quality, tests & build
+        run: |
+          pnpm run lint
+          pnpm run typecheck
+          pnpm run test:coverage
+          pnpm run build
+          pnpm run build-storybook
+
+  migration-lint:
+    name: Supabase Migration Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # ratchet:supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+
+      - name: Lint migrations
+        run: |
+          supabase start
+          supabase db reset --local
+          supabase db lint --local
+        # Apply every forward migration to a disposable database before
+        # invoking the database linter. GitHub-hosted Linux runners support
+        # Docker, which Supabase CLI uses for its local stack.
+
+      - name: Verify overview chart metrics
+        run: >-
+          docker exec -i supabase_db_jobpulse psql
+          --set ON_ERROR_STOP=1 --username postgres --dbname postgres
+          < supabase/tests/overview_metrics.sql
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # ratchet:astral-sh/setup-uv@v5.3.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Verify tenant and document policies
+        run: >-
+          docker exec -i supabase_db_jobpulse psql
+          --set ON_ERROR_STOP=1 --username postgres --dbname postgres
+          < supabase/tests/security.sql
+
+      - name: Verify database type parity (TypeScript & Python)
+        run: |
+          make db-types
+          git diff --exit-code src/types/database.types.ts services/scraper/database/models.py
+
+  scraper-check:
+    name: Scraper Quality & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # ratchet:astral-sh/setup-uv@v5.3.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Lint and format check
+        run: |
+          cd services/scraper
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+
+      - name: Run unit tests
+        run: cd services/scraper && uv run pytest

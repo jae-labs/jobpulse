@@ -1,0 +1,11 @@
+playwright>=1.57,<2
+curl_cffi>=0.7.0
+pyyaml>=6.0
+supabase>=2.30.0
+pydantic>=2.10.0
+python-dotenv>=1.0.0
+torch>=2.0.0
+sentence-transformers>=3.0.0
+rapidfuzz>=3.0.0
+# PyMuPDF>=1.23.0  # Optional: for directly reading Candidate Information Booklet PDFs
+

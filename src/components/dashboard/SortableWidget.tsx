@@ -1,0 +1,56 @@
+import React from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
+
+import { cn } from '../../lib/utils';
+
+interface SortableWidgetProps {
+  id: string;
+  className: string;
+  children: React.ReactNode;
+  reorderLabel: string;
+}
+
+const SortableWidgetComponent: React.FC<SortableWidgetProps> = ({
+  id,
+  className,
+  children,
+  reorderLabel,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <section
+      ref={setNodeRef}
+      data-widget-id={id}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={cn('group relative min-w-0', className, isDragging && 'z-20 opacity-50')}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
+        aria-label={reorderLabel}
+        className="absolute right-4 top-4 z-10 flex size-8 cursor-grab items-center justify-center rounded-lg border border-ds-border bg-ds-control/80 text-ds-text-muted opacity-0 transition-opacity hover:text-ds-text-secondary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 active:cursor-grabbing group-hover:opacity-100"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-4" />
+      </button>
+      {children}
+    </section>
+  );
+};
+
+export const SortableWidget = React.memo(SortableWidgetComponent);
