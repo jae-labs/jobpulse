@@ -1,0 +1,374 @@
+# Curated ATS Board Seeds for Ireland Opportunity Discovery
+# Scanned via: uv run python tools/harvest_boards.py --seeds config/board_seeds.yaml
+# To automatically add verified boards to websites.yaml: add --apply
+
+seeds:
+  - name: Intercom
+    sector: SaaS and Messaging
+    priority: 96
+    careers_url: https://boards.greenhouse.io/intercom
+
+  - name: Supabase
+    sector: Developer Tools & Database
+    priority: 95
+    careers_url: https://jobs.ashbyhq.com/supabase
+
+  - name: Version 1
+    sector: IT Consulting & Digital Transformation
+    priority: 94
+    careers_url: https://careers.smartrecruiters.com/Version1
+
+  - name: Linear
+    sector: Software & Product Management
+    priority: 94
+    careers_url: https://jobs.ashbyhq.com/linear
+
+  - name: Perplexity AI
+    sector: Artificial Intelligence
+    priority: 95
+    careers_url: https://jobs.ashbyhq.com/perplexity
+
+  - name: Okta Ireland
+    sector: Identity & Cybersecurity
+    priority: 93
+    careers_url: https://boards.greenhouse.io/okta
+
+  - name: Asana Ireland
+    sector: Work Management Software
+    priority: 92
+    careers_url: https://boards.greenhouse.io/asana
+
+  - name: New Relic Ireland
+    sector: Cloud Observability
+    priority: 92
+    careers_url: https://boards.greenhouse.io/newrelic
+
+  - name: Resend
+    sector: Developer Tools & Email
+    priority: 93
+    careers_url: https://jobs.ashbyhq.com/resend
+
+  - name: Zapier
+    sector: Workflow Automation
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/zapier
+
+  - name: Railway
+    sector: Cloud Infrastructure
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/railway
+
+  - name: Pinterest Ireland
+    sector: Social Media and Technology
+    priority: 92
+    careers_url: https://boards.greenhouse.io/pinterest
+
+  - name: Deliveroo Ireland
+    sector: E-commerce and Logistics
+    priority: 88
+    careers_url: https://boards.greenhouse.io/deliveroo
+
+  - name: Riot Games Dublin
+    sector: Gaming and Entertainment
+    priority: 92
+    careers_url: https://boards.greenhouse.io/riotgames
+
+  - name: Coinbase Ireland
+    sector: FinTech and Crypto
+    priority: 91
+    careers_url: https://boards.greenhouse.io/coinbase
+
+  - name: Udemy Ireland
+    sector: EdTech
+    priority: 90
+    careers_url: https://boards.greenhouse.io/udemy
+
+  - name: LaunchDarkly
+    sector: Feature Management & DevOps
+    priority: 90
+    careers_url: https://boards.greenhouse.io/launchdarkly
+
+  - name: ServiceNow Ireland
+    sector: Enterprise Cloud
+    priority: 92
+    careers_url: https://careers.smartrecruiters.com/ServiceNow
+
+  - name: Coursera
+    sector: EdTech & Online Learning
+    priority: 89
+    careers_url: https://boards.greenhouse.io/coursera
+
+  - name: Render
+    sector: Cloud Application Hosting
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/render
+
+  - name: Workato
+    sector: Enterprise Automation
+    priority: 88
+    careers_url: https://boards.greenhouse.io/workato
+
+  - name: DraftKings Ireland
+    sector: Sports Tech and Gaming
+    priority: 89
+    careers_url: https://boards.greenhouse.io/draftkings
+
+  - name: Retool
+    sector: Developer Tools
+    priority: 90
+    careers_url: https://boards.greenhouse.io/retool
+
+  - name: Zendesk Ireland
+    sector: Customer Service Software
+    priority: 91
+    careers_url: https://boards.greenhouse.io/zendesk
+
+  - name: Kraken Ireland
+    sector: FinTech and Crypto
+    priority: 88
+    careers_url: https://boards.greenhouse.io/kraken
+
+  - name: Docker
+    sector: Cloud and DevOps
+    priority: 90
+    careers_url: https://boards.greenhouse.io/docker
+
+  - name: Brex
+    sector: FinTech
+    priority: 88
+    careers_url: https://boards.greenhouse.io/brex
+
+  - name: Miro
+    sector: Collaboration Software
+    priority: 90
+    careers_url: https://jobs.lever.co/miro
+
+  - name: Vercel
+    sector: Cloud & Developer Tools
+    priority: 94
+    careers_url: https://jobs.ashbyhq.com/vercel
+
+  - name: Deel
+    sector: HR Tech & Payroll
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/deel
+
+  - name: Ramp
+    sector: FinTech & Corporate Finance
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/ramp
+
+  - name: Personio
+    sector: HR Tech and People Operations
+    priority: 90
+    careers_url: https://personio.jobs.personio.de
+
+  - name: ElevenLabs
+    sector: Artificial Intelligence & Audio Tech
+    priority: 93
+    careers_url: https://jobs.ashbyhq.com/elevenlabs
+
+  - name: Harvey
+    sector: Legal AI & Enterprise Automation
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/harvey
+
+  - name: PostHog
+    sector: Product Analytics & Developer Tools
+    priority: 93
+    careers_url: https://jobs.ashbyhq.com/posthog
+
+  - name: WorkOS
+    sector: Enterprise Auth & Developer Tools
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/workos
+
+  - name: SumUp
+    sector: FinTech & Payments
+    priority: 90
+    careers_url: https://job-boards.greenhouse.io/sumup
+
+  - name: Databricks
+    sector: Data & AI Infrastructure
+    priority: 94
+    careers_url: https://boards.greenhouse.io/databricks
+
+  - name: Reddit
+    sector: Social Media & Community
+    priority: 92
+    careers_url: https://boards.greenhouse.io/reddit
+
+  - name: Rent the Runway
+    sector: E-Commerce Tech & Fashion
+    priority: 89
+    careers_url: https://boards.greenhouse.io/renttherunway
+
+  - name: Kaseya
+    sector: IT Management & Cybersecurity
+    priority: 89
+    careers_url: https://boards.greenhouse.io/kaseya
+
+  - name: Tailscale
+    sector: Networking & VPN
+    priority: 92
+    careers_url: https://boards.greenhouse.io/tailscale
+
+  - name: Fly.io
+    sector: Cloud Infrastructure
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/flyio
+
+  - name: ClickHouse
+    sector: Columnar Database & Analytics
+    priority: 91
+    careers_url: https://boards.greenhouse.io/clickhouse
+
+  - name: Pinecone
+    sector: Vector Database & AI
+    priority: 91
+    careers_url: https://boards.greenhouse.io/pinecone
+
+  - name: Together AI
+    sector: Artificial Intelligence
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/togetherai
+
+  - name: Scale AI
+    sector: Artificial Intelligence & Data
+    priority: 93
+    careers_url: https://boards.greenhouse.io/scaleai
+
+  - name: Synthesia
+    sector: AI Video Generation
+    priority: 90
+    careers_url: https://boards.greenhouse.io/synthesia
+
+  - name: DuckDuckGo
+    sector: Privacy & Search
+    priority: 92
+    careers_url: https://boards.greenhouse.io/duckduckgo
+
+  - name: Brave Software
+    sector: Web Browser & Privacy
+    priority: 91
+    careers_url: https://boards.greenhouse.io/bravesoftware
+
+  - name: Weaviate
+    sector: Vector Database & AI
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/weaviate
+
+  - name: Qdrant
+    sector: Vector Database & AI
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/qdrant
+
+  - name: LangChain
+    sector: AI Agent Framework
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/langchain
+
+  - name: LlamaIndex
+    sector: AI Data Framework
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/llamaindex
+
+  - name: Neon
+    sector: Serverless Postgres
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/neon
+
+  - name: Timescale
+    sector: Time-Series Database
+    priority: 90
+    careers_url: https://boards.greenhouse.io/timescale
+
+  - name: Wiz
+    sector: Cloud Cybersecurity
+    priority: 93
+    careers_url: https://boards.greenhouse.io/wiz
+
+  - name: Replit
+    sector: Cloud Development Environment
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/replit
+
+  - name: Modal
+    sector: Cloud AI Compute
+    priority: 91
+    careers_url: https://jobs.ashbyhq.com/modal
+
+  - name: RunwayML
+    sector: Generative AI Media
+    priority: 90
+    careers_url: https://jobs.ashbyhq.com/runwayml
+
+  - name: Groq
+    sector: AI Inference Chips
+    priority: 92
+    careers_url: https://boards.greenhouse.io/groq
+
+  - name: Palantir
+    sector: Enterprise AI & Defense
+    priority: 93
+    careers_url: https://boards.greenhouse.io/palantir
+
+  - name: Confluent
+    sector: Data Streaming & Kafka
+    priority: 92
+    careers_url: https://boards.greenhouse.io/confluent
+
+  - name: Chainalysis
+    sector: Blockchain Forensics
+    priority: 90
+    careers_url: https://boards.greenhouse.io/chainalysis
+
+  - name: Consensys
+    sector: Web3 & Blockchain
+    priority: 90
+    careers_url: https://boards.greenhouse.io/consensys
+
+  - name: Chime
+    sector: FinTech & Consumer Banking
+    priority: 90
+    careers_url: https://boards.greenhouse.io/chime
+
+  - name: Robinhood
+    sector: FinTech & Investing
+    priority: 91
+    careers_url: https://boards.greenhouse.io/robinhood
+
+  - name: Storyful
+    sector: Media Intelligence
+    priority: 88
+    careers_url: https://boards.greenhouse.io/storyful
+
+  - name: Cubic Telecom
+    sector: Connected Vehicle IoT
+    priority: 89
+    careers_url: https://apply.workable.com/cubic-telecom
+
+  - name: CarTrawler
+    sector: Travel Tech
+    priority: 88
+    careers_url: https://apply.workable.com/cartrawler
+
+  - name: Phorest
+    sector: Salon SaaS
+    priority: 88
+    careers_url: https://apply.workable.com/phorest
+
+  - name: AMCS Group
+    sector: Environmental Software
+    priority: 88
+    careers_url: https://apply.workable.com/amcsgroup
+
+  - name: FINEOS
+    sector: Insurance Core Systems
+    priority: 88
+    careers_url: https://fineos.wd3.myworkdayjobs.com/FINEOS_Careers
+
+  - name: Boylesports
+    sector: Gaming & Sportsbook
+    priority: 87
+    careers_url: https://apply.workable.com/boylesports

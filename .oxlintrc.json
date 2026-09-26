@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  },
+  "overrides": [
+    {
+      "files": ["packages/ui/src/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": ["@supabase/supabase-js", "@tanstack/react-query", "react-i18next", "react-router-dom"],
+            "patterns": [{ "group": ["@/*", "src/*", "apps/*", "../../*", "../../../*"], "message": "UI package modules must not import application code." }]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": ["error", { "patterns": [{ "group": ["@jae-labs/ui/*"], "message": "Import components through the @jae-labs/ui public entry point." }] }]
+      }
+    }
+  ]
+}

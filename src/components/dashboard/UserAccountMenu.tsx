@@ -1,0 +1,172 @@
+import React, { useState, useRef, useEffect, useId } from 'react';
+import { Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { supportedLanguages } from '../../lib/i18n';
+import type { Profile } from '../../types/job';
+import { useAvatarUrl } from '../../hooks/useAvatarUrl';
+
+interface UserAccountMenuProps {
+  userEmail?: string | null;
+  profile?: Profile | null;
+  onNavigateToProfile: () => void;
+  onOpenInvitations?: () => void;
+  onSignOut: () => void;
+}
+
+export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
+  userEmail,
+  profile,
+  onNavigateToProfile,
+  onOpenInvitations,
+  onSignOut,
+}) => {
+  const { t, i18n } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const displayName =
+    profile?.name ||
+    (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') ||
+    userEmail?.split('@')[0] ||
+    'User';
+
+  const avatarUrl = useAvatarUrl(profile?.avatar_url);
+
+  return (
+    <div className="relative inline-flex items-center" ref={menuRef}>
+      {/* Account settings avatar trigger */}
+      <button
+        type="button"
+        data-account-settings-trigger
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="relative size-8 shrink-0 rounded-full border border-ds-border-strong bg-ds-hover text-ds-text-secondary hover:border-ds-border-strong hover:ring-2 hover:ring-ds-accent/30 transition-all cursor-pointer flex items-center justify-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        title={`${t('nav.accountSettings')} (${displayName})`}
+        aria-label={`${t('nav.accountSettings')} (${displayName})`}
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={displayName}
+            className="size-full object-cover"
+          />
+        ) : (
+          <span className="text-[11px] font-semibold text-ds-text-secondary select-none uppercase tracking-wide">
+            {displayName.slice(0, 2)}
+          </span>
+        )}
+      </button>
+
+      {/* Account settings menu */}
+      {isOpen && (
+        <div id={menuId} className="absolute top-full right-0 mt-2 w-56 sm:w-60 rounded-xl border border-ds-border bg-ds-panel p-2 shadow-2xl z-50 text-xs text-ds-text-secondary animate-in fade-in-50 zoom-in-95 duration-100 divide-y divide-ds-border">
+          {/* User Info Header */}
+          <div className="px-2.5 py-2">
+            <p className="font-semibold text-ds-text-primary truncate">{displayName}</p>
+            {userEmail && (
+              <p className="text-[11px] font-mono text-ds-text-muted truncate mt-0.5" title={userEmail}>
+                {userEmail}
+              </p>
+            )}
+          </div>
+
+          {/* Account settings category */}
+          <div role="group" aria-label={t('nav.accountSettings')} className="py-1.5 space-y-0.5">
+            <p className="px-2.5 py-1 text-[10px] font-semibold text-ds-text-muted uppercase tracking-wider">{t('nav.accountSettings')}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onNavigateToProfile();
+              }}
+              className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
+            >
+              <span>{t('nav.profile')}</span>
+            </button>
+            {onOpenInvitations && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenInvitations();
+                }}
+                className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
+              >
+                <span>{t('invitations.title', 'Invite a friend')}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Language Switcher */}
+          <div className="py-1.5 space-y-1">
+            <div className="px-2.5 py-1 text-[10px] font-semibold text-ds-text-muted uppercase tracking-wider flex items-center gap-1.5">
+              <Globe className="size-3 text-ds-text-muted" />
+              <span>{t('nav.language')}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1 px-1">
+              {supportedLanguages.map((lang) => {
+                const isSelected =
+                  i18n.language === lang.code ||
+                  (lang.code === 'pt-BR' && i18n.language.startsWith('pt')) ||
+                  (lang.code === 'en' && i18n.language.startsWith('en'));
+                return (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => {
+                      void i18n.changeLanguage(lang.code);
+                    }}
+                    className={`flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] rounded-md transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-ds-hover text-ds-text-primary font-medium border border-ds-border-strong'
+                        : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
+                    }`}
+                  >
+                    <span aria-hidden="true">{lang.flag}</span>
+                    <span>{lang.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sign Out */}
+          <div className="pt-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onSignOut();
+              }}
+              className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-negative hover:bg-ds-negative/10 hover:text-ds-negative transition-colors cursor-pointer text-left"
+            >
+              <span>{t('nav.signOut')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

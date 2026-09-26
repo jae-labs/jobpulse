@@ -1,0 +1,19 @@
+---
+pre-commit:
+  jobs:
+    - name: lint
+      run: npm run lint
+    - name: typecheck
+      run: npm run typecheck
+    - name: test
+      run: npm run test
+    - name: scraper-lint
+      glob: "services/scraper/**/*.py"
+      run: cd services/scraper && uv run --locked ruff check .
+    - name: secrets-scan
+      run: gitleaks protect --staged --redact --verbose
+
+pre-push:
+  jobs:
+    - name: check
+      run: make check

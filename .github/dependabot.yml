@@ -1,0 +1,38 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "npm"
+    assignees:
+      - "luiz1361"
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    assignees:
+      - "luiz1361"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "pip"
+    directory: "/services/scraper"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+    assignees:
+      - "luiz1361"
+    open-pull-requests-limit: 5
