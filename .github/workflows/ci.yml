@@ -73,7 +73,7 @@ jobs:
           < supabase/tests/overview_metrics.sql
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # ratchet:astral-sh/setup-uv@v5.3.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # ratchet:astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
 
@@ -99,7 +99,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@1edb52594c857e2b5b13128931090f0640537287 # ratchet:astral-sh/setup-uv@v5.3.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # ratchet:astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
 
