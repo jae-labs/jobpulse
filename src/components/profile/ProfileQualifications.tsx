@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, Textarea, TextField } from '@jae-labs/ui';
 import { TagChipInput } from './TagChipInput';
 import { getRuleTags, updateRuleTags } from '../../lib/scoringRuleTags';
+import { DEFAULT_SCORING_RULES } from '../../lib/scoringRules';
 
 interface ProfileQualificationsProps {
   formData: Profile;
@@ -22,12 +23,12 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
   const scoringRules = formData.scoring_rules;
   const seniorityRules: SeniorityTierRule[] = Array.isArray(scoringRules?.seniority_tiers)
     ? scoringRules.seniority_tiers
-    : [];
+    : DEFAULT_SCORING_RULES.seniority_tiers;
 
   const updateSeniority = (tags: string[]) => {
     onScoringRulesChange({
-      positive_domains: scoringRules?.positive_domains ?? [],
-      negative_domains: scoringRules?.negative_domains ?? [],
+      positive_domains: scoringRules?.positive_domains ?? DEFAULT_SCORING_RULES.positive_domains,
+      negative_domains: scoringRules?.negative_domains ?? DEFAULT_SCORING_RULES.negative_domains,
       ...scoringRules,
       seniority_tiers: updateRuleTags(seniorityRules, tags, (tag) => ({
         name: tag,

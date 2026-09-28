@@ -31,7 +31,7 @@ def test_evaluations_use_user_id_after_email_column_removal(monkeypatch: pytest.
 
     count = repository.evaluate_and_save_user_evaluations(
         [{"id": 7, "title": "Engineer", "description": "Build things"}],
-        profiles=[{"user_id": "account-1"}],
+        profiles=repository.prepare_scoring_profiles([{"user_id": "account-1"}]),
     )
 
     assert count == 1
@@ -43,11 +43,13 @@ def test_evaluations_use_user_id_after_email_column_removal(monkeypatch: pytest.
 
 def test_pruning_stops_when_status_check_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     jobs = MagicMock()
-    jobs.select.return_value.lt.return_value.range.return_value.execute.return_value = SimpleNamespace(
-        data=[{"id": 7, "status": "new", "last_seen_at": "2020-01-01"}]
+    jobs.select.return_value.order.return_value.lt.return_value.range.return_value.execute.return_value = (
+        SimpleNamespace(data=[{"id": 7, "status": "new", "last_seen_at": "2020-01-01"}])
     )
     statuses = MagicMock()
-    statuses.select.return_value.in_.return_value.execute.side_effect = RuntimeError("database unavailable")
+    statuses.select.return_value.in_.return_value.order.return_value.range.return_value.execute.side_effect = (
+        RuntimeError("database unavailable")
+    )
     client = MagicMock()
     client.table.side_effect = lambda name: jobs if name == "jobs" else statuses
     monkeypatch.setattr(repository, "get_supabase", lambda: client)
@@ -193,7 +195,9 @@ def test_deduplication_keeps_conflicting_tracking_statuses(monkeypatch: pytest.M
     assert len(rows["jobs"]) == 2
 
 
-def test_ingestion_writes_vacancy_facts_and_evaluates_all_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ingestion_writes_only_vacancy_facts_without_loading_profiles_or_scoring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     client = MagicMock()
     job = {
         "title": "Engineer",
@@ -206,18 +210,20 @@ def test_ingestion_writes_vacancy_facts_and_evaluates_all_candidates(monkeypatch
         "ai_analysis": {"role_domain": "Old candidate domain"},
     }
     client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(data=[{"id": 7}])
-    profiles = [{"user_id": "a"}, {"user_id": "b"}]
+    profiles = MagicMock(side_effect=AssertionError("Ingestion must not load candidates"))
     evaluator = MagicMock()
     monkeypatch.setattr(repository, "get_supabase", lambda: client)
     monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    monkeypatch.setattr(repository, "get_all_user_profiles", lambda: profiles)
+    monkeypatch.setattr(repository, "get_all_user_profiles", profiles)
     monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
     monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
     monkeypatch.setattr(repository, "evaluate_and_save_user_evaluations", evaluator)
 
+    monkeypatch.setattr(repository, "_enrich_job", lambda job: job)
     assert repository.save_jobs_batch([job]) == 1
     payload = client.table.return_value.upsert.call_args.args[0][0]
     assert not set(payload) & {
+        "status",
         "relevance",
         "ai_analysis",
         "fit_tier",
@@ -225,32 +231,8 @@ def test_ingestion_writes_vacancy_facts_and_evaluates_all_candidates(monkeypatch
         "role_domain",
         "seniority_level",
     }
-    evaluator.assert_called_once_with([{"id": 7}], profiles=profiles)
-
-
-def test_scoring_failure_does_not_retry_successful_job_writes(monkeypatch: pytest.MonkeyPatch) -> None:
-    client = MagicMock()
-    client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(data=[{"id": 7}])
-    monkeypatch.setattr(repository, "get_supabase", lambda: client)
-    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    monkeypatch.setattr(repository, "get_all_user_profiles", lambda: [{"user_id": "a"}])
-    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
-    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
-    monkeypatch.setattr(
-        repository, "evaluate_and_save_user_evaluations", MagicMock(side_effect=RuntimeError("scoring unavailable"))
-    )
-    job = {
-        "title": "Engineer",
-        "company": "Example",
-        "location": "Dublin",
-        "description": "Build things",
-        "url": "https://example.com/job",
-        "source": "test",
-    }
-
-    with pytest.raises(RuntimeError, match="scoring unavailable"):
-        repository.save_jobs_batch([job])
-    client.table.return_value.upsert.assert_called_once()
+    evaluator.assert_not_called()
+    profiles.assert_not_called()
 
 
 def test_profile_read_failure_does_not_report_an_empty_successful_scoring_run(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -262,3 +244,23 @@ def test_profile_read_failure_does_not_report_an_empty_successful_scoring_run(mo
     monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
     with pytest.raises(RuntimeError, match="scoring cannot safely continue"):
         repository.get_all_user_profiles()
+
+
+def test_pruning_preserves_tracking_beyond_the_first_status_page(monkeypatch):
+    jobs = MagicMock()
+    jobs.select.return_value.order.return_value.lt.return_value.range.return_value.execute.return_value = (
+        SimpleNamespace(data=[{"id": 7, "last_seen_at": "2020-01-01"}])
+    )
+    statuses = MagicMock()
+    statuses.select.return_value.in_.return_value.order.return_value.range.return_value.execute.side_effect = [
+        SimpleNamespace(data=[{"job_id": 7, "status": "new"}] * 500),
+        SimpleNamespace(data=[{"job_id": 7, "status": "applied"}]),
+    ]
+    client = MagicMock()
+    client.table.side_effect = lambda name: jobs if name == "jobs" else statuses
+    monkeypatch.setattr(repository, "get_supabase", lambda: client)
+    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
+    result = repository.prune_stale_jobs()
+    assert result["deleted_count"] == 0
+    assert result["retained_count"] == 1
+    jobs.delete.assert_not_called()

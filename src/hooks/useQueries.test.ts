@@ -2,43 +2,43 @@ import { describe, it, expect } from 'vitest';
 import { queryKeys, validateOverviewMetrics, validateJobsPageResult } from './useQueries';
 
 describe('useQueries queryKeys', () => {
-  it('normalizes email in overviewMetrics query key', () => {
-    expect(queryKeys.overviewMetrics(' User@Example.COM ')).toEqual([
+  it('uses user ID in overviewMetrics query key', () => {
+    expect(queryKeys.overviewMetrics('user-uuid')).toEqual([
       'overview-metrics',
-      'user@example.com',
+      'user-uuid',
     ]);
     expect(queryKeys.overviewMetrics(null)).toEqual(['overview-metrics', null]);
   });
 
-  it('normalizes email in jobsPage query key', () => {
+  it('uses user ID in jobsPage query key', () => {
     const params = { status: 'new', limit: 40 };
-    expect(queryKeys.jobsPage('TEST@domain.com', params)).toEqual([
+    expect(queryKeys.jobsPage('test-uuid', params)).toEqual([
       'jobs-page',
-      'test@domain.com',
+      'test-uuid',
       params,
     ]);
   });
 
-  it('normalizes email in jobById query key', () => {
-    expect(queryKeys.jobById(123, 'TEST@domain.com')).toEqual([
+  it('uses user ID in jobById query key', () => {
+    expect(queryKeys.jobById(123, 'test-uuid')).toEqual([
       'job-by-id',
       123,
-      'test@domain.com',
+      'test-uuid',
     ]);
   });
 
   it('generates consistent keys for documents', () => {
-    expect(queryKeys.userCvs('Alice@Work.com')).toEqual(['user-cvs', 'alice@work.com']);
-    expect(queryKeys.userCoverLetters('Alice@Work.com')).toEqual([
+    expect(queryKeys.userCvs('alice-uuid')).toEqual(['user-cvs', 'alice-uuid']);
+    expect(queryKeys.userCoverLetters('alice-uuid')).toEqual([
       'user-cover-letters',
-      'alice@work.com',
+      'alice-uuid',
     ]);
   });
 
   it('keeps finite command search results separate from infinite job pages', () => {
-    expect(queryKeys.jobsSearchPage('TEST@domain.com', { search: 'designer' })).toEqual([
+    expect(queryKeys.jobsSearchPage('test-uuid', { search: 'designer' })).toEqual([
       'jobs-search-page',
-      'test@domain.com',
+      'test-uuid',
       { search: 'designer' },
     ]);
   });
@@ -47,8 +47,8 @@ describe('useQueries queryKeys', () => {
     expect(queryKeys.sources()).toEqual(['sources']);
   });
 
-  it('normalizes email in invitations query key', () => {
-    expect(queryKeys.invitations('Alice@Work.com')).toEqual(['invitations', 'alice@work.com']);
+  it('uses user ID in invitations query key', () => {
+    expect(queryKeys.invitations('alice-uuid')).toEqual(['invitations', 'alice-uuid']);
     expect(queryKeys.invitations(null)).toEqual(['invitations', null]);
   });
 });
@@ -119,6 +119,6 @@ describe('RPC boundary validation', () => {
 
 
 it('uses factory prefixes for both paginated caches', () => {
-  expect(queryKeys.jobsPage(' User@Example.COM ')).toEqual(['jobs-page', 'user@example.com']);
-  expect(queryKeys.jobsSearchPage(' User@Example.COM ')).toEqual(['jobs-search-page', 'user@example.com']);
+  expect(queryKeys.jobsPage('user-uuid')).toEqual(['jobs-page', 'user-uuid']);
+  expect(queryKeys.jobsSearchPage('user-uuid')).toEqual(['jobs-search-page', 'user-uuid']);
 });

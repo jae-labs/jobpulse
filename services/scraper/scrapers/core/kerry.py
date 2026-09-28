@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from database.repository import delete_jobs, save_job, update_source_status
+from database.repository import delete_jobs, save_jobs_batch, update_source_status
 from network.browser import with_browser
 
 KERRY_CAREERS_URL = "https://jobs.kerry.com/gb/en/search-results"
@@ -46,7 +46,7 @@ def sync_kerry() -> tuple[int, str]:
         return jobs
 
     opportunities = with_browser(search)
-    added = 0
+    jobs_to_save = []
     ireland_opportunities = [job for job in opportunities if "ireland" in job["location"].lower()]
 
     delete_jobs(company="Kerry Group", not_location_like="%Ireland%")
@@ -55,7 +55,7 @@ def sync_kerry() -> tuple[int, str]:
         if "permanent" not in job["employment_type"].lower():
             continue
         title = job["title"]
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": "Kerry Group",
@@ -65,8 +65,9 @@ def sync_kerry() -> tuple[int, str]:
                 "url": job["url"],
                 "source": "Kerry Group",
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     permanent = sum("permanent" in job["employment_type"].lower() for job in ireland_opportunities)
     detail_msg = f"Read {len(ireland_opportunities)} Ireland opportunities; kept {permanent} permanent opportunities and added {added} new opportunities."

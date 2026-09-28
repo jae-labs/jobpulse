@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from config.loader import INTEL_CAREERS_URL, INTEL_JOBS_URL
-from database.repository import save_job, update_source_status
+from database.repository import save_jobs_batch, update_source_status
 from network.browser import with_browser
 
 
@@ -64,10 +64,10 @@ def sync_intel() -> tuple[int, str]:
 
     first_page, ireland_page = with_browser(search)
     opportunities = extract_intel_ireland_jobs(ireland_page)
-    added = 0
+    jobs_to_save = []
     for job in opportunities:
         title = job["title"]
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": "Intel Ireland",
@@ -77,8 +77,9 @@ def sync_intel() -> tuple[int, str]:
                 "url": f"{INTEL_CAREERS_URL}{job['externalPath']}",
                 "source": "Intel Ireland",
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     detail_msg = f"Read {len(opportunities)} Ireland/Leixlip opportunities; added {added} new opportunities."
     update_source_status("Intel Ireland", "Synced", detail_msg, opportunities_found=len(opportunities))

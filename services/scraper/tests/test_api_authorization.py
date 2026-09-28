@@ -49,3 +49,17 @@ def test_profile_read_requires_explicit_candidate(monkeypatch) -> None:
     handler.do_GET()
     handler.send_json.assert_called_once_with({"error": "A candidate user_id is required"}, HTTPStatus.BAD_REQUEST)
     load.assert_not_called()
+
+
+def test_catalog_rejects_candidate_status_filter(monkeypatch) -> None:
+    client = Mock()
+    monkeypatch.setattr(api, "get_supabase", lambda: client)
+    monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
+    handler = object.__new__(api.ApiHandler)
+    handler.path = "/api/jobs?status=applied"
+    handler.headers = {}
+    handler.client_address = ("127.0.0.1", 12345)
+    handler.send_json = Mock()
+    handler.do_GET()
+    assert handler.send_json.call_args.args[1] == HTTPStatus.BAD_REQUEST
+    client.table.assert_not_called()

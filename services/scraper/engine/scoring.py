@@ -6,6 +6,7 @@ import math
 import re
 import threading
 from collections import Counter, OrderedDict
+from dataclasses import dataclass
 from typing import Any
 
 from config.rules import DEFAULT_SCORING_RULES
@@ -169,6 +170,59 @@ def encode_documents(documents: list[str]) -> list[list[float]] | None:
         return output
 
 
+@dataclass(frozen=True)
+class PreparedScoringProfile:
+    """Candidate inputs compiled once and reused across a catalog scoring run."""
+
+    profile: dict[str, Any]
+    document: str
+    rules: dict[str, Any]
+    disqualifiers: tuple[re.Pattern[str], ...]
+    positive_domains: tuple[tuple[dict[str, Any], tuple[re.Pattern[str], ...]], ...]
+    negative_domains: tuple[tuple[dict[str, Any], tuple[re.Pattern[str], ...]], ...]
+    seniority_tiers: tuple[tuple[dict[str, Any], tuple[re.Pattern[str], ...]], ...]
+    competencies: tuple[tuple[str, re.Pattern[str]], ...]
+    target_roles: tuple[str, ...]
+    locations: tuple[str, ...]
+    work_modes: tuple[str, ...]
+
+
+def prepare_scoring_profile(profile: dict[str, Any]) -> PreparedScoringProfile:
+    """Preserve matching order and regex flags while preparing reusable candidate rules."""
+    rules = get_scoring_rules(profile)
+
+    def domains(key: str) -> tuple[tuple[dict[str, Any], tuple[re.Pattern[str], ...]], ...]:
+        return tuple(
+            (domain, tuple(re.compile(pattern) for pattern in compile_terms_to_regex(domain.get("keywords") or [])))
+            for domain in rules[key]
+        )
+
+    certifications = (profile.get("certifications") or "").strip()
+    certificate_terms = [term.strip() for term in re.split(r"[,;\n]+", certifications) if term.strip()]
+    competencies = dict.fromkeys(
+        [*(profile.get("keywords") or []), *(profile.get("tools_software") or []), *certificate_terms]
+    )
+    locations = [loc.lower() for loc in (profile.get("target_locations") or []) if loc]
+    if profile.get("location"):
+        locations.append(profile["location"].lower())
+    work_modes = [mode.strip().lower() for mode in (profile.get("work_mode") or "").strip().split(",") if mode.strip()]
+    return PreparedScoringProfile(
+        profile=profile,
+        document=build_profile_document(profile),
+        rules=rules,
+        disqualifiers=tuple(
+            re.compile(pattern, re.IGNORECASE) for pattern in compile_terms_to_regex(rules["disqualifiers"])
+        ),
+        positive_domains=domains("positive_domains"),
+        negative_domains=domains("negative_domains"),
+        seniority_tiers=domains("seniority_tiers"),
+        competencies=tuple((term, re.compile(rf"\b{re.escape(term.lower())}\b")) for term in competencies),
+        target_roles=tuple(profile.get("target_roles") or []),
+        locations=tuple(locations),
+        work_modes=tuple(work_modes or ["hybrid", "remote"]),
+    )
+
+
 def evaluate_job(
     title: str,
     description: str = "",
@@ -181,7 +235,7 @@ def evaluate_job(
     salary_max_amount: float | None = None,
     salary_currency: str | None = None,
     salary_period: str | None = None,
-    profile: dict[str, Any],
+    profile: dict[str, Any] | PreparedScoringProfile,
     semantic_similarity: float,
 ) -> dict[str, Any]:
     """
@@ -195,10 +249,10 @@ def evaluate_job(
     - Seniority alignment and domain fit
     - Salary expectations (without imputed pay scales)
     """
-    active_profile = profile
+    prepared = profile if isinstance(profile, PreparedScoringProfile) else prepare_scoring_profile(profile)
+    active_profile = prepared.profile
     min_salary = int(active_profile.get("salary_min") if active_profile.get("salary_min") is not None else 50000)
-    keywords = list(active_profile.get("keywords", []) or [])
-    rules = get_scoring_rules(active_profile)
+    rules = prepared.rules
 
     # Dynamic Scoring Weights from Candidate Profile
     weights = rules["weights"]
@@ -214,10 +268,9 @@ def evaluate_job(
     fixed_term_penalty = float(weights["fixed_term_penalty"])
     disqualification_cap = int(weights["disqualification_cap"])
 
-    negative_domains = rules["negative_domains"]
-    positive_domains = rules["positive_domains"]
-    seniority_tiers = rules["seniority_tiers"]
-    disqualifiers = rules["disqualifiers"]
+    negative_domains = prepared.negative_domains
+    positive_domains = prepared.positive_domains
+    seniority_tiers = prepared.seniority_tiers
 
     full_text = f"{title} {description}".lower()
     title_l = title.lower()
@@ -226,10 +279,10 @@ def evaluate_job(
     mismatch_flags: list[str] = []
 
     # 1. Profile-defined Disqualifiers / Dealbreakers
-    disqualifier_patterns = compile_terms_to_regex(disqualifiers)
+    disqualifier_patterns = prepared.disqualifiers
     disqualification_detected = None
     for pat in disqualifier_patterns:
-        m = re.search(pat, full_text, re.IGNORECASE)
+        m = pat.search(full_text)
         if m:
             disqualification_detected = m.group(0)
             mismatch_flags.append(
@@ -238,27 +291,22 @@ def evaluate_job(
             break
 
     # 2. Precomputed exact semantic similarity
-    candidate_doc = build_profile_document(active_profile)
+    candidate_doc = prepared.document
     semantic_sim = max(0.0, min(1.0, semantic_similarity))
 
     # 3. Check Negative Domains (skip penalizing if domain matches candidate's own background)
     candidate_profile_text = candidate_doc.lower()
     negative_domain_detected = None
-    positive_title_patterns = [
-        pos_pat for pos in positive_domains for pos_pat in compile_terms_to_regex(pos.get("keywords") or [])
-    ]
-    for domain in negative_domains:
+    positive_title_patterns = [pos_pat for _, patterns in positive_domains for pos_pat in patterns]
+    for domain, patterns in negative_domains:
         domain_name, reason = domain["name"], domain.get("reason", "Domain mismatch")
-        raw_terms = domain.get("keywords") or []
-        patterns = compile_terms_to_regex(raw_terms)
 
-        if any(re.search(pat, candidate_profile_text) for pat in patterns):
+        if any(pat.search(candidate_profile_text) for pat in patterns):
             continue
 
         for pat in patterns:
-            if re.search(pat, title_l) or (
-                re.search(pat, full_text)
-                and not any(re.search(pos_pat, title_l) for pos_pat in positive_title_patterns)
+            if pat.search(title_l) or (
+                pat.search(full_text) and not any(pos_pat.search(title_l) for pos_pat in positive_title_patterns)
             ):
                 negative_domain_detected = domain_name
                 mismatch_flags.append(f"{domain_name}: {reason}")
@@ -273,21 +321,19 @@ def evaluate_job(
         detected_domain = negative_domain_detected
         domain_score = 0.05
     else:
-        for domain in positive_domains:
+        for domain, patterns in positive_domains:
             domain_name = domain.get("name") or "Target Domain"
             note = (domain.get("note") or "").strip() or f"Domain alignment: {domain_name}"
-            raw_terms = domain.get("keywords") or []
-            patterns = compile_terms_to_regex(raw_terms)
             match_found = False
             for pat in patterns:
-                if re.search(pat, title_l):
+                if pat.search(title_l):
                     detected_domain = domain_name
                     domain_score = 1.0
                     if note:
                         alignments.append(note)
                     match_found = True
                     break
-                elif re.search(pat, full_text):
+                elif pat.search(full_text):
                     if domain_score < 0.8:
                         detected_domain = domain_name
                         domain_score = 0.8
@@ -300,7 +346,7 @@ def evaluate_job(
     # 5. Seniority Evaluation
     seniority_tier = "Professional / Mid-Level"
     seniority_score = 0.75
-    for tier in seniority_tiers:
+    for tier, patterns in seniority_tiers:
         tier_name = (tier.get("name") or "").strip()
         score_weight = tier.get("score_weight", 1.0)
         tier_note = (tier.get("note") or "").strip()
@@ -309,9 +355,7 @@ def evaluate_job(
                 tier_note = f"Seniority alignment: title aligns with '{tier_name}'."
             else:
                 tier_note = "Seniority alignment: title aligns with target experience tier."
-        raw_terms = tier.get("keywords") or []
-        patterns = compile_terms_to_regex(raw_terms)
-        if any(re.search(pat, title_l) for pat in patterns):
+        if any(pat.search(title_l) for pat in patterns):
             seniority_tier = tier_name or "Seniority Match"
             seniority_score = float(score_weight)
             if seniority_score >= 0.9 and not negative_domain_detected and not disqualification_detected:
@@ -344,13 +388,9 @@ def evaluate_job(
         salary_fit = "Advertised pay not comparable to an annual EUR target / Neutral baseline"
 
     # 7. Competency, Tools & Certifications Matching
-    tools_software = list(active_profile.get("tools_software", []) or [])
-    target_roles = list(active_profile.get("target_roles", []) or [])
-    certifications_val = (active_profile.get("certifications") or "").strip()
-    cert_terms = [c.strip() for c in re.split(r"[,;\n]+", certifications_val) if c.strip()]
-
-    competency_terms = list(dict.fromkeys([*keywords, *tools_software, *cert_terms]))
-    matched_skills = [term for term in competency_terms if re.search(rf"\b{re.escape(term.lower())}\b", full_text)]
+    competency_terms = prepared.competencies
+    target_roles = prepared.target_roles
+    matched_skills = [term for term, pattern in competency_terms if pattern.search(full_text)]
     matched_target_roles = [role for role in target_roles if role.lower() in title_l]
 
     competency_ratio = (len(matched_skills) / len(competency_terms)) if competency_terms else 0.0
@@ -402,10 +442,7 @@ def evaluate_job(
 
     # 9. Location Preference Evaluation
     full_loc_text = f"{location} {title} {company} {description}".lower()
-    user_locations = [loc.lower() for loc in (active_profile.get("target_locations") or []) if loc]
-    primary_loc = (active_profile.get("location") or "").lower()
-    if primary_loc:
-        user_locations.append(primary_loc)
+    user_locations = prepared.locations
 
     # target_locations is priority-ordered: earlier entries score a larger share
     # of location_bonus (1.0, 0.8, 0.6, ... floor 0.4) so a candidate can express
@@ -416,9 +453,7 @@ def evaluate_job(
 
     # 10. Work Mode Preference Evaluation (Dynamic from Profile)
     user_work_mode = (active_profile.get("work_mode") or "").strip()
-    user_modes = [m.strip().lower() for m in user_work_mode.split(",") if m.strip()]
-    if not user_modes:
-        user_modes = ["hybrid", "remote"]
+    user_modes = prepared.work_modes
 
     job_is_remote = any(k in full_loc_text for k in ["remote", "work from home", "wfh", "anywhere in ireland"])
     job_is_hybrid = any(k in full_loc_text for k in ["hybrid", "blended working", "flexible working", "days from home"])
@@ -530,7 +565,7 @@ def evaluate_job(
     if disqualification_detected:
         fit_score = min(fit_score, disqualification_cap)
 
-    # Determine Fit Tier & AI Indicator
+    # Determine fit tier
     if fit_score >= 75:
         fit_tier = "Strong Match"
     elif fit_score >= 55:
@@ -542,7 +577,7 @@ def evaluate_job(
     else:
         fit_tier = "Mismatch"
 
-    # Dynamic explanatory reasoning for the AI evaluation
+    # Explain the candidate evaluation
     candidate_headline = active_profile.get("headline") or active_profile.get("current_role") or "candidate profile"
     if disqualification_detected:
         reasoning = (

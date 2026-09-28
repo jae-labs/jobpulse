@@ -59,7 +59,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 
@@ -82,7 +82,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 
@@ -117,7 +117,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 
@@ -152,7 +152,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 
@@ -181,7 +181,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 
@@ -210,7 +210,7 @@ describe('InvitationsModal', () => {
       <InvitationsModal
         isOpen={true}
         onClose={vi.fn()}
-        currentUserEmail="admin@example.com"
+        currentUserId="admin@example.com"
       />
     );
 

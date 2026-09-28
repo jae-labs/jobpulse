@@ -215,7 +215,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
 
       case 'application-pipeline':
         return (
-          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.applicationPipeline') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('charts.pipeline.title') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadPipelineChart')}>
               <PipelineChart
                 jobs={jobs}
@@ -242,7 +242,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
 
       case 'skills-radar':
         return (
-          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.topSkills') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('charts.skills.title') })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
             <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadSkillsChart')}>
               <SkillsFrequencyChart
                 jobs={jobs}

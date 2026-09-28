@@ -7,7 +7,7 @@ import re
 from urllib.parse import urljoin
 
 from config.loader import PUBLICJOBS_URL
-from database.repository import save_job, update_source_status
+from database.repository import save_jobs_batch, update_source_status
 from engine.text_cleaner import clean_text
 from network.http_client import fetch_page
 
@@ -106,7 +106,7 @@ def sync_publicjobs() -> tuple[int, str]:
     page = fetch_page(PUBLICJOBS_URL)
     pattern = r'<div [^>]*data-title="([^"]+)".*?<a [^>]*href="([^"]*?/candidate/so/pm/[^"]+)"'
     opportunities = list(dict.fromkeys(re.findall(pattern, page, flags=re.IGNORECASE | re.DOTALL)))
-    found = 0
+    jobs_to_save = []
     for title, link in opportunities:
         title = html.unescape(re.sub(r"\s+", " ", title)).strip()
         full_url = urljoin(PUBLICJOBS_URL, html.unescape(link))
@@ -119,7 +119,7 @@ def sync_publicjobs() -> tuple[int, str]:
             or f"PublicJobs competition: {title}. See official competition booklet for details."
         )
 
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": company,
@@ -129,8 +129,9 @@ def sync_publicjobs() -> tuple[int, str]:
                 "url": full_url,
                 "source": "PublicJobs.ie",
             }
-        ):
-            found += 1
+        )
+
+    found = save_jobs_batch(jobs_to_save, enrich=True)
 
     detail_msg = f"Read {len(opportunities)} opportunities; kept {found} opportunities with full specifications."
     update_source_status("PublicJobs.ie", "Synced", detail_msg, opportunities_found=found)

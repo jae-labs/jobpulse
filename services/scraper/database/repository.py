@@ -18,10 +18,11 @@ from config.loader import (
 from database.client import get_supabase, retry_supabase, utc_now
 from database.scoring import (
     SCORING_BATCH_SIZE,
+    ScoringProfile,
     get_scoring_work,
     job_scoring_input,
     prepare_embeddings,
-    profile_scoring_input,
+    prepare_scoring_profiles,
 )
 from engine.salary import extract_salary_from_context
 from engine.scoring import build_job_document, build_profile_document, compute_token_frequency_similarity, evaluate_job
@@ -140,11 +141,9 @@ def _is_ingestable_job(job: dict[str, Any]) -> bool:
     return True
 
 
-def save_job(job: dict[str, Any]) -> bool:
-    """Ingest a shared vacancy, then refresh its candidate evaluations."""
-
-    if not _is_ingestable_job(job):
-        return False
+def _enrich_job(job: dict[str, Any]) -> dict[str, Any]:
+    """Enrich a short vacancy description without changing caller-owned data."""
+    job = dict(job)
 
     # Deep Spec Enrichment: if description is a stub or short, fetch full spec from source URL
     raw_desc = job.get("description", "")
@@ -166,11 +165,11 @@ def save_job(job: dict[str, Any]) -> bool:
         except Exception:
             pass
 
-    return save_jobs_batch([job]) > 0
+    return job
 
 
-def save_jobs_batch(jobs: list[dict[str, Any]]) -> int:
-    """Validate and ingest shared vacancy facts, then refresh candidate evaluations."""
+def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = False) -> int:
+    """Validate, enrich, and batch-write shared vacancy facts; scoring runs after ingestion."""
     if not jobs:
         return 0
 
@@ -181,6 +180,8 @@ def save_jobs_batch(jobs: list[dict[str, Any]]) -> int:
         if not _is_ingestable_job(job):
             continue
 
+        if enrich:
+            job = _enrich_job(job)
         clean_desc = clean_description_text(job.get("description", ""), job.get("company", ""), job.get("title", ""))
         salary_text = job.get("salary_text") or extract_salary_from_context(clean_desc, job.get("title", ""))
 
@@ -199,16 +200,12 @@ def save_jobs_batch(jobs: list[dict[str, Any]]) -> int:
                 "url": _sanitize_val(job["url"]),
                 "source": _sanitize_val(job["source"]),
                 "last_seen_at": now,
-                "status": _sanitize_val(job.get("status", "new")),
             }
         )
 
     if not valid_payloads:
         return 0
 
-    # Resolve profiles once for the whole batch. Calling this inside the per-job
-    # path turns one scrape into N database reads before any rows are written.
-    user_profiles = get_all_user_profiles()
     supabase = get_supabase()
     batch_size = 50
     added = 0
@@ -236,9 +233,6 @@ def save_jobs_batch(jobs: list[dict[str, Any]]) -> int:
 
         if persisted:
             added += len(persisted)
-            # Scoring failures must propagate. Retrying already-persisted jobs as
-            # insert failures duplicates writes and hides missing evaluations.
-            evaluate_and_save_user_evaluations(persisted, profiles=user_profiles)
 
     return added
 
@@ -265,8 +259,7 @@ def get_all_user_profiles() -> list[dict[str, Any]]:
 
 def evaluate_and_save_user_evaluations(
     jobs: list[dict[str, Any]],
-    profiles: list[dict[str, Any]] | None = None,
-    prepare_profile_vectors: bool = True,
+    profiles: list[ScoringProfile],
 ) -> int:
     """
     Evaluate jobs against each user profile from Supabase and upsert
@@ -276,49 +269,20 @@ def evaluate_and_save_user_evaluations(
         return 0
 
     supabase = get_supabase()
-    user_profiles = profiles if profiles is not None else get_all_user_profiles()
-    if not user_profiles:
+    if not profiles:
         return 0
-
-    resolved_jobs = []
-    for job in jobs:
-        if not job.get("id"):
-            key = job.get("dedupe_key")
-            if not key:
-                continue
-            lookup = retry_supabase(
-                lambda k=key: supabase.table("jobs").select("id").eq("dedupe_key", k).limit(1).execute()
-            )
-            if not lookup.data:
-                continue
-            job = {**job, "id": lookup.data[0]["id"]}
-        resolved_jobs.append(job)
-    user_profiles = [profile for profile in user_profiles if profile.get("user_id")]
-    if not resolved_jobs or not user_profiles:
-        return 0
-
-    prepare_embeddings(
-        "job_scoring_embeddings", "job_id", {job["id"]: build_job_document(job) for job in resolved_jobs}
-    )
-    if prepare_profile_vectors:
-        prepare_embeddings(
-            "profile_scoring_embeddings",
-            "user_id",
-            {profile["user_id"]: build_profile_document(profile) for profile in user_profiles},
-        )
+    prepare_embeddings("job_scoring_embeddings", "job_id", {job["id"]: build_job_document(job) for job in jobs})
     now = utc_now()
     saved_count = 0
-    for job_start in range(0, len(resolved_jobs), SCORING_BATCH_SIZE):
-        job_chunk = resolved_jobs[job_start : job_start + SCORING_BATCH_SIZE]
+    for job_start in range(0, len(jobs), SCORING_BATCH_SIZE):
+        job_chunk = jobs[job_start : job_start + SCORING_BATCH_SIZE]
         jobs_by_id = {job["id"]: job for job in job_chunk}
-        job_hashes = {job["id"]: job_scoring_input(job)["content_hash"] for job in job_chunk}
-        for profile_start in range(0, len(user_profiles), SCORING_BATCH_SIZE):
-            profile_chunk = user_profiles[profile_start : profile_start + SCORING_BATCH_SIZE]
-            profiles_by_id = {profile["user_id"]: profile for profile in profile_chunk}
-            profile_hashes = {
-                profile["user_id"]: profile_scoring_input(profile)["content_hash"] for profile in profile_chunk
-            }
-            work = get_scoring_work(job_chunk, profile_chunk)
+        job_inputs = [job_scoring_input(job) for job in job_chunk]
+        job_hashes = {item["job_id"]: item["content_hash"] for item in job_inputs}
+        for profile_start in range(0, len(profiles), SCORING_BATCH_SIZE):
+            profile_chunk = profiles[profile_start : profile_start + SCORING_BATCH_SIZE]
+            profiles_by_id = {profile.fingerprint["user_id"]: profile for profile in profile_chunk}
+            work = get_scoring_work(job_inputs, [profile.fingerprint for profile in profile_chunk])
             eval_payloads = []
             for pair in work:
                 job = jobs_by_id[pair["job_id"]]
@@ -327,9 +291,9 @@ def evaluate_and_save_user_evaluations(
                 if similarity is None:
                     # Preserve the original fallback's full (untruncated) text.
                     similarity = compute_token_frequency_similarity(
-                        build_profile_document(profile), f"{job.get('title', '')}\n{job.get('description', '')}"
+                        profile.evaluator.document, f"{job.get('title', '')}\n{job.get('description', '')}"
                     )
-                ai_eval = evaluate_job(
+                evaluation = evaluate_job(
                     title=job.get("title", ""),
                     description=job.get("description", ""),
                     company=job.get("company", ""),
@@ -340,20 +304,20 @@ def evaluate_and_save_user_evaluations(
                     salary_currency=job.get("salary_currency"),
                     salary_period=job.get("salary_period"),
                     employment_type=job.get("employment_type", ""),
-                    profile=profile,
+                    profile=profile.evaluator,
                     semantic_similarity=float(similarity),
                 )
                 eval_payloads.append(
                     {
                         "user_id": pair["user_id"],
                         "job_id": pair["job_id"],
-                        "relevance": ai_eval.get("fit_score", 0),
-                        "fit_tier": _sanitize_val(ai_eval.get("fit_tier", "Unassessed")),
-                        "matched_skills": _sanitize_val(ai_eval.get("matched_skills", [])),
-                        "ai_analysis": _sanitize_val(ai_eval),
+                        "relevance": evaluation.get("fit_score", 0),
+                        "fit_tier": _sanitize_val(evaluation.get("fit_tier", "Unassessed")),
+                        "matched_skills": _sanitize_val(evaluation.get("matched_skills", [])),
+                        "ai_analysis": _sanitize_val(evaluation),
                         "calculated_at": now,
                         "scoring_job_hash": job_hashes[pair["job_id"]],
-                        "scoring_profile_hash": profile_hashes[pair["user_id"]],
+                        "scoring_profile_hash": profile.fingerprint["content_hash"],
                         "scoring_version": pair["scoring_version"],
                     }
                 )
@@ -395,7 +359,8 @@ def rescore_all_jobs(user_id: str | None = None) -> int:
         {profile["user_id"]: build_profile_document(profile) for profile in profiles},
     )
 
-    page_size = 100
+    scoring_profiles = prepare_scoring_profiles(profiles)
+    page_size = SCORING_BATCH_SIZE
     start = 0
     total_evaluated = 0
     while True:
@@ -411,7 +376,7 @@ def rescore_all_jobs(user_id: str | None = None) -> int:
         jobs = res.data or []
         if not jobs:
             break
-        total_evaluated += evaluate_and_save_user_evaluations(jobs, profiles=profiles, prepare_profile_vectors=False)
+        total_evaluated += evaluate_and_save_user_evaluations(jobs, profiles=scoring_profiles)
         start += page_size
         if len(jobs) < page_size:
             break
@@ -532,7 +497,8 @@ def prune_stale_jobs(retention_days: int = 3) -> dict[str, Any]:
             res = retry_supabase(
                 lambda s=start: (
                     supabase.table("jobs")
-                    .select("id, title, company, status, last_seen_at")
+                    .select("id, title, company, last_seen_at")
+                    .order("id")
                     .lt("last_seen_at", cutoff)
                     .range(s, s + page_size - 1)
                     .execute()
@@ -567,15 +533,26 @@ def prune_stale_jobs(retention_days: int = 3) -> dict[str, Any]:
     for i in range(0, len(stale_ids), batch_size):
         chunk_ids = stale_ids[i : i + batch_size]
         try:
-            u_res = retry_supabase(
-                lambda cids=chunk_ids: (
-                    supabase.table("user_job_statuses").select("job_id, status").in_("job_id", cids).execute()
+            offset = 0
+            while True:
+                u_res = retry_supabase(
+                    lambda cids=chunk_ids, start=offset: (
+                        supabase.table("user_job_statuses")
+                        .select("job_id, status")
+                        .in_("job_id", cids)
+                        .order("id")
+                        .range(start, start + 499)
+                        .execute()
+                    )
                 )
-            )
-            for row in u_res.data or []:
-                st_clean = (row.get("status") or "").strip().lower().replace(" ", "_")
-                if st_clean:
-                    user_status_map[row["job_id"]].add(st_clean)
+                rows = u_res.data or []
+                for row in rows:
+                    st_clean = (row.get("status") or "").strip().lower().replace(" ", "_")
+                    if st_clean:
+                        user_status_map[row["job_id"]].add(st_clean)
+                if len(rows) < 500:
+                    break
+                offset += 500
         except Exception as exc:
             raise RuntimeError("Cannot prune jobs without verifying every user's tracking status") from exc
 
@@ -588,8 +565,7 @@ def prune_stale_jobs(retention_days: int = 3) -> dict[str, Any]:
     for job in stale_jobs:
         jid = job["id"]
         user_statuses = user_status_map.get(jid, set())
-        fallback_status = (job.get("status") or "new").strip().lower().replace(" ", "_")
-        all_statuses = user_statuses | {fallback_status} if user_statuses else {fallback_status}
+        all_statuses = user_statuses or {"new"}
 
         # Check if ANY user has marked this job as applied, interviewing, interested, etc.
         active_statuses = {s for s in all_statuses if s not in DISCARDABLE_STATUSES}

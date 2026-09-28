@@ -11,7 +11,7 @@ interface CommandMenuProps {
   onOpenChange: (open: boolean) => void;
   jobs?: Job[];
   onSelectJob: (job: Job) => void;
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 export const CommandMenu: React.FC<CommandMenuProps> = ({
@@ -19,7 +19,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   onOpenChange,
   jobs = [],
   onSelectJob,
-  userEmail,
+  userId,
 }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,9 +29,9 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
   const { data: searchResults } = useJobsPageQuery(
-    userEmail,
+    userId,
     { search: debouncedSearchQuery, limit: 25 },
-    isOpen && Boolean(userEmail),
+    isOpen && Boolean(userId),
   );
   const commandJobs = searchResults?.items ?? jobs;
 

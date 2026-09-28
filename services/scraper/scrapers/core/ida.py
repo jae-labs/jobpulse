@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from database.repository import save_job, update_employer_status, update_source_status
+from database.repository import save_jobs_batch, update_employer_status, update_source_status
 from network.browser import with_browser
 
 IDA_OPEN_ROLES_URL = "https://www.idaireland.com/careers-at-ida-ireland/open-roles"
@@ -52,10 +52,10 @@ def sync_ida() -> tuple[int, str]:
         update_employer_status("IDA Ireland", "Unavailable")
         return 0, err_msg
 
-    added = 0
+    jobs_to_save = []
     for v in opportunities:
         title = v["title"]
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": "IDA Ireland",
@@ -65,8 +65,9 @@ def sync_ida() -> tuple[int, str]:
                 "url": v["url"],
                 "source": "IDA Ireland",
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     status_text = "Synced" if opportunities else "Monitored"
     detail_text = f"Read {len(opportunities)} current IDA Ireland opportunities; added {added} new opportunities."

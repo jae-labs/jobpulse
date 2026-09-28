@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   FileText,
   Download,
@@ -10,7 +10,9 @@ import {
 import {
   getUserCVSignedUrl,
   getUserCoverLetterSignedUrl,
+  MAX_DOCUMENT_SIZE_BYTES,
 } from '../../lib/userProfile';
+import type { DocumentUpload } from '../../lib/userProfile';
 import {
   useUserCvsQuery,
   useUserCoverLettersQuery,
@@ -22,9 +24,10 @@ import {
 import { formatDate } from '../../lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, TextField } from '@jae-labs/ui';
+import type { UseMutationResult } from '@tanstack/react-query';
 
 interface ProfileDocumentsProps {
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 function formatFileSize(bytes: number): string {
@@ -203,170 +206,182 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
   );
 };
 
-export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail }) => {
+// ---------------------------------------------------------------------------
+// Generic document handler — eliminates upload / download / delete duplication
+// between the CV and cover-letter sections.
+// ---------------------------------------------------------------------------
+
+type Notice = { type: 'success' | 'error'; text: string } | null;
+
+interface DocumentHandlers {
+  description: string;
+  setDescription: React.Dispatch<React.SetStateAction<string>>;
+  downloadingId: number | null;
+  notice: Notice;
+  isPending: boolean;
+  handleUpload: (file: File) => void;
+  handleDownload: (id?: number, fileName?: string) => void;
+  handleDelete: (id?: number, fileName?: string) => void;
+}
+
+function useDocumentHandlers(opts: {
+  userId?: string | null;
+  saveMutation: UseMutationResult<{ success: boolean; error?: string }, Error, DocumentUpload>;
+  deleteMutation: UseMutationResult<boolean, Error, number>;
+  getSignedUrl: (id: number) => Promise<{ signedUrl: string; fileName?: string } | { error: string }>;
+  t: ReturnType<typeof useTranslation>['t'];
+  labels: {
+    uploadSuccess: string;
+    uploadFailed: string;
+    loadFailed: string;
+    downloadFailed: string;
+    removeConfirm: string;
+    removeConfirmFallback: string;
+    removed: string;
+    deleteFailed: string;
+    fileTooLarge: string;
+    processingError: string;
+  };
+}): DocumentHandlers {
+  const { userId, saveMutation, deleteMutation, getSignedUrl, t, labels } = opts;
+  const [description, setDescription] = useState('');
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+
+  const handleUpload = useCallback(
+    async (file: File) => {
+      if (!userId) return;
+
+      if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+        setNotice({ type: 'error', text: labels.fileTooLarge });
+        return;
+      }
+
+      setNotice(null);
+
+      try {
+        const res = await saveMutation.mutateAsync({
+          file,
+          description: description.trim() || undefined,
+        });
+
+        if (res.success) {
+          setDescription('');
+          setNotice({ type: 'success', text: t(labels.uploadSuccess, { fileName: file.name }) });
+          setTimeout(() => setNotice(null), 4000);
+        } else {
+          setNotice({ type: 'error', text: res.error || labels.uploadFailed });
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : labels.processingError;
+        setNotice({ type: 'error', text: message });
+      }
+    },
+    [userId, saveMutation, description, labels, t],
+  );
+
+  const handleDownload = useCallback(
+    async (id?: number, fileName?: string) => {
+      if (!id) return;
+      setDownloadingId(id);
+      try {
+        const res = await getSignedUrl(id);
+        if ('signedUrl' in res) {
+          const link = document.createElement('a');
+          link.href = res.signedUrl;
+          link.download = res.fileName || fileName || 'Document.pdf';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          setNotice({ type: 'error', text: res.error || labels.loadFailed });
+        }
+      } catch {
+        setNotice({ type: 'error', text: labels.downloadFailed });
+      } finally {
+        setDownloadingId(null);
+      }
+    },
+    [getSignedUrl, labels],
+  );
+
+  const handleDelete = useCallback(
+    async (id?: number, fileName?: string) => {
+      if (!id) return;
+      if (!confirm(t(labels.removeConfirm, { fileName: fileName || labels.removeConfirmFallback }))) return;
+      try {
+        const ok = await deleteMutation.mutateAsync(id);
+        if (ok) {
+          setNotice({ type: 'success', text: labels.removed });
+          setTimeout(() => setNotice(null), 3000);
+        }
+      } catch {
+        setNotice({ type: 'error', text: t(labels.deleteFailed, 'Failed to delete document.') });
+      }
+    },
+    [deleteMutation, labels, t],
+  );
+
+  return {
+    description,
+    setDescription,
+    downloadingId,
+    notice,
+    isPending: saveMutation.isPending,
+    handleUpload: (file: File) => void handleUpload(file),
+    handleDownload: (id?: number, fileName?: string) => void handleDownload(id, fileName),
+    handleDelete: (id?: number, fileName?: string) => void handleDelete(id, fileName),
+  };
+}
+
+export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userId }) => {
   const { t } = useTranslation();
 
-  const { data: cvList = [], error: cvLoadError, refetch: refetchCvs } = useUserCvsQuery(userEmail);
-  const { data: coverLetterList = [], error: coverLetterLoadError, refetch: refetchCoverLetters } = useUserCoverLettersQuery(userEmail);
+  const { data: cvList = [], error: cvLoadError, refetch: refetchCvs } = useUserCvsQuery(userId);
+  const { data: coverLetterList = [], error: coverLetterLoadError, refetch: refetchCoverLetters } = useUserCoverLettersQuery(userId);
 
-  const saveCvMutation = useSaveCvMutation(userEmail);
-  const deleteCvMutation = useDeleteCvMutation(userEmail);
-  const saveCoverLetterMutation = useSaveCoverLetterMutation(userEmail);
-  const deleteCoverLetterMutation = useDeleteCoverLetterMutation(userEmail);
+  const cv = useDocumentHandlers({
+    userId,
+    saveMutation: useSaveCvMutation(userId),
+    deleteMutation: useDeleteCvMutation(userId),
+    getSignedUrl: getUserCVSignedUrl,
+    t,
+    labels: {
+      uploadSuccess: 'profile.documents.uploaded',
+      uploadFailed: t('profile.documents.uploadCvFailed'),
+      loadFailed: t('profile.documents.loadCvFailed'),
+      downloadFailed: t('profile.documents.downloadCvFailed'),
+      removeConfirm: 'profile.documents.removeCvConfirmation',
+      removeConfirmFallback: t('profile.documents.thisCv'),
+      removed: t('profile.documents.cvRemoved'),
+      deleteFailed: 'profile.documents.deleteFailed',
+      fileTooLarge: t('profile.documents.fileTooLarge'),
+      processingError: t('profile.documents.processingError'),
+    },
+  });
 
-  // CV local form state
-  const [newCvDescription, setNewCvDescription] = useState('');
-  const [downloadingCvId, setDownloadingCvId] = useState<number | null>(null);
-  const [cvNotice, setCvNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const cl = useDocumentHandlers({
+    userId,
+    saveMutation: useSaveCoverLetterMutation(userId),
+    deleteMutation: useDeleteCoverLetterMutation(userId),
+    getSignedUrl: getUserCoverLetterSignedUrl,
+    t,
+    labels: {
+      uploadSuccess: 'profile.documents.uploaded',
+      uploadFailed: t('profile.documents.uploadCoverLetterFailed'),
+      loadFailed: t('profile.documents.loadCoverLetterFailed'),
+      downloadFailed: t('profile.documents.downloadCoverLetterFailed'),
+      removeConfirm: 'profile.documents.removeCoverLetterConfirmation',
+      removeConfirmFallback: t('profile.documents.thisCoverLetter'),
+      removed: t('profile.documents.coverLetterRemoved'),
+      deleteFailed: 'profile.documents.deleteFailed',
+      fileTooLarge: t('profile.documents.fileTooLarge'),
+      processingError: t('profile.documents.processingError'),
+    },
+  });
 
-  // Cover letter local form state
-  const [newCoverLetterDescription, setNewCoverLetterDescription] = useState('');
-  const [downloadingCoverLetterId, setDownloadingCoverLetterId] = useState<number | null>(null);
-  const [coverLetterNotice, setCoverLetterNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const isUploadingCv = saveCvMutation.isPending;
-  const isUploadingCoverLetter = saveCoverLetterMutation.isPending;
   const documentLoadError = cvLoadError || coverLetterLoadError;
-
-  const handleCvUpload = async (file: File) => {
-    if (!userEmail) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      setCvNotice({ type: 'error', text: t('profile.documents.fileTooLarge') });
-      return;
-    }
-
-    setCvNotice(null);
-
-    try {
-      const res = await saveCvMutation.mutateAsync({
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type || 'application/pdf',
-        fileData: file,
-        description: newCvDescription.trim() || undefined,
-      });
-
-      if (res.success) {
-        setNewCvDescription('');
-        setCvNotice({ type: 'success', text: t('profile.documents.uploaded', { fileName: file.name }) });
-        setTimeout(() => setCvNotice(null), 4000);
-      } else {
-        setCvNotice({ type: 'error', text: res.error || t('profile.documents.uploadCvFailed') });
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('profile.documents.processingError');
-      setCvNotice({ type: 'error', text: message });
-    }
-  };
-
-  const handleDownloadCv = async (id?: number, fileName?: string) => {
-    if (!id) return;
-    setDownloadingCvId(id);
-    try {
-      const res = await getUserCVSignedUrl(id);
-      if (res && 'signedUrl' in res) {
-        const link = document.createElement('a');
-        link.href = res.signedUrl;
-        link.download = res.fileName || fileName || 'Resume.pdf';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        const errorText = res && 'error' in res ? res.error : t('profile.documents.loadCvFailed');
-        setCvNotice({ type: 'error', text: errorText });
-      }
-    } catch {
-      setCvNotice({ type: 'error', text: t('profile.documents.downloadCvFailed') });
-    } finally {
-      setDownloadingCvId(null);
-    }
-  };
-
-  const handleDeleteCv = async (id?: number, fileName?: string) => {
-    if (!id) return;
-    if (!confirm(t('profile.documents.removeCvConfirmation', { fileName: fileName || t('profile.documents.thisCv') }))) return;
-    try {
-      const ok = await deleteCvMutation.mutateAsync(id);
-      if (ok) {
-        setCvNotice({ type: 'success', text: t('profile.documents.cvRemoved') });
-        setTimeout(() => setCvNotice(null), 3000);
-      }
-    } catch {
-      setCvNotice({ type: 'error', text: t('profile.documents.deleteFailed', 'Failed to delete document.') });
-    }
-  };
-
-  const handleCoverLetterUpload = async (file: File) => {
-    if (!userEmail) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      setCoverLetterNotice({ type: 'error', text: t('profile.documents.fileTooLarge') });
-      return;
-    }
-
-    setCoverLetterNotice(null);
-
-    try {
-      const res = await saveCoverLetterMutation.mutateAsync({
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type || 'application/pdf',
-        fileData: file,
-        description: newCoverLetterDescription.trim() || undefined,
-      });
-
-      if (res.success) {
-        setNewCoverLetterDescription('');
-        setCoverLetterNotice({ type: 'success', text: t('profile.documents.uploaded', { fileName: file.name }) });
-        setTimeout(() => setCoverLetterNotice(null), 4000);
-      } else {
-        setCoverLetterNotice({ type: 'error', text: res.error || t('profile.documents.uploadCoverLetterFailed') });
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('profile.documents.processingError');
-      setCoverLetterNotice({ type: 'error', text: message });
-    }
-  };
-
-  const handleDownloadCoverLetter = async (id?: number, fileName?: string) => {
-    if (!id) return;
-    setDownloadingCoverLetterId(id);
-    try {
-      const res = await getUserCoverLetterSignedUrl(id);
-      if (res && 'signedUrl' in res) {
-        const link = document.createElement('a');
-        link.href = res.signedUrl;
-        link.download = res.fileName || fileName || 'Cover_Letter.pdf';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        const errorText = res && 'error' in res ? res.error : t('profile.documents.loadCoverLetterFailed');
-        setCoverLetterNotice({ type: 'error', text: errorText });
-      }
-    } catch {
-      setCoverLetterNotice({ type: 'error', text: t('profile.documents.downloadCoverLetterFailed') });
-    } finally {
-      setDownloadingCoverLetterId(null);
-    }
-  };
-
-  const handleDeleteCoverLetter = async (id?: number, fileName?: string) => {
-    if (!id) return;
-    if (!confirm(t('profile.documents.removeCoverLetterConfirmation', { fileName: fileName || t('profile.documents.thisCoverLetter') }))) return;
-    try {
-      const ok = await deleteCoverLetterMutation.mutateAsync(id);
-      if (ok) {
-        setCoverLetterNotice({ type: 'success', text: t('profile.documents.coverLetterRemoved') });
-        setTimeout(() => setCoverLetterNotice(null), 3000);
-      }
-    } catch {
-      setCoverLetterNotice({ type: 'error', text: t('profile.documents.deleteFailed', 'Failed to delete document.') });
-    }
-  };
 
   return (
     <Card className="space-y-4 p-5 lg:p-6">
@@ -390,40 +405,40 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userEmail })
         <DocumentSection
           title={t('profile.documents.resumes')}
           items={cvList}
-          notice={cvNotice}
-          newDescription={newCvDescription}
-          onDescriptionChange={setNewCvDescription}
-          isUploading={isUploadingCv}
-          downloadingId={downloadingCvId}
+          notice={cv.notice}
+          newDescription={cv.description}
+          onDescriptionChange={cv.setDescription}
+          isUploading={cv.isPending}
+          downloadingId={cv.downloadingId}
           emptyText={t('profile.documents.noResumes')}
           descriptionPlaceholder={t('profile.documents.cvDescriptionPlaceholder')}
           descriptionLabel={t('profile.documents.cvDescriptionLabel')}
           uploadButtonText={t('profile.documents.uploadResume')}
           downloadTitle={t('profile.documents.downloadResume')}
           deleteTitle={t('profile.documents.deleteResume')}
-          onUploadFile={(file) => void handleCvUpload(file)}
-          onDownload={(id, name) => void handleDownloadCv(id, name)}
-          onDelete={(id, name) => void handleDeleteCv(id, name)}
+          onUploadFile={cv.handleUpload}
+          onDownload={cv.handleDownload}
+          onDelete={cv.handleDelete}
         />
 
         {/* COVER LETTERS */}
         <DocumentSection
           title={t('profile.documents.coverLetters')}
           items={coverLetterList}
-          notice={coverLetterNotice}
-          newDescription={newCoverLetterDescription}
-          onDescriptionChange={setNewCoverLetterDescription}
-          isUploading={isUploadingCoverLetter}
-          downloadingId={downloadingCoverLetterId}
+          notice={cl.notice}
+          newDescription={cl.description}
+          onDescriptionChange={cl.setDescription}
+          isUploading={cl.isPending}
+          downloadingId={cl.downloadingId}
           emptyText={t('profile.documents.noCoverLetters')}
           descriptionPlaceholder={t('profile.documents.coverLetterDescriptionPlaceholder')}
           descriptionLabel={t('profile.documents.coverLetterDescriptionLabel')}
           uploadButtonText={t('profile.documents.uploadCoverLetter')}
           downloadTitle={t('profile.documents.downloadCoverLetter')}
           deleteTitle={t('profile.documents.deleteCoverLetter')}
-          onUploadFile={(file) => void handleCoverLetterUpload(file)}
-          onDownload={(id, name) => void handleDownloadCoverLetter(id, name)}
-          onDelete={(id, name) => void handleDeleteCoverLetter(id, name)}
+          onUploadFile={cl.handleUpload}
+          onDownload={cl.handleDownload}
+          onDelete={cl.handleDelete}
         />
       </div>
     </Card>

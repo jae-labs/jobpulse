@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Job, Source, Profile, JobStatus, OverviewMetrics, JobsPageParams, JobsPageResult, UserCVMetadata, UserCoverLetterMetadata } from "../types/job";
+import type { Job, Source, Profile, JobStatus, OverviewMetrics, JobsPageParams, JobsPageResult, UserDocumentMetadata } from "../types/job";
 import { getCurrentUserId } from "../lib/userSession";
 import { candidateEvaluationFields } from "../lib/candidateEvaluation";
 import { DEFAULT_PROFILE } from "../lib/defaultProfile";
@@ -14,20 +14,21 @@ import {
   deleteUserCV,
   deleteUserCoverLetter,
   saveUserAvatar,
+  type DocumentUpload,
 } from "../lib/userProfile";
 
 export const queryKeys = {
-  overviewMetrics: (email?: string | null) => ["overview-metrics", email ? email.trim().toLowerCase() : null] as const,
-  jobsPage: (email?: string | null, params?: unknown) => ["jobs-page", email ? email.trim().toLowerCase() : null, ...(params === undefined ? [] : [params])] as const,
-  jobsSearchPage: (email?: string | null, params?: unknown) => ["jobs-search-page", email ? email.trim().toLowerCase() : null, ...(params === undefined ? [] : [params])] as const,
-  scoringPreviewJobs: (email?: string | null) => ["scoring-preview-jobs", email ? email.trim().toLowerCase() : null] as const,
-  jobById: (id?: number | null, email?: string | null) => ["job-by-id", id, email ? email.trim().toLowerCase() : null] as const,
-  jobDetail: (id?: number | null, email?: string | null) => ["job-detail", id, email ? email.trim().toLowerCase() : null] as const,
+  overviewMetrics: (userId?: string | null) => ["overview-metrics", userId ?? null] as const,
+  jobsPage: (userId?: string | null, params?: unknown) => ["jobs-page", userId ?? null, ...(params === undefined ? [] : [params])] as const,
+  jobsSearchPage: (userId?: string | null, params?: unknown) => ["jobs-search-page", userId ?? null, ...(params === undefined ? [] : [params])] as const,
+  scoringPreviewJobs: (userId?: string | null) => ["scoring-preview-jobs", userId ?? null] as const,
+  jobById: (id?: number | null, userId?: string | null) => ["job-by-id", id, userId ?? null] as const,
+  jobDetail: (id?: number | null, userId?: string | null) => ["job-detail", id, userId ?? null] as const,
   sources: () => ["sources"] as const,
-  profile: (email?: string | null) => ["profile", email ? email.trim().toLowerCase() : null] as const,
-  userCvs: (email?: string | null) => ["user-cvs", email ? email.trim().toLowerCase() : null] as const,
-  userCoverLetters: (email?: string | null) => ["user-cover-letters", email ? email.trim().toLowerCase() : null] as const,
-  invitations: (email?: string | null) => ["invitations", email ? email.trim().toLowerCase() : null] as const,
+  profile: (userId?: string | null) => ["profile", userId ?? null] as const,
+  userCvs: (userId?: string | null) => ["user-cvs", userId ?? null] as const,
+  userCoverLetters: (userId?: string | null) => ["user-cover-letters", userId ?? null] as const,
+  invitations: (userId?: string | null) => ["invitations", userId ?? null] as const,
 };
 
 export function validateOverviewMetrics(data: unknown): OverviewMetrics {
@@ -109,12 +110,11 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
   return { total, items };
 }
 
-export function useOverviewMetricsQuery(userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useOverviewMetricsQuery(activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.overviewMetrics(cleanEmail),
-    enabled: Boolean(supabase) && enabled,
+    queryKey: queryKeys.overviewMetrics(activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async (): Promise<OverviewMetrics> => {
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
@@ -128,16 +128,15 @@ export function useOverviewMetricsQuery(userEmail?: string | null, enabled = tru
 }
 
 export function useJobsPageQuery(
-  userEmail?: string | null,
+  activeUserId?: string | null,
   params: JobsPageParams = {},
   enabled = true
 ) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
   const pageLimit = Math.min(Math.max(params.limit ?? 40, 1), 100);
 
   return useQuery({
-    queryKey: queryKeys.jobsSearchPage(cleanEmail, params),
-    enabled: Boolean(supabase) && enabled,
+    queryKey: queryKeys.jobsSearchPage(activeUserId, params),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async (): Promise<JobsPageResult> => {
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
@@ -164,17 +163,16 @@ export function useJobsPageQuery(
 }
 
 export function useJobsInfiniteQuery(
-  userEmail?: string | null,
+  activeUserId?: string | null,
   params: Omit<JobsPageParams, 'limit' | 'offset'> = {},
   enabled = true
 ) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
   const PAGE_LIMIT = 40;
 
   return useInfiniteQuery({
-    queryKey: queryKeys.jobsPage(cleanEmail, params),
+    queryKey: queryKeys.jobsPage(activeUserId, params),
     initialPageParam: 0,
-    enabled: Boolean(supabase) && enabled,
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async ({ pageParam }): Promise<JobsPageResult> => {
       if (!supabase) throw new Error('Supabase is not initialized. Check your environment variables.');
       const { data, error } = await supabase.rpc('get_jobs_page', {
@@ -201,21 +199,20 @@ export function useJobsInfiniteQuery(
 }
 
 /** Bounded preview for profile scoring. */
-export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useScoringPreviewJobsQuery(activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.scoringPreviewJobs(cleanEmail),
-    enabled: Boolean(supabase) && enabled,
+    queryKey: queryKeys.scoringPreviewJobs(activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async (): Promise<Job[]> => {
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
-      if (!cleanEmail) return [];
+      if (!activeUserId) return [];
       const userId = await getCurrentUserId();
       const { data, error } = await supabase
         .from("user_job_evaluations")
-        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, status, last_seen_at)")
+        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, last_seen_at)")
         .eq("user_id", userId)
         .order("relevance", { ascending: false })
         .limit(100);
@@ -227,6 +224,7 @@ export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = 
         return [{
           ...job,
           ...candidateEvaluationFields(evaluation),
+          status: 'new',
         } as Job];
       });
     },
@@ -234,15 +232,14 @@ export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = 
   });
 }
 
-export function useJobDetailQuery(jobId?: number | null, userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useJobDetailQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.jobDetail(jobId, cleanEmail),
-    enabled: Boolean(supabase) && Boolean(jobId) && enabled,
+    queryKey: queryKeys.jobDetail(jobId, activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<{ description?: string; ai_analysis?: Job['ai_analysis'] }> => {
       if (!supabase || !jobId) throw new Error("Supabase is not initialized or invalid jobId");
-      const userId = cleanEmail ? await getCurrentUserId() : null;
+      const userId = activeUserId ? await getCurrentUserId() : null;
 
       const [jobRes, evalRes] = await Promise.all([
         supabase.from("jobs").select("description").eq("id", jobId).maybeSingle(),
@@ -271,14 +268,13 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
 }
 
 /** Fetches a single job by ID. */
-export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
   return useQuery({
-    queryKey: queryKeys.jobById(jobId, cleanEmail),
-    enabled: Boolean(supabase) && Boolean(jobId) && enabled,
+    queryKey: queryKeys.jobById(jobId, activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<Job | null> => {
       if (!supabase || !jobId) return null;
-      const userId = cleanEmail ? await getCurrentUserId() : null;
+      const userId = activeUserId ? await getCurrentUserId() : null;
       const [jobResult, statusResult, evaluationResult] = await Promise.all([
         supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
         userId
@@ -297,7 +293,7 @@ export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null
         ...jobResult.data,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),
         ...candidateEvaluationFields(evaluation),
-        status: (statusResult.data?.status ?? jobResult.data.status ?? 'new') as JobStatus,
+        status: (statusResult.data?.status ?? 'new') as JobStatus,
       };
     },
     staleTime: 1000 * 60 * 10,
@@ -319,28 +315,26 @@ export function useSourcesQuery(enabled = true) {
   });
 }
 
-export function useProfileQuery(userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useProfileQuery(activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.profile(cleanEmail),
-    enabled: Boolean(supabase) && enabled,
+    queryKey: queryKeys.profile(activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async (): Promise<Profile> => {
-      if (!cleanEmail) return DEFAULT_PROFILE;
-      const data = await loadUserProfile(cleanEmail);
+      if (!activeUserId) return DEFAULT_PROFILE;
+      const data = await loadUserProfile();
       return data || DEFAULT_PROFILE;
     },
   });
 }
 
-export function useUpdateJobStatusMutation(userEmail?: string | null) {
+export function useUpdateJobStatusMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async ({ job, status }: { job: Job; status: JobStatus }) => {
       if (!supabase) throw new Error("Supabase client is not configured");
-      if (!cleanEmail) throw new Error("Active user session required");
+      if (!activeUserId) throw new Error("Active user session required");
       const userId = await getCurrentUserId();
 
       const { error } = await supabase.from("user_job_statuses").upsert(
@@ -357,10 +351,10 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       return { jobId: job.id, status };
     },
     onMutate: async ({ job, status }) => {
-      const jobByIdKey = queryKeys.jobById(job.id, cleanEmail);
+      const jobByIdKey = queryKeys.jobById(job.id, activeUserId);
       await queryClient.cancelQueries({ queryKey: jobByIdKey });
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
 
       const previousJobById = queryClient.getQueryData<Job | null>(jobByIdKey);
 
@@ -370,7 +364,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       );
 
       queryClient.setQueriesData<InfiniteData<JobsPageResult>>(
-        { queryKey: queryKeys.jobsPage(cleanEmail) },
+        { queryKey: queryKeys.jobsPage(activeUserId) },
         (old) => {
           if (!old) return old;
           return {
@@ -384,7 +378,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       );
 
       queryClient.setQueriesData<JobsPageResult>(
-        { queryKey: queryKeys.jobsSearchPage(cleanEmail) },
+        { queryKey: queryKeys.jobsSearchPage(activeUserId) },
         (old) => {
           if (!old) return old;
           return {
@@ -403,32 +397,31 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       if (context?.jobByIdKey) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
     },
     onSettled: (_data, _error, _variables, context) => {
       if (context?.jobByIdKey) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) });
     },
   });
 }
 
-export function useSaveProfileMutation(userEmail?: string | null) {
+export function useSaveProfileMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async (updatedProfile: Profile) => {
-      if (!cleanEmail) return { success: false, error: "User email not found in active session." };
-      return saveUserProfile(cleanEmail, updatedProfile);
+      if (!activeUserId) return { success: false, error: "Active user session required." };
+      return saveUserProfile(updatedProfile);
     },
     onSuccess: (res, updatedProfile) => {
       if (res.success) {
-        queryClient.setQueryData(queryKeys.profile(cleanEmail), updatedProfile);
+        queryClient.setQueryData(queryKeys.profile(activeUserId), updatedProfile);
       }
     },
   });
@@ -448,65 +441,48 @@ export function useDeleteAccountMutation() {
   });
 }
 
-export function useUserCvsQuery(userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useUserCvsQuery(activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.userCvs(cleanEmail),
-    enabled: Boolean(supabase) && Boolean(cleanEmail) && enabled,
-    queryFn: async (): Promise<UserCVMetadata[]> => {
-      if (!cleanEmail) return [];
-      return loadUserCVsMetadata(cleanEmail);
+    queryKey: queryKeys.userCvs(activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
+    queryFn: async (): Promise<UserDocumentMetadata[]> => {
+      if (!activeUserId) return [];
+      return loadUserCVsMetadata();
     },
   });
 }
 
-export function useUserCoverLettersQuery(userEmail?: string | null, enabled = true) {
-  const cleanEmail = userEmail?.trim().toLowerCase();
+export function useUserCoverLettersQuery(activeUserId?: string | null, enabled = true) {
 
   return useQuery({
-    queryKey: queryKeys.userCoverLetters(cleanEmail),
-    enabled: Boolean(supabase) && Boolean(cleanEmail) && enabled,
-    queryFn: async (): Promise<UserCoverLetterMetadata[]> => {
-      if (!cleanEmail) return [];
-      return loadUserCoverLettersMetadata(cleanEmail);
+    queryKey: queryKeys.userCoverLetters(activeUserId),
+    enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
+    queryFn: async (): Promise<UserDocumentMetadata[]> => {
+      if (!activeUserId) return [];
+      return loadUserCoverLettersMetadata();
     },
   });
 }
 
-export function useSaveCvMutation(userEmail?: string | null) {
+export function useSaveCvMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
-    mutationFn: async (params: {
-      fileName: string;
-      fileSize: number;
-      mimeType: string;
-      fileData: File | Blob;
-      description?: string;
-    }) => {
-      if (!cleanEmail) throw new Error("Active user session required");
-      return saveUserCV(
-        cleanEmail,
-        params.fileName,
-        params.fileSize,
-        params.mimeType,
-        params.fileData,
-        params.description
-      );
+    mutationFn: async (params: DocumentUpload) => {
+      if (!activeUserId) throw new Error("Active user session required");
+      return saveUserCV(params.file, params.description);
     },
     onSuccess: (res) => {
       if (res.success) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(cleanEmail) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(activeUserId) });
       }
     },
   });
 }
 
-export function useDeleteCvMutation(userEmail?: string | null) {
+export function useDeleteCvMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async (id: number) => {
@@ -514,45 +490,30 @@ export function useDeleteCvMutation(userEmail?: string | null) {
     },
     onSuccess: (ok) => {
       if (ok) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(cleanEmail) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCvs(activeUserId) });
       }
     },
   });
 }
 
-export function useSaveCoverLetterMutation(userEmail?: string | null) {
+export function useSaveCoverLetterMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
-    mutationFn: async (params: {
-      fileName: string;
-      fileSize: number;
-      mimeType: string;
-      fileData: File | Blob;
-      description?: string;
-    }) => {
-      if (!cleanEmail) throw new Error("Active user session required");
-      return saveUserCoverLetter(
-        cleanEmail,
-        params.fileName,
-        params.fileSize,
-        params.mimeType,
-        params.fileData,
-        params.description
-      );
+    mutationFn: async (params: DocumentUpload) => {
+      if (!activeUserId) throw new Error("Active user session required");
+      return saveUserCoverLetter(params.file, params.description);
     },
     onSuccess: (res) => {
       if (res.success) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(cleanEmail) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(activeUserId) });
       }
     },
   });
 }
 
-export function useDeleteCoverLetterMutation(userEmail?: string | null) {
+export function useDeleteCoverLetterMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async (id: number) => {
@@ -560,26 +521,25 @@ export function useDeleteCoverLetterMutation(userEmail?: string | null) {
     },
     onSuccess: (ok) => {
       if (ok) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(cleanEmail) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.userCoverLetters(activeUserId) });
       }
     },
   });
 }
 
-export function useSaveAvatarMutation(userEmail?: string | null) {
+export function useSaveAvatarMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async (file: File) => {
-      if (!cleanEmail) throw new Error("User email required");
-      const result = await saveUserAvatar(cleanEmail, file);
+      if (!activeUserId) throw new Error("Active user session required");
+      const result = await saveUserAvatar(file);
       if ("error" in result) throw new Error(result.error);
       return result.path;
     },
     onSuccess: (path) => {
       void queryClient.invalidateQueries({ queryKey: ['avatar-url', path] });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(activeUserId) });
     },
   });
 }
@@ -595,9 +555,9 @@ export interface InvitationItem {
   invited_by: string | null;
 }
 
-export function useInvitationsQuery(userEmail?: string | null) {
+export function useInvitationsQuery(activeUserId?: string | null) {
   return useQuery({
-    queryKey: queryKeys.invitations(userEmail),
+    queryKey: queryKeys.invitations(activeUserId),
     queryFn: async (): Promise<InvitationItem[]> => {
       if (!supabase) return [];
       const { data, error } = await supabase
@@ -608,14 +568,13 @@ export function useInvitationsQuery(userEmail?: string | null) {
       if (error) throw error;
       return (data || []) as InvitationItem[];
     },
-    enabled: Boolean(userEmail),
+    enabled: Boolean(activeUserId),
     staleTime: 30_000,
   });
 }
 
-export function useCreateInvitationMutation(userEmail?: string | null) {
+export function useCreateInvitationMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async ({ email }: { email: string }) => {
@@ -627,14 +586,13 @@ export function useCreateInvitationMutation(userEmail?: string | null) {
       return data as { success: boolean; id: number; email: string; role: string; invite_code: string };
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.invitations(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.invitations(activeUserId) });
     },
   });
 }
 
-export function useDeleteInvitationMutation(userEmail?: string | null) {
+export function useDeleteInvitationMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
-  const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
     mutationFn: async (invitationId: number) => {
@@ -646,7 +604,7 @@ export function useDeleteInvitationMutation(userEmail?: string | null) {
       return data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.invitations(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.invitations(activeUserId) });
     },
   });
 }

@@ -210,12 +210,57 @@ describe('Document Streaming Signed URLs', () => {
     });
   });
 
+  describe('Shared document upload safety', () => {
+    it.each([
+      ['user_cvs', saveUserCV],
+      ['user_cover_letters', saveUserCoverLetter],
+    ] as const)('retains quota enforcement when %s cannot be counted', async (_table, save) => {
+      const file = new File(['%PDF-1.4 document'], 'document.pdf', { type: 'application/pdf' });
+      vi.mocked(supabase!.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ count: null, error: { message: 'Quota check unavailable' } }),
+        }),
+      } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+      expect(await save(file)).toEqual({ success: false, error: 'Quota check unavailable' });
+      expect(supabase!.storage.from).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['user_cvs', 'cv', saveUserCV],
+      ['user_cover_letters', 'cover-letter', saveUserCoverLetter],
+    ] as const)('cleans up the authenticated reservation if %s upload fails', async (table, folder, save) => {
+      const file = new File(['%PDF-1.4 document'], 'document.pdf', { type: 'application/pdf' });
+      const insert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { id: 42 }, error: null }) }),
+      });
+      const cleanupUser = vi.fn().mockResolvedValue({ error: null });
+      const cleanupId = vi.fn().mockReturnValue({ eq: cleanupUser });
+      vi.mocked(supabase!.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ count: 0, error: null }) }),
+        insert,
+        delete: vi.fn().mockReturnValue({ eq: cleanupId }),
+      } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+      const upload = vi.fn().mockResolvedValue({ error: { message: 'Storage unavailable' } });
+      vi.mocked(supabase!.storage.from).mockReturnValue({ upload } as unknown as ReturnType<NonNullable<typeof supabase>['storage']['from']>);
+      expect(await save(file, 'My document')).toEqual({ success: false, error: 'Storage unavailable' });
+      expect(supabase!.from).toHaveBeenCalledWith(table);
+      expect(insert).toHaveBeenCalledWith(expect.objectContaining({
+        user_id: 'test-user-uuid', file_name: file.name, file_size: file.size,
+        mime_type: 'application/pdf', description: 'My document',
+      }));
+      expect(upload.mock.calls[0][0]).toMatch(new RegExp(`^test-user-uuid/${folder}/`));
+      expect(upload.mock.calls[0][1]).toBe(file);
+      expect(cleanupId).toHaveBeenCalledWith('id', 42);
+      expect(cleanupUser).toHaveBeenCalledWith('user_id', 'test-user-uuid');
+    });
+  });
+
   describe('Upload Magic Byte Security Validation', () => {
     it('rejects avatar upload with invalid magic bytes', async () => {
       const fakeImage = new File(['<svg><script>alert(1)</script></svg>'], 'avatar.png', {
         type: 'image/png',
       });
-      const result = await saveUserAvatar('user@example.com', fakeImage);
+      const result = await saveUserAvatar(fakeImage);
       expect('error' in result).toBe(true);
       if ('error' in result) {
         expect(result.error).toContain('Invalid image format');
@@ -226,7 +271,7 @@ describe('Document Streaming Signed URLs', () => {
       const fakePdf = new File(['MZ\x90\x00executable content'], 'resume.pdf', {
         type: 'application/pdf',
       });
-      const result = await saveUserCV('user@example.com', 'resume.pdf', fakePdf.size, fakePdf.type, fakePdf);
+      const result = await saveUserCV(fakePdf);
       expect(result.success).toBe(false);
       expect(result.error).toContain('File content does not match its expected document signature');
     });
@@ -236,10 +281,6 @@ describe('Document Streaming Signed URLs', () => {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
       const result = await saveUserCoverLetter(
-        'user@example.com',
-        'cover.docx',
-        fakeDocx.size,
-        fakeDocx.type,
         fakeDocx
       );
       expect(result.success).toBe(false);

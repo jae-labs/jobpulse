@@ -18,6 +18,7 @@ interface ProfileViewProps {
   isLoading?: boolean;
   loadError?: string | null;
   userEmail?: string | null;
+  userId?: string | null;
   onSaveProfile: (profile: Profile) => Promise<{ success: boolean; error?: string }>;
   onDeleteAccount: (confirmation: string) => Promise<void>;
   jobs?: Job[];
@@ -28,6 +29,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isLoading = false,
   loadError = null,
   userEmail,
+  userId,
   onSaveProfile,
   onDeleteAccount,
   jobs,
@@ -277,7 +279,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       )}
 
       {/* Application Documents (CVs & Cover Letters) */}
-      <ProfileDocuments userEmail={userEmail} />
+      <ProfileDocuments userId={userId} />
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         {/* Personal & Contact Information */}
@@ -287,7 +289,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           phoneNumber={phoneNumber}
           onPhoneChange={handlePhoneChange}
           onChange={handleChange}
-          userEmail={userEmail}
+          userId={userId}
         />
 
         {/* Target Roles, Preferences & Compensation */}
@@ -312,7 +314,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           value={formData.scoring_rules}
           onChange={handleScoringRulesChange}
           jobs={jobs}
-          userEmail={userEmail}
+          userId={userId}
         />
       </form>
 

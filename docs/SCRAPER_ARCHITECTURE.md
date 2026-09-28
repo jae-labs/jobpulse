@@ -38,7 +38,7 @@ flowchart TD
     Providers --> Validation["engine/validators.py & salary.py"]
     Validation --> Repository["database/repository.py (Shared vacancy facts)"]
     Repository --> Supabase[("Supabase (PostgreSQL / pgvector)")]
-    Repository --> Cache["database/scoring.py (Embeddings / stale pairs)"]
+    Runner --> Cache["database/scoring.py (Embeddings / stale pairs)"]
     Cache --> Supabase
     Cache --> Scoring["engine/scoring.py (Explicit profile + similarity)"]
     Scoring --> Evaluations["user_job_evaluations (Candidate-owned scores)"]
@@ -69,7 +69,7 @@ flowchart TD
    - `client.py`: Thread-safe singleton Supabase client (`_client_lock`) using service-role credentials.
    - `repository.py`:
      - Multi-tenant evaluation upserts keyed strictly by `(user_id, job_id)`.
-     - Single-job ingestion enriches a vacancy and delegates to batch ingestion. Both share validation, cleaning, persistence, and incremental scoring. Failed score refreshes propagate without retrying successful vacancy writes.
+     - All adapters batch shared vacancy facts through one validation, cleaning, and persistence path. Core adapters request short-description enrichment; the generic crawler supplies its own extracted details. After ingestion and catalog maintenance, the pipeline refreshes stale candidate evaluations once. Scoring failures propagate without repeating successful vacancy writes.
      - **Safe Deduplication**: Normalizes employer, title, and URL into `dedupe_key`. Transfers both `user_job_statuses` and `user_job_evaluations` by `user_id` before removing duplicate rows; fails closed if transfer errors or status conflicts occur.
      - **Safe Pruning**: Lifecycle cleanup of untracked postings older than retention window. Verifies `user_job_statuses` and halts immediately (`RuntimeError`) if status query fails, preventing accidental deletion of user-tracked jobs.
 
@@ -117,10 +117,10 @@ The candidate match percentage (`relevance: 0–100%`) is calculated dynamically
 
 The repository writes `{ relevance, fit_tier, matched_skills, ai_analysis: { reasoning, alignments, mismatches, sub_scores } }` to `user_job_evaluations`.
 
-Shared jobs contain vacancy facts only. There is one scoring path for ingestion
-and full-catalog rescoring: persisted vectors and stale-pair lookup, followed by
-`evaluate_job` with an explicit profile and precomputed similarity. The rule
-evaluator performs no database lookup or model inference. The shared catalogue
+Shared jobs contain vacancy facts only. Ingestion writes vacancy facts only. The CLI and sync API then use one
+full-catalog scoring phase: persisted vectors and stale-pair lookup, followed by
+`evaluate_job` with an explicit profile and precomputed similarity. Profiles compile matching patterns and prepare fingerprints once per run;
+the rule evaluator performs no database lookup or model inference. The shared catalogue
 scorer, implicit default-profile scorer, and `evaluate_match` wrapper are removed.
 PublicJobs ingests valid vacancies without a selected candidate's title-score
 filter; validation and personalized evaluation happen in the repository.
@@ -178,7 +178,7 @@ contract-preference, and rule-normalization corrections. Apply pending migration
 with the frontend release, then run `make scrape-rescore`. Embedding content and
 model versions remain unchanged, so unchanged documents reuse persisted vectors.
 
-This removes repeated inference and repeated work on unchanged pairs. An initial
+This removes repeated inference and repeated work on unchanged pairs. `--no-rescore` skips the scoring phase entirely. An initial
 full backfill still performs users × jobs rule evaluations and writes those
 evaluations. Its cost is not eliminated by pgvector.
 

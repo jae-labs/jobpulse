@@ -151,7 +151,6 @@ export type Database = {
           salary_period: string | null
           salary_text: string | null
           source: string
-          status: string
           title: string
           url: string
         }
@@ -170,7 +169,6 @@ export type Database = {
           salary_period?: string | null
           salary_text?: string | null
           source: string
-          status?: string
           title: string
           url: string
         }
@@ -189,7 +187,6 @@ export type Database = {
           salary_period?: string | null
           salary_text?: string | null
           source?: string
-          status?: string
           title?: string
           url?: string
         }
@@ -537,7 +534,6 @@ export type Database = {
         Returns: Json
       }
       get_overview_metrics: { Args: never; Returns: Json }
-      is_admin: { Args: never; Returns: boolean }
       is_authorized_user: { Args: never; Returns: boolean }
       jobpulse_literal_search_pattern: {
         Args: { input: string }

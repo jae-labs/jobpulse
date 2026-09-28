@@ -10,6 +10,7 @@ from database.repository import (
     deduplicate_database_jobs,
     get_employer,
     prune_stale_jobs,
+    rescore_all_jobs,
     update_employer_status,
     update_source_status,
 )
@@ -19,6 +20,22 @@ from scrapers.registry import find_core_scraper_by_name, get_core_scrapers
 
 
 def synchronize(
+    employer: str | None = None,
+    limit: int | None = None,
+    full: bool = True,
+    skip_core: bool = False,
+    core_only: bool = False,
+    *,
+    rescore: bool = True,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    """Ingest shared vacancies, maintain the catalog, then refresh stale candidate scores once."""
+    result = _scrape(employer, limit, full, skip_core, core_only)
+    result["evaluations_updated"] = rescore_all_jobs(user_id=user_id) if rescore else 0
+    return result
+
+
+def _scrape(
     employer: str | None = None,
     limit: int | None = None,
     full: bool = True,

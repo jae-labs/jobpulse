@@ -13,7 +13,7 @@ interface ProfileGeneralInfoProps {
   phoneNumber: string;
   onPhoneChange: (newDial: string, newNumber: string) => void;
   onChange: (field: keyof Profile, value: string | number | string[]) => void;
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
@@ -22,10 +22,10 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
   phoneNumber,
   onPhoneChange,
   onChange,
-  userEmail,
+  userId,
 }) => {
   const { t, i18n } = useTranslation();
-  const saveAvatarMutation = useSaveAvatarMutation(userEmail);
+  const saveAvatarMutation = useSaveAvatarMutation(userId);
   const avatarUrl = useAvatarUrl(formData.avatar_url);
   const [avatarNotice, setAvatarNotice] = useState<string | null>(null);
   const countryNames = useMemo(
@@ -44,7 +44,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
       return;
     }
 
-    if (!userEmail) return;
+    if (!userId) return;
 
     try {
       setAvatarNotice(null);

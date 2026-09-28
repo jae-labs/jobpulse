@@ -24,7 +24,7 @@ interface JobDetailInspectorProps {
   isUpdating?: boolean;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
@@ -34,13 +34,13 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
   isUpdating = false,
   isFullScreen = false,
   onToggleFullScreen,
-  userEmail,
+  userId,
 }) => {
   const { t, i18n } = useTranslation();
   const needsDetail = Boolean(job?.id) && !job?.description;
   const { data: detail, isLoading: isLoadingDetail, isError: isDetailError, refetch: refetchDetail } = useJobDetailQuery(
     job?.id,
-    userEmail,
+    userId,
     needsDetail
   );
 

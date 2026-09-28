@@ -19,7 +19,7 @@ interface ScoringRulesEditorProps {
   value: ScoringRules | undefined;
   onChange: (rules: ScoringRules) => void;
   jobs?: Job[];
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 type TagColorTheme = 'accent' | 'warning' | 'interviewing' | 'negative' | 'positive';
@@ -112,11 +112,11 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
   value,
   onChange,
   jobs: providedJobs,
-  userEmail,
+  userId,
 }) => {
   const { data: queriedJobs = [], isFetching: isPreviewFetching } = useScoringPreviewJobsQuery(
-    userEmail,
-    !providedJobs && Boolean(userEmail)
+    userId,
+    !providedJobs && Boolean(userId)
   );
   const jobs = providedJobs ?? queriedJobs;
   const { t } = useTranslation();
@@ -131,7 +131,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
       .sort((a, b) => (b.relevance || 0) - (a.relevance || 0))
       .slice(0, 3);
   }, [jobs]);
-  const previewSourceKey = `${userEmail ?? ''}|${previewJobs.map((job) => `${job.id}:${job.relevance}`).join('|')}`;
+  const previewSourceKey = `${userId ?? ''}|${previewJobs.map((job) => `${job.id}:${job.relevance}`).join('|')}`;
   const [previewBaseline, setPreviewBaseline] = React.useState<{ sourceKey: string; weights: ScoringWeights } | null>(null);
   const baselineWeights = previewBaseline?.sourceKey === previewSourceKey ? previewBaseline.weights : weights;
   const previewMatches = previewJobs.map((job) => ({
@@ -236,7 +236,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
               </div>
             ) : (
               <p className="mt-3 text-xs text-ds-text-muted">
-                {isPreviewFetching && !providedJobs && userEmail
+                {isPreviewFetching && !providedJobs && userId
                   ? t('common.loading')
                   : t('profile.scoring.previewUnavailable')}
               </p>

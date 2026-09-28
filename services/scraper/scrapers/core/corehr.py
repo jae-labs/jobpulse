@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from database.repository import save_job, update_source_status
+from database.repository import save_jobs_batch, update_source_status
 from engine.text_cleaner import clean_text
 from network.browser import with_browser
 
@@ -107,14 +107,14 @@ def sync_corehr(company: str, search_url: str, location: str) -> tuple[int, str]
     """Execute Playwright browser search over a CoreHR portal and persist vacancies."""
     page_content = fetch_corehr_results(search_url)
     opportunities = extract_maynooth_jobs(page_content)
-    added = 0
+    jobs_to_save = []
     for job in opportunities:
         description = f"{job['summary']} Department: {job['department']}. Closing date: {job['closing_date']}."
         url = (
             f"{search_url.split('/erq_search_package', 1)[0]}/erq_jobspec_version_4.display_form?"
             f"p_company=1&p_internal_external=E&p_display_in_irish=N&p_display_apply_ind=Y&p_recruitment_id={job['reference']}"
         )
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": job["title"],
                 "company": company,
@@ -124,8 +124,9 @@ def sync_corehr(company: str, search_url: str, location: str) -> tuple[int, str]
                 "url": url,
                 "source": company,
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     detail_msg = f"Read {len(opportunities)} opportunities; added {added} new opportunities."
     update_source_status(company, "Synced", detail_msg, opportunities_found=len(opportunities))

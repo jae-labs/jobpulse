@@ -7,7 +7,7 @@ import re
 from urllib.parse import unquote, urljoin
 
 from config.loader import KILDARE_CAREERS_URL
-from database.repository import save_job, update_source_status
+from database.repository import save_jobs_batch, update_source_status
 from network.http_client import fetch_page
 
 
@@ -17,7 +17,7 @@ def sync_kildare() -> tuple[int, str]:
     pattern = r'href="([^"]*Candidate[^"]*\.pdf)"'
     links = list(dict.fromkeys(re.findall(pattern, page, flags=re.IGNORECASE)))
     read = 0
-    added = 0
+    jobs_to_save = []
     for link in links:
         filename = html.unescape(unquote(link.rsplit("/", 1)[-1]))
         title = re.sub(
@@ -25,7 +25,7 @@ def sync_kildare() -> tuple[int, str]:
         )
         title = re.sub(r"\s+", " ", title).strip(" -")
         if title:
-            if save_job(
+            jobs_to_save.append(
                 {
                     "title": title,
                     "company": "Kildare County Council",
@@ -35,9 +35,10 @@ def sync_kildare() -> tuple[int, str]:
                     "url": urljoin(KILDARE_CAREERS_URL, link),
                     "source": "Kildare County Council",
                 }
-            ):
-                added += 1
+            )
             read += 1
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     detail = f"Read {read} current opportunity booklets; added {added} new opportunities."
     update_source_status("Kildare County Council", "Synced", detail, opportunities_found=read)

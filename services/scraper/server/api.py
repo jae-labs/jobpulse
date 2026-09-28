@@ -9,7 +9,6 @@ import os
 import re
 import time
 import urllib.parse
-from collections import Counter
 from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -154,7 +153,11 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if path == "/api/jobs":
             include_full = query_params.get("full", ["false"])[0].lower() in ("true", "1")
-            status_filter = query_params.get("status", [None])[0]
+            if query_params.get("status", ["all"])[0] != "all":
+                self.send_json(
+                    {"error": "Status filtering requires a candidate; use get_jobs_page."}, HTTPStatus.BAD_REQUEST
+                )
+                return
             domain_filter = query_params.get("domain", [None])[0]
             limit = query_params.get("limit", [None])[0]
             offset = query_params.get("offset", [0])[0]
@@ -162,12 +165,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             cols = (
                 "*"
                 if include_full
-                else "id, dedupe_key, title, company, location, employment_type, salary_text, url, source, status, last_seen_at"
+                else "id, dedupe_key, title, company, location, employment_type, salary_text, url, source, last_seen_at"
             )
             query = supabase.table("jobs").select(cols)
 
-            if status_filter and status_filter != "all":
-                query = query.eq("status", status_filter)
             if domain_filter and domain_filter != "all":
                 self.send_json(
                     {"error": "Domain filtering requires a candidate evaluation; use get_jobs_page."},
@@ -214,13 +215,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/dashboard":
-            res = supabase.table("jobs").select("status").execute()
-            counts = Counter(r.get("status") for r in (res.data or []) if r.get("status"))
+            res = supabase.table("jobs").select("id", count="exact", head=True).execute()
             employers_count = len(get_employers_tuples())
             self.send_json(
                 {
-                    "total": len(res.data or []),
-                    "counts": dict(counts),
+                    "total": res.count or 0,
                     "employers": employers_count,
                 }
             )
@@ -249,39 +248,20 @@ class ApiHandler(BaseHTTPRequestHandler):
             ):
                 self.send_json({"error": "Invalid sync parameters"}, HTTPStatus.BAD_REQUEST)
                 return
-            sync_result = synchronize(employer=employer, limit=limit, full=full)
+            try:
+                sync_result = synchronize(employer=employer, limit=limit, full=full)
+            except RuntimeError:
+                self.send_json(
+                    {
+                        "error": "Sync did not complete; persisted vacancies were retained. Retry the sync to refresh stale scores."
+                    },
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
             GLOBAL_DATA_VERSION = int(time.time() * 1000)
             self.send_json(sync_result)
         else:
             self.send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
-
-    def do_PATCH(self) -> None:
-        global GLOBAL_DATA_VERSION
-        path = self.path.split("?", 1)[0]
-        match = re.fullmatch(r"/api/jobs/(\d+)", path)
-        if not match:
-            self.send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
-            return
-        if not self._require_write_authorization():
-            return
-        try:
-            payload = self.read_json()
-            status = payload["status"]
-        except (KeyError, ValueError, json.JSONDecodeError):
-            self.send_json({"error": "A status is required"}, HTTPStatus.BAD_REQUEST)
-            return
-        valid_statuses = {"new", "applied", "interviewing", "interested", "not_interested"}
-        if not isinstance(status, str) or status not in valid_statuses:
-            self.send_json({"error": f"Invalid status: {status}"}, HTTPStatus.BAD_REQUEST)
-            return
-        job_id = int(match.group(1))
-        supabase = get_supabase()
-        res = supabase.table("jobs").update({"status": status}).eq("id", job_id).execute()
-        if not res.data:
-            self.send_json({"error": "Job not found"}, HTTPStatus.NOT_FOUND)
-            return
-        GLOBAL_DATA_VERSION = int(time.time() * 1000)
-        self.send_json({"id": job_id, "status": status, "success": True, "version": GLOBAL_DATA_VERSION})
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8000) -> None:

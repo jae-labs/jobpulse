@@ -3,11 +3,11 @@ import { supabase } from "./supabase";
 import { reportError } from "./logger";
 import type {
   Profile,
-  UserCVMetadata,
-  UserCoverLetterMetadata,
+  UserDocumentMetadata,
   ScoringRules,
 } from "../types/job";
 import { DEFAULT_PROFILE } from "./defaultProfile";
+import { DEFAULT_SCORING_RULES } from "./scoringRules";
 import { validateDocumentFile, validateAvatarFile } from "./fileValidation";
 import type { Json, TablesInsert } from "../types/database.types";
 
@@ -16,11 +16,9 @@ const AVATARS_BUCKET = "avatars";
 
 /** Uploads user avatar to private storage. */
 export async function saveUserAvatar(
-  email: string,
   file: File,
 ): Promise<{ path: string } | { error: string }> {
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail || !supabase) return { error: "Database unavailable" };
+  if (!supabase) return { error: "Database unavailable" };
 
   if (file.size > 2 * 1024 * 1024) {
     return { error: "Avatar exceeds the 2MB size limit." };
@@ -45,9 +43,8 @@ export async function saveUserAvatar(
 }
 
 /** Loads user profile from Supabase, falling back to DEFAULT_PROFILE. */
-export async function loadUserProfile(email?: string | null): Promise<Profile> {
-  const cleanEmail = email?.trim().toLowerCase();
-  if (!cleanEmail || !supabase) {
+export async function loadUserProfile(): Promise<Profile> {
+  if (!supabase) {
     return DEFAULT_PROFILE;
   }
 
@@ -107,7 +104,7 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
         typeof data.scoring_rules === 'object' &&
         Object.keys(data.scoring_rules).length > 0
           ? (data.scoring_rules as unknown as ScoringRules)
-          : undefined,
+          : DEFAULT_SCORING_RULES,
       avatar_url: data.avatar_url || "",
     };
   } catch (err: unknown) {
@@ -118,14 +115,8 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
 
 /** Saves or updates a user profile in Supabase. */
 export async function saveUserProfile(
-  email: string,
   profile: Profile,
 ): Promise<{ success: boolean; error?: string }> {
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) {
-    return { success: false, error: "Email is required to save profile." };
-  }
-
   if (!supabase) {
     return { success: false, error: "Database connection not initialized." };
   }
@@ -185,31 +176,28 @@ export async function saveUserProfile(
   }
 }
 
-/** Loads all user CV metadata records. */
-export async function loadUserCVsMetadata(
-  email?: string | null,
-): Promise<UserCVMetadata[]> {
-  const cleanEmail = email?.trim().toLowerCase();
-  if (!cleanEmail || !supabase) return [];
-
-  try {
-    const userId = await getCurrentUserId();
-    const { data, error } = await supabase
-      .from("user_cvs")
-      .select("id, user_id, file_name, file_size, mime_type, description, uploaded_at")
-      .eq("user_id", userId)
-      .order("uploaded_at", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    if (!data) return [];
-    return data as UserCVMetadata[];
-  } catch (error) {
-    throw error instanceof Error ? error : new Error("Failed to load CV metadata");
-  }
-}
-
 type DocumentTable = "user_cvs" | "user_cover_letters";
 type DocumentDownload = { signedUrl: string; fileName: string } | { error: string };
+
+async function loadDocumentMetadata(table: DocumentTable): Promise<UserDocumentMetadata[]> {
+  if (!supabase) return [];
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase.from(table)
+    .select("id, user_id, file_name, file_size, mime_type, description, uploaded_at")
+    .eq("user_id", userId)
+    .order("uploaded_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(row => ({ ...row, description: row.description ?? undefined, uploaded_at: row.uploaded_at ?? "" }));
+}
+
+export function loadUserCVsMetadata(): Promise<UserDocumentMetadata[]> {
+  return loadDocumentMetadata("user_cvs");
+}
+
+export function loadUserCoverLettersMetadata(): Promise<UserDocumentMetadata[]> {
+  return loadDocumentMetadata("user_cover_letters");
+}
+
 
 async function getDocumentSignedUrl(
   table: DocumentTable,
@@ -260,76 +248,64 @@ export function getUserCVSignedUrl(
 export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 export const MAX_DOCUMENTS_PER_TYPE = 10;
 
-/** Uploads a user CV to storage and records metadata. */
-export async function saveUserCV(
-  email: string,
-  fileName: string,
-  fileSize: number,
-  mimeType: string,
-  fileData: File | Blob,
-  description: string = "",
-): Promise<{ success: boolean; error?: string }> {
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail || !supabase)
-    return { success: false, error: "Database unavailable" };
+type DocumentSaveResult = { success: boolean; error?: string };
+export type DocumentUpload = { file: File; description?: string };
 
-  if (fileSize > MAX_DOCUMENT_SIZE_BYTES) {
+async function saveDocument(table: DocumentTable, file: File, description: string): Promise<DocumentSaveResult> {
+  if (!supabase) return { success: false, error: "Database unavailable" };
+  if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
     return { success: false, error: "File exceeds the 10MB size limit." };
   }
-
-  const validation = await validateDocumentFile(fileData, fileName);
+  const validation = await validateDocumentFile(file, file.name);
   if (!validation.isValid) {
     return { success: false, error: validation.error || "Invalid document format." };
   }
-
+  const isCv = table === "user_cvs";
+  const label = isCv ? "CV" : "Cover letter";
   try {
     const userId = await getCurrentUserId();
-    // Check quota before attempting storage upload
-    const { count, error: countErr } = await supabase
-      .from("user_cvs")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    if (!countErr && (count || 0) >= MAX_DOCUMENTS_PER_TYPE) {
-      return {
-        success: false,
-        error: `Maximum limit of ${MAX_DOCUMENTS_PER_TYPE} CVs reached. Please delete an existing CV first.`,
-      };
+    const { count, error: countError } = await supabase.from(table)
+      .select("id", { count: "exact", head: true }).eq("user_id", userId);
+    if (countError) return { success: false, error: countError.message };
+    if ((count ?? 0) >= MAX_DOCUMENTS_PER_TYPE) {
+      return { success: false, error: `Maximum limit of ${MAX_DOCUMENTS_PER_TYPE} ${isCv ? "CVs" : "cover letters"} reached. Please delete an existing ${isCv ? "CV" : "cover letter"} first.` };
     }
-
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${userId}/cv/${crypto.randomUUID()}_${sanitizedFileName}`;
-    const uploadBody = fileData;
-    const { data: reservation, error } = await supabase.from("user_cvs").insert({
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `${userId}/${isCv ? "cv" : "cover-letter"}/${crypto.randomUUID()}_${sanitizedName}`;
+    const mimeType = validation.detectedType || file.type;
+    const { data: reservation, error } = await supabase.from(table).insert({
       user_id: userId,
-      file_name: fileName,
-      file_size: fileSize,
+      file_name: file.name,
+      file_size: file.size,
       mime_type: mimeType,
       storage_path: storagePath,
       description: description.trim(),
       uploaded_at: new Date().toISOString(),
     }).select("id").single();
     if (error) return { success: false, error: error.message };
-
     let uploadFailure: string | null = null;
     try {
-      const { error: uploadError } = await supabase.storage
-        .from(DOCUMENTS_BUCKET)
-        .upload(storagePath, uploadBody, { contentType: mimeType, upsert: false });
+      const { error: uploadError } = await supabase.storage.from(DOCUMENTS_BUCKET)
+        .upload(storagePath, file, { contentType: mimeType, upsert: false });
       uploadFailure = uploadError?.message ?? null;
     } catch (uploadError) {
-      uploadFailure = uploadError instanceof Error ? uploadError.message : "CV upload failed";
+      uploadFailure = uploadError instanceof Error ? uploadError.message : `${label} upload failed`;
     }
     if (uploadFailure) {
-      const { error: cleanupError } = await supabase.from("user_cvs").delete().eq("id", reservation.id).eq("user_id", userId);
-      if (cleanupError) reportError(new Error(`CV reservation cleanup failed: ${cleanupError.message}`));
+      const { error: cleanupError } = await supabase.from(table).delete()
+        .eq("id", reservation.id).eq("user_id", userId);
+      if (cleanupError) reportError(new Error(`${label} reservation cleanup failed: ${cleanupError.message}`));
       return { success: false, error: uploadFailure };
     }
     return { success: true };
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    return { success: false, error: errorMessage || "Failed to save CV" };
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : `Failed to save ${label.toLowerCase()}` };
   }
+}
+
+/** Upload metadata comes from the actual file; ownership comes from the session. */
+export function saveUserCV(file: File, description = ""): Promise<DocumentSaveResult> {
+  return saveDocument("user_cvs", file, description);
 }
 
 async function deleteDocument(table: DocumentTable, documentId: number): Promise<boolean> {
@@ -363,29 +339,6 @@ export function deleteUserCV(documentId: number): Promise<boolean> {
   return deleteDocument("user_cvs", documentId);
 }
 
-/** Loads all user Cover Letter metadata records. */
-export async function loadUserCoverLettersMetadata(
-  email?: string | null,
-): Promise<UserCoverLetterMetadata[]> {
-  const cleanEmail = email?.trim().toLowerCase();
-  if (!cleanEmail || !supabase) return [];
-
-  try {
-    const userId = await getCurrentUserId();
-    const { data, error } = await supabase
-      .from("user_cover_letters")
-      .select("id, user_id, file_name, file_size, mime_type, description, uploaded_at")
-      .eq("user_id", userId)
-      .order("uploaded_at", { ascending: false });
-
-    if (error) throw new Error(error.message);
-    if (!data) return [];
-    return data as UserCoverLetterMetadata[];
-  } catch (error) {
-    throw error instanceof Error ? error : new Error("Failed to load cover-letter metadata");
-  }
-}
-
 /** Generates a signed download URL for the authenticated user's specific cover letter. */
 export function getUserCoverLetterSignedUrl(
   documentId: number,
@@ -394,79 +347,8 @@ export function getUserCoverLetterSignedUrl(
   return getDocumentSignedUrl("user_cover_letters", documentId, expiresInSeconds, "Cover letter not found");
 }
 
-/** Uploads a cover letter to storage and records metadata. */
-export async function saveUserCoverLetter(
-  email: string,
-  fileName: string,
-  fileSize: number,
-  mimeType: string,
-  fileData: File | Blob,
-  description: string = "",
-): Promise<{ success: boolean; error?: string }> {
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail || !supabase)
-    return { success: false, error: "Database unavailable" };
-
-  if (fileSize > MAX_DOCUMENT_SIZE_BYTES) {
-    return { success: false, error: "File exceeds the 10MB size limit." };
-  }
-
-  const validation = await validateDocumentFile(fileData, fileName);
-  if (!validation.isValid) {
-    return { success: false, error: validation.error || "Invalid document format." };
-  }
-
-  try {
-    const userId = await getCurrentUserId();
-    // Check quota before attempting storage upload
-    const { count, error: countErr } = await supabase
-      .from("user_cover_letters")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    if (!countErr && (count || 0) >= MAX_DOCUMENTS_PER_TYPE) {
-      return {
-        success: false,
-        error: `Maximum limit of ${MAX_DOCUMENTS_PER_TYPE} cover letters reached. Please delete an existing cover letter first.`,
-      };
-    }
-
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${userId}/cover-letter/${crypto.randomUUID()}_${sanitizedFileName}`;
-    const uploadBody = fileData;
-    const { data: reservation, error } = await supabase.from("user_cover_letters").insert({
-      user_id: userId,
-      file_name: fileName,
-      file_size: fileSize,
-      mime_type: mimeType,
-      storage_path: storagePath,
-      description: description.trim(),
-      uploaded_at: new Date().toISOString(),
-    }).select("id").single();
-    if (error) return { success: false, error: error.message };
-
-    let uploadFailure: string | null = null;
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from(DOCUMENTS_BUCKET)
-        .upload(storagePath, uploadBody, { contentType: mimeType, upsert: false });
-      uploadFailure = uploadError?.message ?? null;
-    } catch (uploadError) {
-      uploadFailure = uploadError instanceof Error ? uploadError.message : "Cover letter upload failed";
-    }
-    if (uploadFailure) {
-      const { error: cleanupError } = await supabase.from("user_cover_letters").delete().eq("id", reservation.id).eq("user_id", userId);
-      if (cleanupError) reportError(new Error(`Cover-letter reservation cleanup failed: ${cleanupError.message}`));
-      return { success: false, error: uploadFailure };
-    }
-    return { success: true };
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    return {
-      success: false,
-      error: errorMessage || "Failed to save cover letter",
-    };
-  }
+export function saveUserCoverLetter(file: File, description = ""): Promise<DocumentSaveResult> {
+  return saveDocument("user_cover_letters", file, description);
 }
 
 /** Deletes the authenticated user's specific cover letter and its storage object. */

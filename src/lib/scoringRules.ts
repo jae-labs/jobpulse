@@ -10,9 +10,9 @@ export function resolveScoringRules(value?: ScoringRules): ScoringRules & {
   weights: ScoringWeights;
 } {
   return {
-    positive_domains: value?.positive_domains ?? [],
-    negative_domains: value?.negative_domains ?? [],
-    seniority_tiers: value?.seniority_tiers ?? [],
+    positive_domains: value?.positive_domains ?? defaults.positive_domains,
+    negative_domains: value?.negative_domains ?? defaults.negative_domains,
+    seniority_tiers: value?.seniority_tiers ?? defaults.seniority_tiers,
     disqualifiers: value?.disqualifiers ?? defaults.disqualifiers,
     weights: { ...DEFAULT_SCORING_WEIGHTS, ...value?.weights },
   };

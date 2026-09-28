@@ -90,7 +90,7 @@ jobs:
         run: |
           docker cp supabase/tests supabase_db_jobpulse:/tmp/jobpulse-sql-tests
           docker cp supabase/migrations supabase_db_jobpulse:/tmp/migrations
-          for test_sql in scoring canonical_scoring profile_scoring_rules salary_normalization salary_backfill schema_reconciliation missing_search_extension account_deletion invitations; do
+          for test_sql in scoring canonical_scoring candidate_statuses profile_scoring_rules salary_normalization salary_backfill schema_reconciliation missing_search_extension account_deletion invitations; do
             docker exec supabase_db_jobpulse psql --set ON_ERROR_STOP=1 --username postgres --dbname postgres -f "/tmp/jobpulse-sql-tests/$test_sql.sql"
           done
 

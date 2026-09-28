@@ -189,14 +189,16 @@ def main() -> None:
         full=True,
         skip_core=args.no_core,
         core_only=args.core_only,
+        rescore=not args.no_rescore,
+        user_id=args.user_id,
     )
 
     duration = time.time() - start_time
 
     print("\n" + "=" * 72)
-    print(f"Scrape Summary ({duration:.1f}s):")
+    print(f"Pipeline Summary ({duration:.1f}s):")
     print(f"  - Employers processed:       {result.get('scraped_employers', 'N/A')}")
-    print(f"  - New opportunities added:   {result.get('added', 0)}")
+    print(f"  - Vacancies saved/updated:   {result.get('added', 0)}")
 
     msgs = result.get("messages", [])
     if msgs:
@@ -223,15 +225,8 @@ def main() -> None:
             if len(failures) > 10:
                 print(f"    - ... and {len(failures) - 10} more.")
 
-    print("\nAll opportunities and tracking statuses saved directly to Supabase cloud database.")
-
-    if not args.no_rescore:
-        print("\n" + "=" * 72)
-        print("Automatic Multi-User Rescoring: Calculating fit % for all profiles in Supabase...")
-        print("=" * 72)
-        from database.repository import rescore_all_jobs
-
-        rescore_all_jobs(user_id=args.user_id)
+    print(f"  - Candidate scores updated:  {result.get('evaluations_updated', 0)}")
+    print("\nVacancy facts and candidate evaluations saved to Supabase.")
 
     print("\nScraper completed. Exiting.")
     sys.exit(0)

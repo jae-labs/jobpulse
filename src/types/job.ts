@@ -145,17 +145,7 @@ export interface Profile {
   avatar_url?: string;
 }
 
-export interface UserCVMetadata {
-  id?: number;
-  user_id?: string;
-  file_name: string;
-  file_size: number;
-  mime_type: string;
-  uploaded_at: string;
-  description?: string;
-}
-
-export interface UserCoverLetterMetadata {
+export interface UserDocumentMetadata {
   id?: number;
   user_id?: string;
   file_name: string;

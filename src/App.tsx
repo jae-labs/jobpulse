@@ -120,7 +120,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveTab, isCommandMenuOpen]);
 
-  const userEmail = session?.user?.email?.trim().toLowerCase();
+  const userId = session?.user.id;
 
   const isOverviewNeeded = activeTab === 'overview' || activeTab === 'jobs';
 
@@ -129,7 +129,7 @@ export const App: React.FC = () => {
     isLoading: isOverviewLoading,
     error: overviewQueryError,
     refetch: refetchOverview,
-  } = useOverviewMetricsQuery(userEmail, isAuthorized && isOverviewNeeded);
+  } = useOverviewMetricsQuery(userId, isAuthorized && isOverviewNeeded);
 
   const isSourcesNeeded = activeTab === 'sources';
 
@@ -142,11 +142,11 @@ export const App: React.FC = () => {
     data: loadedProfile,
     isLoading: isProfileLoading,
     error: profileQueryError,
-  } = useProfileQuery(userEmail, isAuthorized);
+  } = useProfileQuery(userId, isAuthorized);
   const profile = loadedProfile ?? DEFAULT_PROFILE;
 
-  const updateJobStatusMutation = useUpdateJobStatusMutation(userEmail);
-  const saveProfileMutation = useSaveProfileMutation(userEmail);
+  const updateJobStatusMutation = useUpdateJobStatusMutation(userId);
+  const saveProfileMutation = useSaveProfileMutation(userId);
   const { mutateAsync: deleteAccount } = useDeleteAccountMutation();
 
   const [selectedJobState, setSelectedJobState] = useState<Job | null>(null);
@@ -432,7 +432,7 @@ export const App: React.FC = () => {
                     initialMinMatch={selectedMinMatch}
                     onFilterReset={handleFilterReset}
                     onOpenCommandMenu={handleOpenCommandMenu}
-                    userEmail={userEmail}
+                    userId={userId}
                   />
                 </ErrorBoundary>
               )}
@@ -453,6 +453,7 @@ export const App: React.FC = () => {
                     isLoading={isProfileLoading}
                     loadError={profileQueryError instanceof Error ? profileQueryError.message : null}
                     userEmail={session.user.email}
+                    userId={session.user.id}
                     onSaveProfile={handleSaveProfile}
                     onDeleteAccount={handleDeleteAccount}
                   />
@@ -505,7 +506,7 @@ export const App: React.FC = () => {
       <CommandMenu
         isOpen={isCommandMenuOpen}
         onOpenChange={setIsCommandMenuOpen}
-        userEmail={userEmail}
+        userId={userId}
         onSelectJob={(job) => {
           handleSelectJob(job);
           navigate(`/opportunities?job=${job.id}`);
@@ -516,7 +517,7 @@ export const App: React.FC = () => {
       <InvitationsModal
         isOpen={isInvitationsOpen}
         onClose={() => setIsInvitationsOpen(false)}
-        currentUserEmail={session.user.email}
+        currentUserId={session.user.id}
       />
     </div>
   );

@@ -96,7 +96,12 @@ def test_unchanged_evaluations_are_not_written(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(repository, "get_scoring_work", lambda *args: [])
     evaluator = Mock(side_effect=AssertionError("No rescoring unchanged pairs"))
     monkeypatch.setattr(repository, "evaluate_job", evaluator)
-    assert repository.evaluate_and_save_user_evaluations([{"id": 7}], profiles=[{"user_id": "a"}]) == 0
+    assert (
+        repository.evaluate_and_save_user_evaluations(
+            [{"id": 7}], profiles=cache.prepare_scoring_profiles([{"user_id": "a"}])
+        )
+        == 0
+    )
     evaluator.assert_not_called()
     client.table.assert_not_called()
 
@@ -120,7 +125,12 @@ def test_fallback_is_passed_without_pairwise_model_calls(monkeypatch: pytest.Mon
     monkeypatch.setattr(repository, "compute_token_frequency_similarity", lambda *args: 0.123)
     evaluator = Mock(return_value={"fit_score": 80})
     monkeypatch.setattr(repository, "evaluate_job", evaluator)
-    assert repository.evaluate_and_save_user_evaluations([{"id": 7}], profiles=[{"user_id": "a"}]) == 1
+    assert (
+        repository.evaluate_and_save_user_evaluations(
+            [{"id": 7}], profiles=cache.prepare_scoring_profiles([{"user_id": "a"}])
+        )
+        == 1
+    )
     assert evaluator.call_args.kwargs["semantic_similarity"] == 0.123
     payload = client.table.return_value.upsert.call_args.args[0][0]
     assert payload["scoring_version"] == "test:fallback"

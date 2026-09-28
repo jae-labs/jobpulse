@@ -39,7 +39,7 @@ flowchart TD
 2. Candidate tables enforce RLS with `user_id = auth.uid()`.
 3. Pipeline status changes update optimistically and sync to Supabase.
 4. `get_jobs_page` and `get_overview_metrics` join shared vacancy facts with the current user's evaluations for catalog queries and aggregation.
-5. `user_job_evaluations` is the sole candidate scoring source. Ingestion and nightly rescoring share the same incremental pgvector pipeline; unassessed jobs never inherit a shared profile score.
+5. `user_job_evaluations` is the sole candidate scoring source. Ingestion writes shared facts in batches, then one incremental pgvector phase refreshes stale candidate pairs; unassessed jobs never inherit a shared profile score.
 
 ## Routes & Views
 
@@ -56,3 +56,5 @@ flowchart TD
 - **Document Streaming (`src/lib/userProfile.ts`)**: CV and cover letter downloads use short-lived signed URLs with attachment disposition to stream files directly without memory buffering.
 - **Scraper & Ingestion Pipeline (`services/scraper/`)**: Modular Python ETL with 18+ stateless ATS provider adapters, description HTML-to-markdown cleaning, and ML-powered multi-signal candidate fit evaluation (SentenceTransformers on Apple Silicon Metal or CPU).
 - **Invitations & Multi-Tenancy**: Invite-only onboarding via cryptographic invite codes and database triggers (`bind_verified_invitation`, `purge_deleted_account_access`).
+
+Candidate query caches are scoped by immutable Auth user IDs. Profile and document APIs derive ownership from the active session; emails remain contact and invitation fields.

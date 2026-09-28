@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from database.repository import delete_jobs, save_job, update_source_status
+from database.repository import delete_jobs, save_jobs_batch, update_source_status
 from engine.text_cleaner import clean_text
 from network.http_client import fetch_page
 
@@ -31,12 +31,12 @@ def sync_housing_agency() -> tuple[int, str]:
     """Scrape vacancies from The Housing Agency."""
     page = fetch_page(HOUSING_AGENCY_URL)
     opportunities = extract_housing_agency_jobs(page)
-    added = 0
+    jobs_to_save = []
 
     delete_jobs(company="The Housing Agency", url_like="%#faqs")
 
     for title, url in opportunities:
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": "The Housing Agency",
@@ -46,8 +46,9 @@ def sync_housing_agency() -> tuple[int, str]:
                 "url": url,
                 "source": "The Housing Agency",
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     detail_msg = f"Read {len(opportunities)} current opportunities; added {added} new opportunities."
     update_source_status("The Housing Agency", "Synced", detail_msg, opportunities_found=len(opportunities))

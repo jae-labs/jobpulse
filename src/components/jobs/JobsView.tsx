@@ -42,7 +42,7 @@ interface JobsViewProps {
   initialMinMatch?: number;
   onFilterReset?: () => void;
   onOpenCommandMenu?: () => void;
-  userEmail?: string | null;
+  userId?: string | null;
 }
 
 
@@ -75,7 +75,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   initialMinMatch = 0,
   onFilterReset,
   onOpenCommandMenu,
-  userEmail,
+  userId,
 }) => {
   // TanStack Virtual mutates a stable Virtualizer instance as scroll state
   // changes. React Compiler must not memoize this component around that API.
@@ -113,7 +113,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     initialMinMatch,
   });
 
-  const { data: linkedJob } = useJobByIdQuery(urlJobId, userEmail, Boolean(urlJobId));
+  const { data: linkedJob } = useJobByIdQuery(urlJobId, userId, Boolean(urlJobId));
 
   useEffect(() => {
     if (!isDetailFullScreen) return;
@@ -149,7 +149,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useJobsInfiniteQuery(userEmail, queryParams, Boolean(userEmail));
+  } = useJobsInfiniteQuery(userId, queryParams, Boolean(userId));
 
   const pageItems = useMemo(() =>
     pageQueryData?.pages.flatMap(p => p.items) ?? [],
@@ -789,7 +789,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 onClose={() => onSelectJob(null)}
                 isFullScreen={false}
                 onToggleFullScreen={() => setIsDetailFullScreen(true)}
-                userEmail={userEmail}
+                userId={userId}
               />
             </div>
           )}
@@ -847,7 +847,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   onSelectJob(null);
                 }
               }}
-              userEmail={userEmail}
+              userId={userId}
             />
           </div>
           </DialogPrimitive.Content>

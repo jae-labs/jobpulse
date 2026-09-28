@@ -100,7 +100,6 @@ class PublicJobs(BaseModel):
     salary_period: Optional[str] = Field(alias="salary_period")
     salary_text: Optional[str] = Field(alias="salary_text")
     source: str = Field(alias="source")
-    status: str = Field(alias="status")
     title: str = Field(alias="title")
     url: str = Field(alias="url")
 
@@ -120,7 +119,6 @@ class PublicJobsInsert(TypedDict):
     salary_period: NotRequired[Annotated[Optional[str], Field(alias="salary_period")]]
     salary_text: NotRequired[Annotated[Optional[str], Field(alias="salary_text")]]
     source: Annotated[str, Field(alias="source")]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
     title: Annotated[str, Field(alias="title")]
     url: Annotated[str, Field(alias="url")]
 
@@ -140,7 +138,6 @@ class PublicJobsUpdate(TypedDict):
     salary_period: NotRequired[Annotated[Optional[str], Field(alias="salary_period")]]
     salary_text: NotRequired[Annotated[Optional[str], Field(alias="salary_text")]]
     source: NotRequired[Annotated[str, Field(alias="source")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
     title: NotRequired[Annotated[str, Field(alias="title")]]
     url: NotRequired[Annotated[str, Field(alias="url")]]
 

@@ -53,3 +53,12 @@ Operational checklist for deploying and recovering JobPulse.
 After shared candidate columns are removed, rollback must use a frontend build
 that reads `user_job_evaluations`. A pre-cleanup frontend requires a corrective
 forward migration restoring its database API before redeployment.
+
+## Candidate Status Rollout
+
+Deploy the frontend that no longer selects `jobs.status` before applying the
+status retirement migration. It works with either schema. Stop the scraper,
+verify a backup, then apply migrations and start the updated scraper. The
+migration refuses to remove non-default shared statuses; candidate tracking
+rows and existing evaluations are preserved. No score version bump or rescore
+is needed for the preparation optimization because scoring output is unchanged.

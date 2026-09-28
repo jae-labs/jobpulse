@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
 from engine.scoring import (
     EMBEDDING_MODEL_VERSION,
+    PreparedScoringProfile,
     build_job_document,
     build_profile_document,
     encode_documents,
     get_scoring_rules,
+    prepare_scoring_profile,
 )
 
 # Bump whenever feature extraction, weights, penalties, or explanations change.
@@ -78,6 +81,21 @@ def profile_scoring_input(profile: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@dataclass(frozen=True)
+class ScoringProfile:
+    evaluator: PreparedScoringProfile
+    fingerprint: dict[str, Any]
+
+
+def prepare_scoring_profiles(profiles: list[dict[str, Any]]) -> list[ScoringProfile]:
+    """Prepare each candidate once; fingerprints stay independent of compiled regexes."""
+    return [
+        ScoringProfile(prepare_scoring_profile(profile), profile_scoring_input(profile))
+        for profile in profiles
+        if profile.get("user_id")
+    ]
+
+
 def prepare_embeddings(
     table: str,
     id_column: str,
@@ -127,14 +145,15 @@ def prepare_embeddings(
 
 
 def get_scoring_work(jobs: list[dict[str, Any]], profiles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Look up stale pairs using fingerprints prepared by the scoring run."""
     response = retry_supabase(
         lambda: (
             get_supabase()
             .rpc(
                 "get_job_scoring_work",
                 {
-                    "p_jobs": [job_scoring_input(job) for job in jobs],
-                    "p_profiles": [profile_scoring_input(profile) for profile in profiles],
+                    "p_jobs": jobs,
+                    "p_profiles": profiles,
                     "p_model_version": EMBEDDING_MODEL_VERSION,
                     "p_scoring_version": SCORING_VERSION,
                 },

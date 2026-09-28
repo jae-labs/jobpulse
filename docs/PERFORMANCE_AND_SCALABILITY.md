@@ -56,7 +56,7 @@ High frame rates (60fps) and rapid response to keyboard navigation require stric
 
 - `get_jobs_page` and `get_overview_metrics` filter, score, and aggregate in PostgreSQL.
 - Search and location inputs are capped at 80 characters; wildcards are literal.
-- Composite indexes cover `(user_id, status)` and `(user_id, job_id)`.
+- Candidate tracking uses the unique `(user_id, job_id)` index for ownership lookups and a `job_id` index for catalog maintenance.
 
 ## 4. Scale Checks & Profiling
 

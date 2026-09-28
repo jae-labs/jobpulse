@@ -26,13 +26,13 @@ import { formatDate } from '../../lib/i18n';
 interface InvitationsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUserEmail?: string | null;
+  currentUserId?: string | null;
 }
 
 export const InvitationsModal: React.FC<InvitationsModalProps> = ({
   isOpen,
   onClose,
-  currentUserEmail,
+  currentUserId,
 }) => {
   const { t, i18n } = useTranslation();
   const [emailInput, setEmailInput] = useState('');
@@ -42,9 +42,9 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
 
   const emailInputId = useId();
 
-  const { data: invitations = [], isLoading } = useInvitationsQuery(currentUserEmail);
-  const createMutation = useCreateInvitationMutation(currentUserEmail);
-  const deleteMutation = useDeleteInvitationMutation(currentUserEmail);
+  const { data: invitations = [], isLoading } = useInvitationsQuery(currentUserId);
+  const createMutation = useCreateInvitationMutation(currentUserId);
+  const deleteMutation = useDeleteInvitationMutation(currentUserId);
 
   const getInviteUrl = (code: string | null, email: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';

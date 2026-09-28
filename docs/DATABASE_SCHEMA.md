@@ -22,7 +22,6 @@ erDiagram
         text title
         text company
         text location
-        text status
     }
     USER_PROFILES {
         bigint id PK
@@ -89,7 +88,9 @@ Candidate tables strictly enforce `user_id = auth.uid()`. Legacy `user_email` co
 `user_job_evaluations`, keyed by `(user_id, job_id)`, is the sole source of
 relevance, fit tier, matched skills, and explanations. Profile-dependent domain
 and seniority classifications live in its `ai_analysis` JSON. The shared `jobs`
-table contains only vacancy facts and lifecycle metadata.
+table contains only vacancy facts and lifecycle metadata. Candidate tracking lives
+only in `user_job_statuses`; a missing candidate status is `new`. There is no
+shared job status or `is_admin()` authorization alias.
 
 `get_jobs_page`, `get_overview_metrics`, and browser detail/preview queries read
 only the current user's evaluation. An absent evaluation returns relevance `0`,
@@ -117,7 +118,7 @@ weights, and seniority multipliers are preserved. After this rollout, run
 ## Invitations & Access Lifecycle
 
 Access is strictly invite-only:
-1. An authorized user creates an invitation with an email and optional role. The database generates a cryptographic `invite_code` and records `invited_by = auth.uid()`, with `status = 'pending'`.
+1. An authorized user creates an invitation with an email. The database generates a cryptographic `invite_code` and records `invited_by = auth.uid()`, with `status = 'pending'`.
 2. When the invitee signs up and confirms their email, the `bind_verified_invitation()` trigger binds `auth.users.id` to `authorized_users.user_id`, transitions status to `accepted`, and sets `accepted_at`.
 3. If an existing invitation is pending, team members can re-share the invitation link or hard-delete it to revoke access.
 4. Authorization is enforced across all tables and RPCs via `public.is_authorized_user()`, requiring a confirmed Auth account and `status = 'accepted'`.

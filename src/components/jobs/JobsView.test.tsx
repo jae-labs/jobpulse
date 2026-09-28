@@ -63,7 +63,7 @@ describe('JobsView Search Input', () => {
     return render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={initialEntries}>
-          <JobsView onSelectJob={vi.fn()} userEmail="user@example.com" selectedJob={selectedJob} />
+          <JobsView onSelectJob={vi.fn()} userId="user@example.com" selectedJob={selectedJob} />
         </MemoryRouter>
       </QueryClientProvider>
     );

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from database.repository import save_job, update_employer_status, update_source_status
+from database.repository import save_jobs_batch, update_employer_status, update_source_status
 from network.browser import with_browser
 
 ALLIANZ_CAREERS_URL = "https://careers.allianz.com/ie/en/search-results"
@@ -64,10 +64,10 @@ def sync_allianz() -> tuple[int, str]:
         update_employer_status("Allianz Ireland", "Unavailable")
         return 0, err_msg
 
-    added = 0
+    jobs_to_save = []
     for v in opportunities:
         title = v["title"]
-        if save_job(
+        jobs_to_save.append(
             {
                 "title": title,
                 "company": "Allianz Ireland",
@@ -77,8 +77,9 @@ def sync_allianz() -> tuple[int, str]:
                 "url": v["url"],
                 "source": "Allianz Ireland",
             }
-        ):
-            added += 1
+        )
+
+    added = save_jobs_batch(jobs_to_save, enrich=True)
 
     status_text = "Synced" if opportunities else "Monitored"
     detail_text = f"Read {len(opportunities)} current Allianz Ireland opportunities; added {added} new opportunities."
