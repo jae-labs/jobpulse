@@ -29,7 +29,6 @@ const mockProfile: Profile = {
   target_roles: ['Staff Engineer', 'Principal Architect'],
   target_locations: ['Dublin', 'Remote'],
   work_mode: 'Hybrid, Remote',
-  minimum_salary: 110000,
   salary_min: 110000,
   employment: 'Permanent only',
   education: 'B.Sc. Computer Science',
@@ -102,21 +101,21 @@ describe('ProfileView', () => {
       last_seen_at: '2026-09-25T10:00:00Z',
       matched_skills: [],
       sub_scores: {
-        domain: 25,
-        semantic: 24,
-        competency: 20,
-        seniority: 15,
-        salary: 15,
-        contract: 10,
-        target_role: 6,
-        location: 4,
-        work_mode: 2,
+        domain: 1.0,
+        semantic: 0.96,
+        competency: 1.0,
+        seniority: 1.0,
+        salary: 1.0,
+        contract: 1.0,
+        target_role: 1.0,
+        location: 1.0,
+        work_mode: 1.0,
         fixed_term: 0,
       },
     };
     renderProfileView({ jobs: [previewJob] });
 
-    const preview = screen.getByRole('complementary', { name: 'Live Match Score Preview' });
+    const preview = screen.getByRole('complementary', { name: 'Estimated Match Score Preview' });
     const slider = screen.getByRole('slider', { name: 'Domain Match & Core Specialization' });
     expect(preview).toHaveClass('min-[1200px]:sticky');
     expect(preview.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -146,19 +145,16 @@ describe('ProfileView', () => {
           positive_domains: [{
             name: 'Cloud & Platform Engineering',
             keywords: ['Kubernetes', 'Terraform'],
-            patterns: ['Kubernetes', 'Terraform'],
             note: 'Core platform alignment',
           }],
           negative_domains: [{
             name: 'UI focus',
             keywords: ['React', 'frontend'],
-            patterns: ['React', 'frontend'],
             reason: 'Client-side emphasis',
           }],
           seniority_tiers: [{
             name: 'Senior',
             keywords: ['Senior', 'Lead'],
-            patterns: ['Senior', 'Lead'],
             score_weight: 0.8,
             note: 'Experienced roles',
           }],
@@ -186,10 +182,9 @@ describe('ProfileView', () => {
       expect.objectContaining({
         name: 'Cloud & Platform Engineering',
         keywords: ['Kubernetes'],
-        patterns: ['Kubernetes'],
         note: 'Core platform alignment',
       }),
-      { name: 'Python', keywords: ['Python'], patterns: ['Python'], note: '' },
+      { name: 'Python', keywords: ['Python'], note: '' },
     ]));
     expect(savedRules.positive_domains.some((rule: { name: string }) => rule.name === 'Terraform')).toBe(false);
     expect(savedProfile.keywords).toEqual(expect.arrayContaining(['Python', 'Go', 'distributed systems']));
@@ -198,13 +193,11 @@ describe('ProfileView', () => {
     expect(savedRules.negative_domains).toEqual([{
       name: 'UI focus',
       keywords: ['frontend'],
-      patterns: ['frontend'],
       reason: 'Client-side emphasis',
     }]);
     expect(savedRules.seniority_tiers).toEqual([{
       name: 'Lead',
       keywords: ['Lead'],
-      patterns: ['Lead'],
       score_weight: 0.8,
       note: 'Experienced roles',
     }]);

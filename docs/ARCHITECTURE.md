@@ -38,7 +38,8 @@ flowchart TD
 1. The frontend uses typed Supabase clients and PostgreSQL RPCs.
 2. Candidate tables enforce RLS with `user_id = auth.uid()`.
 3. Pipeline status changes update optimistically and sync to Supabase.
-4. `get_jobs_page` and `get_overview_metrics` handle catalog queries and aggregation.
+4. `get_jobs_page` and `get_overview_metrics` join shared vacancy facts with the current user's evaluations for catalog queries and aggregation.
+5. `user_job_evaluations` is the sole candidate scoring source. Ingestion and nightly rescoring share the same incremental pgvector pipeline; unassessed jobs never inherit a shared profile score.
 
 ## Routes & Views
 

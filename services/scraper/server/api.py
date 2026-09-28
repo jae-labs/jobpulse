@@ -141,7 +141,15 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if path == "/api/profile":
             user_id = query_params.get("user_id", [None])[0]
-            self.send_json(load_profile(user_id=user_id))
+            if not user_id:
+                self.send_json({"error": "A candidate user_id is required"}, HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                self.send_json(load_profile(user_id=user_id))
+            except LookupError:
+                self.send_json({"error": "Candidate profile not found"}, HTTPStatus.NOT_FOUND)
+            except Exception:
+                self.send_json({"error": "Could not load candidate profile"}, HTTPStatus.SERVICE_UNAVAILABLE)
             return
 
         if path == "/api/jobs":
@@ -154,16 +162,20 @@ class ApiHandler(BaseHTTPRequestHandler):
             cols = (
                 "*"
                 if include_full
-                else "id, dedupe_key, title, company, location, employment_type, salary_text, url, source, relevance, matched_skills, fit_tier, role_domain, seniority_level, status, last_seen_at"
+                else "id, dedupe_key, title, company, location, employment_type, salary_text, url, source, status, last_seen_at"
             )
             query = supabase.table("jobs").select(cols)
 
             if status_filter and status_filter != "all":
                 query = query.eq("status", status_filter)
             if domain_filter and domain_filter != "all":
-                query = query.eq("role_domain", domain_filter)
+                self.send_json(
+                    {"error": "Domain filtering requires a candidate evaluation; use get_jobs_page."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
 
-            query = query.order("relevance", desc=True).order("last_seen_at", desc=True)
+            query = query.order("last_seen_at", desc=True).order("id", desc=True)
 
             if limit is not None:
                 try:

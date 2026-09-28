@@ -2,9 +2,8 @@
 
 from engine.salary import extract_salary_from_context
 from engine.scoring import (
-    compute_tf_idf_similarity,
-    evaluate_job_ai,
-    evaluate_match,
+    compute_token_frequency_similarity,
+    evaluate_job,
     tokenize_text,
 )
 from engine.text_cleaner import (
@@ -30,7 +29,6 @@ __all__ = [
     "is_valid_job_title",
     "extract_salary_from_context",
     "tokenize_text",
-    "compute_tf_idf_similarity",
-    "evaluate_job_ai",
-    "evaluate_match",
+    "compute_token_frequency_similarity",
+    "evaluate_job",
 ]

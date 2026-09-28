@@ -3,7 +3,7 @@ Comprehensive verification gate for JobPulse backend:
 - Module imports and dependencies
 - Supabase connectivity and schema accessibility
 - Websites configuration validation
-- Scoring engine sanity and ReDoS check
+- Scoring engine sanity and regex compilation check
 - REST API handler smoke test
 """
 
@@ -29,7 +29,7 @@ def run_checks() -> bool:
     print("\n[1/5] Verifying module imports...")
     try:
         from database.client import get_supabase
-        from engine.scoring import compile_terms_to_regex, evaluate_job_ai
+        from engine.scoring import compile_terms_to_regex, evaluate_job
 
         print("  -> All core modules imported successfully.")
     except Exception as exc:
@@ -73,21 +73,27 @@ def run_checks() -> bool:
         print(f"  [FAIL] {err}")
         errors.append(err)
 
-    # 4. Check Scoring Engine & ReDoS Bounds
+    # 4. Check Scoring Engine & Regex Compilation
     print("\n[4/5] Testing scoring engine and regex compilation...")
     try:
-        from engine.scoring import compile_terms_to_regex, evaluate_job_ai
+        from engine.scoring import compile_terms_to_regex, evaluate_job
 
         patterns = compile_terms_to_regex(["Software Engineer", "C++", "(?:Python|Go)", "[A-Z]+"])
         assert len(patterns) == 4, f"Expected 4 patterns, got {len(patterns)}"
 
-        eval_res = evaluate_job_ai(
+        eval_res = evaluate_job(
             title="Senior Python Backend Engineer",
             description="We are seeking an experienced Senior Python Engineer to design scalable cloud services in Dublin, Ireland.",
             company="JobPulse Technologies",
             location="Dublin, Ireland",
             salary_text="€90,000 - €105,000",
+            salary_min_amount=90000,
+            salary_max_amount=105000,
+            salary_currency="EUR",
+            salary_period="annual",
             employment_type="Permanent",
+            profile={"headline": "Senior Python Backend Engineer"},
+            semantic_similarity=0.8,
         )
         fit_score = eval_res.get("fit_score", 0)
         print(f"  -> Scoring test passed: '{eval_res.get('title')}' scored {fit_score}% ({eval_res.get('fit_tier')}).")

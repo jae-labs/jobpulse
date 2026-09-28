@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Job, Source, Profile, JobStatus, SubScores, OverviewMetrics, JobsPageParams, JobsPageResult, UserCVMetadata, UserCoverLetterMetadata } from "../types/job";
+import type { Job, Source, Profile, JobStatus, OverviewMetrics, JobsPageParams, JobsPageResult, UserCVMetadata, UserCoverLetterMetadata } from "../types/job";
+import { getCurrentUserId } from "../lib/userSession";
+import { candidateEvaluationFields } from "../lib/candidateEvaluation";
 import { DEFAULT_PROFILE } from "../lib/defaultProfile";
 import {
   loadUserProfile,
@@ -14,18 +16,10 @@ import {
   saveUserAvatar,
 } from "../lib/userProfile";
 
-async function currentUserId(): Promise<string> {
-  if (!supabase) throw new Error("Supabase is not initialized");
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session?.user.id) throw new Error("Active user session required");
-  return session.user.id;
-}
-
 export const queryKeys = {
   overviewMetrics: (email?: string | null) => ["overview-metrics", email ? email.trim().toLowerCase() : null] as const,
-  jobsPage: (email?: string | null, params?: unknown) => ["jobs-page", email ? email.trim().toLowerCase() : null, params] as const,
-  jobsSearchPage: (email?: string | null, params?: unknown) => ["jobs-search-page", email ? email.trim().toLowerCase() : null, params] as const,
-  jobs: (email?: string | null) => ["jobs", email ? email.trim().toLowerCase() : null] as const,
+  jobsPage: (email?: string | null, params?: unknown) => ["jobs-page", email ? email.trim().toLowerCase() : null, ...(params === undefined ? [] : [params])] as const,
+  jobsSearchPage: (email?: string | null, params?: unknown) => ["jobs-search-page", email ? email.trim().toLowerCase() : null, ...(params === undefined ? [] : [params])] as const,
   scoringPreviewJobs: (email?: string | null) => ["scoring-preview-jobs", email ? email.trim().toLowerCase() : null] as const,
   jobById: (id?: number | null, email?: string | null) => ["job-by-id", id, email ? email.trim().toLowerCase() : null] as const,
   jobDetail: (id?: number | null, email?: string | null) => ["job-detail", id, email ? email.trim().toLowerCase() : null] as const,
@@ -218,10 +212,10 @@ export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = 
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
       if (!cleanEmail) return [];
-      const userId = await currentUserId();
+      const userId = await getCurrentUserId();
       const { data, error } = await supabase
         .from("user_job_evaluations")
-        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, status, last_seen_at, role_domain, seniority_level)")
+        .select("relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, status, last_seen_at)")
         .eq("user_id", userId)
         .order("relevance", { ascending: false })
         .limit(100);
@@ -232,11 +226,7 @@ export function useScoringPreviewJobsQuery(userEmail?: string | null, enabled = 
         if (!job) return [];
         return [{
           ...job,
-          relevance: Number(evaluation.relevance ?? 0),
-          fit_tier: evaluation.fit_tier || 'Unassessed',
-          matched_skills: Array.isArray(evaluation.matched_skills) ? evaluation.matched_skills as string[] : [],
-          ai_analysis: evaluation.ai_analysis as unknown as Job['ai_analysis'],
-          sub_scores: (evaluation.ai_analysis as { sub_scores?: SubScores } | null)?.sub_scores,
+          ...candidateEvaluationFields(evaluation),
         } as Job];
       });
     },
@@ -250,12 +240,12 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
   return useQuery({
     queryKey: queryKeys.jobDetail(jobId, cleanEmail),
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
-    queryFn: async (): Promise<{ description?: string; ai_analysis?: Record<string, unknown> }> => {
+    queryFn: async (): Promise<{ description?: string; ai_analysis?: Job['ai_analysis'] }> => {
       if (!supabase || !jobId) throw new Error("Supabase is not initialized or invalid jobId");
-      const userId = cleanEmail ? await currentUserId() : null;
+      const userId = cleanEmail ? await getCurrentUserId() : null;
 
       const [jobRes, evalRes] = await Promise.all([
-        supabase.from("jobs").select("description, ai_analysis").eq("id", jobId).maybeSingle(),
+        supabase.from("jobs").select("description").eq("id", jobId).maybeSingle(),
         userId
           ? supabase
               .from("user_job_evaluations")
@@ -268,11 +258,12 @@ export function useJobDetailQuery(jobId?: number | null, userEmail?: string | nu
 
       if (jobRes.error) throw new Error(jobRes.error.message);
 
-      const aiAnalysis = evalRes.data?.ai_analysis || jobRes.data?.ai_analysis;
+      if (evalRes.error) throw new Error(evalRes.error.message);
+      const aiAnalysis = candidateEvaluationFields(evalRes.data).ai_analysis;
 
       return {
         description: jobRes.data?.description ?? undefined,
-        ai_analysis: (aiAnalysis as Record<string, unknown> | null) ?? undefined,
+        ai_analysis: aiAnalysis,
       };
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -287,7 +278,7 @@ export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null
     enabled: Boolean(supabase) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<Job | null> => {
       if (!supabase || !jobId) return null;
-      const userId = cleanEmail ? await currentUserId() : null;
+      const userId = cleanEmail ? await getCurrentUserId() : null;
       const [jobResult, statusResult, evaluationResult] = await Promise.all([
         supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
         userId
@@ -305,19 +296,8 @@ export function useJobByIdQuery(jobId?: number | null, userEmail?: string | null
       return {
         ...jobResult.data,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),
-        role_domain: jobResult.data.role_domain ?? undefined,
-        seniority_level: jobResult.data.seniority_level ?? undefined,
-        fit_tier: evaluation?.fit_tier ?? jobResult.data.fit_tier ?? undefined,
+        ...candidateEvaluationFields(evaluation),
         status: (statusResult.data?.status ?? jobResult.data.status ?? 'new') as JobStatus,
-        relevance: evaluation?.relevance ?? jobResult.data.relevance,
-        matched_skills: Array.isArray(evaluation?.matched_skills)
-          ? (evaluation.matched_skills as string[])
-          : (Array.isArray(jobResult.data.matched_skills) ? (jobResult.data.matched_skills as string[]) : []),
-        ai_analysis: (evaluation?.ai_analysis && typeof evaluation.ai_analysis === 'object' && !Array.isArray(evaluation.ai_analysis))
-          ? (evaluation.ai_analysis as unknown as Job['ai_analysis'])
-          : (jobResult.data.ai_analysis && typeof jobResult.data.ai_analysis === 'object' && !Array.isArray(jobResult.data.ai_analysis))
-            ? (jobResult.data.ai_analysis as unknown as Job['ai_analysis'])
-            : undefined,
       };
     },
     staleTime: 1000 * 60 * 10,
@@ -361,7 +341,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
     mutationFn: async ({ job, status }: { job: Job; status: JobStatus }) => {
       if (!supabase) throw new Error("Supabase client is not configured");
       if (!cleanEmail) throw new Error("Active user session required");
-      const userId = await currentUserId();
+      const userId = await getCurrentUserId();
 
       const { error } = await supabase.from("user_job_statuses").upsert(
         {
@@ -377,22 +357,12 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       return { jobId: job.id, status };
     },
     onMutate: async ({ job, status }) => {
-      const qk = queryKeys.jobs(cleanEmail);
       const jobByIdKey = queryKeys.jobById(job.id, cleanEmail);
-      await queryClient.cancelQueries({ queryKey: qk });
       await queryClient.cancelQueries({ queryKey: jobByIdKey });
-      await queryClient.cancelQueries({ queryKey: ['jobs-page', cleanEmail] });
-      await queryClient.cancelQueries({ queryKey: ['jobs-search-page', cleanEmail] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
 
-      const previousJobs = queryClient.getQueryData<Job[]>(qk);
       const previousJobById = queryClient.getQueryData<Job | null>(jobByIdKey);
-
-      if (previousJobs) {
-        queryClient.setQueryData<Job[]>(
-          qk,
-          previousJobs.map((j) => (j.id === job.id ? { ...j, status } : j))
-        );
-      }
 
       queryClient.setQueryData<Job | null>(
         jobByIdKey,
@@ -400,7 +370,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       );
 
       queryClient.setQueriesData<InfiniteData<JobsPageResult>>(
-        { queryKey: ['jobs-page', cleanEmail] },
+        { queryKey: queryKeys.jobsPage(cleanEmail) },
         (old) => {
           if (!old) return old;
           return {
@@ -414,7 +384,7 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
       );
 
       queryClient.setQueriesData<JobsPageResult>(
-        { queryKey: ['jobs-search-page', cleanEmail] },
+        { queryKey: queryKeys.jobsSearchPage(cleanEmail) },
         (old) => {
           if (!old) return old;
           return {
@@ -424,30 +394,24 @@ export function useUpdateJobStatusMutation(userEmail?: string | null) {
         }
       );
 
-      return { previousJobs, qk, previousJobById, jobByIdKey };
+      return { previousJobById, jobByIdKey };
     },
     onError: (_err, _variables, context) => {
-      if (context?.previousJobs && context.qk) {
-        queryClient.setQueryData(context.qk, context.previousJobs);
-      }
       if (context?.previousJobById !== undefined && context.jobByIdKey) {
         queryClient.setQueryData(context.jobByIdKey, context.previousJobById);
       }
       if (context?.jobByIdKey) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
-      void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
-      void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
     },
     onSettled: (_data, _error, _variables, context) => {
-      if (context?.qk) {
-        void queryClient.invalidateQueries({ queryKey: context.qk });
-      }
       if (context?.jobByIdKey) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
-      void queryClient.invalidateQueries({ queryKey: ['jobs-page', cleanEmail] });
-      void queryClient.invalidateQueries({ queryKey: ['jobs-search-page', cleanEmail] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(cleanEmail) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(cleanEmail) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(cleanEmail) });
     },
   });
@@ -654,11 +618,10 @@ export function useCreateInvitationMutation(userEmail?: string | null) {
   const cleanEmail = userEmail?.trim().toLowerCase();
 
   return useMutation({
-    mutationFn: async ({ email, role = 'member' }: { email: string; role?: string }) => {
+    mutationFn: async ({ email }: { email: string }) => {
       if (!supabase) throw new Error("Database not connected");
       const { data, error } = await supabase.rpc('create_invitation', {
         target_email: email,
-        target_role: role,
       });
       if (error) throw error;
       return data as { success: boolean; id: number; email: string; role: string; invite_code: string };

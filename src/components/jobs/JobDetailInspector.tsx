@@ -92,7 +92,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 <span className="text-ds-text-muted">·</span>
                 <span className="text-xs font-mono text-ds-text-muted">{job.source}</span>
                 <StatusPill status={job.status} />
-                <MatchScoreBadge score={job.relevance} />
+                <MatchScoreBadge score={job.relevance} isAssessed={job.fit_tier !== 'Unassessed'} />
               </div>
 
               <h2 className={cn('font-semibold tracking-tight text-ds-text-primary leading-snug', isFullScreen ? 'text-xl sm:text-2xl' : 'text-lg')}>
@@ -233,7 +233,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 {t('jobs.inspector.matchFit')}
               </span>
               <p className="mt-1 font-mono text-xs font-medium text-ds-text-secondary line-clamp-2 leading-tight">
-                {job.relevance}%
+                {job.fit_tier === 'Unassessed' ? t('jobs.unassessed') : `${job.relevance}%`}
               </p>
             </div>
 

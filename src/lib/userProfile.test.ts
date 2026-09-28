@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  deleteUserCV,
+  deleteUserCoverLetter,
   getUserCVSignedUrl,
   getUserCoverLetterSignedUrl,
   saveUserAvatar,
@@ -173,6 +175,38 @@ describe('Document Streaming Signed URLs', () => {
         signedUrl: 'https://example.supabase.co/storage/v1/object/sign/user-documents/cl.pdf?token=xyz',
         fileName: 'Cover_Letter.pdf',
       });
+    });
+  });
+
+  describe('Specific document deletion', () => {
+    it.each([0, -1, 1.5, Number.NaN])('rejects invalid document ID %s without querying storage or metadata', async (id) => {
+      expect(await deleteUserCV(id)).toBe(false);
+      expect(await deleteUserCoverLetter(id)).toBe(false);
+      expect(await getUserCVSignedUrl(id)).toEqual({ error: 'Invalid document ID' });
+      expect(supabase!.from).not.toHaveBeenCalled();
+      expect(supabase!.storage.from).not.toHaveBeenCalled();
+    });
+
+    it('retains metadata if deleting the storage object fails', async () => {
+      const deleteRecord = vi.fn();
+      const lookup = {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { storage_path: 'test-user-uuid/cv/resume.pdf' }, error: null,
+              }),
+            }),
+          }),
+        }),
+        delete: deleteRecord,
+      };
+      vi.mocked(supabase!.from).mockReturnValue(lookup as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+      vi.mocked(supabase!.storage.from).mockReturnValue({
+        remove: vi.fn().mockResolvedValue({ error: { message: 'Storage unavailable' } }),
+      } as unknown as ReturnType<NonNullable<typeof supabase>['storage']['from']>);
+      expect(await deleteUserCV(42)).toBe(false);
+      expect(deleteRecord).not.toHaveBeenCalled();
     });
   });
 

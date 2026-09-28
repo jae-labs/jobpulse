@@ -116,3 +116,9 @@ describe('RPC boundary validation', () => {
     expect(result.items[0].status).toBe('new');
   });
 });
+
+
+it('uses factory prefixes for both paginated caches', () => {
+  expect(queryKeys.jobsPage(' User@Example.COM ')).toEqual(['jobs-page', 'user@example.com']);
+  expect(queryKeys.jobsSearchPage(' User@Example.COM ')).toEqual(['jobs-search-page', 'user@example.com']);
+});

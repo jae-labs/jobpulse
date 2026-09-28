@@ -33,3 +33,23 @@ Operational checklist for deploying and recovering JobPulse.
 - **Data Recovery**:
   - Use `make backup` snapshots stored in `.backups/` for local disaster triage.
   - Hosted restore must be conducted through Supabase Dashboard or point-in-time recovery (PITR).
+
+## Candidate Scoring Rollout
+
+1. Verify a fresh backup, then deploy the frontend build before applying the
+   candidate-scoring cleanup migrations. The new frontend reads evaluation rows
+   and is compatible with the current schema; older builds still select shared
+   candidate columns that the cleanup removes. Keep the scraper stopped during
+   migration application.
+2. Apply all pending forward migrations with `npm run db:push`. They remove
+   shared candidate fields, canonicalize profile rules, restore search indexes,
+   restrict internal trigger functions, isolate the search extension, simplify the
+   invitation RPC, and rebuild salary facts from source text.
+3. Run `make scrape-rescore` to refresh exact full-catalog evaluations with v2.
+   Unchanged documents reuse persisted embeddings.
+4. Check `npm run db:diff` for unexplained schema drift and smoke-test score,
+   salary and search filters plus profile and document writes.
+
+After shared candidate columns are removed, rollback must use a frontend build
+that reads `user_job_evaluations`. A pre-cleanup frontend requires a corrective
+forward migration restoring its database API before redeployment.

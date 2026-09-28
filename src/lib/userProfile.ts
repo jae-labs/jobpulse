@@ -1,3 +1,4 @@
+import { getCurrentUserId } from "./userSession";
 import { supabase } from "./supabase";
 import { reportError } from "./logger";
 import type {
@@ -12,13 +13,6 @@ import type { Json, TablesInsert } from "../types/database.types";
 
 const DOCUMENTS_BUCKET = "user-documents";
 const AVATARS_BUCKET = "avatars";
-
-async function getCurrentUserId(): Promise<string> {
-  if (!supabase) throw new Error("Database unavailable");
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session?.user.id) throw new Error("Active user session required");
-  return session.user.id;
-}
 
 /** Uploads user avatar to private storage. */
 export async function saveUserAvatar(
@@ -99,7 +93,6 @@ export async function loadUserProfile(email?: string | null): Promise<Profile> {
         : [],
       work_mode: data.work_mode || "",
       salary_min: Number(data.salary_min) || 0,
-      minimum_salary: Number(data.salary_min) || 0,
       employment: data.employment || "",
       education: data.education || "",
       certifications: data.certifications || "",
@@ -160,7 +153,7 @@ export async function saveUserProfile(
       target_roles: profile.target_roles || [],
       target_locations: profile.target_locations || [],
       work_mode: profile.work_mode || "",
-      salary_min: profile.salary_min ?? profile.minimum_salary ?? 0,
+      salary_min: profile.salary_min ?? 0,
       employment: profile.employment || "",
       education: profile.education || "",
       certifications: profile.certifications || "",
@@ -215,62 +208,53 @@ export async function loadUserCVsMetadata(
   }
 }
 
-/** Generates a short-lived signed URL for streaming CV download. */
-export async function getUserCVSignedUrl(
-  emailOrId: string | number,
-  cvIdOrExpiresIn?: number,
-  expiresInSeconds: number = 60,
-): Promise<{ signedUrl: string; fileName: string } | { error: string }> {
+type DocumentTable = "user_cvs" | "user_cover_letters";
+type DocumentDownload = { signedUrl: string; fileName: string } | { error: string };
+
+async function getDocumentSignedUrl(
+  table: DocumentTable,
+  documentId: number,
+  expiresInSeconds: number,
+  notFoundMessage: string,
+): Promise<DocumentDownload> {
+  if (!Number.isSafeInteger(documentId) || documentId <= 0) {
+    return { error: "Invalid document ID" };
+  }
+  if (!Number.isSafeInteger(expiresInSeconds) || expiresInSeconds <= 0) {
+    return { error: "Invalid download expiry" };
+  }
   if (!supabase) return { error: "Database unavailable" };
 
   try {
     const userId = await getCurrentUserId();
-    let query = supabase
-      .from("user_cvs")
+    const { data: row, error: rowError } = await supabase
+      .from(table)
       .select("file_name, storage_path")
-      .eq("user_id", userId);
-
-    let ttl = expiresInSeconds;
-
-    if (typeof emailOrId === "number") {
-      query = query.eq("id", emailOrId);
-      if (typeof cvIdOrExpiresIn === "number") {
-        ttl = cvIdOrExpiresIn;
-      }
-    } else {
-      const cleanEmail = emailOrId.trim().toLowerCase();
-      if (!cleanEmail) return { error: "Invalid email" };
-      if (typeof cvIdOrExpiresIn === "number") {
-        query = query.eq("id", cvIdOrExpiresIn);
-      } else {
-        query = query.order("uploaded_at", { ascending: false }).limit(1);
-      }
+      .eq("user_id", userId)
+      .eq("id", documentId)
+      .maybeSingle();
+    if (rowError || !row?.storage_path) {
+      return { error: rowError?.message || notFoundMessage };
     }
 
-    const { data: row, error: rowError } = await query.maybeSingle();
-
-    if (rowError || !row || !row.storage_path) {
-      return { error: rowError?.message || "CV not found" };
-    }
-
-    const { data, error: signedUrlError } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from(DOCUMENTS_BUCKET)
-      .createSignedUrl(row.storage_path, ttl, {
-        download: row.file_name,
-      });
-
-    if (signedUrlError || !data?.signedUrl) {
-      return { error: signedUrlError?.message || "Failed to generate download URL" };
+      .createSignedUrl(row.storage_path, expiresInSeconds, { download: row.file_name });
+    if (error || !data?.signedUrl) {
+      return { error: error?.message || "Failed to generate download URL" };
     }
-
-    return {
-      signedUrl: data.signedUrl,
-      fileName: row.file_name,
-    };
+    return { signedUrl: data.signedUrl, fileName: row.file_name };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { error: message || "Failed to generate download URL" };
+    return { error: err instanceof Error ? err.message : "Failed to generate download URL" };
   }
+}
+
+/** Generates a signed download URL for the authenticated user's specific CV. */
+export function getUserCVSignedUrl(
+  documentId: number,
+  expiresInSeconds: number = 60,
+): Promise<DocumentDownload> {
+  return getDocumentSignedUrl("user_cvs", documentId, expiresInSeconds, "CV not found");
 }
 
 export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -348,51 +332,35 @@ export async function saveUserCV(
   }
 }
 
-/** Deletes a specific user CV from Supabase. */
-export async function deleteUserCV(
-  emailOrId: string | number,
-  cvId?: number,
-): Promise<boolean> {
-  if (!supabase) return false;
+async function deleteDocument(table: DocumentTable, documentId: number): Promise<boolean> {
+  if (!supabase || !Number.isSafeInteger(documentId) || documentId <= 0) return false;
 
   try {
     const userId = await getCurrentUserId();
-    let query = supabase.from("user_cvs").select("storage_path").eq("user_id", userId);
+    const { data: row, error: lookupError } = await supabase
+      .from(table)
+      .select("storage_path")
+      .eq("user_id", userId)
+      .eq("id", documentId)
+      .maybeSingle();
+    if (lookupError || !row) return false;
 
-    if (typeof emailOrId === "number") {
-      query = query.eq("id", emailOrId);
-    } else {
-      const cleanEmail = emailOrId.trim().toLowerCase();
-      if (!cleanEmail) return false;
-      if (cvId) query = query.eq("id", cvId);
+    // Storage ownership depends on metadata: remove the object before its record.
+    if (row.storage_path) {
+      const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).remove([row.storage_path]);
+      if (error) return false;
     }
-
-    const { data: rows, error: lookupError } = await query;
-    if (lookupError) return false;
-
-    if (rows && rows.length > 0) {
-      const paths = (rows as Array<{ storage_path?: string | null }>)
-        .map((r) => r.storage_path)
-        .filter((p): p is string => Boolean(p));
-      if (paths.length > 0) {
-        const { error: storageError } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
-        if (storageError) return false;
-      }
-    }
-
-    let delQuery = supabase.from("user_cvs").delete().eq("user_id", userId);
-
-    if (typeof emailOrId === "number") {
-      delQuery = delQuery.eq("id", emailOrId);
-    } else {
-      if (cvId) delQuery = delQuery.eq("id", cvId);
-    }
-
-    const { error } = await delQuery;
+    const { error } = await supabase.from(table).delete()
+      .eq("user_id", userId).eq("id", documentId);
     return !error;
   } catch {
     return false;
   }
+}
+
+/** Deletes the authenticated user's specific CV and its storage object. */
+export function deleteUserCV(documentId: number): Promise<boolean> {
+  return deleteDocument("user_cvs", documentId);
 }
 
 /** Loads all user Cover Letter metadata records. */
@@ -418,62 +386,12 @@ export async function loadUserCoverLettersMetadata(
   }
 }
 
-/** Generates a short-lived signed URL for streaming cover letter download. */
-export async function getUserCoverLetterSignedUrl(
-  emailOrId: string | number,
-  coverLetterIdOrExpiresIn?: number,
+/** Generates a signed download URL for the authenticated user's specific cover letter. */
+export function getUserCoverLetterSignedUrl(
+  documentId: number,
   expiresInSeconds: number = 60,
-): Promise<{ signedUrl: string; fileName: string } | { error: string }> {
-  if (!supabase) return { error: "Database unavailable" };
-
-  try {
-    const userId = await getCurrentUserId();
-    let query = supabase
-      .from("user_cover_letters")
-      .select("file_name, storage_path")
-      .eq("user_id", userId);
-
-    let ttl = expiresInSeconds;
-
-    if (typeof emailOrId === "number") {
-      query = query.eq("id", emailOrId);
-      if (typeof coverLetterIdOrExpiresIn === "number") {
-        ttl = coverLetterIdOrExpiresIn;
-      }
-    } else {
-      const cleanEmail = emailOrId.trim().toLowerCase();
-      if (!cleanEmail) return { error: "Invalid email" };
-      if (typeof coverLetterIdOrExpiresIn === "number") {
-        query = query.eq("id", coverLetterIdOrExpiresIn);
-      } else {
-        query = query.order("uploaded_at", { ascending: false }).limit(1);
-      }
-    }
-
-    const { data: row, error: rowError } = await query.maybeSingle();
-
-    if (rowError || !row || !row.storage_path) {
-      return { error: rowError?.message || "Cover letter not found" };
-    }
-
-    const { data, error: signedUrlError } = await supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .createSignedUrl(row.storage_path, ttl, {
-        download: row.file_name,
-      });
-
-    if (signedUrlError || !data?.signedUrl) {
-      return { error: signedUrlError?.message || "Failed to generate download URL" };
-    }
-
-    return {
-      signedUrl: data.signedUrl,
-      fileName: row.file_name,
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { error: message || "Failed to generate download URL" };
-  }
+): Promise<DocumentDownload> {
+  return getDocumentSignedUrl("user_cover_letters", documentId, expiresInSeconds, "Cover letter not found");
 }
 
 /** Uploads a cover letter to storage and records metadata. */
@@ -551,52 +469,7 @@ export async function saveUserCoverLetter(
   }
 }
 
-/** Deletes a user cover letter from storage and database. */
-export async function deleteUserCoverLetter(
-  emailOrId: string | number,
-  coverLetterId?: number,
-): Promise<boolean> {
-  if (!supabase) return false;
-
-  try {
-    const userId = await getCurrentUserId();
-    let query = supabase
-      .from("user_cover_letters")
-      .select("storage_path")
-      .eq("user_id", userId);
-
-    if (typeof emailOrId === "number") {
-      query = query.eq("id", emailOrId);
-    } else {
-      const cleanEmail = emailOrId.trim().toLowerCase();
-      if (!cleanEmail) return false;
-      if (coverLetterId) query = query.eq("id", coverLetterId);
-    }
-
-    const { data: rows, error: lookupError } = await query;
-    if (lookupError) return false;
-
-    if (rows && rows.length > 0) {
-      const paths = (rows as Array<{ storage_path?: string | null }>)
-        .map((r) => r.storage_path)
-        .filter((p): p is string => Boolean(p));
-      if (paths.length > 0) {
-        const { error: storageError } = await supabase.storage.from(DOCUMENTS_BUCKET).remove(paths);
-        if (storageError) return false;
-      }
-    }
-
-    let delQuery = supabase.from("user_cover_letters").delete().eq("user_id", userId);
-
-    if (typeof emailOrId === "number") {
-      delQuery = delQuery.eq("id", emailOrId);
-    } else {
-      if (coverLetterId) delQuery = delQuery.eq("id", coverLetterId);
-    }
-
-    const { error } = await delQuery;
-    return !error;
-  } catch {
-    return false;
-  }
+/** Deletes the authenticated user's specific cover letter and its storage object. */
+export function deleteUserCoverLetter(documentId: number): Promise<boolean> {
+  return deleteDocument("user_cover_letters", documentId);
 }

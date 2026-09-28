@@ -48,3 +48,10 @@ describe('StatusPill', () => {
     expect(badge.className).toContain('border-ds-border-strong');
   });
 });
+
+
+it('shows an unassessed label instead of a zero-percent match', () => {
+  render(<MatchScoreBadge score={0} isAssessed={false} />);
+  expect(screen.getByText('Unassessed')).toBeInTheDocument();
+  expect(screen.queryByText('0%')).not.toBeInTheDocument();
+});

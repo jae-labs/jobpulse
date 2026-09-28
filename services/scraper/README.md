@@ -30,4 +30,8 @@ Set `enabled: false` to pause it. Run `make scrape-validate` from the repository
 
 For local development, start the Supabase stack with `make dev`. If running the scraper separately, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `services/scraper/.env`. Keep the service role key out of the frontend and Git.
 
+Python dependencies are managed by `pyproject.toml` and `uv.lock`; commands use `uv run --locked`.
+The duplicate pip requirements file has been removed. Scoring defaults live in
+`shared/scoringDefaults.json` at the repository root; keep that file with the scraper when packaging it.
+
 After schema changes, run `make db-types` from the repository root to regenerate both language models.

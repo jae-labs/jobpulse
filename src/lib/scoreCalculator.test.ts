@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { previewWeightedScore } from './scoreCalculator';
-import type { Job, ScoringWeights } from '../types/job';
-
-const DEFAULT_WEIGHTS: ScoringWeights = {
-  domain: 25, semantic: 25, competency: 20, seniority: 15, salary: 15, contract: 10,
-  target_role_bonus: 6, location_bonus: 4, work_mode_bonus: 2,
-  fixed_term_penalty: 8, disqualification_cap: 10,
-};
+import { DEFAULT_SCORING_WEIGHTS as DEFAULT_WEIGHTS } from './scoringRules';
+import type { Job } from '../types/job';
 
 describe('previewWeightedScore', () => {
-  it('previews weight changes against stored point-based evaluation scores', () => {
+  it('previews weight changes against stored normalized evaluation factors', () => {
     const job: Job = {
       id: 101,
       title: 'Staff Cloud Platform Engineer',
@@ -24,15 +19,15 @@ describe('previewWeightedScore', () => {
       matched_skills: [],
       relevance: 96,
       sub_scores: {
-        domain: 25,
-        semantic: 24,
-        competency: 20,
-        seniority: 15,
-        salary: 15,
-        contract: 10,
-        target_role: 6,
-        location: 4,
-        work_mode: 2,
+        domain: 1.0,
+        semantic: 0.96,
+        competency: 1.0,
+        seniority: 1.0,
+        salary: 1.0,
+        contract: 1.0,
+        target_role: 1.0,
+        location: 1.0,
+        work_mode: 1.0,
         fixed_term: 0,
       },
     };

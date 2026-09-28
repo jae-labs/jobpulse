@@ -65,13 +65,14 @@ export const StatusPill = React.memo(StatusPillComponent);
 
 const MatchScoreBadgeComponent: React.FC<{
   score: number;
+  isAssessed?: boolean;
   className?: string;
-}> = ({ score, className }) => {
+}> = ({ score, isAssessed = true, className }) => {
   const { t } = useTranslation();
   const tierColor =
-    score >= 75
+    isAssessed && score >= 75
       ? 'border-ds-warning-border bg-ds-warning-subtle text-ds-warning'
-      : score >= 50
+      : isAssessed && score >= 55
         ? 'border-ds-warning-muted-border bg-ds-warning-muted-bg text-ds-warning'
         : 'border-ds-border-strong text-ds-text-secondary bg-ds-surface';
 
@@ -83,8 +84,10 @@ const MatchScoreBadgeComponent: React.FC<{
         className,
       )}
     >
-      <span>{score}%</span>
-      <span className="text-[9px] uppercase tracking-wider opacity-80 font-sans">{t('jobs.match', 'match')}</span>
+      {isAssessed ? <>
+        <span>{score}%</span>
+        <span className="text-[9px] uppercase tracking-wider opacity-80 font-sans">{t('jobs.match')}</span>
+      </> : <span>{t('jobs.unassessed')}</span>}
     </span>
   );
 };

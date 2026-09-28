@@ -28,7 +28,7 @@ DEFAULT_PROFILE: dict[str, Any] = {
     "name": "",
     "headline": "General Professional",
     "location": "Ireland",
-    "minimum_salary": 50000,
+    "salary_min": 50000,
     "employment": "Permanent only",
     "education": "",
     "current_role": "",
@@ -37,40 +37,16 @@ DEFAULT_PROFILE: dict[str, Any] = {
 }
 
 
-_profile_cache: dict[str, Any] = {}
+def load_profile(user_id: str) -> dict[str, Any]:
+    """Read one explicitly selected candidate; never substitute another profile."""
+    if not user_id:
+        raise ValueError("A candidate user_id is required")
+    from database.client import get_supabase
 
-
-def load_profile(user_id: str | None = None, force_refresh: bool = False) -> dict[str, Any]:
-    """
-    Load candidate profile dynamically from Supabase `user_profiles`.
-    If user_id is provided, fetches that specific user's profile.
-    Cached in memory during scraping runs to eliminate redundant HTTP requests.
-    Falls back to first active Supabase profile, or DEFAULT_PROFILE if offline.
-    """
-    cache_key = user_id or "__default__"
-    if not force_refresh and cache_key in _profile_cache:
-        return dict(_profile_cache[cache_key])
-
-    try:
-        from database.client import get_supabase
-
-        supabase = get_supabase()
-        if user_id:
-            res = supabase.table("user_profiles").select("*").eq("user_id", user_id).limit(1).execute()
-        else:
-            res = supabase.table("user_profiles").select("*").limit(1).execute()
-
-        if res.data:
-            merged = dict(DEFAULT_PROFILE)
-            merged.update(res.data[0])
-            _profile_cache[cache_key] = merged
-            return dict(merged)
-    except Exception as exc:
-        print(f"[CONFIG] Notice: Profile loading from Supabase ({exc}). Using defaults.")
-
-    fallback = dict(DEFAULT_PROFILE)
-    _profile_cache[cache_key] = fallback
-    return fallback
+    result = get_supabase().table("user_profiles").select("*").eq("user_id", user_id).limit(1).execute()
+    if not result.data:
+        raise LookupError("Candidate profile not found")
+    return {**DEFAULT_PROFILE, **result.data[0]}
 
 
 def load_websites_config(path: Path | str | None = None) -> list[dict[str, Any]]:

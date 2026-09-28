@@ -118,7 +118,7 @@ make scrape-core
 # Run the full scraping + deduplication + candidate fit rescore pipeline
 make scrape
 
-# Rescore candidate fit against existing opportunities using Apple Metal GPU
+# Refresh stale candidate scores against existing opportunities
 make scrape-rescore
 
 # Run code quality checks on scraper Python code

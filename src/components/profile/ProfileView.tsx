@@ -9,6 +9,7 @@ import { ProfileTargetPreferences } from './ProfileTargetPreferences';
 import { ProfileQualifications } from './ProfileQualifications';
 import { parsePhone } from './profileConstants';
 import { ProfileMatchingTerms } from './ProfileMatchingTerms';
+import { DEFAULT_PROFILE } from '../../lib/defaultProfile';
 import { withMatchingTerms } from '../../lib/profileMatchingTerms';
 import { Button, Card, Dialog, DialogContent, PageHeader, TextField } from '@jae-labs/ui';
 
@@ -33,29 +34,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<Profile>(
-    profile || {
-      name: '',
-      first_name: '',
-      last_name: '',
-      phone: '',
-      linkedin_url: '',
-      work_authorization: 'EU Citizen',
-      gender: '',
-      current_role: '',
-      location: '',
-      target_roles: [],
-      target_locations: [],
-      work_mode: 'Hybrid',
-      minimum_salary: 50000,
-      salary_min: 50000,
-      employment: 'Permanent only',
-      education: '',
-      certifications: '',
-      languages: [],
-      tools_software: [],
-      summary: '',
-      keywords: [],
-    }
+    profile || DEFAULT_PROFILE
   );
 
   // Phone separate state

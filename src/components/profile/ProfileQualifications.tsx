@@ -32,7 +32,6 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
       seniority_tiers: updateRuleTags(seniorityRules, tags, (tag) => ({
         name: tag,
         keywords: [tag],
-        patterns: [tag],
         score_weight: 1.0,
         note: '',
       })),

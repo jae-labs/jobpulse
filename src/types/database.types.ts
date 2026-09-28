@@ -106,83 +106,123 @@ export type Database = {
         }
         Relationships: []
       }
+      job_scoring_embeddings: {
+        Row: {
+          content_hash: string
+          embedding: string
+          job_id: number
+          model_version: string
+        }
+        Insert: {
+          content_hash: string
+          embedding: string
+          job_id: number
+          model_version: string
+        }
+        Update: {
+          content_hash?: string
+          embedding?: string
+          job_id?: number
+          model_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_scoring_embeddings_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
-          ai_analysis: Json | null
           company: string
           dedupe_key: string
           description: string
           employment_type: string
           first_seen_at: string | null
-          fit_tier: string
           id: number
           last_seen_at: string | null
           location: string
-          matched_skills: Json
-          relevance: number
-          role_domain: string | null
           salary_currency: string | null
           salary_max_amount: number | null
           salary_min_amount: number | null
           salary_period: string | null
           salary_text: string | null
-          seniority_level: string | null
           source: string
           status: string
           title: string
           url: string
         }
         Insert: {
-          ai_analysis?: Json | null
           company: string
           dedupe_key: string
           description: string
           employment_type?: string
           first_seen_at?: string | null
-          fit_tier?: string
           id?: number
           last_seen_at?: string | null
           location?: string
-          matched_skills?: Json
-          relevance?: number
-          role_domain?: string | null
           salary_currency?: string | null
           salary_max_amount?: number | null
           salary_min_amount?: number | null
           salary_period?: string | null
           salary_text?: string | null
-          seniority_level?: string | null
           source: string
           status?: string
           title: string
           url: string
         }
         Update: {
-          ai_analysis?: Json | null
           company?: string
           dedupe_key?: string
           description?: string
           employment_type?: string
           first_seen_at?: string | null
-          fit_tier?: string
           id?: number
           last_seen_at?: string | null
           location?: string
-          matched_skills?: Json
-          relevance?: number
-          role_domain?: string | null
           salary_currency?: string | null
           salary_max_amount?: number | null
           salary_min_amount?: number | null
           salary_period?: string | null
           salary_text?: string | null
-          seniority_level?: string | null
           source?: string
           status?: string
           title?: string
           url?: string
         }
         Relationships: []
+      }
+      profile_scoring_embeddings: {
+        Row: {
+          content_hash: string
+          embedding: string
+          model_version: string
+          user_id: string
+        }
+        Insert: {
+          content_hash: string
+          embedding: string
+          model_version: string
+          user_id: string
+        }
+        Update: {
+          content_hash?: string
+          embedding?: string
+          model_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_scoring_embeddings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       sources: {
         Row: {
@@ -292,6 +332,9 @@ export type Database = {
           job_id: number
           matched_skills: Json
           relevance: number
+          scoring_job_hash: string | null
+          scoring_profile_hash: string | null
+          scoring_version: string | null
           user_id: string
         }
         Insert: {
@@ -302,6 +345,9 @@ export type Database = {
           job_id: number
           matched_skills?: Json
           relevance?: number
+          scoring_job_hash?: string | null
+          scoring_profile_hash?: string | null
+          scoring_version?: string | null
           user_id: string
         }
         Update: {
@@ -312,6 +358,9 @@ export type Database = {
           job_id?: number
           matched_skills?: Json
           relevance?: number
+          scoring_job_hash?: string | null
+          scoring_profile_hash?: string | null
+          scoring_version?: string | null
           user_id?: string
         }
         Relationships: [
@@ -457,15 +506,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_invitation: {
-        Args: { target_email: string; target_role?: string }
-        Returns: Json
-      }
+      create_invitation: { Args: { target_email: string }; Returns: Json }
       current_user_owns_row: {
         Args: { row_user_email: string; row_user_id: string }
         Returns: boolean
       }
       delete_invitation: { Args: { invitation_id: number }; Returns: Json }
+      get_job_scoring_work: {
+        Args: {
+          p_jobs: Json
+          p_model_version: string
+          p_profiles: Json
+          p_scoring_version: string
+        }
+        Returns: Json
+      }
       get_jobs_page: {
         Args: {
           p_domain?: string
@@ -489,9 +544,6 @@ export type Database = {
         Returns: string
       }
       owns_document_object: { Args: { object_name: string }; Returns: boolean }
-      revoke_invitation: { Args: { invitation_id: number }; Returns: Json }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

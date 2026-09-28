@@ -144,7 +144,7 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
                 density="compact"
                 type="number"
                 step="1000"
-                value={formData.salary_min || 50000}
+                value={formData.salary_min ?? 50000}
                 onChange={(e) => {
                   const val = Number(e.target.value);
                   onChange('salary_min', val);

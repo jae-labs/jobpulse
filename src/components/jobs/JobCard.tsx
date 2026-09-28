@@ -44,7 +44,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <MatchScoreBadge score={job.relevance} />
+              <MatchScoreBadge score={job.relevance} isAssessed={job.fit_tier !== 'Unassessed'} />
               <ChevronRight
                 className={cn(
                   'size-3.5 transition-transform',

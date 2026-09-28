@@ -86,6 +86,14 @@ jobs:
           --set ON_ERROR_STOP=1 --username postgres --dbname postgres
           < supabase/tests/security.sql
 
+      - name: Verify scoring caches and canonical profile rules
+        run: |
+          docker cp supabase/tests supabase_db_jobpulse:/tmp/jobpulse-sql-tests
+          docker cp supabase/migrations supabase_db_jobpulse:/tmp/migrations
+          for test_sql in scoring canonical_scoring profile_scoring_rules salary_normalization salary_backfill schema_reconciliation account_deletion invitations; do
+            docker exec supabase_db_jobpulse psql --set ON_ERROR_STOP=1 --username postgres --dbname postgres -f "/tmp/jobpulse-sql-tests/$test_sql.sql"
+          done
+
       - name: Verify database type parity (TypeScript & Python)
         run: |
           make db-types
@@ -113,4 +121,4 @@ jobs:
           uv run --locked ruff format --check .
 
       - name: Run unit tests
-        run: cd services/scraper && uv run pytest
+        run: cd services/scraper && uv run --locked pytest

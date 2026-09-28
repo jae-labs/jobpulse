@@ -86,25 +86,19 @@ class PublicAuthorizedUsersUpdate(TypedDict):
 
 
 class PublicJobs(BaseModel):
-    ai_analysis: Optional[Json[Any]] = Field(alias="ai_analysis")
     company: str = Field(alias="company")
     dedupe_key: str = Field(alias="dedupe_key")
     description: str = Field(alias="description")
     employment_type: str = Field(alias="employment_type")
     first_seen_at: Optional[datetime.datetime] = Field(alias="first_seen_at")
-    fit_tier: str = Field(alias="fit_tier")
     id: int = Field(alias="id")
     last_seen_at: Optional[datetime.datetime] = Field(alias="last_seen_at")
     location: str = Field(alias="location")
-    matched_skills: Json[Any] = Field(alias="matched_skills")
-    relevance: int = Field(alias="relevance")
-    role_domain: Optional[str] = Field(alias="role_domain")
     salary_currency: Optional[str] = Field(alias="salary_currency")
     salary_max_amount: Optional[int] = Field(alias="salary_max_amount")
     salary_min_amount: Optional[int] = Field(alias="salary_min_amount")
     salary_period: Optional[str] = Field(alias="salary_period")
     salary_text: Optional[str] = Field(alias="salary_text")
-    seniority_level: Optional[str] = Field(alias="seniority_level")
     source: str = Field(alias="source")
     status: str = Field(alias="status")
     title: str = Field(alias="title")
@@ -112,25 +106,19 @@ class PublicJobs(BaseModel):
 
 
 class PublicJobsInsert(TypedDict):
-    ai_analysis: NotRequired[Annotated[Optional[Json[Any]], Field(alias="ai_analysis")]]
     company: Annotated[str, Field(alias="company")]
     dedupe_key: Annotated[str, Field(alias="dedupe_key")]
     description: Annotated[str, Field(alias="description")]
     employment_type: NotRequired[Annotated[str, Field(alias="employment_type")]]
     first_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="first_seen_at")]]
-    fit_tier: NotRequired[Annotated[str, Field(alias="fit_tier")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
-    matched_skills: NotRequired[Annotated[Json[Any], Field(alias="matched_skills")]]
-    relevance: NotRequired[Annotated[int, Field(alias="relevance")]]
-    role_domain: NotRequired[Annotated[Optional[str], Field(alias="role_domain")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]
     salary_min_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_min_amount")]]
     salary_period: NotRequired[Annotated[Optional[str], Field(alias="salary_period")]]
     salary_text: NotRequired[Annotated[Optional[str], Field(alias="salary_text")]]
-    seniority_level: NotRequired[Annotated[Optional[str], Field(alias="seniority_level")]]
     source: Annotated[str, Field(alias="source")]
     status: NotRequired[Annotated[str, Field(alias="status")]]
     title: Annotated[str, Field(alias="title")]
@@ -138,25 +126,19 @@ class PublicJobsInsert(TypedDict):
 
 
 class PublicJobsUpdate(TypedDict):
-    ai_analysis: NotRequired[Annotated[Optional[Json[Any]], Field(alias="ai_analysis")]]
     company: NotRequired[Annotated[str, Field(alias="company")]]
     dedupe_key: NotRequired[Annotated[str, Field(alias="dedupe_key")]]
     description: NotRequired[Annotated[str, Field(alias="description")]]
     employment_type: NotRequired[Annotated[str, Field(alias="employment_type")]]
     first_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="first_seen_at")]]
-    fit_tier: NotRequired[Annotated[str, Field(alias="fit_tier")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
-    matched_skills: NotRequired[Annotated[Json[Any], Field(alias="matched_skills")]]
-    relevance: NotRequired[Annotated[int, Field(alias="relevance")]]
-    role_domain: NotRequired[Annotated[Optional[str], Field(alias="role_domain")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]
     salary_min_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_min_amount")]]
     salary_period: NotRequired[Annotated[Optional[str], Field(alias="salary_period")]]
     salary_text: NotRequired[Annotated[Optional[str], Field(alias="salary_text")]]
-    seniority_level: NotRequired[Annotated[Optional[str], Field(alias="seniority_level")]]
     source: NotRequired[Annotated[str, Field(alias="source")]]
     status: NotRequired[Annotated[str, Field(alias="status")]]
     title: NotRequired[Annotated[str, Field(alias="title")]]
@@ -426,6 +408,9 @@ class PublicUserJobEvaluations(BaseModel):
     job_id: int = Field(alias="job_id")
     matched_skills: Json[Any] = Field(alias="matched_skills")
     relevance: int = Field(alias="relevance")
+    scoring_job_hash: Optional[str] = Field(alias="scoring_job_hash")
+    scoring_profile_hash: Optional[str] = Field(alias="scoring_profile_hash")
+    scoring_version: Optional[str] = Field(alias="scoring_version")
     user_id: uuid.UUID = Field(alias="user_id")
 
 
@@ -437,6 +422,9 @@ class PublicUserJobEvaluationsInsert(TypedDict):
     job_id: Annotated[int, Field(alias="job_id")]
     matched_skills: NotRequired[Annotated[Json[Any], Field(alias="matched_skills")]]
     relevance: NotRequired[Annotated[int, Field(alias="relevance")]]
+    scoring_job_hash: NotRequired[Annotated[Optional[str], Field(alias="scoring_job_hash")]]
+    scoring_profile_hash: NotRequired[Annotated[Optional[str], Field(alias="scoring_profile_hash")]]
+    scoring_version: NotRequired[Annotated[Optional[str], Field(alias="scoring_version")]]
     user_id: Annotated[uuid.UUID, Field(alias="user_id")]
 
 
@@ -448,4 +436,49 @@ class PublicUserJobEvaluationsUpdate(TypedDict):
     job_id: NotRequired[Annotated[int, Field(alias="job_id")]]
     matched_skills: NotRequired[Annotated[Json[Any], Field(alias="matched_skills")]]
     relevance: NotRequired[Annotated[int, Field(alias="relevance")]]
+    scoring_job_hash: NotRequired[Annotated[Optional[str], Field(alias="scoring_job_hash")]]
+    scoring_profile_hash: NotRequired[Annotated[Optional[str], Field(alias="scoring_profile_hash")]]
+    scoring_version: NotRequired[Annotated[Optional[str], Field(alias="scoring_version")]]
+    user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
+
+
+class PublicJobScoringEmbeddings(BaseModel):
+    content_hash: str = Field(alias="content_hash")
+    embedding: list[Any] = Field(alias="embedding")
+    job_id: int = Field(alias="job_id")
+    model_version: str = Field(alias="model_version")
+
+
+class PublicJobScoringEmbeddingsInsert(TypedDict):
+    content_hash: Annotated[str, Field(alias="content_hash")]
+    embedding: Annotated[list[Any], Field(alias="embedding")]
+    job_id: Annotated[int, Field(alias="job_id")]
+    model_version: Annotated[str, Field(alias="model_version")]
+
+
+class PublicJobScoringEmbeddingsUpdate(TypedDict):
+    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
+    embedding: NotRequired[Annotated[list[Any], Field(alias="embedding")]]
+    job_id: NotRequired[Annotated[int, Field(alias="job_id")]]
+    model_version: NotRequired[Annotated[str, Field(alias="model_version")]]
+
+
+class PublicProfileScoringEmbeddings(BaseModel):
+    content_hash: str = Field(alias="content_hash")
+    embedding: list[Any] = Field(alias="embedding")
+    model_version: str = Field(alias="model_version")
+    user_id: uuid.UUID = Field(alias="user_id")
+
+
+class PublicProfileScoringEmbeddingsInsert(TypedDict):
+    content_hash: Annotated[str, Field(alias="content_hash")]
+    embedding: Annotated[list[Any], Field(alias="embedding")]
+    model_version: Annotated[str, Field(alias="model_version")]
+    user_id: Annotated[uuid.UUID, Field(alias="user_id")]
+
+
+class PublicProfileScoringEmbeddingsUpdate(TypedDict):
+    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
+    embedding: NotRequired[Annotated[list[Any], Field(alias="embedding")]]
+    model_version: NotRequired[Annotated[str, Field(alias="model_version")]]
     user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]

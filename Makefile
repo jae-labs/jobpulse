@@ -40,26 +40,26 @@ backup: ## Save the linked production database and every Storage bucket.
 	bash scripts/backup-production.sh
 
 scrape: ## Run full scraper pipeline against Supabase.
-	@cd services/scraper && uv run python app.py
+	@cd services/scraper && uv run --locked python app.py
 
 scrape-test: ## Test scraping a specific employer; set NAME="Employer Name".
 	@test -n "$(NAME)" || (echo "Set NAME='Employer Name'." >&2; exit 2)
-	@cd services/scraper && uv run python app.py --employer "$(NAME)"
+	@cd services/scraper && uv run --locked python app.py --employer "$(NAME)"
 
 scrape-core: ## Run only core scrapers (universities, councils, PublicJobs).
-	@cd services/scraper && uv run python app.py --core-only
+	@cd services/scraper && uv run --locked python app.py --core-only
 
-scrape-rescore: ## Run candidate fit rescoring on Apple Metal GPU.
-	@cd services/scraper && uv run python app.py --rescore-only
+scrape-rescore: ## Refresh stale candidate scores using cached embeddings.
+	@cd services/scraper && uv run --locked python app.py --rescore-only
 
 scrape-validate: ## Validate websites.yaml configuration.
-	@cd services/scraper && uv run python app.py --validate-config
+	@cd services/scraper && uv run --locked python app.py --validate-config
 
 scrape-harvest: ## Scan candidate ATS boards for Ireland vacancies; set ARGS="--apply" to persist.
-	@cd services/scraper && uv run python tools/harvest_boards.py $(ARGS)
+	@cd services/scraper && uv run --locked python tools/harvest_boards.py $(ARGS)
 
 scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set ARGS="--apply" to persist.
-	@cd services/scraper && uv run python tools/sniff_ats.py $(ARGS)
+	@cd services/scraper && uv run --locked python tools/sniff_ats.py $(ARGS)
 
 scrape-lint: ## Run ruff lint & format check on scraper code.
 	@cd services/scraper && uv run --locked ruff check .
@@ -70,7 +70,7 @@ scrape-format: ## Auto-format and fix lint issues in scraper code.
 	@cd services/scraper && uv run --locked ruff check --fix .
 
 scrape-unit: ## Run scraper unit tests with pytest.
-	@cd services/scraper && uv run pytest
+	@cd services/scraper && uv run --locked pytest
 
 db-types: ## Generate TypeScript and Python types atomically from local Supabase schema.
 	npm run db:types

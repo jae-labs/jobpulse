@@ -8,7 +8,6 @@ from urllib.parse import urljoin
 
 from config.loader import PUBLICJOBS_URL
 from database.repository import save_job, update_source_status
-from engine.scoring import evaluate_match
 from engine.text_cleaner import clean_text
 from network.http_client import fetch_page
 
@@ -110,9 +109,6 @@ def sync_publicjobs() -> tuple[int, str]:
     found = 0
     for title, link in opportunities:
         title = html.unescape(re.sub(r"\s+", " ", title)).strip()
-        score, _ = evaluate_match(title, "")
-        if score == 0:
-            continue
         full_url = urljoin(PUBLICJOBS_URL, html.unescape(link))
         detail = extract_publicjobs_detail(full_url, title)
         company = detail.get("company") or "PublicJobs.ie"
@@ -136,8 +132,6 @@ def sync_publicjobs() -> tuple[int, str]:
         ):
             found += 1
 
-    detail_msg = (
-        f"Read {len(opportunities)} opportunities; kept {found} relevant opportunities with full specifications."
-    )
+    detail_msg = f"Read {len(opportunities)} opportunities; kept {found} opportunities with full specifications."
     update_source_status("PublicJobs.ie", "Synced", detail_msg, opportunities_found=found)
-    return found, f"PublicJobs.ie: {found} relevant opportunities added or updated with full specifications."
+    return found, f"PublicJobs.ie: {found} opportunities added or updated with full specifications."

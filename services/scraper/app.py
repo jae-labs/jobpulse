@@ -149,6 +149,13 @@ def main() -> None:
         prune_stale_jobs(retention_days=3)
         return
 
+    from database.scoring import verify_scoring_schema
+
+    try:
+        verify_scoring_schema()
+    except RuntimeError as exc:
+        parser.exit(1, f"{exc}\n")
+
     if args.rescore_only:
         from database.repository import rescore_all_jobs
 

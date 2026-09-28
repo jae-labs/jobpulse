@@ -28,6 +28,7 @@ make dev
 
 - `src/`: React application, queries, localization, and domain types.
 - `packages/ui/`: Reusable components and design tokens.
+- `shared/`: Scoring defaults consumed by the browser and Python.
 - `services/scraper/`: Python discovery, extraction, scoring, and ingestion.
 - `supabase/`: Migrations, seed data, SQL tests, and Edge Functions.
 - `docs/`: Architecture and operating guides.

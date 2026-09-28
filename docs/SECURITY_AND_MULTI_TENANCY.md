@@ -7,7 +7,7 @@ JobPulse enforces strict tenant isolation and data protection across the databas
 - **Invite-Only Access**: Enforced via `authorized_users`. Unbound invitations are claimed on first login and bound to `auth.users.id`.
 - **Authorization Guard**: Stored procedures and policies verify `public.is_authorized_user()`, requiring a confirmed Auth account and bound invite.
 - **Unauthenticated Blocking**: `anon` access to private tables and catalog RPCs is revoked.
-- **Error Masking & Information Leakage Prevention**: Access checks filter strictly by authenticated identity (`auth.uid()` or validated session email) to avoid multi-row collisions (PGRST116), and the UI displays sanitized, localized copy (`AccessDeniedView`) rather than exposing internal database error messages, schema names, or table keys.
+- **Error Masking & Information Leakage Prevention**: Access checks filter strictly by authenticated identity (`auth.uid()` and the authenticated session UUID) to avoid multi-row collisions (PGRST116), and the UI displays sanitized, localized copy (`AccessDeniedView`) rather than exposing internal database error messages, schema names, or table keys.
 
 ## 2. Row-Level Security (RLS)
 
@@ -15,6 +15,7 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 
 - **Tables**: `user_profiles`, `user_job_statuses`, `user_job_evaluations`, `user_cvs`, `user_cover_letters`.
 - **Ownership**: Every candidate row requires `user_id = auth.uid()`. Legacy `user_email` columns have been dropped.
+- **Scoring Isolation**: Candidate scores, explanations, and profile-dependent classifications exist only in `user_job_evaluations`; shared `jobs` rows never contain candidate analysis. RPCs and browser queries return an unassessed result when the current user has no evaluation. Embedding tables and the scoring-work RPC are accessible only to the service role.
 - **Write Triggers**: Database triggers automatically enforce `user_id = auth.uid()` from the active session on all writes.
 
 ## 3. Storage Security (Documents & Avatars)
@@ -23,6 +24,8 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
   - Private bucket; 10 MB per-file limit with allowed MIME types.
   - Storage paths are prefixed with `${auth.uid()}/`.
   - Object access requires an existing metadata row in `user_cvs` or `user_cover_letters` owned by `auth.uid()`.
+  - Document download/deletion APIs require a specific numeric document ID and scope metadata queries to the authenticated UUID.
+  - Object deletion precedes metadata deletion because Storage policies depend on that metadata; a Storage failure retains the record.
   - Downloads use short-lived signed URLs (60-second TTL) with `Content-Disposition: attachment` to stream directly to disk without browser memory buffering.
 - **`avatars` Bucket**:
   - Private bucket; 2 MB per-file limit.

@@ -1,21 +1,18 @@
-"""NLP & TF-IDF similarity calculation, role domain classification, and job match evaluation."""
+"""Batch semantic embeddings, token-frequency fallback, and deterministic candidate scoring."""
 
 from __future__ import annotations
 
-import hashlib
 import math
 import re
 import threading
-from collections import Counter
+from collections import Counter, OrderedDict
 from typing import Any
 
-from config.loader import load_profile
 from config.rules import DEFAULT_SCORING_RULES
-from engine.salary import extract_salary_from_context
 
 
 def compile_terms_to_regex(terms: list[str]) -> list[str]:
-    """Convert user-friendly terms/words into word-boundary regex patterns safely without ReDoS risk."""
+    """Escape plain matching terms; validate explicitly supplied regex patterns."""
     patterns = []
     for term in terms:
         clean = term.strip()
@@ -43,23 +40,27 @@ def get_scoring_rules(profile: dict[str, Any]) -> dict[str, Any]:
     Resolve the domain/seniority/disqualifier/weight rules to use for a profile.
     All rules, dealbreakers, and weights live on the Supabase user_profiles row.
     """
-    rules = profile.get("scoring_rules")
-    if isinstance(rules, dict) and rules:
-        return {
-            "negative_domains": rules.get("negative_domains") or DEFAULT_SCORING_RULES["negative_domains"],
-            "positive_domains": rules.get("positive_domains") or DEFAULT_SCORING_RULES["positive_domains"],
-            "seniority_tiers": rules.get("seniority_tiers") or DEFAULT_SCORING_RULES["seniority_tiers"],
-            "disqualifiers": rules.get("disqualifiers")
-            or rules.get("irish_language_patterns")
-            or DEFAULT_SCORING_RULES.get("disqualifiers", []),
-            "weights": rules.get("weights") or DEFAULT_SCORING_RULES.get("weights", {}),
-        }
-    return DEFAULT_SCORING_RULES
+    raw = profile.get("scoring_rules")
+    rules = raw if isinstance(raw, dict) else {}
+    resolved = {}
+    for key in ("positive_domains", "negative_domains", "seniority_tiers", "disqualifiers"):
+        value = rules.get(key)
+        resolved[key] = value if isinstance(value, list) else DEFAULT_SCORING_RULES[key]
+    weights = rules.get("weights")
+    resolved["weights"] = {
+        **DEFAULT_SCORING_RULES["weights"],
+        **(weights if isinstance(weights, dict) else {}),
+    }
+    return resolved
 
 
 _EMBEDDING_MODEL: Any = None
-_PROFILE_EMB_CACHE: dict[str, Any] = {}
+_DOCUMENT_EMB_CACHE: OrderedDict[str, list[float]] = OrderedDict()
+_DOCUMENT_CACHE_LIMIT = 4096
 _model_lock = threading.RLock()
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+# Bump when changing the model or the text preprocessing/encoding contract.
+EMBEDDING_MODEL_VERSION = "all-MiniLM-L6-v2:384:v1"
 
 
 def get_semantic_model() -> Any:
@@ -72,9 +73,11 @@ def get_semantic_model() -> Any:
                 from sentence_transformers import SentenceTransformer
 
                 device = "mps" if torch.backends.mps.is_available() else "cpu"
-                _EMBEDDING_MODEL = SentenceTransformer("all-MiniLM-L6-v2", device=device)
+                _EMBEDDING_MODEL = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
             except Exception as exc:
-                print(f"  [AI ENGINE] Notice: Local SentenceTransformer unavailable ({exc}). Using TF-IDF fallback.")
+                print(
+                    f"  [AI ENGINE] Notice: Local SentenceTransformer unavailable ({exc}). Using token-frequency fallback."
+                )
                 _EMBEDDING_MODEL = False
     return _EMBEDDING_MODEL
 
@@ -84,7 +87,7 @@ def tokenize_text(text: str) -> list[str]:
     return [w for w in re.findall(r"[a-z0-9]{2,}", text.lower()) if len(w) > 2]
 
 
-def compute_tf_idf_similarity(text_a: str, text_b: str) -> float:
+def compute_token_frequency_similarity(text_a: str, text_b: str) -> float:
     """Compute cosine similarity between token frequencies of two documents."""
     tokens_a = tokenize_text(text_a)
     tokens_b = tokenize_text(text_b)
@@ -103,48 +106,13 @@ def compute_tf_idf_similarity(text_a: str, text_b: str) -> float:
     return min(1.0, dot_product / (mag_a * mag_b))
 
 
-def compute_dense_semantic_similarity(text_a: str, text_b: str, text_a_key: str | None = None) -> float:
-    """
-    Compute dense vector cosine similarity using SentenceTransformers accelerated on Apple Metal (MPS).
-    Caches candidate profile embeddings across jobs to ensure high-throughput local inference.
-    """
-    if not text_a or not text_b:
-        return 0.0
-
-    model = get_semantic_model()
-    if not model:
-        return compute_tf_idf_similarity(text_a, text_b)
-
-    try:
-        import torch
-
-        with _model_lock:
-            if text_a_key and text_a_key in _PROFILE_EMB_CACHE:
-                emb_a = _PROFILE_EMB_CACHE[text_a_key]
-            else:
-                emb_a = model.encode(text_a, convert_to_tensor=True, show_progress_bar=False)
-                if text_a_key:
-                    _PROFILE_EMB_CACHE[text_a_key] = emb_a
-
-            # Keep access to the shared model serialized across crawler threads.
-            clean_target = text_b[:2500].strip()
-            emb_b = model.encode(clean_target, convert_to_tensor=True, show_progress_bar=False)
-
-        sim = float(torch.nn.functional.cosine_similarity(emb_a.unsqueeze(0), emb_b.unsqueeze(0)).item())
-        return max(0.0, min(1.0, sim))
-    except Exception:
-        return compute_tf_idf_similarity(text_a, text_b)
-
-
 def build_profile_document(profile: dict[str, Any]) -> str:
     """Construct dynamic NLP text corpus from candidate's profile fields."""
     parts = [
         profile.get("headline", ""),
         profile.get("current_role", ""),
-        profile.get("title", ""),
         profile.get("summary", ""),
         " ".join(profile.get("keywords", []) or []),
-        " ".join(profile.get("soft_skills", []) or []),
         " ".join(profile.get("tools_software", []) or []),
         " ".join(profile.get("languages", []) or []),
         profile.get("certifications", "") or "",
@@ -154,19 +122,72 @@ def build_profile_document(profile: dict[str, Any]) -> str:
     return doc if doc else "Professional career experience"
 
 
-def evaluate_job_ai(
+def build_job_document(job: dict[str, Any]) -> str:
+    """Preserve the existing semantic scorer's title/description preprocessing."""
+    return f"{job.get('title', '')}\n{job.get('description', '')}"[:2500].strip()
+
+
+def encode_documents(documents: list[str]) -> list[list[float]] | None:
+    """Encode each distinct document once in batches; never persist fallback vectors."""
+    if not documents:
+        return []
+    with _model_lock:
+        missing = list(dict.fromkeys(document for document in documents if document not in _DOCUMENT_EMB_CACHE))
+        generated = {}
+        if missing:
+            model = get_semantic_model()
+            if not model:
+                return None
+            try:
+                vectors = model.encode(
+                    missing,
+                    batch_size=32,
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                    show_progress_bar=False,
+                )
+                result = vectors.tolist()
+                if len(result) != len(missing) or any(
+                    len(vector) != 384
+                    or not all(math.isfinite(value) for value in vector)
+                    or not any(value != 0 for value in vector)
+                    for vector in result
+                ):
+                    raise ValueError("Invalid embedding output")
+                generated = dict(zip(missing, result, strict=True))
+            except Exception:
+                print("  [AI ENGINE] Batch encoding unavailable. Using token-frequency fallback for missing vectors.")
+                return None
+        output = [
+            generated[document] if document in generated else _DOCUMENT_EMB_CACHE[document] for document in documents
+        ]
+        for document, vector in zip(documents, output, strict=True):
+            _DOCUMENT_EMB_CACHE[document] = vector
+            _DOCUMENT_EMB_CACHE.move_to_end(document)
+        while len(_DOCUMENT_EMB_CACHE) > _DOCUMENT_CACHE_LIMIT:
+            _DOCUMENT_EMB_CACHE.popitem(last=False)
+        return output
+
+
+def evaluate_job(
     title: str,
     description: str = "",
     company: str = "",
     location: str = "",
     salary_text: str | None = None,
     employment_type: str = "",
-    profile: dict[str, Any] | None = None,
+    *,
+    salary_min_amount: float | None = None,
+    salary_max_amount: float | None = None,
+    salary_currency: str | None = None,
+    salary_period: str | None = None,
+    profile: dict[str, Any],
+    semantic_similarity: float,
 ) -> dict[str, Any]:
     """
     Score a job posting against a specific candidate profile based on:
     - User-defined weights and points from profile
-    - Apple Metal (MPS) dense semantic vector similarity
+    - Precomputed exact semantic similarity (pgvector or token-frequency fallback)
     - Profile-defined disqualifiers / dealbreakers (no hardcoded language exclusion)
     - Work authorization alignment
     - User's preferred work mode (Remote / Hybrid / On-site)
@@ -174,29 +195,29 @@ def evaluate_job_ai(
     - Seniority alignment and domain fit
     - Salary expectations (without imputed pay scales)
     """
-    active_profile = profile if profile is not None else load_profile()
-    min_salary = int(active_profile.get("minimum_salary", 50000))
+    active_profile = profile
+    min_salary = int(active_profile.get("salary_min") if active_profile.get("salary_min") is not None else 50000)
     keywords = list(active_profile.get("keywords", []) or [])
     rules = get_scoring_rules(active_profile)
 
     # Dynamic Scoring Weights from Candidate Profile
-    weights = rules.get("weights") or {}
-    domain_max = float(weights.get("domain", 25))
-    semantic_max = float(weights.get("semantic", 25))
-    competency_max = float(weights.get("competency", 20))
-    seniority_max = float(weights.get("seniority", 15))
-    salary_max = float(weights.get("salary", 15))
-    contract_max = float(weights.get("contract", 10))
-    target_role_bonus = float(weights.get("target_role_bonus", 6))
-    location_bonus = float(weights.get("location_bonus", 4))
-    work_mode_bonus = float(weights.get("work_mode_bonus", 2))
-    fixed_term_penalty = float(weights.get("fixed_term_penalty", 8))
-    disqualification_cap = int(weights.get("disqualification_cap", 10))
+    weights = rules["weights"]
+    domain_max = float(weights["domain"])
+    semantic_max = float(weights["semantic"])
+    competency_max = float(weights["competency"])
+    seniority_max = float(weights["seniority"])
+    salary_max = float(weights["salary"])
+    contract_max = float(weights["contract"])
+    target_role_bonus = float(weights["target_role_bonus"])
+    location_bonus = float(weights["location_bonus"])
+    work_mode_bonus = float(weights["work_mode_bonus"])
+    fixed_term_penalty = float(weights["fixed_term_penalty"])
+    disqualification_cap = int(weights["disqualification_cap"])
 
     negative_domains = rules["negative_domains"]
     positive_domains = rules["positive_domains"]
     seniority_tiers = rules["seniority_tiers"]
-    disqualifiers = rules.get("disqualifiers") or rules.get("irish_language_patterns") or []
+    disqualifiers = rules["disqualifiers"]
 
     full_text = f"{title} {description}".lower()
     title_l = title.lower()
@@ -216,22 +237,19 @@ def evaluate_job_ai(
             )
             break
 
-    # 2. Dynamic Dense Semantic Profile Similarity (Apple Silicon M4 Pro Metal GPU)
+    # 2. Precomputed exact semantic similarity
     candidate_doc = build_profile_document(active_profile)
-    profile_key = hashlib.sha256(candidate_doc.encode("utf-8")).hexdigest()
-    semantic_sim = compute_dense_semantic_similarity(candidate_doc, f"{title}\n{description}", text_a_key=profile_key)
+    semantic_sim = max(0.0, min(1.0, semantic_similarity))
 
     # 3. Check Negative Domains (skip penalizing if domain matches candidate's own background)
     candidate_profile_text = candidate_doc.lower()
     negative_domain_detected = None
     positive_title_patterns = [
-        pos_pat
-        for pos in positive_domains
-        for pos_pat in compile_terms_to_regex(pos.get("keywords") or pos.get("patterns") or [])
+        pos_pat for pos in positive_domains for pos_pat in compile_terms_to_regex(pos.get("keywords") or [])
     ]
     for domain in negative_domains:
         domain_name, reason = domain["name"], domain.get("reason", "Domain mismatch")
-        raw_terms = domain.get("keywords") or domain.get("patterns") or []
+        raw_terms = domain.get("keywords") or []
         patterns = compile_terms_to_regex(raw_terms)
 
         if any(re.search(pat, candidate_profile_text) for pat in patterns):
@@ -258,7 +276,7 @@ def evaluate_job_ai(
         for domain in positive_domains:
             domain_name = domain.get("name") or "Target Domain"
             note = (domain.get("note") or "").strip() or f"Domain alignment: {domain_name}"
-            raw_terms = domain.get("keywords") or domain.get("patterns") or []
+            raw_terms = domain.get("keywords") or []
             patterns = compile_terms_to_regex(raw_terms)
             match_found = False
             for pat in patterns:
@@ -291,7 +309,7 @@ def evaluate_job_ai(
                 tier_note = f"Seniority alignment: title aligns with '{tier_name}'."
             else:
                 tier_note = "Seniority alignment: title aligns with target experience tier."
-        raw_terms = tier.get("keywords") or tier.get("patterns") or []
+        raw_terms = tier.get("keywords") or []
         patterns = compile_terms_to_regex(raw_terms)
         if any(re.search(pat, title_l) for pat in patterns):
             seniority_tier = tier_name or "Seniority Match"
@@ -304,37 +322,26 @@ def evaluate_job_ai(
                     mismatch_flags.append(f"Seniority notice: {tier_note}")
             break
 
-    # 6. Salary & Compensation Evaluation (Advertised Only, No Imputation)
-    effective_salary = salary_text or extract_salary_from_context(description, title)
-    salary_fit = "Unadvertised / Market Competitive"
+    # 6. Use the same normalized advertised salary facts as catalog filters.
+    salary_fit = "Unadvertised / Neutral baseline"
     salary_score = 0.75
-
-    if effective_salary:
-        digits = re.findall(r"\d[\d,]*", effective_salary)
-        nums = []
-        for d in digits:
-            clean_num = int(d.replace(",", ""))
-            if clean_num < 1000:
-                clean_num *= 1000
-            nums.append(clean_num)
-
-        if nums:
-            max_num = max(nums)
-            min_num = min(nums)
-            if min_num >= min_salary or max_num >= min_salary:
-                salary_score = 1.0
-                salary_fit = f"{effective_salary} (Meets €{min_salary // 1000}k+ Target)"
-                if not negative_domain_detected and not disqualification_detected:
-                    alignments.append(
-                        f"Salary alignment: {effective_salary} satisfies your €{min_salary:,}+ benchmark."
-                    )
-            elif max_num < (min_salary * 0.8):
-                salary_score = 0.3
-                salary_fit = f"{effective_salary} (Below €{min_salary // 1000}k Target)"
-                mismatch_flags.append(f"Compensation below target threshold: {effective_salary}")
-            else:
-                salary_score = 0.6
-                salary_fit = f"{effective_salary} (Marginal Target)"
+    maximum_salary = salary_max_amount if salary_max_amount is not None else salary_min_amount
+    if maximum_salary is not None and salary_currency == "EUR" and salary_period == "annual":
+        effective_salary = salary_text or f"€{maximum_salary:,.0f} annually"
+        if maximum_salary >= min_salary:
+            salary_score = 1.0
+            salary_fit = f"{effective_salary} (Meets €{min_salary:,} Target)"
+            if not negative_domain_detected and not disqualification_detected:
+                alignments.append(f"Salary alignment: {effective_salary} satisfies your €{min_salary:,}+ benchmark.")
+        elif maximum_salary < min_salary * 0.8:
+            salary_score = 0.3
+            salary_fit = f"{effective_salary} (Below €{min_salary:,} Target)"
+            mismatch_flags.append(f"Compensation below target threshold: {effective_salary}")
+        else:
+            salary_score = 0.6
+            salary_fit = f"{effective_salary} (Marginal Target)"
+    elif salary_text:
+        salary_fit = "Advertised pay not comparable to an annual EUR target / Neutral baseline"
 
     # 7. Competency, Tools & Certifications Matching
     tools_software = list(active_profile.get("tools_software", []) or [])
@@ -373,14 +380,25 @@ def evaluate_job_ai(
         ]
     )
 
+    employment_preference = active_profile.get("employment") or "Permanent only"
+    prefers_permanent = employment_preference == "Permanent only"
+    prefers_contract = employment_preference == "Contract / Specified Purpose"
+    penalize_fixed_term = is_fixed_term and prefers_permanent
     contract_score = 0.85
-    if is_permanent and not is_fixed_term:
+    if employment_preference == "Open to all":
         contract_score = 1.0
-        if not negative_domain_detected and not disqualification_detected:
-            alignments.append("Contract alignment: Permanent / Indefinite position matches candidate preference.")
     elif is_fixed_term:
-        contract_score = 0.55
-        mismatch_flags.append("Contract notice: Fixed-term / temporary appointment (Permanent preferred).")
+        contract_score = 0.55 if prefers_permanent else 1.0
+        if prefers_permanent:
+            mismatch_flags.append("Contract mismatch: Fixed-term / temporary appointment; permanent roles preferred.")
+        elif not negative_domain_detected and not disqualification_detected:
+            alignments.append("Contract alignment: Fixed-term / contract role matches candidate preference.")
+    elif is_permanent:
+        contract_score = 0.55 if prefers_contract else 1.0
+        if prefers_contract:
+            mismatch_flags.append("Contract mismatch: Permanent appointment; contract roles preferred.")
+        elif not negative_domain_detected and not disqualification_detected:
+            alignments.append("Contract alignment: Permanent / indefinite role matches candidate preference.")
 
     # 9. Location Preference Evaluation
     full_loc_text = f"{location} {title} {company} {description}".lower()
@@ -473,7 +491,7 @@ def evaluate_job_ai(
             mismatch_flags.append(f"Work mode notice: Role appears on-site; candidate prefers {user_work_mode}.")
         if semantic_sim >= 0.65:
             alignments.append(
-                f"Dense AI semantic match ({round(semantic_sim * 100)}%): Role scope closely fits candidate background."
+                f"Semantic match ({round(semantic_sim * 100)}%): Role scope closely fits candidate background."
             )
         elif semantic_sim <= 0.22 and not matched_target_roles and not matched_skills:
             mismatch_flags.append(
@@ -501,7 +519,7 @@ def evaluate_job_ai(
         elif job_is_onsite and not any("on-site" in m or "onsite" in m for m in user_modes):
             raw_composite -= 4.0
 
-        if is_fixed_term:
+        if penalize_fixed_term:
             raw_composite -= fixed_term_penalty
 
         raw_composite -= auth_deduction
@@ -513,7 +531,6 @@ def evaluate_job_ai(
         fit_score = min(fit_score, disqualification_cap)
 
     # Determine Fit Tier & AI Indicator
-    score_emoji = "✨"
     if fit_score >= 75:
         fit_tier = "Strong Match"
     elif fit_score >= 55:
@@ -564,12 +581,12 @@ def evaluate_job_ai(
         "salary": round(float(salary_score), 3),
         "contract": round(float(contract_score), 3),
         "target_role": 1.0 if bool(matched_target_roles) else 0.0,
-        "location": 1.0 if bool(matched_user_loc) else 0.0,
+        "location": location_weight_factor,
         "work_mode": 1.0 if bool(matched_mode) else 0.0,
         "onsite_penalty": 1.0
         if bool(job_is_onsite and not any("on-site" in m or "onsite" in m for m in user_modes))
         else 0.0,
-        "fixed_term": 1.0 if bool(is_fixed_term) else 0.0,
+        "fixed_term": 1.0 if penalize_fixed_term else 0.0,
         "auth_deduction": round(float(auth_deduction), 2),
         "negative_domain": 1.0 if bool(negative_domain_detected) else 0.0,
         "disqualified": 1.0 if bool(disqualification_detected) else 0.0,
@@ -581,7 +598,6 @@ def evaluate_job_ai(
     return {
         "fit_score": fit_score,
         "fit_tier": fit_tier,
-        "score_emoji": score_emoji,
         "reasoning": reasoning,
         "role_domain": detected_domain,
         "seniority_level": seniority_tier,
@@ -592,9 +608,3 @@ def evaluate_job_ai(
         "semantic_similarity": round(semantic_sim, 3),
         "sub_scores": sub_scores,
     }
-
-
-def evaluate_match(title: str, description: str = "") -> tuple[int, list[str]]:
-    """Legacy helper returning (fit_score, matched_skills)."""
-    res = evaluate_job_ai(title=title, description=description)
-    return res["fit_score"], res["matched_skills"]

@@ -30,7 +30,6 @@ export function withMatchingTerms(profile: Profile, nextTags: string[]): Profile
       positive_domains: updateRuleTags(existingRules, terms, (tag) => ({
         name: tag,
         keywords: [tag],
-        patterns: [tag],
         note: '',
       })),
     },

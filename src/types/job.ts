@@ -8,6 +8,7 @@ export const STATUS_LIST = [
 
 export type JobStatus = (typeof STATUS_LIST)[number];
 
+/** Normalized scoring factors; auth_deduction is an absolute point deduction. */
 export interface SubScores {
   domain: number;
   semantic: number;
@@ -28,7 +29,6 @@ export interface SubScores {
 export interface AiAnalysis {
   fit_score: number;
   fit_tier: string;
-  score_emoji?: string;
   reasoning?: string;
   role_domain: string;
   seniority_level: string;
@@ -95,14 +95,12 @@ export interface ScoringDomainRule {
   name: string;
   keywords: string[];
   note: string;
-  patterns?: string[];
 }
 
 export interface NegativeDomainRule {
   name: string;
   keywords: string[];
   reason: string;
-  patterns?: string[];
 }
 
 export interface SeniorityTierRule {
@@ -110,7 +108,6 @@ export interface SeniorityTierRule {
   keywords: string[];
   score_weight: number;
   note: string;
-  patterns?: string[];
 }
 
 export interface ScoringRules {
@@ -119,7 +116,6 @@ export interface ScoringRules {
   seniority_tiers: SeniorityTierRule[];
   disqualifiers?: string[];
   weights?: ScoringWeights;
-  irish_language_patterns?: string[];
 }
 
 export interface Profile {
@@ -129,7 +125,6 @@ export interface Profile {
   headline?: string;
   location: string;
   salary_min: number;
-  minimum_salary?: number;
   employment?: string;
   education?: string;
   certifications?: string;
@@ -146,7 +141,6 @@ export interface Profile {
   tools_software?: string[];
   summary: string;
   keywords: string[];
-  excluded_terms?: string[];
   scoring_rules?: ScoringRules;
   avatar_url?: string;
 }

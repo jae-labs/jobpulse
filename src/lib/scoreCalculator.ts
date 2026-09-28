@@ -10,13 +10,8 @@ export function previewWeightedScore(
   if (!subScores) return job.relevance;
 
   const coreKeys = ['domain', 'semantic', 'competency', 'seniority', 'salary', 'contract'] as const;
-  const pointBasedCore = coreKeys.some((key) => subScores[key] > 1);
-  const pointBasedBonuses = [subScores.target_role, subScores.location, subScores.work_mode].some((value) => value > 1);
-  const share = (value: number, baseline: number, pointBased: boolean) =>
-    pointBased ? (baseline > 0 ? value / baseline : Number(value > 0)) : value;
-
   let delta = coreKeys.reduce(
-    (sum, key) => sum + share(subScores[key], baselineWeights[key], pointBasedCore) * (weights[key] - baselineWeights[key]),
+    (sum, key) => sum + subScores[key] * (weights[key] - baselineWeights[key]),
     0
   );
 
@@ -26,13 +21,13 @@ export function previewWeightedScore(
     ['work_mode', 'work_mode_bonus'],
   ] as const;
   for (const [scoreKey, weightKey] of bonuses) {
-    delta += share(subScores[scoreKey], baselineWeights[weightKey], pointBasedBonuses)
+    delta += subScores[scoreKey]
       * (weights[weightKey] - baselineWeights[weightKey]);
   }
 
   const baselinePenalty = baselineWeights.fixed_term_penalty ?? 0;
   const currentPenalty = weights.fixed_term_penalty ?? 0;
-  delta -= share(subScores.fixed_term, baselinePenalty, subScores.fixed_term > 1)
+  delta -= subScores.fixed_term
     * (currentPenalty - baselinePenalty);
 
   // The negative-domain path is capped separately from the normal weighted score.

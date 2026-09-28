@@ -1,30 +1,22 @@
-"""Salary scale parsing and context extraction."""
+"""Extract advertised salary text; numeric normalization belongs to Postgres."""
 
 from __future__ import annotations
 
 import re
 
+_AMOUNT = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*[kK]?"
+_PERIOD = r"(?:\s*(?:(?:per|a)\s+(?:annum|year|month|week|day|hour)|p\.a\.|pa\b|/(?:year|yr|month|mo|week|day|hour|hr)|(?:annually|annual|monthly|weekly|daily|hourly)\b))?"
+_RANGE = re.compile(rf"[€£$]\s*{_AMOUNT}\s*(?:-|–|to)\s*[€£$]?\s*{_AMOUNT}{_PERIOD}", re.IGNORECASE)
+_SINGLE = re.compile(rf"(?:salary|remuneration|pay|compensation)[:\s]*([€£$]\s*{_AMOUNT}{_PERIOD})", re.IGNORECASE)
+
 
 def extract_salary_from_context(context_text: str, title: str = "") -> str | None:
-    """Extract advertised salary range from context text. Returns None if unadvertised."""
+    """Preserve currency, decimal amounts and pay period from source text."""
     full_text = f"{title} {context_text}"
-    m_range = re.search(
-        r"([€£$]\s*\d{1,3}(?:,\d{3})*(?:\s*[kK])?\s*(?:-|–|to)\s*[€£$]?\s*\d{1,3}(?:,\d{3})*(?:\s*[kK])?(?:\s*(?:per\s+annum|p\.a\.|pa|\/year|\/yr))?)",
-        full_text,
-        re.IGNORECASE,
-    )
-    if m_range:
-        sal = re.sub(r"\s+", " ", m_range.group(1)).strip()
-        digits = re.sub(r"[^\d]", "", sal)
-        if digits and (int(digits[:2]) >= 20 or len(digits) >= 5 or "k" in sal.lower()):
-            return sal
-
-    m_single = re.search(
-        r"(?:salary|remuneration|pay|compensation)[:\s]*([€£$]\s*\d{1,3}(?:,\d{3})+(?:\s*(?:per\s+annum|p\.a\.|pa|\/year|\/yr))?)",
-        full_text,
-        re.IGNORECASE,
-    )
-    if m_single:
-        return re.sub(r"\s+", " ", m_single.group(1)).strip()
-
+    match = _RANGE.search(full_text)
+    if match:
+        return re.sub(r"\s+", " ", match.group()).strip()
+    match = _SINGLE.search(full_text)
+    if match:
+        return re.sub(r"\s+", " ", match.group(1)).strip()
     return None

@@ -27,7 +27,6 @@ interface InvitationsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserEmail?: string | null;
-  currentUserRole?: string | null;
 }
 
 export const InvitationsModal: React.FC<InvitationsModalProps> = ({

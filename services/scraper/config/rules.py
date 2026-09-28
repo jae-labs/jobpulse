@@ -1,39 +1,13 @@
-"""Domain rules, seniority tiers, salary scales, and regex patterns for filtering and scoring."""
+"""Shared scoring defaults and vacancy validation patterns."""
 
 from __future__ import annotations
 
-# Default scoring rules used only when a user profile has no `scoring_rules`
-# set in Supabase yet (see engine/scoring.py: get_scoring_rules). Domain and
-# seniority rules are candidate-specific, so they live entirely on each
-# user's profile (editable in the Profile UI) rather than hardcoded here.
-# scoring.py already falls back to sane neutral defaults (mid-level seniority,
-# neutral domain score) when these lists are empty.
-DEFAULT_NEGATIVE_DOMAINS: list[dict] = []
-DEFAULT_POSITIVE_DOMAINS: list[dict] = []
-DEFAULT_SENIORITY_TIERS: list[dict] = []
-DEFAULT_DISQUALIFIERS: list[str] = []
+import json
+from pathlib import Path
 
-DEFAULT_SCORING_WEIGHTS: dict[str, float | int] = {
-    "domain": 25,
-    "semantic": 25,
-    "competency": 20,
-    "seniority": 15,
-    "salary": 15,
-    "contract": 10,
-    "target_role_bonus": 6,
-    "location_bonus": 4,
-    "work_mode_bonus": 2,
-    "fixed_term_penalty": 8,
-    "disqualification_cap": 10,
-}
-
-DEFAULT_SCORING_RULES: dict = {
-    "negative_domains": DEFAULT_NEGATIVE_DOMAINS,
-    "positive_domains": DEFAULT_POSITIVE_DOMAINS,
-    "seniority_tiers": DEFAULT_SENIORITY_TIERS,
-    "disqualifiers": DEFAULT_DISQUALIFIERS,
-    "weights": DEFAULT_SCORING_WEIGHTS,
-}
+DEFAULT_SCORING_RULES: dict = json.loads(
+    (Path(__file__).resolve().parents[3] / "shared" / "scoringDefaults.json").read_text(encoding="utf-8")
+)
 
 
 GENERIC_NON_JOB_TITLES: set[str] = {

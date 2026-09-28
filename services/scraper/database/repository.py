@@ -16,8 +16,15 @@ from config.loader import (
     get_employers_tuples,
 )
 from database.client import get_supabase, retry_supabase, utc_now
+from database.scoring import (
+    SCORING_BATCH_SIZE,
+    get_scoring_work,
+    job_scoring_input,
+    prepare_embeddings,
+    profile_scoring_input,
+)
 from engine.salary import extract_salary_from_context
-from engine.scoring import evaluate_job_ai
+from engine.scoring import build_job_document, build_profile_document, compute_token_frequency_similarity, evaluate_job
 from engine.text_cleaner import clean_description_text, normalize_location
 from engine.validators import is_valid_job_title, is_valid_location
 
@@ -111,9 +118,7 @@ def _sanitize_val(val: Any) -> Any:
     return val
 
 
-def save_job(job: dict[str, Any], profile: dict[str, Any] | None = None) -> bool:
-    """Validate, score, and upsert a discovered opportunity."""
-
+def _is_ingestable_job(job: dict[str, Any]) -> bool:
     if not is_valid_job_title(job.get("title", ""), job.get("url", "")):
         return False
     if not is_valid_location(job.get("location", ""), job.get("title", ""), job.get("url", "")):
@@ -130,6 +135,15 @@ def save_job(job: dict[str, Any], profile: dict[str, Any] | None = None) -> bool
             "no longer accepting applications",
         ]
     ):
+        return False
+
+    return True
+
+
+def save_job(job: dict[str, Any]) -> bool:
+    """Ingest a shared vacancy, then refresh its candidate evaluations."""
+
+    if not _is_ingestable_job(job):
         return False
 
     # Deep Spec Enrichment: if description is a stub or short, fetch full spec from source URL
@@ -152,60 +166,11 @@ def save_job(job: dict[str, Any], profile: dict[str, Any] | None = None) -> bool
         except Exception:
             pass
 
-    clean_desc = clean_description_text(job.get("description", ""), job.get("company", ""), job.get("title", ""))
-    job["description"] = clean_desc
-    salary_text = job.get("salary_text") or extract_salary_from_context(
-        job.get("description", ""), job.get("title", "")
-    )
-
-    ai_eval = evaluate_job_ai(
-        title=job["title"],
-        description=job["description"],
-        company=job.get("company", ""),
-        location=job.get("location", ""),
-        salary_text=salary_text,
-        employment_type=job.get("employment_type", ""),
-        profile=profile,
-    )
-
-    key = normalized_key(
-        job["company"], job["title"], job.get("url", ""), job.get("location", ""), job.get("employment_type", "")
-    )
-    now = utc_now()
-
-    payload = {
-        "dedupe_key": key,
-        "title": _sanitize_val(job["title"]),
-        "company": _sanitize_val(job["company"]),
-        "location": _sanitize_val(normalize_location(job.get("location", ""))),
-        "employment_type": _sanitize_val(job.get("employment_type") or "Not specified"),
-        "salary_text": _sanitize_val(salary_text),
-        "description": _sanitize_val(job["description"]),
-        "url": _sanitize_val(job["url"]),
-        "source": _sanitize_val(job["source"]),
-        "relevance": ai_eval.get("fit_score", 0),
-        "matched_skills": _sanitize_val(ai_eval.get("matched_skills", [])),
-        "fit_tier": _sanitize_val(ai_eval.get("fit_tier", "Unassessed")),
-        "role_domain": _sanitize_val(ai_eval.get("role_domain", "General")),
-        "seniority_level": _sanitize_val(ai_eval.get("seniority_level", "Not specified")),
-        "ai_analysis": _sanitize_val(ai_eval),
-        "last_seen_at": now,
-        "status": _sanitize_val(job.get("status", "new")),
-    }
-
-    try:
-        supabase = get_supabase()
-        res = retry_supabase(lambda: supabase.table("jobs").upsert(payload, on_conflict="dedupe_key").execute())
-        if res.data:
-            evaluate_and_save_user_evaluations(res.data)
-        return bool(res.data)
-    except Exception as exc:
-        print(f"  [SUPABASE] Warning: Failed to upsert job '{job.get('title')}': {exc}")
-        return False
+    return save_jobs_batch([job]) > 0
 
 
-def save_jobs_batch(jobs: list[dict[str, Any]], profile: dict[str, Any] | None = None) -> int:
-    """Validate, score, upsert, and evaluate opportunities in bounded batches."""
+def save_jobs_batch(jobs: list[dict[str, Any]]) -> int:
+    """Validate and ingest shared vacancy facts, then refresh candidate evaluations."""
     if not jobs:
         return 0
 
@@ -213,36 +178,11 @@ def save_jobs_batch(jobs: list[dict[str, Any]], profile: dict[str, Any] | None =
     now = utc_now()
 
     for job in jobs:
-        if not is_valid_job_title(job.get("title", ""), job.get("url", "")):
-            continue
-        if not is_valid_location(job.get("location", ""), job.get("title", ""), job.get("url", "")):
-            continue
-
-        desc_l = (job.get("description") or "").lower()
-        if any(
-            p in desc_l
-            for p in [
-                "position has been filled",
-                "job is no longer available",
-                "position has expired",
-                "job is closed",
-                "no longer accepting applications",
-            ]
-        ):
+        if not _is_ingestable_job(job):
             continue
 
         clean_desc = clean_description_text(job.get("description", ""), job.get("company", ""), job.get("title", ""))
         salary_text = job.get("salary_text") or extract_salary_from_context(clean_desc, job.get("title", ""))
-
-        ai_eval = evaluate_job_ai(
-            title=job["title"],
-            description=clean_desc,
-            company=job.get("company", ""),
-            location=job.get("location", ""),
-            salary_text=salary_text,
-            employment_type=job.get("employment_type", ""),
-            profile=profile,
-        )
 
         key = normalized_key(
             job["company"], job["title"], job.get("url", ""), job.get("location", ""), job.get("employment_type", "")
@@ -258,12 +198,6 @@ def save_jobs_batch(jobs: list[dict[str, Any]], profile: dict[str, Any] | None =
                 "description": _sanitize_val(clean_desc),
                 "url": _sanitize_val(job["url"]),
                 "source": _sanitize_val(job["source"]),
-                "relevance": ai_eval.get("fit_score", 0),
-                "matched_skills": _sanitize_val(ai_eval.get("matched_skills", [])),
-                "fit_tier": _sanitize_val(ai_eval.get("fit_tier", "Unassessed")),
-                "role_domain": _sanitize_val(ai_eval.get("role_domain", "General")),
-                "seniority_level": _sanitize_val(ai_eval.get("seniority_level", "Not specified")),
-                "ai_analysis": _sanitize_val(ai_eval),
                 "last_seen_at": now,
                 "status": _sanitize_val(job.get("status", "new")),
             }
@@ -282,22 +216,29 @@ def save_jobs_batch(jobs: list[dict[str, Any]], profile: dict[str, Any] | None =
     for i in range(0, len(valid_payloads), batch_size):
         chunk = valid_payloads[i : i + batch_size]
         try:
-            res = retry_supabase(lambda c=chunk: supabase.table("jobs").upsert(c, on_conflict="dedupe_key").execute())
-            if res.data:
-                added += len(res.data)
-                evaluate_and_save_user_evaluations(res.data, profiles=user_profiles)
+            persisted = (
+                retry_supabase(
+                    lambda c=chunk: supabase.table("jobs").upsert(c, on_conflict="dedupe_key").execute()
+                ).data
+                or []
+            )
         except Exception as exc:
-            print(f"  [SUPABASE] Batch error: {exc}. Falling back to single inserts...")
+            print(f"  [SUPABASE] Batch write error: {exc}. Falling back to single inserts...")
+            persisted = []
             for item in chunk:
                 try:
-                    s_res = retry_supabase(
+                    response = retry_supabase(
                         lambda it=item: supabase.table("jobs").upsert(it, on_conflict="dedupe_key").execute()
                     )
-                    if s_res.data:
-                        added += 1
-                        evaluate_and_save_user_evaluations(s_res.data, profiles=user_profiles)
-                except Exception:
-                    pass
+                    persisted.extend(response.data or [])
+                except Exception as write_error:
+                    print(f"  [SUPABASE] Single job write failed: {write_error}")
+
+        if persisted:
+            added += len(persisted)
+            # Scoring failures must propagate. Retrying already-persisted jobs as
+            # insert failures duplicates writes and hides missing evaluations.
+            evaluate_and_save_user_evaluations(persisted, profiles=user_profiles)
 
     return added
 
@@ -306,16 +247,26 @@ def get_all_user_profiles() -> list[dict[str, Any]]:
     """Fetch all user profiles from Supabase user_profiles table."""
     supabase = get_supabase()
     try:
-        res = retry_supabase(lambda: supabase.table("user_profiles").select("*").execute())
-        return res.data or []
+        profiles = []
+        start = 0
+        while True:
+            res = retry_supabase(
+                lambda offset=start: (
+                    supabase.table("user_profiles").select("*").order("id").range(offset, offset + 499).execute()
+                )
+            )
+            profiles.extend(res.data or [])
+            if len(res.data or []) < 500:
+                return profiles
+            start += 500
     except Exception as exc:
-        print(f"  [SUPABASE] Warning: Could not fetch user_profiles: {exc}")
-        return []
+        raise RuntimeError("Could not fetch candidate profiles; scoring cannot safely continue.") from exc
 
 
 def evaluate_and_save_user_evaluations(
     jobs: list[dict[str, Any]],
     profiles: list[dict[str, Any]] | None = None,
+    prepare_profile_vectors: bool = True,
 ) -> int:
     """
     Evaluate jobs against each user profile from Supabase and upsert
@@ -329,72 +280,98 @@ def evaluate_and_save_user_evaluations(
     if not user_profiles:
         return 0
 
-    eval_payloads = []
-    now = utc_now()
-
+    resolved_jobs = []
     for job in jobs:
-        job_id = job.get("id")
-        if not job_id:
-            dedupe_key = job.get("dedupe_key")
-            if dedupe_key:
-                try:
-                    lookup = retry_supabase(
-                        lambda dk=dedupe_key: (
-                            supabase.table("jobs").select("id").eq("dedupe_key", dk).limit(1).execute()
-                        )
-                    )
-                    if lookup.data:
-                        job_id = lookup.data[0]["id"]
-                except Exception:
-                    pass
-        if not job_id:
-            continue
-
-        clean_desc = job.get("description", "")
-        salary_text = job.get("salary_text") or extract_salary_from_context(clean_desc, job.get("title", ""))
-
-        for user_profile in user_profiles:
-            user_id = user_profile.get("user_id")
-            if not user_id:
+        if not job.get("id"):
+            key = job.get("dedupe_key")
+            if not key:
                 continue
-
-            ai_eval = evaluate_job_ai(
-                title=job.get("title", ""),
-                description=clean_desc,
-                company=job.get("company", ""),
-                location=job.get("location", ""),
-                salary_text=salary_text,
-                employment_type=job.get("employment_type", ""),
-                profile=user_profile,
+            lookup = retry_supabase(
+                lambda k=key: supabase.table("jobs").select("id").eq("dedupe_key", k).limit(1).execute()
             )
-
-            eval_payloads.append(
-                {
-                    "user_id": user_id,
-                    "job_id": job_id,
-                    "relevance": ai_eval.get("fit_score", 0),
-                    "fit_tier": _sanitize_val(ai_eval.get("fit_tier", "Unassessed")),
-                    "matched_skills": _sanitize_val(ai_eval.get("matched_skills", [])),
-                    "ai_analysis": _sanitize_val(ai_eval),
-                    "calculated_at": now,
-                }
-            )
-
-    if not eval_payloads:
+            if not lookup.data:
+                continue
+            job = {**job, "id": lookup.data[0]["id"]}
+        resolved_jobs.append(job)
+    user_profiles = [profile for profile in user_profiles if profile.get("user_id")]
+    if not resolved_jobs or not user_profiles:
         return 0
 
-    batch_size = 50
+    prepare_embeddings(
+        "job_scoring_embeddings", "job_id", {job["id"]: build_job_document(job) for job in resolved_jobs}
+    )
+    if prepare_profile_vectors:
+        prepare_embeddings(
+            "profile_scoring_embeddings",
+            "user_id",
+            {profile["user_id"]: build_profile_document(profile) for profile in user_profiles},
+        )
+    now = utc_now()
     saved_count = 0
-    for i in range(0, len(eval_payloads), batch_size):
-        chunk = eval_payloads[i : i + batch_size]
-        try:
-            res = retry_supabase(
-                lambda c=chunk: supabase.table("user_job_evaluations").upsert(c, on_conflict="user_id,job_id").execute()
-            )
-            if res.data:
-                saved_count += len(res.data)
-        except Exception as exc:
-            print(f"  [SUPABASE] Warning: Failed to upsert user_job_evaluations: {exc}")
+    for job_start in range(0, len(resolved_jobs), SCORING_BATCH_SIZE):
+        job_chunk = resolved_jobs[job_start : job_start + SCORING_BATCH_SIZE]
+        jobs_by_id = {job["id"]: job for job in job_chunk}
+        job_hashes = {job["id"]: job_scoring_input(job)["content_hash"] for job in job_chunk}
+        for profile_start in range(0, len(user_profiles), SCORING_BATCH_SIZE):
+            profile_chunk = user_profiles[profile_start : profile_start + SCORING_BATCH_SIZE]
+            profiles_by_id = {profile["user_id"]: profile for profile in profile_chunk}
+            profile_hashes = {
+                profile["user_id"]: profile_scoring_input(profile)["content_hash"] for profile in profile_chunk
+            }
+            work = get_scoring_work(job_chunk, profile_chunk)
+            eval_payloads = []
+            for pair in work:
+                job = jobs_by_id[pair["job_id"]]
+                profile = profiles_by_id[pair["user_id"]]
+                similarity = pair["semantic_similarity"]
+                if similarity is None:
+                    # Preserve the original fallback's full (untruncated) text.
+                    similarity = compute_token_frequency_similarity(
+                        build_profile_document(profile), f"{job.get('title', '')}\n{job.get('description', '')}"
+                    )
+                ai_eval = evaluate_job(
+                    title=job.get("title", ""),
+                    description=job.get("description", ""),
+                    company=job.get("company", ""),
+                    location=job.get("location", ""),
+                    salary_text=job.get("salary_text"),
+                    salary_min_amount=job.get("salary_min_amount"),
+                    salary_max_amount=job.get("salary_max_amount"),
+                    salary_currency=job.get("salary_currency"),
+                    salary_period=job.get("salary_period"),
+                    employment_type=job.get("employment_type", ""),
+                    profile=profile,
+                    semantic_similarity=float(similarity),
+                )
+                eval_payloads.append(
+                    {
+                        "user_id": pair["user_id"],
+                        "job_id": pair["job_id"],
+                        "relevance": ai_eval.get("fit_score", 0),
+                        "fit_tier": _sanitize_val(ai_eval.get("fit_tier", "Unassessed")),
+                        "matched_skills": _sanitize_val(ai_eval.get("matched_skills", [])),
+                        "ai_analysis": _sanitize_val(ai_eval),
+                        "calculated_at": now,
+                        "scoring_job_hash": job_hashes[pair["job_id"]],
+                        "scoring_profile_hash": profile_hashes[pair["user_id"]],
+                        "scoring_version": pair["scoring_version"],
+                    }
+                )
+                if len(eval_payloads) == 500:
+                    retry_supabase(
+                        lambda p=eval_payloads: (
+                            supabase.table("user_job_evaluations").upsert(p, on_conflict="user_id,job_id").execute()
+                        )
+                    )
+                    saved_count += len(eval_payloads)
+                    eval_payloads = []
+            if eval_payloads:
+                retry_supabase(
+                    lambda p=eval_payloads: (
+                        supabase.table("user_job_evaluations").upsert(p, on_conflict="user_id,job_id").execute()
+                    )
+                )
+                saved_count += len(eval_payloads)
 
     return saved_count
 
@@ -411,8 +388,12 @@ def rescore_all_jobs(user_id: str | None = None) -> int:
         return 0
 
     print(f"  [SUPABASE] Rescoring jobs for {len(profiles)} user profile(s)...")
-    for p in profiles:
-        print(f"    - {p.get('name', 'User')} ({p.get('user_id')}) : {p.get('headline')}")
+
+    prepare_embeddings(
+        "profile_scoring_embeddings",
+        "user_id",
+        {profile["user_id"]: build_profile_document(profile) for profile in profiles},
+    )
 
     page_size = 100
     start = 0
@@ -420,14 +401,17 @@ def rescore_all_jobs(user_id: str | None = None) -> int:
     while True:
         res = (
             supabase.table("jobs")
-            .select("id, dedupe_key, title, description, company, location, salary_text, employment_type")
+            .select(
+                "id, dedupe_key, title, description, company, location, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, employment_type"
+            )
+            .order("id")
             .range(start, start + page_size - 1)
             .execute()
         )
         jobs = res.data or []
         if not jobs:
             break
-        total_evaluated += evaluate_and_save_user_evaluations(jobs, profiles=profiles)
+        total_evaluated += evaluate_and_save_user_evaluations(jobs, profiles=profiles, prepare_profile_vectors=False)
         start += page_size
         if len(jobs) < page_size:
             break
