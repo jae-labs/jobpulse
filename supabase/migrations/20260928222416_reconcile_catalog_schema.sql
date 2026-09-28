@@ -1,8 +1,19 @@
+-- Hosted extensions can drift independently of migration history.
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
+
 -- Restore search/recency indexes missing from hosted deployments.
 CREATE INDEX IF NOT EXISTS idx_jobs_location ON public.jobs (location);
 CREATE INDEX IF NOT EXISTS idx_jobs_last_seen_at ON public.jobs (last_seen_at DESC);
-CREATE INDEX IF NOT EXISTS idx_jobs_title_trgm ON public.jobs USING gin (title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_jobs_company_trgm ON public.jobs USING gin (company gin_trgm_ops);
+DO $$
+DECLARE extension_schema text;
+BEGIN
+  SELECT n.nspname INTO STRICT extension_schema
+  FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace
+  WHERE e.extname='pg_trgm';
+  EXECUTE format('CREATE INDEX IF NOT EXISTS idx_jobs_title_trgm ON public.jobs USING gin (title %I.gin_trgm_ops)', extension_schema);
+  EXECUTE format('CREATE INDEX IF NOT EXISTS idx_jobs_company_trgm ON public.jobs USING gin (company %I.gin_trgm_ops)', extension_schema);
+END;
+$$;
 
 -- Candidate rankings are always scoped to one user, never catalog-wide.
 DROP INDEX IF EXISTS public.idx_user_job_evaluations_relevance;
