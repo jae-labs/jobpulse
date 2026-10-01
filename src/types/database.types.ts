@@ -1,0 +1,783 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      authorized_users: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string
+          id: number
+          invite_code: string | null
+          invited_by: string | null
+          role: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: number
+          invite_code?: string | null
+          invited_by?: string | null
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: number
+          invite_code?: string | null
+          invited_by?: string | null
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      candidate_scoring_work: {
+        Row: {
+          attempts: number
+          catalog_generation: number
+          completed_catalog_generation: number
+          completed_fingerprint: string
+          completed_revision: number
+          cursor: number
+          desired_revision: number
+          fingerprint: string
+          job_ids: number[] | null
+          last_error_code: string | null
+          needs_embedding: boolean
+          retry_at: string
+          shortlist_ids: number[] | null
+          state: string
+          top_k: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          catalog_generation?: number
+          completed_catalog_generation?: number
+          completed_fingerprint?: string
+          completed_revision?: number
+          cursor?: number
+          desired_revision?: number
+          fingerprint: string
+          job_ids?: number[] | null
+          last_error_code?: string | null
+          needs_embedding?: boolean
+          retry_at?: string
+          shortlist_ids?: number[] | null
+          state?: string
+          top_k?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          catalog_generation?: number
+          completed_catalog_generation?: number
+          completed_fingerprint?: string
+          completed_revision?: number
+          cursor?: number
+          desired_revision?: number
+          fingerprint?: string
+          job_ids?: number[] | null
+          last_error_code?: string | null
+          needs_embedding?: boolean
+          retry_at?: string
+          shortlist_ids?: number[] | null
+          state?: string
+          top_k?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employers: {
+        Row: {
+          careers_url: string
+          discovered_jobs_url: string | null
+          id: number
+          last_scraped_at: string | null
+          name: string
+          opportunities_found: number | null
+          priority: number
+          sector: string
+          status: string | null
+        }
+        Insert: {
+          careers_url: string
+          discovered_jobs_url?: string | null
+          id?: number
+          last_scraped_at?: string | null
+          name: string
+          opportunities_found?: number | null
+          priority?: number
+          sector: string
+          status?: string | null
+        }
+        Update: {
+          careers_url?: string
+          discovered_jobs_url?: string | null
+          id?: number
+          last_scraped_at?: string | null
+          name?: string
+          opportunities_found?: number | null
+          priority?: number
+          sector?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      job_scoring_embeddings: {
+        Row: {
+          content_hash: string
+          embedding: string
+          job_id: number
+          model_version: string
+        }
+        Insert: {
+          content_hash: string
+          embedding: string
+          job_id: number
+          model_version: string
+        }
+        Update: {
+          content_hash?: string
+          embedding?: string
+          job_id?: number
+          model_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_scoring_embeddings_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          company: string
+          dedupe_key: string
+          description: string
+          employment_type: string
+          first_seen_at: string | null
+          id: number
+          last_seen_at: string | null
+          location: string
+          salary_currency: string | null
+          salary_max_amount: number | null
+          salary_min_amount: number | null
+          salary_period: string | null
+          salary_text: string | null
+          source: string
+          title: string
+          url: string
+        }
+        Insert: {
+          company: string
+          dedupe_key: string
+          description: string
+          employment_type?: string
+          first_seen_at?: string | null
+          id?: number
+          last_seen_at?: string | null
+          location?: string
+          salary_currency?: string | null
+          salary_max_amount?: number | null
+          salary_min_amount?: number | null
+          salary_period?: string | null
+          salary_text?: string | null
+          source: string
+          title: string
+          url: string
+        }
+        Update: {
+          company?: string
+          dedupe_key?: string
+          description?: string
+          employment_type?: string
+          first_seen_at?: string | null
+          id?: number
+          last_seen_at?: string | null
+          location?: string
+          salary_currency?: string | null
+          salary_max_amount?: number | null
+          salary_min_amount?: number | null
+          salary_period?: string | null
+          salary_text?: string | null
+          source?: string
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      profile_scoring_embeddings: {
+        Row: {
+          content_hash: string
+          embedding: string
+          model_version: string
+          user_id: string
+        }
+        Insert: {
+          content_hash: string
+          embedding: string
+          model_version: string
+          user_id: string
+        }
+        Update: {
+          content_hash?: string
+          embedding?: string
+          model_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_scoring_embeddings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      scoring_catalog_generation: {
+        Row: {
+          generation: number
+          id: boolean
+        }
+        Insert: {
+          generation?: number
+          id?: boolean
+        }
+        Update: {
+          generation?: number
+          id?: boolean
+        }
+        Relationships: []
+      }
+      sources: {
+        Row: {
+          detail: string | null
+          id: number
+          last_status: string
+          last_synced_at: string | null
+          mode: string
+          name: string
+          opportunities_found: number | null
+          url: string
+        }
+        Insert: {
+          detail?: string | null
+          id?: number
+          last_status?: string
+          last_synced_at?: string | null
+          mode?: string
+          name: string
+          opportunities_found?: number | null
+          url: string
+        }
+        Update: {
+          detail?: string | null
+          id?: number
+          last_status?: string
+          last_synced_at?: string | null
+          mode?: string
+          name?: string
+          opportunities_found?: number | null
+          url?: string
+        }
+        Relationships: []
+      }
+      user_cover_letters: {
+        Row: {
+          description: string | null
+          file_name: string
+          file_size: number
+          id: number
+          mime_type: string
+          storage_path: string | null
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          file_name: string
+          file_size?: number
+          id?: number
+          mime_type?: string
+          storage_path?: string | null
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          file_name?: string
+          file_size?: number
+          id?: number
+          mime_type?: string
+          storage_path?: string | null
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_cvs: {
+        Row: {
+          description: string | null
+          file_name: string
+          file_size: number
+          id: number
+          mime_type: string
+          storage_path: string | null
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          file_name: string
+          file_size?: number
+          id?: number
+          mime_type?: string
+          storage_path?: string | null
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          file_name?: string
+          file_size?: number
+          id?: number
+          mime_type?: string
+          storage_path?: string | null
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_job_evaluations: {
+        Row: {
+          ai_analysis: Json | null
+          calculated_at: string | null
+          fit_tier: string
+          id: number
+          job_id: number
+          matched_skills: Json
+          relevance: number
+          scoring_job_hash: string | null
+          scoring_profile_hash: string | null
+          scoring_version: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          calculated_at?: string | null
+          fit_tier?: string
+          id?: number
+          job_id: number
+          matched_skills?: Json
+          relevance?: number
+          scoring_job_hash?: string | null
+          scoring_profile_hash?: string | null
+          scoring_version?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          calculated_at?: string | null
+          fit_tier?: string
+          id?: number
+          job_id?: number
+          matched_skills?: Json
+          relevance?: number
+          scoring_job_hash?: string | null
+          scoring_profile_hash?: string | null
+          scoring_version?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_job_evaluations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_job_statuses: {
+        Row: {
+          id: number
+          job_id: number
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          job_id: number
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: number
+          job_id?: number
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_job_statuses_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          certifications: string | null
+          created_at: string | null
+          current_company: string | null
+          current_role: string
+          education: string
+          employment: string
+          experience_level: string | null
+          first_name: string | null
+          gender: string | null
+          headline: string
+          id: number
+          keywords: string[] | null
+          languages: string[] | null
+          last_name: string | null
+          linkedin_url: string | null
+          location: string
+          name: string
+          phone: string | null
+          salary_min: number
+          scoring_rules: Json | null
+          summary: string
+          target_locations: string[] | null
+          target_roles: string[] | null
+          tools_software: string[] | null
+          updated_at: string | null
+          user_id: string
+          work_authorization: string | null
+          work_mode: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          certifications?: string | null
+          created_at?: string | null
+          current_company?: string | null
+          current_role?: string
+          education?: string
+          employment?: string
+          experience_level?: string | null
+          first_name?: string | null
+          gender?: string | null
+          headline?: string
+          id?: number
+          keywords?: string[] | null
+          languages?: string[] | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string
+          name?: string
+          phone?: string | null
+          salary_min?: number
+          scoring_rules?: Json | null
+          summary?: string
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tools_software?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          work_authorization?: string | null
+          work_mode?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          certifications?: string | null
+          created_at?: string | null
+          current_company?: string | null
+          current_role?: string
+          education?: string
+          employment?: string
+          experience_level?: string | null
+          first_name?: string | null
+          gender?: string | null
+          headline?: string
+          id?: number
+          keywords?: string[] | null
+          languages?: string[] | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          location?: string
+          name?: string
+          phone?: string | null
+          salary_min?: number
+          scoring_rules?: Json | null
+          summary?: string
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tools_software?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          work_authorization?: string | null
+          work_mode?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      create_invitation: { Args: { target_email: string }; Returns: Json }
+      delete_invitation: { Args: { invitation_id: number }; Returns: Json }
+      enqueue_candidate_scoring: {
+        Args: { p_top_k?: number; p_user_id: string }
+        Returns: undefined
+      }
+      fit_tier_for_score: { Args: { p_score: number }; Returns: string }
+      get_jobs_page: {
+        Args: {
+          p_domain?: string
+          p_limit?: number
+          p_location?: string
+          p_min_match?: number
+          p_offset?: number
+          p_salary?: string
+          p_search?: string
+          p_sort_by?: string
+          p_sort_dir?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      get_overview_metrics: { Args: never; Returns: Json }
+      get_profile_embedding_state: { Args: never; Returns: Json }
+      is_authorized_user: { Args: never; Returns: boolean }
+      jobpulse_literal_search_pattern: {
+        Args: { input: string }
+        Returns: string
+      }
+      merge_duplicate_catalog_jobs: {
+        Args: {
+          p_dedupe_key: string
+          p_duplicate_ids: number[]
+          p_keeper_id: number
+        }
+        Returns: number
+      }
+      owns_document_object: { Args: { object_name: string }; Returns: boolean }
+      process_candidate_scoring: {
+        Args: { p_batch_size?: number }
+        Returns: number
+      }
+      process_candidate_scoring_queue: {
+        Args: { p_max_slices?: number }
+        Returns: number
+      }
+      prune_stale_catalog_jobs: {
+        Args: { p_retention_days?: number }
+        Returns: number
+      }
+      rescore_user: {
+        Args: { p_top_k?: number; p_user_id: string }
+        Returns: number
+      }
+      save_profile_embedding: {
+        Args: {
+          p_content_hash: string
+          p_embedding: string
+          p_model_version: string
+        }
+        Returns: undefined
+      }
+      score_from_subscores: { Args: { s: Json; w: Json }; Returns: number }
+      score_job_for_user: {
+        Args: { p_job_id: number; p_similarity: number; p_user_id: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const
+

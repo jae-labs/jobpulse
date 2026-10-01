@@ -1,0 +1,147 @@
+---
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Code Quality & Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # ratchet:actions/setup-node@v7.0.0
+        with:
+          node-version: "22.12.0"
+      - name: Scan repository history for secrets
+        run: |
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          echo "a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb  /tmp/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks git --redact --log-opts="--all"
+      - name: Install pnpm
+        run: npm install --global pnpm@10.29.3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit JavaScript dependencies
+        run: pnpm audit --audit-level moderate
+
+      - name: Run code quality, tests & build
+        run: |
+          pnpm run lint
+          pnpm run typecheck
+          pnpm run test:coverage
+          pnpm run build
+          pnpm run build-storybook
+
+  migration-lint:
+    name: Supabase Migration Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # ratchet:supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+
+      - name: Lint migrations
+        run: |
+          supabase start
+          supabase db reset --local
+          supabase db lint --local
+        # Verify the baseline on a clean database before linting it.
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # ratchet:astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # ratchet:actions/setup-node@v7.0.0
+        with:
+          node-version: "22.12.0"
+
+      - name: Verify all database behavior (auto-discovered SQL suites)
+        run: node scripts/test-database.mjs
+
+      - name: Verify database type parity (TypeScript & Python)
+        run: |
+          make db-types
+          git diff --exit-code src/types/database.types.ts services/scraper/database/models.py
+
+  tenant-isolation:
+    name: Tenant Isolation Guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # ratchet:actions/setup-node@v7.0.0
+        with:
+          node-version: "22.12.0"
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # ratchet:supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+      - name: Rebuild schema and enforce tenant contracts
+        run: |
+          supabase start
+          supabase db reset --local
+          node scripts/test-database.mjs --tenancy
+
+  scraper-check:
+    name: Scraper Quality & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # ratchet:astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Lint and format check
+        run: |
+          cd services/scraper
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+
+      - name: Audit locked Python dependencies
+        run: |
+          cd services/scraper
+          uv export --locked --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file /tmp/jobpulse-requirements.txt
+          uvx --from pip-audit==2.10.1 pip-audit --disable-pip --no-deps -r /tmp/jobpulse-requirements.txt
+
+      - name: Run unit tests
+        run: cd services/scraper && uv run --locked pytest

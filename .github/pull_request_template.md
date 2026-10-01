@@ -1,0 +1,16 @@
+## Change
+
+Describe the user-visible problem and resulting behavior.
+
+## Validation
+
+- [ ] `npm run check` passes.
+- [ ] `npm run db:test:tenancy` passes against the current local migrations.
+- [ ] New public relations/browser RPCs are classified in the tenant contract.
+- [ ] Changes to private data paths have owner-success and foreign-denial tests with two authorized members
+  (including RPC/Storage paths where applicable).
+- [ ] Shared catalog data contains no candidate scores, statuses, explanations, or personal information.
+- [ ] Query keys include the authenticated identity; cache/session behavior remains isolated.
+
+Describe any additional validation or explain which conditional items do not apply.
+Security failures must be resolved before release; do not waive them as unrelated.

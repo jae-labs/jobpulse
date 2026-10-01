@@ -1,0 +1,19 @@
+{
+  "negative_domains": [],
+  "positive_domains": [],
+  "seniority_tiers": [],
+  "disqualifiers": [],
+  "weights": {
+    "domain": 25,
+    "semantic": 25,
+    "competency": 20,
+    "seniority": 15,
+    "salary": 15,
+    "contract": 10,
+    "target_role_bonus": 6,
+    "location_bonus": 4,
+    "work_mode_bonus": 2,
+    "fixed_term_penalty": 8,
+    "disqualification_cap": 10
+  }
+}

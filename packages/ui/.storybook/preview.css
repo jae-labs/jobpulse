@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import '../src/tokens.css';
+@source '../src';
+
+body {
+  background: var(--ds-color-canvas);
+  color: var(--ds-color-text-primary);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
