@@ -94,6 +94,7 @@ class PublicEmployers(BaseModel):
     latitude: Optional[float] = Field(alias="latitude")
     location: Optional[str] = Field(alias="location")
     longitude: Optional[float] = Field(alias="longitude")
+    metadata_source: str = Field(alias="metadata_source")
     name: str = Field(alias="name")
     opportunities_found: Optional[int] = Field(alias="opportunities_found")
     priority: int = Field(alias="priority")
@@ -111,6 +112,7 @@ class PublicEmployersInsert(TypedDict):
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[Optional[str], Field(alias="location")]]
     longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
+    metadata_source: NotRequired[Annotated[str, Field(alias="metadata_source")]]
     name: Annotated[str, Field(alias="name")]
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
@@ -128,6 +130,7 @@ class PublicEmployersUpdate(TypedDict):
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[Optional[str], Field(alias="location")]]
     longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
+    metadata_source: NotRequired[Annotated[str, Field(alias="metadata_source")]]
     name: NotRequired[Annotated[str, Field(alias="name")]]
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
@@ -159,6 +162,7 @@ class PublicJobScoringEmbeddingsUpdate(TypedDict):
 
 class PublicJobs(BaseModel):
     company: str = Field(alias="company")
+    coordinate_source: Optional[str] = Field(alias="coordinate_source")
     dedupe_key: str = Field(alias="dedupe_key")
     description: str = Field(alias="description")
     employer_id: Optional[int] = Field(alias="employer_id")
@@ -181,6 +185,7 @@ class PublicJobs(BaseModel):
 
 class PublicJobsInsert(TypedDict):
     company: Annotated[str, Field(alias="company")]
+    coordinate_source: NotRequired[Annotated[Optional[str], Field(alias="coordinate_source")]]
     dedupe_key: Annotated[str, Field(alias="dedupe_key")]
     description: Annotated[str, Field(alias="description")]
     employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
@@ -203,6 +208,7 @@ class PublicJobsInsert(TypedDict):
 
 class PublicJobsUpdate(TypedDict):
     company: NotRequired[Annotated[str, Field(alias="company")]]
+    coordinate_source: NotRequired[Annotated[Optional[str], Field(alias="coordinate_source")]]
     dedupe_key: NotRequired[Annotated[str, Field(alias="dedupe_key")]]
     description: NotRequired[Annotated[str, Field(alias="description")]]
     employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]

@@ -68,6 +68,7 @@ export function useJobsPageQuery(
       const { data, error } = await supabase.rpc("get_jobs_page", {
         p_status: params.status || "all",
         p_domain: params.domain || "all",
+        p_sector: params.sector || "all",
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || "all",
         p_salary: params.salary || "all",
@@ -102,6 +103,7 @@ export function useJobsInfiniteQuery(
       const { data, error } = await supabase.rpc('get_jobs_page', {
         p_status: params.status || 'all',
         p_domain: params.domain || 'all',
+        p_sector: params.sector || 'all',
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || 'all',
         p_salary: params.salary || 'all',
@@ -230,6 +232,8 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
       const evaluation = evaluationResult.data;
       return {
         ...jobResult.data,
+        latitude: jobResult.data.coordinate_source === 'posting' ? jobResult.data.latitude : null,
+        longitude: jobResult.data.coordinate_source === 'posting' ? jobResult.data.longitude : null,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),
         ...candidateEvaluationFields(evaluation, resolveScoringRules(profileResult.data?.scoring_rules as unknown as ScoringRules)),
         status: (statusResult.data?.status ?? 'new') as JobStatus,
@@ -247,9 +251,18 @@ export function useSourcesQuery(enabled = true) {
       if (!supabase) {
         throw new Error("Supabase is not initialized.");
       }
-      const { data, error } = await supabase.from("sources").select("*").order("name", { ascending: true }).limit(1000);
-      if (error) throw new Error(error.message);
-      return (data || []) as Source[];
+      const sources: Source[] = [];
+      let cursor: number | undefined;
+      for (;;) {
+        let query = supabase.from("sources").select("*").order("id", { ascending: true }).limit(1000);
+        if (cursor !== undefined) query = query.gt("id", cursor);
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
+        sources.push(...(data || []));
+        if (!data || data.length < 1000) break;
+        cursor = data[data.length - 1].id;
+      }
+      return sources.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
     },
   });
 }

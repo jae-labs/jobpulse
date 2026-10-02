@@ -12,6 +12,7 @@ import { Card, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
 
 interface CategoryBreakdownChartProps {
+  title?: string;
   jobs?: Job[];
   categories?: OverviewCategory[];
   totalJobs?: number;
@@ -83,6 +84,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, t, onSel
 };
 
 const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = ({
+  title,
   jobs = [],
   categories,
   totalJobs: controlledTotalJobs,
@@ -164,7 +166,7 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h3 className="text-xl font-bold text-ds-text-primary">
-            {t('charts.categoryBreakdown.title')}
+            {title ?? t('charts.categoryBreakdown.title')}
           </h3>
         </div>
       </div>

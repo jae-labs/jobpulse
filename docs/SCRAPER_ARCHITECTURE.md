@@ -64,21 +64,34 @@ embeddings cover the complete body through token windows. See
 [Published job descriptions and semantic coverage](JOB_DESCRIPTION_COMPLETENESS.md)
 for repair commands, body-gate limits and unresolved-source handling.
 
-## Employer Metadata & Geocoding
+## Employer metadata and vacancy locations
 
-Ingestion resolves company entities through `pipeline/employer_lookup.py` to maintain
-a persistent catalog of employers (`employers` table):
-- **Database & Cache First**: Reuses existing `employers` database records and curated
-  Irish anchors (county councils, universities, enterprise campuses) with 0 network calls.
-- **On-Demand Resolution**: Discovered employers missing from the database are resolved
-  via Wikidata (industry sector & description) and OpenStreetMap Nominatim (Irish address
-  and GPS coordinates), then persisted permanently to `employers`.
-- **Map & Spatial Readiness**: Opportunities link to `employers(id)` via `jobs.employer_id`
-  and receive `latitude` and `longitude` coordinates (inherited from employer headquarters
-  if the vacancy location is vague, e.g. "Ireland" or "Hybrid").
-- **Domain & Sector Classification Fallback**: Candidate evaluations and dashboard metrics
-  fall back to `employers.sector` when candidate-specific profile domain rules do not match,
-  enriching catalog categorization.
-- **Catalog Backfill**: Existing vacancies can be linked and geocoded via
-  `make scrape-backfill-employers` (`tools/backfill_employers.py`).
+Employer identity resolution uses exact case-insensitive database names with literal
+wildcard escaping and rejects ambiguous matches. Explicit curated aliases may resolve
+known companies; no substring identity search or public geocoding runs during ingestion.
+Failed persistence never caches an employer without an ID.
 
+Employer headquarters remain in `employers`; published vacancy locations stay in `jobs`.
+Ingestion accepts only complete, finite posting coordinate pairs, preserves zero values,
+and writes `coordinate_source='posting'`. Legacy coordinates remain stored with unknown
+provenance and are hidden in paginated results and deep-link details.
+
+`employers.metadata_source` distinguishes `curated`, `watchlist`, `verified`, and
+`unverified` metadata. Unknown sectors are `Uncategorized`; historical inferred sectors
+are excluded from established industry facets until evidence is supplied. Overview
+`sectors` and `p_sector` filter the same shared catalog population. Overview `categories`
+and `p_domain` remain tenant-specific role classifications, including `Uncategorized`
+for unassessed jobs. Sector averages use assessed jobs only. The canonical SQL scorer
+owns matching; employer industry is display metadata and does not modify scoring factors.
+
+`make scrape-backfill-employers` is read-only by default. Set `ARGS="--apply --limit 100"`
+to link a bounded scan. It uses ID keyset pagination, counts unresolved rows toward the
+limit, and guards writes against concurrent company/link changes. It never substitutes
+headquarters or increments scoring generations.
+
+For proven historical headquarters substitutions, `tools/repair_employer_locations.py`
+reads only the public catalog section of the approved pre-enrichment snapshot. Supply
+`--snapshot PATH --report PATH` to review proposed restorations, then `--apply` to perform
+identity/location compare-and-set writes. It refreshes scoring documents/hashes through
+`prepare_embeddings`; a retry refreshes already restored matching facts too. No private
+snapshot data is imported or used as fixtures.

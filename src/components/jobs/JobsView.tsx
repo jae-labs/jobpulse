@@ -84,6 +84,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
     setStatusFilter,
     domainFilter,
     setDomainFilter,
+    sectorFilter,
+    setSectorFilter,
     minMatch,
     setMinMatch,
     locationFilter,
@@ -223,6 +225,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     minMatch > 0 ||
     activeLocationFilter !== 'all' ||
     activeDomainFilter !== 'all' ||
+    sectorFilter !== 'all' ||
     salaryFilter !== 'all' ||
     sortField !== 'match' ||
     sortDir !== 'desc' ||
@@ -479,6 +482,23 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   <ArrowUp className="size-3 text-ds-text-secondary" />
                 )}
               </button>
+            </div>
+
+            <div className="ds-field-shell flex w-full items-center rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
+              <select
+                aria-label={t('jobs.allSectors')}
+                value={sectorFilter}
+                onChange={(event) => setSectorFilter(event.target.value)}
+                className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-primary outline-none"
+              >
+                <option value="all">{t('jobs.allSectors')}</option>
+                {sectorFilter !== 'all' && !overviewMetrics?.sectors?.some((sector) => sector.name === sectorFilter) && (
+                  <option value={sectorFilter}>{sectorFilter}</option>
+                )}
+                {overviewMetrics?.sectors?.map((sector) => (
+                  <option key={sector.name} value={sector.name}>{sector.name} ({formatNumber(sector.value, i18n.language)})</option>
+                ))}
+              </select>
             </div>
 
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">

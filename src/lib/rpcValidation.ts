@@ -19,6 +19,13 @@ function count(value: unknown): number {
   return value;
 }
 
+function nullableCoordinate(value: unknown, maximum: number): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > maximum)
+    throw new Error("Invalid RPC coordinate");
+  return value;
+}
+
 export function validateOverviewMetrics(data: unknown): OverviewMetrics {
   if (!data || typeof data !== "object") {
     throw new Error("Invalid overview metrics response: expected object");
@@ -52,6 +59,13 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
   )
     throw new Error("Invalid overview stage count");
   return {
+    sectors: obj.sectors === undefined ? undefined : (() => {
+      if (!Array.isArray(obj.sectors)) throw new Error("Invalid overview sectors");
+      return obj.sectors.map((value) => {
+        const row = record(value);
+        return { name: string(row.name), value: count(row.value), avgMatch: count(row.avgMatch) };
+      });
+    })(),
     evaluated: obj.evaluated as number,
     locations: obj.locations.map((value) => {
       const row = record(value);
@@ -125,7 +139,16 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
       string(item[field]);
     count(item.relevance);
     if ((item.relevance as number) > 100) throw new Error("Invalid relevance");
+    if (item.employer_id != null && !Number.isSafeInteger(item.employer_id))
+      throw new Error("Invalid employer ID");
+    const latitude = nullableCoordinate(item.latitude, 90);
+    const longitude = nullableCoordinate(item.longitude, 180);
+    if ((latitude === null) !== (longitude === null)) throw new Error("Incomplete RPC coordinates");
     return {
+      employer_id: item.employer_id == null ? null : Number(item.employer_id),
+      employer_sector: item.employer_sector === undefined ? undefined : string(item.employer_sector),
+      latitude,
+      longitude,
       id: Number(item.id),
       title: String(item.title ?? ""),
       company: String(item.company ?? ""),

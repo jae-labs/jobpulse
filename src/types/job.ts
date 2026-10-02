@@ -55,6 +55,7 @@ export interface Job {
   url: string;
   source: string;
   employer_id?: number | null;
+  employer_sector?: string;
   latitude?: number | null;
   longitude?: number | null;
   relevance: number;
@@ -186,11 +187,13 @@ export interface OverviewMetrics {
   counts: Record<string, number>;
   stage_averages: Record<string, number>;
   categories: OverviewCategory[];
+  sectors?: OverviewCategory[];
   relevance_distribution: Array<{ range: string; min: number; max: number; count: number }>;
   top_skills: Array<{ skill: string; count: number; percentage: number }>;
 }
 
 export interface JobsPageParams {
+  sector?: string;
   status?: string;
   domain?: string;
   minMatch?: number;

@@ -22,7 +22,7 @@ from database.client import get_supabase, retry_supabase, utc_now
 from database.embeddings import prepare_embeddings
 from engine.description_quality import has_description_body, needs_description_repair
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import WORK_MODE_TAGS, clean_description_text, normalize_location
+from engine.text_cleaner import clean_description_text, normalize_location
 from engine.validators import is_valid_job_title, is_valid_location
 from pipeline.employer_lookup import (
     CURATED_IRISH_EMPLOYERS,
@@ -230,31 +230,25 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
             lookup_service = get_employer_lookup_service()
             employer = lookup_service.resolve_employer(
                 job.get("company", ""),
-                careers_url=job.get("url", ""),
                 scraped_location=job.get("location", ""),
             )
         except Exception as lookup_err:
             logging.getLogger(__name__).debug("Employer lookup skipped for %s: %s", job.get("company"), lookup_err)
 
+        # A company address is not evidence of this vacancy's work location.
         norm_loc = normalize_location(job.get("location", ""))
-        if (
-            norm_loc in ("Ireland", "Ireland (Hybrid)", "Ireland (Remote)", "Ireland (On-site)")
-            and employer
-            and employer.get("location")
-            and employer.get("location") != "Ireland"
-        ):
-            emp_loc = employer["location"]
-            work_mode = next(
-                (label for key, label in WORK_MODE_TAGS.items() if key in (job.get("location", "")).lower()),
-                None,
-            )
-            if work_mode and work_mode not in emp_loc:
-                norm_loc = f"{emp_loc} ({work_mode})"
-            else:
-                norm_loc = emp_loc
-
-        latitude = job.get("latitude") or (employer.get("latitude") if employer else None)
-        longitude = job.get("longitude") or (employer.get("longitude") if employer else None)
+        latitude = job.get("latitude")
+        longitude = job.get("longitude")
+        valid_coordinates = (
+            isinstance(latitude, (int, float))
+            and not isinstance(latitude, bool)
+            and isinstance(longitude, (int, float))
+            and not isinstance(longitude, bool)
+            and -90 <= latitude <= 90
+            and -180 <= longitude <= 180
+        )
+        if not valid_coordinates:
+            latitude = longitude = None
         employer_id = employer.get("id") if employer else None
 
         valid_payloads.append(
@@ -271,6 +265,7 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
                 "employer_id": employer_id,
                 "latitude": latitude,
                 "longitude": longitude,
+                "coordinate_source": "posting" if valid_coordinates else None,
                 "last_seen_at": now,
             }
         )
@@ -299,7 +294,7 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
             retry_supabase(
                 lambda c=chunk: (
                     supabase.table("jobs")
-                    .select("dedupe_key,description")
+                    .select("dedupe_key,description,employer_id,location,latitude,longitude,coordinate_source")
                     .in_("dedupe_key", [item["dedupe_key"] for item in c])
                     .execute()
                 )
@@ -308,7 +303,17 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
         )
         existing = {row["dedupe_key"]: row for row in existing_rows}
         for item in chunk:
-            previous = existing.get(item["dedupe_key"], {}).get("description", "")
+            prior = existing.get(item["dedupe_key"], {})
+            previous = prior.get("description", "")
+            if item["employer_id"] is None:
+                item["employer_id"] = prior.get("employer_id")
+            if (
+                item["coordinate_source"] is None
+                and prior.get("coordinate_source") == "posting"
+                and prior.get("location") == item["location"]
+            ):
+                for key in ("latitude", "longitude", "coordinate_source"):
+                    item[key] = prior.get(key)
             if not has_description_body(item["description"]) and has_description_body(previous):
                 item["description"] = previous
         # Unresolved listings are not new semantic documents. Existing rows remain intact
@@ -573,6 +578,7 @@ def sync_watchlist_metadata() -> None:
                 emp_dict: dict[str, Any] = {
                     "name": name,
                     "sector": _sanitize_val(emp[1]),
+                    "metadata_source": "watchlist",
                     "priority": emp[2],
                     "careers_url": _sanitize_val(emp[3]),
                 }

@@ -90,7 +90,7 @@
     "pipelineBreakdown": "Pipeline de Candidaturas",
     "relevanceDistribution": "Distribuição de Compatibilidade",
     "skillsFrequency": "Competências nas vagas avaliadas",
-    "categoryBreakdown": "Distribuição por Domínio",
+    "categoryBreakdown": "Setores dos Empregadores",
     "assessmentCoverage": "{{evaluated}} de {{total}} vagas avaliadas. Os gráficos de correspondência incluem apenas vagas avaliadas."
   },
   "jobs": {
@@ -108,6 +108,7 @@
     "searchPlaceholder": "Buscar por cargo, empresa, habilidades ou local...",
     "allSalaries": "Todas as Faixas Salariais",
     "disclosedOnly": "Apenas divulgados",
+    "allSectors": "Todos os Setores",
     "allDomains": "Todos os Domínios",
     "allLocations": "Todas as Localizações",
     "minMatch": "Match Mínimo",

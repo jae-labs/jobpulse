@@ -172,3 +172,19 @@ version are exposed through `get_profile_embedding_state` without exposing the v
 `ai_analysis.sub_scores` using current profile weights.
 Existing evaluations for jobs without vectors remain until those jobs receive a
 vector; this avoids losing match data during a staged migration.
+
+### Employer industry and matching domains
+
+Employer metadata has an explicit `metadata_source`; only curated, watchlist, or
+verified sectors contribute established employer industry facets. Legacy inferred
+values are retained as unverified. Vacancy coordinates have `coordinate_source`;
+only posting coordinates are exposed by catalog RPCs. Employer headquarters never
+replace a vacancy location.
+
+`get_overview_metrics` returns both private role-domain `categories` and shared
+employer `sectors`; `get_jobs_page` retains the existing arguments and adds the
+optional final `p_sector` argument. Domain and sector filters intersect, use the
+same count/page CTE, and remain bounded at the database boundary. The old signature
+is replaced to avoid PostgREST overload ambiguity. Only authenticated authorized
+callers and service workers may invoke it. The unused duplicate scorer is removed;
+canonical scoring is requeued in bounded slices to repair historical domain rewrites.

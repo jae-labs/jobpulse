@@ -90,7 +90,7 @@
     "pipelineBreakdown": "Application Pipeline",
     "relevanceDistribution": "Match Score Distribution",
     "skillsFrequency": "Skills matched in assessed vacancies",
-    "categoryBreakdown": "Domain Category Breakdown",
+    "categoryBreakdown": "Employer Sectors",
     "assessmentCoverage": "{{evaluated}} of {{total}} vacancies assessed. Match charts describe assessed vacancies only."
   },
   "jobs": {
@@ -108,6 +108,7 @@
     "searchPlaceholder": "Search by title, company, skills, or location...",
     "allSalaries": "All Salaries",
     "disclosedOnly": "Disclosed only",
+    "allSectors": "All Sectors",
     "allDomains": "All Domains",
     "allLocations": "All Locations",
     "minMatch": "Min Match",

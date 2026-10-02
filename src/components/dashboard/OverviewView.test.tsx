@@ -70,6 +70,15 @@ describe('OverviewView', () => {
     expect(highFit.compareDocumentPosition(tracked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('navigates from employer sectors without changing candidate domain filters', async () => {
+    const navigate = vi.fn();
+    render(<Suspense fallback={<div>Loading...</div>}>
+      <OverviewView overviewMetrics={{ ...mockMetrics, sectors: [{ name: 'Synthetic Sector', value: 120, avgMatch: 88 }] }} onNavigateToJobs={navigate} />
+    </Suspense>);
+    fireEvent.click(await screen.findByTitle('Synthetic Sector'));
+    expect(navigate).toHaveBeenCalledWith({ status: 'all', domain: 'all', sector: 'Synthetic Sector', minMatch: 0 });
+  });
+
   it('renders summary stat cards with correct metrics', async () => {
     const handleNavigate = vi.fn();
     render(

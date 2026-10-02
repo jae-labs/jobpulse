@@ -1,34 +1,22 @@
-"""Employer metadata lookup, geocoding, and database synchronization.
+"""Resolve employer identities from exact database names and an explicit curated registry.
 
-Maintains a persistent database of employers in Supabase (sector, location, coordinates).
-Checks existing database records first; queries Wikidata & OpenStreetMap only for missing
-employers, then caches them permanently.
+Employer addresses describe the company, never a vacancy. Unknown metadata stays
+unknown; ingestion does not call external search or public geocoding services.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import threading
-import time
-import urllib.parse
-import urllib.request
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
-from engine.text_cleaner import normalize_location
 
 logger = logging.getLogger(__name__)
-
 _CACHE_LOCK = threading.Lock()
 _EMPLOYER_CACHE: dict[str, dict[str, Any]] = {}
-_LAST_EXTERNAL_CALL_TIME = 0.0
-_EXTERNAL_CALL_MIN_INTERVAL = 1.0  # Respect Nominatim 1 req/sec policy
 
-USER_AGENT = "JobPulse/1.0 (https://jobpulse.dev; opportunities@jobpulse.dev)"
-
-# Curated Irish anchors for instant, 0ms, zero-network resolution of common employers
 CURATED_IRISH_EMPLOYERS: dict[str, dict[str, Any]] = {
     "kildare county council": {
         "name": "Kildare County Council",
@@ -511,253 +499,109 @@ CURATED_IRISH_EMPLOYERS: dict[str, dict[str, Any]] = {
 
 
 def normalize_company_key(company: str) -> str:
-    """Standardize company name for uniform dictionary and database indexing."""
-    if not company:
-        return ""
-    c = company.lower().strip()
-    c = re.sub(r"\b(?:ireland|limited|ltd|plc|dac|inc|corp|corporation|group|llc|holdings|company|co)\b", " ", c)
-    c = re.sub(r"[^a-z0-9]+", " ", c).strip()
-    return c
-
-
-def _rate_limit_external_call() -> None:
-    """Enforce gentle rate limits on external open API requests."""
-    global _LAST_EXTERNAL_CALL_TIME
-    now = time.time()
-    elapsed = now - _LAST_EXTERNAL_CALL_TIME
-    if elapsed < _EXTERNAL_CALL_MIN_INTERVAL:
-        time.sleep(_EXTERNAL_CALL_MIN_INTERVAL - elapsed)
-    _LAST_EXTERNAL_CALL_TIME = time.time()
-
-
-def _query_wikidata_entity(company: str) -> tuple[str, str, str] | None:
-    """Query Wikidata for company description, inferred sector, and website."""
-    query = urllib.parse.quote(company)
-    url = f"https://www.wikidata.org/w/api.php?action=wbsearchentities&search={query}&language=en&format=json&limit=3"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    try:
-        _rate_limit_external_call()
-        with urllib.request.urlopen(req, timeout=4.0) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            results = data.get("search", [])
-            for r in results:
-                desc = (r.get("description") or "").strip()
-                desc_l = desc.lower()
-                if any(
-                    k in desc_l
-                    for k in (
-                        "company",
-                        "corporation",
-                        "bank",
-                        "university",
-                        "authority",
-                        "service",
-                        "software",
-                        "firm",
-                        "enterprise",
-                        "organization",
-                        "agency",
-                    )
-                ):
-                    sector = _infer_sector_from_description(desc)
-                    website = ""
-                    return desc, sector, website
-    except Exception as exc:
-        logger.debug("Wikidata query for '%s' failed: %s", company, exc)
-    return None
-
-
-def _infer_sector_from_description(desc: str) -> str:
-    """Map free-text entity description to canonical industry sector."""
-    d = desc.lower()
-    if re.search(r"\b(council|local government|public sector|public service|state body|government agency)\b", d):
-        return "Public service"
-    if re.search(r"\b(university|college|school|higher education|polytechnic)\b", d):
-        return "Higher education"
-    if re.search(r"\b(payment|payments|fintech|banking|bank|finance|financial|investment|credit)\b", d):
-        return "Financial services"
-    if re.search(r"\b(pharma|pharmaceutical|biotech|life sciences|medical device|medicine)\b", d):
-        return "Life sciences"
-    if re.search(r"\b(health|hospital|clinic|healthcare|medical)\b", d):
-        return "Healthcare"
-    if re.search(r"\b(semiconductor|semiconductors|chip|microchip|hardware)\b", d):
-        return "Semiconductors & Hardware"
-    if re.search(r"\b(retail|store|supermarket|grocery|shop)\b", d):
-        return "Retail"
-    if re.search(r"\b(energy|power|utility|utilities|electricity|renewables|renewable energy)\b", d):
-        return "Energy & Utilities"
-    if re.search(r"\b(airline|airlines|aviation|transport|logistics|freight)\b", d):
-        return "Transport & Logistics"
-    if re.search(r"\b(food|beverage|nutrition|dairy|brewery)\b", d):
-        return "Food and nutrition"
-    if re.search(r"\b(cloud|software|saas|tech|technology|computing|ai|artificial intelligence|platform)\b", d):
-        return "Technology & Software"
-    return "Technology & Services"
-
-
-def _query_nominatim_location(query_term: str) -> tuple[str, float, float] | None:
-    """Query OpenStreetMap Nominatim for Irish address and lat/lon coordinates."""
-    q = urllib.parse.quote(query_term)
-    url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&limit=1"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    try:
-        _rate_limit_external_call()
-        with urllib.request.urlopen(req, timeout=4.0) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if data and isinstance(data, list) and len(data) > 0:
-                item = data[0]
-                lat = float(item["lat"])
-                lon = float(item["lon"])
-                display = item.get("display_name", "")
-                parts = [p.strip() for p in display.split(",")]
-                if len(parts) >= 3:
-                    loc = f"{parts[0]}, {parts[-3] if len(parts) > 3 else parts[1]}, Ireland"
-                else:
-                    loc = display
-                return loc, lat, lon
-    except Exception as exc:
-        logger.debug("Nominatim geocoding for '%s' failed: %s", query_term, exc)
-    return None
+    """Normalize explicit registry aliases, removing trailing legal suffixes only."""
+    name = " ".join(re.sub(r"[^a-z0-9]+", " ", company.casefold()).split())
+    return re.sub(r"(?:\s+(?:ireland|limited|ltd|plc|dac|inc|corp|corporation|group|llc))+$", "", name).strip()
 
 
 class EmployerLookupService:
-    """Resolves and caches employer metadata, ensuring no redundant lookups."""
+    """Exact identity resolution; failed writes are retried on subsequent calls."""
 
-    def __init__(self) -> None:
-        self._supabase = get_supabase()
+    def __init__(self, client: Any = None) -> None:
+        self._supabase = client if client is not None else get_supabase()
 
     def lookup_employer_in_db(self, name: str) -> dict[str, Any] | None:
-        """Fetch existing employer row from Supabase by exact name or ILIKE match."""
-        try:
-            # 1. Exact match
-            res = (
-                retry_supabase(
-                    lambda: self._supabase.table("employers").select("*").eq("name", name.strip()).limit(1).execute()
-                ).data
-                or []
-            )
-            if res:
-                return res[0]
-
-            # 2. ILIKE match
-            res = (
-                retry_supabase(
-                    lambda: (
-                        self._supabase.table("employers")
-                        .select("*")
-                        .ilike("name", f"%{name.strip()}%")
-                        .limit(1)
-                        .execute()
-                    )
-                ).data
-                or []
-            )
-            return res[0] if res else None
-        except Exception as exc:
-            logger.warning("Database lookup for employer '%s' failed: %s", name, exc)
-            return None
+        # ILIKE without surrounding wildcards supports case differences only.
+        literal = name.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        rows = (
+            retry_supabase(
+                lambda: self._supabase.table("employers").select("*").ilike("name", literal).limit(2).execute()
+            ).data
+            or []
+        )
+        if len(rows) > 1:
+            raise ValueError("Ambiguous employer identity")
+        return rows[0] if rows else None
 
     def resolve_employer(
-        self,
-        company_name: str,
-        careers_url: str = "",
-        scraped_location: str = "",
+        self, company_name: str, careers_url: str = "", scraped_location: str = "", *, persist: bool = True
     ) -> dict[str, Any] | None:
-        """
-        Resolve an employer's metadata (id, sector, location, coordinates).
-        Uses in-memory cache -> database table -> curated registry -> external lookups.
-        Persists newly discovered employers so they are never queried externally again.
-        """
-        clean_name = (company_name or "").strip()
-        if not clean_name or clean_name.lower() in ("employer", "confidential", "undisclosed"):
-            return None
+        """Resolve metadata without treating a scraped vacancy location as headquarters.
 
-        norm_key = normalize_company_key(clean_name)
-        if not norm_key:
+        persist=False performs reads only, including on a cache miss.
+        """
+        clean_name = " ".join((company_name or "").split())
+        if not clean_name or clean_name.casefold() in {"employer", "confidential", "undisclosed"}:
             return None
-
-        # 1. Check in-memory session cache
+        cache_key = clean_name.casefold()
         with _CACHE_LOCK:
-            cached = _EMPLOYER_CACHE.get(norm_key)
-            if cached:
-                return cached
-
-        # 2. Check persistent database
-        db_emp = self.lookup_employer_in_db(clean_name)
-        if db_emp:
-            with _CACHE_LOCK:
-                _EMPLOYER_CACHE[norm_key] = db_emp
-            return db_emp
-
-        # 3. Check curated Irish employers registry
-        curated = CURATED_IRISH_EMPLOYERS.get(norm_key)
-        if curated:
-            sector = curated["sector"]
-            location = curated["location"]
-            latitude = curated["latitude"]
-            longitude = curated["longitude"]
-            description = curated["description"]
-            website = curated["website"]
-        else:
-            # 4. External resolution for previously unseen employers
-            sector = "General"
-            description = ""
-            website = ""
-            latitude = None
-            longitude = None
-            location = normalize_location(scraped_location) if scraped_location else "Ireland"
-
-            # 4a. Query Wikidata for sector and entity summary
-            wiki_result = _query_wikidata_entity(clean_name)
-            if wiki_result:
-                description, sector, website = wiki_result
-
-            # 4b. Query Nominatim for location & coordinates
-            geo_result = _query_nominatim_location(f"{clean_name}, Ireland")
-            if not geo_result and scraped_location and scraped_location.lower() not in ("ireland", "not specified"):
-                geo_result = _query_nominatim_location(f"{scraped_location}, Ireland")
-
-            if geo_result:
-                location, latitude, longitude = geo_result
-
-        # 5. Persist to employers table so it remains permanent
-        insert_payload = {
-            "name": clean_name,
-            "sector": sector,
-            "location": location,
-            "latitude": latitude,
-            "longitude": longitude,
-            "description": description or None,
+            cached = _EMPLOYER_CACHE.get(cache_key)
+        if cached:
+            return cached
+        curated = CURATED_IRISH_EMPLOYERS.get(normalize_company_key(clean_name))
+        canonical_name = curated["name"] if curated else clean_name
+        existing = self.lookup_employer_in_db(canonical_name)
+        if existing:
+            # Only an explicit registry entry can upgrade legacy guessed metadata.
+            if curated and existing.get("metadata_source") == "unverified":
+                evidence = {
+                    key: curated[key]
+                    for key in ("sector", "location", "latitude", "longitude", "description", "website")
+                }
+                evidence["metadata_source"] = "curated"
+                if persist:
+                    rows = (
+                        retry_supabase(
+                            lambda: (
+                                self._supabase.table("employers")
+                                .update(evidence)
+                                .eq("id", existing["id"])
+                                .eq("metadata_source", "unverified")
+                                .execute()
+                            )
+                        ).data
+                        or []
+                    )
+                    existing = rows[0] if rows else self.lookup_employer_in_db(canonical_name)
+                else:
+                    existing = {**existing, **evidence}
+            if existing and persist:
+                with _CACHE_LOCK:
+                    _EMPLOYER_CACHE[cache_key] = existing
+            return existing
+        payload = {
+            "name": canonical_name,
+            "sector": curated["sector"] if curated else "Uncategorized",
+            "metadata_source": "curated" if curated else "unverified",
+            "location": curated["location"] if curated else None,
+            "latitude": curated["latitude"] if curated else None,
+            "longitude": curated["longitude"] if curated else None,
+            "description": curated["description"] if curated else None,
+            "website": curated["website"] if curated else None,
             "careers_url": careers_url or "",
-            "website": website or None,
             "status": "discovered",
             "priority": 50,
         }
-
+        if not persist:
+            return payload
         try:
-            persisted = (
-                retry_supabase(lambda: self._supabase.table("employers").insert(insert_payload).execute()).data or []
-            )
-            if persisted:
-                created = persisted[0]
-            else:
-                created = self.lookup_employer_in_db(clean_name) or insert_payload
-        except Exception as exc:
-            logger.info("Employer '%s' insert on conflict fallback: %s", clean_name, exc)
-            created = self.lookup_employer_in_db(clean_name) or insert_payload
-
-        with _CACHE_LOCK:
-            _EMPLOYER_CACHE[norm_key] = created
-
-        return created
+            rows = retry_supabase(lambda: self._supabase.table("employers").insert(payload).execute()).data or []
+            created = rows[0] if rows else self.lookup_employer_in_db(canonical_name)
+        except Exception:
+            # A concurrent insert can win; other failures must not poison the cache.
+            created = self.lookup_employer_in_db(canonical_name)
+        if created and created.get("id") is not None:
+            with _CACHE_LOCK:
+                _EMPLOYER_CACHE[cache_key] = created
+            return created
+        return None
 
     def resolve_batch(self, companies: list[str]) -> dict[str, dict[str, Any]]:
-        """Resolve a batch of company names, returning a mapping of company -> employer."""
-        results: dict[str, dict[str, Any]] = {}
-        for c in set(companies):
-            resolved = self.resolve_employer(c)
-            if resolved:
-                results[c] = resolved
+        results = {}
+        for company in sorted(set(companies)):
+            employer = self.resolve_employer(company)
+            if employer:
+                results[company] = employer
         return results
 
 
@@ -765,7 +609,6 @@ _default_service: EmployerLookupService | None = None
 
 
 def get_employer_lookup_service() -> EmployerLookupService:
-    """Return singleton instance of EmployerLookupService."""
     global _default_service
     if _default_service is None:
         _default_service = EmployerLookupService()

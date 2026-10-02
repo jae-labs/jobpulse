@@ -140,6 +140,7 @@ export type Database = {
           latitude: number | null
           location: string | null
           longitude: number | null
+          metadata_source: string
           name: string
           opportunities_found: number | null
           priority: number
@@ -156,6 +157,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          metadata_source?: string
           name: string
           opportunities_found?: number | null
           priority?: number
@@ -172,6 +174,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          metadata_source?: string
           name?: string
           opportunities_found?: number | null
           priority?: number
@@ -213,6 +216,7 @@ export type Database = {
       jobs: {
         Row: {
           company: string
+          coordinate_source: string | null
           dedupe_key: string
           description: string
           employer_id: number | null
@@ -234,6 +238,7 @@ export type Database = {
         }
         Insert: {
           company: string
+          coordinate_source?: string | null
           dedupe_key: string
           description: string
           employer_id?: number | null
@@ -255,6 +260,7 @@ export type Database = {
         }
         Update: {
           company?: string
+          coordinate_source?: string | null
           dedupe_key?: string
           description?: string
           employer_id?: number | null
@@ -616,10 +622,6 @@ export type Database = {
         Args: { p_top_k?: number; p_user_id: string }
         Returns: undefined
       }
-      evaluate_candidate_job: {
-        Args: { p_job_id: number; p_similarity: number; p_user_id: string }
-        Returns: undefined
-      }
       fit_tier_for_score: { Args: { p_score: number }; Returns: string }
       get_jobs_page: {
         Args: {
@@ -630,6 +632,7 @@ export type Database = {
           p_offset?: number
           p_salary?: string
           p_search?: string
+          p_sector?: string
           p_sort_by?: string
           p_sort_dir?: string
           p_status?: string

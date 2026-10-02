@@ -1,0 +1,31 @@
+import { describe, expect, it } from 'vitest';
+import { validateJobsPageResult, validateOverviewMetrics } from './rpcValidation';
+
+const job = {
+  id: 1, title: 'Example Engineer', company: 'Example', location: 'Cork', url: 'https://example.invalid',
+  source: 'test', last_seen_at: '2026-10-02', status: 'new', relevance: 0, matched_skills: [],
+  employer_id: 12, employer_sector: 'Synthetic Sector', latitude: 0, longitude: 0,
+};
+
+describe('employer RPC boundary', () => {
+  it('preserves employer identity, shared sector and zero coordinates', () => {
+    expect(validateJobsPageResult({ total: 1, items: [job] }).items[0]).toMatchObject({
+      employer_id: 12, employer_sector: 'Synthetic Sector', latitude: 0, longitude: 0,
+    });
+  });
+  it.each([
+    { latitude: 91 }, { longitude: -181 }, { latitude: Infinity },
+    { latitude: null }, { employer_id: '12' }, { employer_id: Number.MAX_SAFE_INTEGER + 1 },
+  ])('rejects malformed employer fields: %j', (invalid) => {
+    expect(() => validateJobsPageResult({ total: 1, items: [{ ...job, ...invalid }] })).toThrow();
+  });
+  it('accepts unknown coordinates and separate sector/domain aggregates', () => {
+    expect(validateJobsPageResult({ total: 1, items: [{ ...job, latitude: null, longitude: null }] }).items[0].latitude).toBeNull();
+    const metrics = { total: 1, evaluated: 0, high_fit: 0, counts: { new: 1 }, locations: [],
+      categories: [{ name: 'Uncategorized', value: 1, avgMatch: 0 }],
+      sectors: [{ name: 'Synthetic Sector', value: 1, avgMatch: 0 }], relevance_distribution: [], top_skills: [],
+    };
+    expect(validateOverviewMetrics(metrics)).toMatchObject({ sectors: metrics.sectors, categories: metrics.categories });
+    expect(() => validateOverviewMetrics({ ...metrics, sectors: {} })).toThrow();
+  });
+});

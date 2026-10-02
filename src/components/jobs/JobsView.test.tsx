@@ -69,6 +69,16 @@ describe('JobsView Search Input', () => {
     );
   };
 
+  it('preserves and clears an employer sector deep link independently of domains', () => {
+    renderJobsView(['/opportunities?sector=Synthetic%20Sector&domain=Cloud']);
+    const sectors = screen.getByRole('combobox', { name: 'All Sectors' });
+    expect(sectors).toHaveValue('Synthetic Sector');
+    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
+    fireEvent.change(sectors, { target: { value: 'all' } });
+    expect(sectors).toHaveValue('all');
+    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
+  });
+
   it('allows user to type without losing focus or cursor jumping', async () => {
     renderJobsView();
 
