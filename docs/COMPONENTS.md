@@ -45,3 +45,11 @@ To prevent rendering cascades across heavy views:
 - **Container Views & Shell**: `OverviewView`, `SortableWidget`, `DashboardSidebar`, and `SourcesView` are wrapped in `React.memo`.
 - **Callback Invariants**: Shell-level handlers in `App.tsx` (`handleSelectJob`, `updateStatus`, `handleNavigateToJobs`, `handleFilterReset`, `handleOpenCommandMenu`) and drill-downs in `OverviewView.tsx` are wrapped in `useCallback`.
 - **Virtual List Ref Stability**: Cards in `JobsView` receive a memoized ref callback via `getCardRefCallback(job.id)` to avoid commit-phase callback churn across mounted items.
+
+## Geographic browsing
+
+`JobsMapView` owns the map camera and pin selection. `JobsMapLocationPanel` shows
+role/company labels and bounded location pages using the existing catalog RPC.
+Public sample labels use `useJobMapPreviewQuery` with an account-scoped key and
+before/after identity checks. No candidate scores or tracking fields are read from
+shared job rows. The map remains independent of loaded list pages.

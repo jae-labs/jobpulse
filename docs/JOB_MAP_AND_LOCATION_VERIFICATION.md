@@ -2,11 +2,16 @@
 
 Opportunities supports List, Split and Map. Map pins come from the entire filtered
 server catalog, independently of the loaded list page. Viewport clustering is bounded
-at 2,000 groups; popups offer up to five sample jobs and zooming. Filters use the
-same shared catalog domains and caller-owned matching/status contract as the list.
+at 2,000 groups. The map starts framed over Ireland, with Ireland and World reset
+controls. Selecting a pin opens a role/company browser beside the map (below it on
+mobile), with up to five examples. A named-location action browses every matching
+job in pages of 20; active domain, search, salary, match and status filters remain
+applied. A coarse group can contain several locations, so each sample location has
+its own explicit browsing action. Raw database IDs are never action labels. Filters use
+the same shared catalog domains and caller-owned matching/status contract as the list.
 
 Pins verify the **place named in the stored posting**, not the employer's headquarters
-or an independently proven exact workplace. The popup states precision, including
+or an independently proven exact workplace. The location browser states precision, including
 city, county and country centroids. Remote, ambiguous and unresolved locations remain
 visible in coverage totals without invented coordinates.
 
@@ -33,8 +38,10 @@ A shared local budget caps Geoapify attempts at 2,500 per UTC day. Other applica
 using the same account are outside this counter.
 
 The browser loads Leaflet and OpenStreetMap tiles with visible attribution. A custom
-`VITE_MAP_TILE_URL` requires corresponding exact CSP image origins in `public/_headers`.
-Do not prefetch/download tiles for offline use. Provider terms and capacity must be
+`VITE_MAP_TILE_URL` requires corresponding exact CSP image origins in both `index.html` and `public/_headers`.
+Leaflet remains the renderer. MapLibre GL JS is a WebGL alternative for a future
+renderer migration; a suitable vector basemap requires a separately selected
+production tile source. Do not prefetch/download tiles for offline use. Provider terms and capacity must be
 reviewed before changing tile providers or substantially increasing traffic.
 
 ## Hosted backfill on 2026-10-03

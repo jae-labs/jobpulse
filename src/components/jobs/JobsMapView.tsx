@@ -4,9 +4,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './JobsMapView.css';
 import { Button } from '@jae-labs/ui';
-import type { JobsPageParams } from '../../types/job';
+import type { JobMapPin, JobsPageParams } from '../../types/job';
 import { useJobMapQuery } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
+import JobsMapLocationPanel from './JobsMapLocationPanel';
+
+const IRELAND_BOUNDS: L.LatLngBoundsExpression = [[51.3, -10.8], [55.5, -5.3]];
 
 export default function JobsMapView({ userId, filters, onSelectJob }: {
   userId?: string | null;
@@ -17,16 +20,17 @@ export default function JobsMapView({ userId, filters, onSelectJob }: {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
-  const [viewport, setViewport] = useState({ bounds: [-180, -90, 180, 90], zoom: 3 });
+  const [viewport, setViewport] = useState({ bounds: [-10.8, 51.3, -5.3, 55.5], zoom: 7 });
   const [tilesFailed, setTilesFailed] = useState(false);
   const query = useJobMapQuery(userId, filters, viewport.bounds, viewport.zoom);
-  const selectRef = useRef(onSelectJob);
-  useEffect(() => { selectRef.current = onSelectJob; }, [onSelectJob]);
+  const [selectedPin, setSelectedPin] = useState<JobMapPin | null>(null);
+  const selectedMarker = useRef<HTMLElement | null>(null);
+  useEffect(() => { setSelectedPin(null); }, [filters, userId]);
 
   useEffect(() => {
     if (!container.current) return;
     const map = L.map(container.current, { worldCopyJump: true, zoomAnimation: false, fadeAnimation: false,
-      markerZoomAnimation: false, minZoom: 2, maxZoom: 19 }).setView([20, 0], 3);
+      markerZoomAnimation: false, minZoom: 2, maxZoom: 19 }).fitBounds(IRELAND_BOUNDS, { padding: [32, 32], maxZoom: 7 });
     mapRef.current = map;
     const tiles = L.tileLayer(import.meta.env.VITE_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -64,33 +68,11 @@ export default function JobsMapView({ userId, filters, onSelectJob }: {
         title: label, keyboard: true,
         icon: L.divIcon({ className: 'job-map-pin', html: `<span>${pin.count}</span>`, iconSize: [36, 36], iconAnchor: [18, 18] }),
       }).addTo(layer);
-      const popup = document.createElement('div');
-      const heading = document.createElement('strong');
-      heading.textContent = label;
-      popup.append(heading);
-      if (pin.count === 1) {
-        const domain = document.createElement('p');
-        domain.textContent = t('jobs.mapDomain', { domain: pin.domain });
-        popup.append(domain);
-      }
-      const precision = document.createElement('p');
-      precision.textContent = t('jobs.mapPrecision', { precision: t(`jobs.locationPrecision.${pin.precision}`, { defaultValue: pin.precision }) });
-      popup.append(precision);
-      for (const id of pin.job_ids) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'job-map-open';
-        button.textContent = t('jobs.mapOpenJob', { id });
-        button.onclick = () => selectRef.current(id);
-        popup.append(button);
-      }
-      if (pin.count > pin.job_ids.length) {
-        const zoom = document.createElement('button');
-        zoom.type = 'button'; zoom.className = 'job-map-open'; zoom.textContent = t('jobs.mapZoomCluster');
-        zoom.onclick = () => map.setView([pin.latitude, pin.longitude], Math.min(map.getZoom() + 2, 19), { animate: false });
-        popup.append(zoom);
-      }
-      marker.bindPopup(popup);
+      marker.getElement()?.setAttribute('aria-label', label);
+      marker.on('click', () => {
+        selectedMarker.current = marker.getElement() ?? null;
+        setSelectedPin(pin);
+      });
     }
   }, [query.data, query.isError, t]);
 
@@ -119,7 +101,21 @@ export default function JobsMapView({ userId, filters, onSelectJob }: {
       </> : null}
       {tilesFailed ? <><span role="alert">{t('jobs.mapTilesError')}</span><Button variant="secondary" onClick={retryTiles}>{t('common.retry')}</Button></> : null}
     </div>
-    <div ref={container} className="job-world-map min-h-[360px] flex-1 rounded-ds-card border border-ds-border" />
+    <div className={`job-map-workspace ${selectedPin && !query.isError ? 'has-selection' : ''}`}>
+      <div className="job-map-canvas-wrap">
+        <div className="job-map-framing flex gap-1 rounded-ds-control border border-ds-border bg-ds-panel p-1">
+          <Button variant="secondary" size="sm" onClick={() => mapRef.current?.fitBounds(IRELAND_BOUNDS, { padding: [32, 32], maxZoom: 7 })}>{t('jobs.mapIreland')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => mapRef.current?.fitWorld()}>{t('jobs.mapWorld')}</Button>
+        </div>
+        <div ref={container} tabIndex={-1} className="job-world-map h-full min-h-[320px] rounded-ds-card border border-ds-border" />
+      </div>
+      {selectedPin && !query.isError ? <JobsMapLocationPanel key={selectedPin.job_ids.join(',')} pin={selectedPin} userId={userId} filters={filters} onSelectJob={onSelectJob} onClose={() => {
+        setSelectedPin(null);
+        if (selectedMarker.current?.isConnected) selectedMarker.current.focus();
+        else container.current?.focus();
+      }} /> : null}
+    </div>
+    {!selectedPin ? <p className="text-xs text-ds-text-muted">{t('jobs.mapSelectLocation')}</p> : null}
     <p className="text-xs text-ds-text-muted">{t('jobs.mapLocationNote')} · <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer" className="underline">{t('jobs.mapProvider')}</a></p>
   </section>;
 }

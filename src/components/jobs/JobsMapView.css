@@ -1,8 +1,18 @@
 .job-world-map.leaflet-container { background: var(--ds-color-canvas); color: var(--ds-color-text-primary); font: inherit; z-index: 0; }
-.job-world-map .leaflet-popup-content-wrapper, .job-world-map .leaflet-popup-tip,
 .job-world-map .leaflet-control-zoom a { background: var(--ds-color-panel); color: var(--ds-color-text-primary); }
 .job-world-map .leaflet-control-attribution { background: var(--ds-color-panel); color: var(--ds-color-text-secondary); }
 .job-world-map .leaflet-control-attribution a { color: var(--ds-color-text-primary); }
 .job-map-pin { display: grid; place-items: center; border: 1px solid var(--ds-color-border-strong); border-radius: 50%; background: var(--ds-color-panel); color: var(--ds-color-text-primary); font-weight: 700; }
-.job-map-open { display: block; margin-top: 8px; padding: 4px 8px; border: 1px solid var(--ds-color-border-strong); border-radius: var(--ds-radius-control); background: var(--ds-color-panel); color: var(--ds-color-text-primary); cursor: pointer; }
-.job-map-open:focus-visible, .job-map-pin:focus-visible { outline: 2px solid var(--ds-color-text-primary); outline-offset: 2px; }
+.job-map-workspace { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.job-map-workspace.has-selection { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); }
+.job-map-canvas-wrap { position: relative; min-height: 320px; }
+.job-map-framing { position: absolute; z-index: 1; top: 12px; right: 12px; }
+.job-map-browser { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.job-map-browser-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.job-map-job { cursor: pointer; }
+.job-map-job:focus-visible { outline: 2px solid var(--ds-color-text-primary); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .job-map-workspace.has-selection { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 1fr) minmax(220px, 1fr); overflow-y: auto; }
+  .job-map-browser { min-height: 220px; }
+}
+.job-map-pin:focus-visible { outline: 2px solid var(--ds-color-text-primary); outline-offset: 2px; }

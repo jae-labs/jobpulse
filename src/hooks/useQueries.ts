@@ -651,3 +651,20 @@ export function useJobMapQuery(userId: string | null | undefined, params: import
     refetchInterval: 60000,
   });
 }
+
+/** Bounded public vacancy labels for a selected map group; no candidate fields. */
+export function useJobMapPreviewQuery(userId: string | null | undefined, ids: number[]) {
+  return useQuery({
+    queryKey: queryKeys.jobMapPreview(userId, ids),
+    enabled: Boolean(supabase && userId && ids.length),
+    queryFn: ({ signal }) => withActiveUser(userId, async () => {
+      if (!supabase) throw new Error('Supabase is not initialized');
+      if (ids.length > 5 || ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) throw new Error('Invalid map selection');
+      const { data, error } = await supabase.from('jobs').select('id,title,company,location').in('id', ids).abortSignal(signal);
+      if (error) throw new Error(error.message);
+      const labels = new Map((data ?? []).map((job) => [job.id, job]));
+      return ids.flatMap((id) => labels.has(id) ? [labels.get(id)!] : []);
+    }),
+    staleTime: 120_000,
+  });
+}
