@@ -25,7 +25,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         onClick={() => onSelect(job)}
         aria-pressed={isSelected}
         className={cn(
-          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-xl border p-3.5 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
+          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
           isSelected
             ? 'border-ds-accent bg-ds-selected shadow-xs focus-visible:border-ds-accent'
             : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-accent',
@@ -91,7 +91,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
               {job.matched_skills.slice(0, 3).map((skill) => (
                 <span
                   key={skill}
-                  className="rounded border border-ds-border-strong bg-ds-surface px-1.5 py-0.5 text-[11px] text-ds-text-secondary font-sans font-medium"
+                  className="rounded-ds-control border border-ds-border-strong bg-ds-surface px-1.5 py-0.5 text-[11px] text-ds-text-secondary font-sans font-medium"
                 >
                   {skill}
                 </span>

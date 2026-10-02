@@ -116,7 +116,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
         className="max-w-2xl bg-ds-surface border border-ds-border text-ds-text-primary p-6 sm:p-7 shadow-2xl overflow-y-auto max-h-[88vh]"
       >
         <div className="flex items-center gap-3.5 pb-5 border-b border-ds-border">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-ds-control border border-ds-border-strong shrink-0">
+          <div className="flex size-10 items-center justify-center rounded-ds-control bg-ds-control border border-ds-border-strong shrink-0">
             <span aria-hidden="true" className="text-xl leading-none">🎁</span>
           </div>
           <div>
@@ -162,30 +162,30 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
           </form>
 
           {formError && (
-            <div className="mt-3.5 flex items-center gap-2 p-3 rounded-lg border border-ds-negative/30 bg-ds-negative/10 text-xs text-ds-negative">
+            <div className="mt-3.5 flex items-center gap-2 p-3 rounded-ds-control border border-ds-negative/30 bg-ds-negative/10 text-xs text-ds-negative">
               <AlertCircle className="size-4 shrink-0" />
               <span>{formError}</span>
             </div>
           )}
 
           {justGeneratedLink && (
-            <div className="mt-4 p-3 rounded-xl border border-ds-border bg-ds-control/40 space-y-2 animate-in fade-in-50">
+            <div className="mt-4 p-3 rounded-ds-card border border-ds-border bg-ds-control/40 space-y-2 animate-in fade-in-50">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-ds-positive">
                 <Check className="size-3.5" />
                 <span>{t('invitations.inviteCreated', 'Invitation link created!')}</span>
               </div>
               <div className="relative flex items-center">
-                <input
-                  type="text"
+                <TextField
+                  density="compact"
                   readOnly
                   value={justGeneratedLink}
                   onClick={(e) => (e.target as HTMLInputElement).select()}
-                  className="h-9 w-full rounded-ds-control border border-ds-border-control bg-ds-panel pl-3 pr-9 font-mono text-xs text-ds-text-primary focus:border-ds-accent focus:outline-none select-all transition-colors"
+                  className="bg-ds-panel font-mono pr-9 select-all"
                 />
                 <button
                   type="button"
                   onClick={() => void handleCopyText(justGeneratedLink, 'just-generated')}
-                  className="absolute right-1 top-1 bottom-1 flex items-center justify-center w-7 rounded text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover transition-colors cursor-pointer"
+                  className="absolute right-1 top-1 bottom-1 flex items-center justify-center w-7 rounded-ds-control text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover transition-colors cursor-pointer"
                   title={copiedCode === 'just-generated' ? t('invitations.linkCopied', 'Copied!') : t('invitations.copyLink', 'Copy')}
                   aria-label={t('invitations.copyLink', 'Copy')}
                 >
@@ -218,10 +218,10 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
             <EmptyState
               title={t('invitations.noInvitations', 'No invitations issued yet')}
               description={t('invitations.noInvitationsSub', 'Invite someone to give them access to JobPulse.')}
-              className="py-8 border border-dashed border-ds-border rounded-xl"
+              className="py-8 border border-dashed border-ds-border rounded-ds-card"
             />
           ) : (
-            <div className="divide-y divide-ds-border rounded-xl border border-ds-border bg-ds-control/40 overflow-hidden">
+            <div className="divide-y divide-ds-border rounded-ds-card border border-ds-border bg-ds-control/40 overflow-hidden">
               {invitations.map((inv: InvitationItem) => {
                 const isPending = inv.status === 'pending';
                 const isAccepted = inv.status === 'accepted';

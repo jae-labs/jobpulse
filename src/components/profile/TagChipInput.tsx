@@ -96,11 +96,11 @@ export const TagChipInput: React.FC<TagChipInputProps> = ({
   };
 
   return (
-    <div className={`ds-field-shell flex min-h-9 flex-wrap items-center gap-1.5 rounded-lg border p-1.5 ${className}`}>
+    <div className={`ds-field-shell flex min-h-9 flex-wrap items-center gap-1.5 rounded-ds-control border p-1.5 ${className}`}>
       {items.map((item) => (
         <span
           key={item}
-          className={`group inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors select-none ${colors.chip}`}
+          className={`group inline-flex items-center gap-1.5 rounded-ds-control border px-2.5 py-1 text-xs font-medium transition-colors select-none ${colors.chip}`}
         >
           <span>{item}</span>
           <button

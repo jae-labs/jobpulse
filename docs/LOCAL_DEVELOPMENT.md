@@ -130,7 +130,7 @@ make scrape-test NAME="Kildare County Council"
 # Run core scrapers only (universities, councils, PublicJobs)
 make scrape-core
 
-# Run the full scraping, deduplication, pruning, and job embedding pipeline
+# Run the full scraping, deduplication and job embedding pipeline
 make scrape
 
 # Backfill embeddings for jobs saved before native SQL scoring was deployed

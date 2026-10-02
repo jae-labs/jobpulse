@@ -2,6 +2,10 @@
 
 Code quality standards and development conventions for JobPulse.
 
+For the failure-to-test matrix, security review steps and safe removal rules, read
+[Regression Prevention](REGRESSION_PREVENTION.md). Its contracts apply to new features
+and refactors as well as bug fixes.
+
 ## 1. Type Safety & Schema
 
 - **No `any`**: Strictly type all interfaces, handlers, and database interactions.
@@ -19,6 +23,11 @@ Code quality standards and development conventions for JobPulse.
 - **Cache Invalidation**: Mutations must invalidate query cache keys via the `queryKeys` factory.
 - **Server Aggregation**: Delegate catalog filtering, sorting, and pagination to PostgreSQL stored procedures
   (`get_jobs_page`, `get_overview_metrics`).
+- **One Matching Authority**: PostgreSQL compares matching inputs and enqueues profile/vector
+  writes atomically. Do not reproduce its fingerprint rules or send an extra enqueue after every save.
+  Explicit failed-work retry remains a caller-owned RPC.
+- **Visible Failures**: Do not turn private export, mutation or inference failures into success-shaped
+  fallback values. Search distinguishes loading, error/retry and empty results.
 
 ## 3. Localization (i18n)
 
@@ -71,3 +80,8 @@ make check  # npm run check + scrape-lint + scrape-unit
 ```
 
 CI audits the locked JavaScript and Python dependencies and scans repository history with a checksum-verified Gitleaks release. Local Lefthook scans staged changes; CI remains mandatory when hooks are skipped.
+
+Source lint also rejects runtime Sentry imports outside `src/lib/sentry.ts` and common
+direct console diagnostics outside `src/lib/logger.ts`. Use `reportError` for sanitized
+production reporting and `warn` for development-only diagnostics. Never log profile or
+document content as a workaround, or add an exception to silence a security failure.

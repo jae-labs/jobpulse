@@ -292,7 +292,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         activeTab={activeTab}
       />
 
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-ds-surface lg:rounded-2xl lg:border lg:border-ds-border lg:shadow-2xl">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-ds-surface lg:rounded-ds-card lg:border lg:border-ds-border lg:shadow-2xl">
         <ScoringProgress userId={userId} />
         <header
           data-search-exclude
@@ -336,9 +336,9 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
             }`}
           >
             {dbError && (
-              <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-ds-negative/40 bg-ds-negative/10 p-3.5 text-xs text-ds-negative backdrop-blur-md shadow-lg">
+              <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-ds-card border border-ds-negative/40 bg-ds-negative/10 p-3.5 text-xs text-ds-negative backdrop-blur-md shadow-lg">
                 <div className="flex items-start sm:items-center gap-3">
-                  <div className="p-1.5 rounded-lg bg-ds-negative/20 text-ds-negative shrink-0">
+                  <div className="p-1.5 rounded-ds-control bg-ds-negative/20 text-ds-negative shrink-0">
                     <AlertTriangle className="size-4" />
                   </div>
                   <div>
@@ -358,21 +358,22 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                   >
                     <span>{t('common.retry')}</span>
                   </Button>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setIsDbErrorDismissed(true)}
-                    className="text-ds-text-muted hover:text-ds-text-primary p-1 cursor-pointer"
                     aria-label={t('common.dismissError')}
                   >
                     <X className="size-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
 
             {isLoading && !dbError && (
               <Card className="mb-4 p-10 text-center space-y-2.5">
-                <div className="size-8 mx-auto rounded-lg bg-ds-control border border-ds-border flex items-center justify-center">
+                <div className="size-8 mx-auto rounded-ds-control bg-ds-control border border-ds-border flex items-center justify-center">
                   <RefreshCw className="size-4 animate-spin text-ds-text-muted" />
                 </div>
                 <div className="text-xs font-semibold text-ds-text-secondary">{t('common.connectingToDb')}</div>
@@ -383,18 +384,19 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
             )}
 
             {notice && (
-              <div role="status" aria-live="polite" className="mb-4 flex items-center justify-between rounded-xl border border-ds-border bg-ds-control/60 p-3 text-xs text-ds-text-secondary">
+              <div role="status" aria-live="polite" className="mb-4 flex items-center justify-between rounded-ds-card border border-ds-border bg-ds-control/60 p-3 text-xs text-ds-text-secondary">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 shrink-0 text-ds-positive" />
                   <span>{notice}</span>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setNotice('')}
-                  className="text-ds-text-muted hover:text-ds-text-primary ml-3 font-semibold cursor-pointer"
                 >
-                  {t('common.dismiss')}
-                </button>
+                  <span>{t('common.dismiss')}</span>
+                </Button>
               </div>
             )}
 
@@ -485,7 +487,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 }`}
               >
                 <div
-                  className={`flex size-8 items-center justify-center rounded-lg transition-colors ${
+                  className={`flex size-8 items-center justify-center rounded-ds-control transition-colors ${
                     isActive
                       ? 'border border-ds-border-strong bg-ds-hover text-ds-text-primary shadow-xs'
                       : 'text-ds-text-muted'

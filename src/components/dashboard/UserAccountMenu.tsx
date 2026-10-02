@@ -81,7 +81,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div id={menuId} className="absolute top-full right-0 mt-2 w-56 sm:w-60 rounded-xl border border-ds-border bg-ds-panel p-2 shadow-2xl z-50 text-xs text-ds-text-secondary animate-in fade-in-50 zoom-in-95 duration-100 divide-y divide-ds-border">
+        <div id={menuId} className="absolute top-full right-0 mt-2 w-56 sm:w-60 rounded-ds-card border border-ds-border bg-ds-panel p-2 shadow-2xl z-50 text-xs text-ds-text-secondary animate-in fade-in-50 zoom-in-95 duration-100 divide-y divide-ds-border">
           <div className="px-2.5 py-2">
             <p className="font-semibold text-ds-text-primary truncate">{displayName}</p>
             {userEmail && (
@@ -99,7 +99,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 setIsOpen(false);
                 onNavigateToProfile();
               }}
-              className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
+              className="flex w-full items-center rounded-ds-control px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
             >
               <span>{t('nav.profile')}</span>
             </button>
@@ -110,7 +110,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   setIsOpen(false);
                   onOpenInvitations();
                 }}
-                className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
+                className="flex w-full items-center rounded-ds-control px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
               >
                 <span>{t('invitations.title', 'Invite a friend')}</span>
               </button>
@@ -135,7 +135,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     onClick={() => {
                       void i18n.changeLanguage(lang.code);
                     }}
-                    className={`flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] rounded-md transition-colors cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] rounded-ds-control transition-colors cursor-pointer ${
                       isSelected
                         ? 'bg-ds-hover text-ds-text-primary font-medium border border-ds-border-strong'
                         : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
@@ -150,9 +150,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
           </div>
 
           <div className="pt-1.5">
-            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="block rounded-lg px-2.5 py-1.5 hover:bg-ds-control">{t('privacy.notice')}</a>
+            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="block rounded-ds-control px-2.5 py-1.5 hover:bg-ds-control">{t('privacy.notice')}</a>
             <button type="button" disabled={exportAccount.isPending} onClick={() => void exportAccount.mutateAsync().catch(() => {})}
-              className="w-full rounded-lg px-2.5 py-1.5 text-left hover:bg-ds-control">
+              className="w-full rounded-ds-control px-2.5 py-1.5 text-left hover:bg-ds-control">
               {exportAccount.isPending ? t('common.loading') : t('privacy.exportAccount')}
             </button>
             {exportAccount.isError && <p role="alert" className="px-2.5 text-ds-negative">{t('privacy.exportFailed')}</p>}
@@ -163,7 +163,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 setIsOpen(false);
                 onSignOut();
               }}
-              className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-ds-negative hover:bg-ds-negative/10 hover:text-ds-negative transition-colors cursor-pointer text-left"
+              className="flex w-full items-center rounded-ds-control px-2.5 py-1.5 text-ds-negative hover:bg-ds-negative/10 hover:text-ds-negative transition-colors cursor-pointer text-left"
             >
               <span>{t('nav.signOut')}</span>
             </button>

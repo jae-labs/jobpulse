@@ -14,6 +14,9 @@ export function auditTenantSource(source, filename) {
     if (!ts.isImportDeclaration(node) || !ts.isStringLiteral(node.moduleSpecifier)) continue;
     const module = node.moduleSpecifier.text;
     const clause = node.importClause;
+    if (!clause && module.startsWith('@sentry/') && filename !== 'src/lib/sentry.ts') {
+      issues.push('Import telemetry SDKs only in src/lib/sentry.ts; use the sanitized logger elsewhere.');
+    }
     if (!clause || clause.isTypeOnly) continue;
     const bindings = clause.namedBindings;
     if (module.startsWith('@sentry/') && filename !== 'src/lib/sentry.ts') {
@@ -49,6 +52,10 @@ export function auditTenantSource(source, filename) {
     }
     if (ts.isCallExpression(node)) {
       const expr = node.expression;
+      if (expr.kind === ts.SyntaxKind.ImportKeyword && node.arguments[0] &&
+        ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text.startsWith('@sentry/') && filename !== 'src/lib/sentry.ts') {
+        issues.push('Import telemetry SDKs only in src/lib/sentry.ts; use the sanitized logger elsewhere.');
+      }
       const consoleMethod = ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.expression) && expr.expression.text === 'console'
         ? expr.name.text
         : ts.isElementAccessExpression(expr) && ts.isIdentifier(expr.expression) && expr.expression.text === 'console' &&

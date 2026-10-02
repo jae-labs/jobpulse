@@ -42,7 +42,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, o
       : t('charts.relevance.positions', { count: data.count });
     return (
       <div
-        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 z-50 select-none ${
+        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 z-50 select-none ${
           onSelectTier ? 'cursor-pointer' : ''
         }`}
         onClick={() => onSelectTier?.(minMatch)}
@@ -109,7 +109,7 @@ const RelevanceDistributionChartComponent: React.FC<RelevanceDistributionChartPr
   }, [jobs, distribution]);
 
   return (
-    <Card className="rounded-3xl p-6 flex flex-col justify-between">
+    <Card className="p-6 flex flex-col justify-between">
       <div className="mb-4">
         <h3 className="text-xl font-bold text-ds-text-primary">{t('charts.relevance.title')}</h3>
       </div>

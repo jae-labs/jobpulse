@@ -25,7 +25,7 @@ flowchart TD
     end
 
     Client -->|Authenticate| Auth
-    Client -->|Typed RPCs & Queries (Anon JWT)| PostgREST
+    Client -->|Typed RPCs and queries with session JWT| PostgREST
     Client -->|Profile vector generated in browser| PostgREST
     PostgREST -->|Execute with caller JWT| DB
     Client -->|Stream Signed URLs / Uploads| Storage
@@ -60,3 +60,9 @@ flowchart TD
 - **Invitations & Multi-Tenancy**: Invite-only onboarding via cryptographic invite codes and database triggers (`bind_verified_invitation`, `purge_deleted_account_access`).
 
 Candidate query caches are scoped by immutable Auth user IDs. Profile and document APIs derive ownership from the active session; emails remain contact and invitation fields.
+
+The browser creates only the publishable-key session client. Request access uses the
+current authenticated JWT; the key itself grants no tenant ownership. Account view
+state remounts per UID, and query/mutation helpers reject responses after an identity
+change. PostgreSQL owns atomic scoring enqueueing; browser profile saves do not
+duplicate matching comparisons. See [Regression Prevention](REGRESSION_PREVENTION.md).

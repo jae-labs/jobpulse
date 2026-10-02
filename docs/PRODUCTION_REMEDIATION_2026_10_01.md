@@ -1,5 +1,9 @@
 # Production review remediation — 1 October 2026
 
+This is a dated verification record, not a live deployment tracker. Current change
+requirements are in [Regression Prevention](REGRESSION_PREVENTION.md); verify release
+state against deployment commits and migration ledgers.
+
 The reported `relation "filtered" does not exist` outage and all three follow-up database migrations are applied to hosted JobPulse. Browser, ingestion and workflow fixes are in this change set; they must be deployed from the reviewed commit before the overall remediation is live.
 
 ## Findings
@@ -41,4 +45,7 @@ Supabase advisors still flag the nine intentional authenticated SECURITY DEFINER
 
 Leaked-password protection remains disabled in hosted Auth. The application uses Google OAuth and hosted aggregate inspection found zero password accounts. Enable protection before offering password sign-in (Supabase requires Pro or above), or disable an unused email/password provider after verifying its effects. This hosted setting cannot be established by a SQL migration. Provider account controls and log-retention configuration still require operational review; the application payload contract alone cannot erase historical telemetry or backups.
 
-Frontend production deployment is a separate release from SQL. Review the prepared pull request and pass its required checks before merging; Cloudflare Pages uses the protected `main` branch for production.
+Frontend production deployment is a separate release from SQL. Submit the change set
+through a reviewed PR with passing required checks; Cloudflare Pages uses the protected
+`main` branch for production. Verify the resulting deployment commit rather than
+assuming a PR, merge or release occurred from this historical record.

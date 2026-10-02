@@ -25,9 +25,10 @@ entry point rather than deep imports.
 The dependency direction is JobPulse → `@jae-labs/ui`. The package must not import application models,
 Supabase, routes, hooks, libraries, translations, or feature code. The root
 [`scripts/check-design-system-boundary.sh`](../scripts/check-design-system-boundary.sh) runs during `npm run lint`
-and in CI. It rejects application imports and raw component colors, then validates token references. Oxlint
-also blocks forbidden imports at the module level. Run `npm run check` before completion and
-`npm run build-storybook` after changing UI states. CI builds the standalone Storybook catalog.
+and in CI. It rejects application imports, literal hex/rgb colors, raw palette utilities, and arbitrary
+border-radius classes (enforcing `rounded-ds-control`, `rounded-ds-card`, or `rounded-full`), then validates
+token references. Oxlint also blocks forbidden imports at the module level. Run `npm run check` before completion
+and `npm run build-storybook` after changing UI states. CI builds the standalone Storybook catalog.
 
 The application maps domain statuses to the generic `Pill.tone` API in
 [`src/lib/statusTone.ts`](../src/lib/statusTone.ts).

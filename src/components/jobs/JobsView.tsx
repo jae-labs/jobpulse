@@ -350,7 +350,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleQueryChange('')}
-                className="absolute right-12 top-1/2 -translate-y-1/2 rounded p-0.5 text-ds-text-muted hover:text-ds-text-primary"
+                className="absolute right-12 top-1/2 -translate-y-1/2 rounded-ds-control p-0.5 text-ds-text-muted hover:text-ds-text-primary"
                 aria-label={t('jobs.clearSearch')}
               >
                 <X className="size-3" />
@@ -360,7 +360,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenCommandMenu}
-                className="hidden sm:inline-flex absolute right-2 top-1/2 -translate-y-1/2 items-center rounded border border-ds-border bg-ds-panel px-1.5 py-0.5 font-mono text-[10px] text-ds-text-muted hover:border-ds-border-strong hover:text-ds-text-secondary cursor-pointer"
+                className="hidden sm:inline-flex absolute right-2 top-1/2 -translate-y-1/2 items-center rounded-ds-control border border-ds-border bg-ds-panel px-1.5 py-0.5 font-mono text-[10px] text-ds-text-muted hover:border-ds-border-strong hover:text-ds-text-secondary cursor-pointer"
                 title={t('jobs.openCommandMenu')}
                 aria-label={t('jobs.openCommandMenu')}
               >
@@ -369,14 +369,14 @@ export const JobsView: React.FC<JobsViewProps> = ({
             )}
           </div>
 
-          <div className="hidden lg:flex items-center rounded-lg border border-ds-border bg-ds-surface p-0.5">
+          <div className="hidden lg:flex items-center rounded-ds-control border border-ds-border bg-ds-surface p-0.5">
             <button
               type="button"
               onClick={() => {
                 setLayoutMode('split');
                 setIsDetailFullScreen(false);
               }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'split'
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
@@ -392,7 +392,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 setLayoutMode('list');
                 setIsDetailFullScreen(false);
               }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'list'
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
@@ -407,7 +407,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
         <div className="flex flex-col gap-2.5 pt-2 border-t border-ds-border text-xs">
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-1.5">
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.minMatch')}
@@ -446,7 +446,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.allDomains')}
@@ -481,7 +481,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.allSalaries')}
@@ -526,7 +526,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.allLocations')}
@@ -623,7 +623,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </span>
           <span className="hidden sm:inline-block text-ds-text-muted">·</span>
           <span className="hidden sm:inline-block text-ds-text-muted font-sans">
-            {t('shortcuts.press')} <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')} · <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')}
+            {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')}
           </span>
         </div>
       </div>
@@ -640,10 +640,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
         </div>
       ) : isPageLoading && displayedJobs.length === 0 ? (
         <div className="flex-1 min-h-0 flex items-center justify-center p-6">
-          <div className="rounded-xl border border-ds-border bg-ds-panel p-12 text-center space-y-3 max-w-md mx-auto">
+          <Card className="p-12 text-center space-y-3 max-w-md mx-auto">
             <RefreshCw className="size-6 animate-spin mx-auto text-ds-text-muted" />
             <div className="text-xs font-medium text-ds-text-secondary">{t('jobs.loadingOpportunities')}</div>
-          </div>
+          </Card>
         </div>
       ) : displayedJobs.length > 0 ? (
         <div className={`flex-1 min-h-0 grid gap-3.5 ${layoutMode === 'split' ? 'lg:grid-cols-12' : 'grid-cols-1'}`}>
@@ -709,7 +709,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </div>
 
           {layoutMode === 'split' && (
-            <div className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full min-h-0 rounded-xl border border-ds-border bg-ds-panel shadow-xs overflow-hidden">
+            <Card className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full min-h-0 shadow-xs overflow-hidden">
               <JobDetailInspector
                 job={selectedJob || null}
                 onUpdateStatus={onUpdateStatus || (async () => {})}
@@ -719,7 +719,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 onToggleFullScreen={() => setIsDetailFullScreen(true)}
                 userId={userId}
               />
-            </div>
+            </Card>
           )}
         </div>
       ) : (

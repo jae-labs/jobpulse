@@ -11,6 +11,10 @@ Describe the user-visible problem and resulting behavior.
   (including RPC/Storage paths where applicable).
 - [ ] Shared catalog data contains no candidate scores, statuses, explanations, or personal information.
 - [ ] Query keys include the authenticated identity; cache/session behavior remains isolated.
+- [ ] Affected contracts from `docs/REGRESSION_PREVENTION.md` and their behavioral tests are identified below.
+- [ ] Diagnostics use the sanitized logger; new personal fields have a purpose and export/deletion coverage.
+- [ ] Cleanup includes callers/docs/tests; applied migrations, safety regressions and compatibility contracts are preserved.
 
-Describe any additional validation or explain which conditional items do not apply.
+Describe affected finding IDs, additional validation, release commit/schema evidence,
+or which conditional items do not apply.
 Security failures must be resolved before release; do not waive them as unrelated.

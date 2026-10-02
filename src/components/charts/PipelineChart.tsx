@@ -28,23 +28,23 @@ const STAGE_CONFIG: Record<
 > = {
   new: {
     token: '--jp-color-status-new',
-    fallback: '#3b82f6',
+    fallback: 'currentColor',
   },
   applied: {
     token: '--jp-color-status-applied',
-    fallback: '#8b5cf6',
+    fallback: 'currentColor',
   },
   interviewing: {
     token: '--jp-color-status-interviewing',
-    fallback: '#f59e0b',
+    fallback: 'currentColor',
   },
   interested: {
     token: '--jp-color-status-interested',
-    fallback: '#10b981',
+    fallback: 'currentColor',
   },
   not_interested: {
     token: '--jp-color-status-muted',
-    fallback: '#6b7280',
+    fallback: 'currentColor',
   },
 };
 
@@ -70,7 +70,7 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTool
     const roleText = data.count === 1 ? t('charts.pipeline.role') : t('charts.pipeline.roles');
     return (
       <div
-        className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 cursor-pointer z-50"
+        className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 cursor-pointer z-50"
         onClick={() => onSelectStatus?.(data.status)}
       >
         <div className="font-semibold text-ds-text-primary">{label}</div>
@@ -247,7 +247,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
           return (
             <Pill
               key={stage.status}
-              className="h-auto min-h-12 flex-col items-stretch justify-center gap-0.5 rounded-xl py-1.5"
+              className="h-auto min-h-12 flex-col items-stretch justify-center gap-0.5 rounded-ds-control py-1.5"
               tone={statusPillTone[stage.status]}
               onClick={() => onSelectStatus?.(stage.status)}
             >

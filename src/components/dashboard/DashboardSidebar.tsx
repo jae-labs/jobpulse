@@ -49,7 +49,7 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
                 onClick={(event) => {
                   if (event.detail > 0) event.currentTarget.blur();
                 }}
-                className={`group flex items-center rounded-lg text-xs font-medium transition-colors cursor-pointer outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 ${
+                className={`group flex items-center rounded-ds-control text-xs font-medium transition-colors cursor-pointer outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 ${
                   isCollapsed
                     ? 'size-9 justify-center mx-auto'
                     : 'w-full justify-between px-2 py-1.5 text-left'
@@ -64,7 +64,7 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
                   {!isCollapsed && <span>{displayLabel}</span>}
                 </div>
                 {!isCollapsed && (
-                  <kbd className="rounded border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted select-none leading-none group-hover:border-ds-border-strong group-hover:text-ds-text-secondary">
+                  <kbd className="rounded-ds-control border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted select-none leading-none group-hover:border-ds-border-strong group-hover:text-ds-text-secondary">
                     {shortcutKey}
                   </kbd>
                 )}

@@ -266,7 +266,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </Card>
 
       {saveStatus === 'error' && (
-        <div className="rounded-xl border border-ds-negative/30 bg-ds-negative/10 p-4 text-xs text-ds-negative flex items-start gap-3">
+        <div className="rounded-ds-card border border-ds-negative/30 bg-ds-negative/10 p-4 text-xs text-ds-negative flex items-start gap-3">
           <AlertCircle className="size-4 text-ds-negative shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-ds-negative">{t('profile.autoSaveNotice')}</p>

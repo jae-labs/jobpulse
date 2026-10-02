@@ -71,7 +71,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
       {avatarNotice && (
         <div
           role="alert"
-          className="flex items-center justify-between gap-3 rounded-lg border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative"
+          className="flex items-center justify-between gap-3 rounded-ds-control border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative"
         >
           <span>{avatarNotice}</span>
           <button

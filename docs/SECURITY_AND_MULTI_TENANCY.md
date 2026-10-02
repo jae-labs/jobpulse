@@ -56,13 +56,19 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 RLS is the enforcement boundary. Lint, hooks, and agent instructions are additional
 checks; they cannot prove isolation on their own.
 
+The [regression matrix](REGRESSION_PREVENTION.md) records the session's privacy,
+matching and query failures alongside the tenant contract. Review it when adding
+private fields, asynchronous work or diagnostic integrations.
+
 | Layer | Gate | What it catches |
 | --- | --- | --- |
-| Browser source | `npm run test:tenant-lint` (also included in `lint`) | New browser Supabase clients, privileged credential references/Admin APIs, query definitions outside the central key factory, missing identity arguments |
+| Browser source | `npm run test:tenant-lint` (also included in `lint`) | New browser Supabase clients, privileged credential references/Admin APIs, unsafe query keys/placeholders, Sentry imports outside the privacy boundary, direct console diagnostics |
 | Browser cache/session | `npm run test` | Cache key collisions between two users, unclassified new factories, logout/account-switch cache retention, stale asynchronous session restoration |
 | Database inventory | `tenant_catalog.sql` | Unclassified public relations/RPC exposure, disabled RLS, missing owner columns, browser vector access, anonymous RPC grants, missing definer search paths, writable public schema, public/unclassified Storage buckets |
 | Database requests | `tenant_rows.sql`, `tenant_invitations.sql` | Two-member read/write separation, ownership spoofing, Storage metadata isolation, candidate fields returned by jobs/overview RPCs, foreign rescoring, anonymous/uninvited/unconfirmed access, foreign invitation reads/code retrieval/deletion |
 | Guard self-tests | `tenant_mutations.sql` | Intentionally disables RLS, widens a policy, exposes a privileged RPC, grants anonymous execution, creates an unknown table, and makes documents public; the guards must reject each change |
+| Durable work | `tenant_scoring_queue.sql` | Invalid matching inputs/vectors, lost setup/retry state, ingestion fan-out, shortlist underfill, weight-edit rescoring, worker exposure and failed-tenant interference |
+| Catalog retention | `tenant_catalog_retention.sql` | A service-role caller cannot use the retired age-only pruning API to delete an old untracked vacancy without closure evidence |
 
 The public-table and browser-RPC inventory lives in
 `supabase/tests/helpers/tenant_contract.sql`. A new owner table must also have a
@@ -97,8 +103,9 @@ The database runner uses the local Supabase Docker container named from
 `supabase/config.toml`; it accepts no database URL, hosted credentials, or reset
 flag, and requires a local Docker socket/pipe. It fails when the migration ledger differs from the checkout, so an older
 schema cannot produce a misleading green result. It never resets, restores, or
-applies migrations automatically. Back up important local data before explicitly
-resetting/updating the local schema. Existing non-tenant SQL suites also require the
+applies migrations automatically. Apply pending forward versions with
+`supabase migration up --local`. A divergent history needs reconciliation; reset only
+a disposable database or a deliberately backed-up developer database. Existing non-tenant SQL suites also require the
 development seed.
 
 Lefthook runs browser checks at pre-commit through `lint` and `test`, and requires

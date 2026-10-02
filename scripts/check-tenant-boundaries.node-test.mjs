@@ -33,6 +33,8 @@ test('rejects telemetry SDK imports outside the privacy boundary', () => {
     "import * as telemetry from '@sentry/react';",
     "import {captureException as capture} from '@sentry/react';",
     "import telemetry from '@sentry/browser';",
+    "import '@sentry/react';",
+    "const telemetry = await import('@sentry/react');",
   ]) {
     assert.ok(auditTenantSource(source, 'src/hooks/example.ts').length);
   }

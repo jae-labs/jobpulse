@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         <Card className="border border-ds-negative/30 bg-ds-negative/10 p-6 text-center text-ds-negative">
-          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-ds-negative/20 text-ds-negative">
+          <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-ds-control bg-ds-negative/20 text-ds-negative">
             <AlertTriangle className="size-5" />
           </div>
           <h3 className="text-sm font-semibold text-ds-negative">

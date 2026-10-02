@@ -12,6 +12,7 @@ import {
 import { supabase } from './supabase';
 import { DEFAULT_PROFILE } from './defaultProfile';
 import { embedProfile, profileContentHash } from './browserEmbedding';
+import type { Session } from '@supabase/supabase-js';
 
 vi.mock('./browserEmbedding', () => ({
   embedProfile: vi.fn(),
@@ -41,7 +42,7 @@ describe('profile scoring synchronization', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(supabase!.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: 'test-user-uuid' } } as any }, error: null,
+      data: { session: { user: { id: 'test-user-uuid' } } as unknown as Session }, error: null,
     });
     vi.mocked(profileContentHash).mockResolvedValue('a'.repeat(64));
     vi.mocked(embedProfile).mockResolvedValue(Array(384).fill(0));
@@ -52,13 +53,11 @@ describe('profile scoring synchronization', () => {
       ...DEFAULT_PROFILE.scoring_rules!,
       weights: { ...DEFAULT_PROFILE.scoring_rules!.weights!, semantic: 40 },
     } };
-    const previous = { ...profile, scoring_rules: {
-      ...profile.scoring_rules, weights: { ...profile.scoring_rules.weights, semantic: 25 },
-    } };
+    const select = vi.fn();
     vi.mocked(supabase!.from).mockReturnValue({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: previous, error: null }) }) }),
+      select,
       upsert: async () => ({ error: null }),
-    } as any);
+    } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
     const rpc = vi.fn().mockResolvedValue({ data: {
       content_hash: 'a'.repeat(64), model_version: 'all-MiniLM-L6-v2:384:v1',
     }, error: null });
@@ -66,6 +65,7 @@ describe('profile scoring synchronization', () => {
 
     expect(await saveUserProfile(profile)).toEqual({ success: true });
     expect(embedProfile).not.toHaveBeenCalled();
+    expect(select).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalledWith('rescore_user', expect.anything());
   });
 
@@ -88,9 +88,9 @@ describe('profile scoring synchronization', () => {
   it('stores a changed vector without a redundant enqueue request', async () => {
     const profile = { ...DEFAULT_PROFILE, headline: 'Analyst' };
     vi.mocked(supabase!.from).mockReturnValue({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: DEFAULT_PROFILE, error: null }) }) }),
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile, error: null }) }) }),
       upsert: async () => ({ error: null }),
-    } as any);
+    } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
     const rpc = vi.fn().mockImplementation(async (name: string) => ({
       data: name === 'get_profile_embedding_state' ? null : 1, error: null,
     }));
@@ -102,6 +102,55 @@ describe('profile scoring synchronization', () => {
       p_content_hash: 'a'.repeat(64), p_model_version: 'all-MiniLM-L6-v2:384:v1',
     }));
     expect(rpc).not.toHaveBeenCalledWith('rescore_user', expect.anything());
+  });
+
+  it('rejects a vector save if the account switches during inference', async () => {
+    vi.mocked(supabase!.auth.getSession)
+      .mockResolvedValueOnce({ data: { session: { user: { id: 'test-user-uuid' } } as unknown as Session }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: { id: 'foreign-user-uuid' } } as unknown as Session }, error: null });
+    vi.mocked(supabase!.from).mockReturnValue({ upsert: async () => ({ error: null }) } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
+
+    expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
+      success: false, error: 'Active account changed during inference',
+    });
+    expect(embedProfile).toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
+    expect(rpc).not.toHaveBeenCalledWith('rescore_user', expect.anything());
+  });
+
+  it('rejects a stale vector if the saved profile changes during inference', async () => {
+    vi.mocked(profileContentHash).mockResolvedValueOnce('a'.repeat(64)).mockResolvedValueOnce('b'.repeat(64));
+    vi.mocked(supabase!.from).mockReturnValue({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: DEFAULT_PROFILE, error: null }) }) }),
+      upsert: async () => ({ error: null }),
+    } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
+
+    expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
+      success: false, error: 'Profile changed during inference',
+    });
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
+  });
+
+  it('rechecks identity after the asynchronous profile verification', async () => {
+    const foreignSession = { user: { id: 'foreign-user-uuid' } } as unknown as Session;
+    vi.mocked(supabase!.from).mockReturnValue({
+      select: () => ({ eq: () => ({ maybeSingle: async () => {
+        vi.mocked(supabase!.auth.getSession).mockResolvedValue({ data: { session: foreignSession }, error: null });
+        return { data: DEFAULT_PROFILE, error: null };
+      } }) }),
+      upsert: async () => ({ error: null }),
+    } as unknown as ReturnType<NonNullable<typeof supabase>['from']>);
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
+
+    expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
+      success: false, error: 'Active account changed during inference',
+    });
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
   });
 });
 

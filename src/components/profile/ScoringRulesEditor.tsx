@@ -191,7 +191,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1200px]:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] min-[1200px]:items-start 2xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
           <aside
             aria-label={t('profile.scoring.previewTitle')}
-            className="min-w-0 rounded-xl border border-ds-accent/30 bg-ds-panel p-4 shadow-sm min-[1200px]:sticky min-[1200px]:top-4 min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:self-start"
+            className="min-w-0 rounded-ds-card border border-ds-accent/30 bg-ds-panel p-4 shadow-sm min-[1200px]:sticky min-[1200px]:top-4 min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:self-start"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-ds-text-primary">
@@ -207,7 +207,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
             {previewMatches.length > 0 ? (
               <ol className="mt-3 space-y-2">
                 {previewMatches.map((job, index) => (
-                  <li key={job.id} className="flex min-w-0 items-center gap-3 rounded-lg border border-ds-border bg-ds-surface p-2.5">
+                  <li key={job.id} className="flex min-w-0 items-center gap-3 rounded-ds-control border border-ds-border bg-ds-surface p-2.5">
                     <span className="w-4 shrink-0 text-center font-mono text-[11px] text-ds-text-muted">{index + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium text-ds-text-primary" title={job.title}>{job.title}</p>
@@ -246,7 +246,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
                     </div>
                     <div className="shrink-0 self-start sm:self-center">
                       <span
-                        className={`inline-flex items-center justify-center min-w-[84px] px-3 py-1.5 rounded-lg border font-mono text-sm font-semibold ${theme}`}
+                        className={`inline-flex items-center justify-center min-w-[84px] px-3 py-1.5 rounded-ds-control border font-mono text-sm font-semibold ${theme}`}
                       >
                         {t(cfg.key === 'disqualification_cap' ? 'profile.scoring.maximumPercent' : 'profile.scoring.pointsUnit', { count: currentVal })}
                       </span>

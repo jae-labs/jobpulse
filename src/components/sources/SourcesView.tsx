@@ -89,14 +89,14 @@ const SourcesViewComponent: React.FC<SourcesViewProps> = ({
         </p>
 
         {notice && (
-          <div className="flex items-center gap-2.5 rounded-lg border border-ds-border bg-ds-surface p-3 text-xs text-ds-text-secondary">
+          <div className="flex items-center gap-2.5 rounded-ds-control border border-ds-border bg-ds-surface p-3 text-xs text-ds-text-secondary">
             <CheckCircle2 className="size-4 shrink-0 text-ds-positive" />
             <p>{notice}</p>
           </div>
         )}
 
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-ds-border text-xs">
-          <div className="ds-field-shell flex w-full items-center justify-between rounded-lg border px-2 py-1.5 sm:w-auto sm:py-1">
+          <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
             <div className="flex items-center min-w-0 flex-1">
               <select
                 aria-label={t('sources.sortByLabel')}

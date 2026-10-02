@@ -32,6 +32,8 @@ For local development, start the Supabase stack with `make dev`. If running the 
 
 Python dependencies are managed by `pyproject.toml` and `uv.lock`; commands use `uv run --locked`.
 Candidate scoring runs in PostgreSQL; the scraper does not load profile or scoring rules.
+Vacancies are retained when a source is old, empty or unavailable. The former
+`--prune-only` command has been removed; retirement needs source-specific closure evidence.
 Existing jobs need a one-time embedding backfill when migrating from the former scraper scoring path.
 
 After schema changes, run `make db-types` from the repository root to regenerate both language models.

@@ -74,6 +74,7 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 | Development and release | [Local development](docs/LOCAL_DEVELOPMENT.md) · [Release and recovery](docs/RELEASE_AND_RECOVERY.md) |
 | UI and quality | [Design system](docs/DESIGN_SYSTEM.md) · [UI package design](packages/ui/DESIGN.md) · [Accessibility](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) |
 | Operations and standards | [Performance](docs/PERFORMANCE_AND_SCALABILITY.md) · [Monitoring](docs/ERROR_TRACKING_AND_MONITORING.md) · [Conventions](docs/STANDARDS_AND_CONVENTIONS.md) |
+| Preventing regressions | [Failure contracts, code smells and safe cleanup](docs/REGRESSION_PREVENTION.md) |
 
 The browser uses a publishable Supabase key; only the scraper and Edge Function use service-role credentials. Keep `.env` files and `.backups/` out of Git.
 

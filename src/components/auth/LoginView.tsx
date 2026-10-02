@@ -64,7 +64,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSignInError }) => {
         </h1>
 
         {inviteEmail && (
-          <div className="mb-6 w-full rounded-xl border border-ds-accent/40 bg-ds-accent/10 p-3.5 text-xs text-ds-text-primary text-center animate-in fade-in-50">
+          <div className="mb-6 w-full rounded-ds-card border border-ds-accent/40 bg-ds-accent/10 p-3.5 text-xs text-ds-text-primary text-center animate-in fade-in-50">
             <p className="font-semibold text-ds-accent">
               {t('auth.invitationBannerTitle', "You've been invited to JobPulse!")}
             </p>

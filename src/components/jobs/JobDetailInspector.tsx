@@ -66,9 +66,9 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
         description={
           <span>
             {t('jobs.inspector.selectPrompt', 'Select an opportunity from the list or press')}{' '}
-            <kbd className="rounded border border-ds-border bg-ds-surface px-1 font-mono text-[10px] text-ds-text-secondary">↑</kbd>{' '}
+            <kbd className="rounded-ds-control border border-ds-border bg-ds-surface px-1 font-mono text-[10px] text-ds-text-secondary">↑</kbd>{' '}
             /{' '}
-            <kbd className="rounded border border-ds-border bg-ds-surface px-1 font-mono text-[10px] text-ds-text-secondary">↓</kbd>{' '}
+            <kbd className="rounded-ds-control border border-ds-border bg-ds-surface px-1 font-mono text-[10px] text-ds-text-secondary">↓</kbd>{' '}
             {t('shortcuts.cycle', 'to navigate')}.
           </span>
         }
@@ -101,10 +101,12 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
 
             <div className="flex items-center gap-1.5 shrink-0">
               {onToggleFullScreen && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={onToggleFullScreen}
-                  className="rounded-md p-1.5 text-ds-text-secondary hover:bg-ds-hover hover:text-ds-text-primary transition-colors cursor-pointer"
+                  className="size-8"
                   aria-label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')}
                   title={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')}
                 >
@@ -113,18 +115,20 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                   ) : (
                     <Maximize2 className="size-4" />
                   )}
-                </button>
+                </Button>
               )}
               {onClose && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={onClose}
-                  className="rounded-md p-1.5 text-ds-text-secondary hover:bg-ds-hover hover:text-ds-text-primary transition-colors cursor-pointer"
+                  className="size-8"
                   aria-label={t('jobs.inspector.close')}
                   title={t('jobs.inspector.close')}
                 >
                   <X className="size-4" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -133,7 +137,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             <div
               role="group"
               aria-label={t('jobs.inspector.statusGroup', 'Job status selection')}
-              className="grid grid-cols-5 sm:flex sm:items-center rounded-lg border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto"
+              className="grid grid-cols-5 sm:flex sm:items-center rounded-ds-control border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto"
             >
               {[
                 { id: 'new', label: t('status.new'), shortLabel: t('status.short.new', { defaultValue: 'New' }) },
@@ -152,7 +156,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                     onClick={() =>
                       void onUpdateStatus(job, id as JobStatus)
                     }
-                    className={`flex items-center justify-center px-1 sm:px-3 py-1.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-md border cursor-pointer text-center truncate ${
+                    className={`flex items-center justify-center px-1 sm:px-3 py-1.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-ds-control border cursor-pointer text-center truncate ${
                       active
                         ? 'bg-ds-hover text-ds-text-primary shadow-xs border-ds-border-strong'
                         : 'border-transparent text-ds-text-secondary hover:text-ds-text-primary hover:bg-ds-hover'
@@ -198,17 +202,17 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             <div className="mt-3 hidden items-center justify-between text-xs text-ds-text-muted pt-2.5 border-t border-ds-border/60 sm:flex">
               <span className="font-sans flex items-center gap-1.5 flex-wrap">
                 {t('shortcuts.press')}{' '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd>
                 {' / '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd>
                 {' '}{t('shortcuts.cycle')} ·{' '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd>
                 {' '}{t('shortcuts.fullscreen')} ·{' '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd>
                 {' '}{t('shortcuts.apply')} ·{' '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd>
                 {' / '}
-                <kbd className="rounded border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd>
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd>
                 {' '}{t('shortcuts.status')}
               </span>
             </div>
@@ -223,7 +227,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
       >
         <div className={cn('space-y-4 sm:space-y-5', isFullScreen && 'max-w-5xl mx-auto')}>
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5 sm:grid-cols-4">
-            <div className="rounded-lg border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
+            <div className="rounded-ds-control border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
               <span className="text-[10px] sm:text-[11px] font-medium text-ds-warning uppercase tracking-wider block">
                 {t('jobs.inspector.matchFit')}
               </span>
@@ -232,7 +236,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               </p>
             </div>
 
-            <div className="rounded-lg border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
+            <div className="rounded-ds-control border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
               <span className="text-[10px] sm:text-[11px] font-medium text-ds-text-muted uppercase tracking-wider block">
                 {t('jobs.inspector.location')}
               </span>
@@ -241,7 +245,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               </p>
             </div>
 
-            <div className="rounded-lg border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
+            <div className="rounded-ds-control border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
               <span className="text-[10px] sm:text-[11px] font-medium text-ds-text-muted uppercase tracking-wider block">
                 {t('jobs.inspector.salary')}
               </span>
@@ -250,7 +254,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               </p>
             </div>
 
-            <div className="rounded-lg border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
+            <div className="rounded-ds-control border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
               <span className="text-[10px] sm:text-[11px] font-medium text-ds-text-muted uppercase tracking-wider block">
                 {t('jobs.inspector.employmentType')}
               </span>
@@ -269,7 +273,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 {job.matched_skills.map((skill) => (
                   <span
                     key={skill}
-                    className="rounded border border-ds-border-strong bg-ds-panel px-2 py-0.5 font-mono text-xs text-ds-text-secondary"
+                    className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-2 py-0.5 font-mono text-xs text-ds-text-secondary"
                   >
                     {skill}
                   </span>
@@ -288,7 +292,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               </span>
             </div>
 
-            <div className={cn('rounded-lg border border-ds-border bg-ds-panel p-4 text-xs leading-relaxed text-ds-text-secondary whitespace-pre-line select-text font-sans', isFullScreen && 'sm:text-sm sm:p-6')}>
+            <div className={cn('rounded-ds-card border border-ds-border bg-ds-panel p-4 text-xs leading-relaxed text-ds-text-secondary whitespace-pre-line select-text font-sans', isFullScreen && 'sm:text-sm sm:p-6')}>
               {formattedDescription ? (
                 formattedDescription
               ) : isLoadingDetail ? (
@@ -297,11 +301,11 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                   <span className="text-xs">{t('jobs.inspector.loadingDescription')}</span>
                 </div>
               ) : isDetailError ? (
-                <div role="alert" className="py-6 text-center text-xs text-ds-negative">
+                <div role="alert" className="py-6 text-center text-xs text-ds-negative space-y-2">
                   <p>{t('jobs.inspector.detailLoadError')}</p>
-                  <button type="button" onClick={() => void refetchDetail()} className="mt-2 text-ds-accent underline">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => void refetchDetail()} className="text-ds-accent">
                     {t('common.retry')}
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="py-6 text-center text-xs text-ds-text-muted">

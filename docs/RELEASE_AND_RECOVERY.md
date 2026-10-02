@@ -12,18 +12,34 @@ Operational checklist for deploying and recovering JobPulse.
 - **Pre-Release Snapshot**: Run `make backup` before applying schema migrations.
 - **Automated Gate**: Confirm `npm run check` and `npm run db:test:tenancy` pass with zero errors.
   Require the **Tenant Isolation Guardrails** CI status in the `main` ruleset; a red tenant suite blocks release.
+- **Regression Contract**: Identify affected findings in [Regression Prevention](REGRESSION_PREVENTION.md),
+  run their behavioral tests, and verify the integration checks that mocks/SQL cannot cover.
 - **Native Scoring**: Confirm the pinned browser model assets are included in `dist/`, run `make scrape-backfill` for any existing jobs without vectors, and verify profile onboarding, a weight edit, and a dealbreaker against the hosted database.
 
 ## Deployment Steps
 
-1. **Create Forward Migration**: If modifying schema, create a migration via `npm run db:migration <name>` and apply via `npm run db:push`.
-2. **Update Types**: Regenerate database types via `npm run db:types`.
-3. **Verify Build**: Run `npm run check` to ensure clean typecheck, lint, tests, and bundle build.
-4. **Deploy Function**: Run `supabase functions deploy delete-account` against the linked project. Keep JWT
+1. **Verify Locally**: Create any forward migration via `npm run db:migration <name>`.
+   Verify the complete chain on a disposable local database, regenerate both language
+   models with `npm run db:types`, and run `make check`, `npm run db:test` and
+   `npm run build-storybook`. Pending versions on a developer database use
+   `supabase migration up --local`; do not reset it automatically.
+2. **Prepare the Release**: Pass required PR checks/review. Record the intended commit,
+   migration versions, compatibility with the currently deployed frontend and rollback artifact.
+   A SQL migration and a frontend release are separate deployments.
+3. **Apply Schema**: Verify a fresh complete database/Storage snapshot before pushing
+   schema changes to the intended linked project via `npm run db:push`. Inspect
+   `npm run db:diff` and the hosted ledger after application.
+4. **Deploy Changed Functions**: When the function changed, run `supabase functions deploy delete-account` against the linked project. Keep JWT
    verification enabled and verify that `SUPABASE_SERVICE_ROLE_KEY` is available only in the function runtime.
-5. **Deploy Frontend**: Deploy the production Vite build (`dist/`) to hosting platform (e.g. Cloudflare Pages).
-6. **Post-Deploy Smoke Test**: Verify login, catalog browsing, status transitions, profile update, document
-   downloads, and account deletion on a disposable test account with an avatar and document.
+5. **Deploy Frontend**: Deploy the reviewed production commit through the configured
+   Cloudflare Pages production branch. Verify the successful deployment's commit;
+   a local build or applied migration does not establish that browser fixes are live.
+6. **Post-Deploy Smoke Test**: With two separate disposable authorized accounts,
+   verify login, search/filter/sort, overview coverage, status/detail freshness,
+   profile update/retry, account switching, export and private document access.
+   Verify account deletion with an avatar and document. After an inference/runtime
+   upgrade, check finite 384-dimensional output under production CSP and observe
+   cold download, warm inference and worker responsiveness separately.
 
 ## Rollback & Recovery Runbook
 
@@ -34,6 +50,9 @@ Operational checklist for deploying and recovering JobPulse.
 - **Data Recovery**:
   - Use `make backup` snapshots stored in `.backups/` for local disaster triage.
   - Hosted restore must be conducted through Supabase Dashboard or point-in-time recovery (PITR).
+  - Rehearse a representative database plus Storage restore in isolation; verify rows,
+    documents and ownership, and record measured recovery time. Checksums alone do
+    not establish a usable restore.
 
 ## Durable matching operations
 
@@ -42,3 +61,19 @@ Operational checklist for deploying and recovering JobPulse.
 Check queue age, failures and cron activity after deployment. Alert on oldest pending work over five minutes, repeated failures, a cron worker failure, or missing model/vector coverage. A five-minute freshness target is an operational target, not a certified capacity claim for 1,000 simultaneous profile edits. Do not raise worker concurrency until catalog requests retain their latency budget. Use a service worker pool with `SKIP LOCKED` for additional throughput; never put privileged credentials in the frontend.
 
 The repository's `main` protection now requires Tenant Isolation Guardrails, Supabase Migration Lint, Code Quality & Build Check and Scraper Quality & Tests, enforces administrators, requires one review and stale-approval dismissal, and prevents branch deletion/force pushes. Code-owner review is enabled. All production fixes still need the reviewed commit deployed to the frontend; applying SQL migrations alone does not deploy browser changes.
+
+## Operational evidence before wider rollout
+
+- Configure and test actual alert delivery for queue age/failure, ingestion failure
+  and frontend errors. Writing an alert threshold in a document does not configure it.
+- Verify provider access and retention for Supabase, Cloudflare and Sentry against
+  the one-year ceiling, including historical telemetry/backups and incomplete exports.
+- Keep recovery drill results and a hosted load test with realistic read concurrency
+  alongside scoring. The [local capacity probe](CAPACITY_PROBE_2026_10_01.md) is limited
+  SQL evidence; it does not certify 1,000 hosted users or simultaneous profile edits.
+- Before offering password login, verify leaked-password protection or disable the
+  unused provider after checking its effects. Recheck hosted settings rather than
+  assuming a migration established provider account configuration.
+
+Keep dated remediation records as history. Current production status comes from
+deployment commits, migration ledgers, live smoke tests and operational evidence.

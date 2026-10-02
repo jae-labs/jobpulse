@@ -107,6 +107,9 @@ export async function loadUserProfile(): Promise<Profile> {
     };
     return profile;
   } catch (err: unknown) {
+    if (err instanceof Error && err.message === "Active user session required") {
+      return DEFAULT_PROFILE;
+    }
     reportError(err);
     throw err;
   }
@@ -130,6 +133,7 @@ async function ensureProfileScoringEmbedding(profile: Profile, userId: string): 
   if (await getCurrentUserId() !== userId) throw new Error('Active account changed during inference');
   const currentProfile = await loadUserProfile();
   if (await profileContentHash(currentProfile) !== contentHash) throw new Error('Profile changed during inference');
+  if (await getCurrentUserId() !== userId) throw new Error('Active account changed during inference');
   const { error } = await supabase.rpc('save_profile_embedding', {
     p_embedding: `[${embedding.join(',')}]`,
     p_content_hash: contentHash,
@@ -137,7 +141,6 @@ async function ensureProfileScoringEmbedding(profile: Profile, userId: string): 
   });
   if (error) throw new Error(error.message);
   // The embedding-write trigger enqueues durable work in the same transaction.
-  invalidateScoringQueries(userId);
 }
 
 function invalidateScoringQueries(userId: string): void {

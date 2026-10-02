@@ -79,7 +79,7 @@ const MatchScoreBadgeComponent: React.FC<{
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums',
+        'inline-flex items-center gap-1 rounded-ds-control border px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums',
         tierColor,
         className,
       )}

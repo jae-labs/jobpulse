@@ -67,7 +67,8 @@ make check         # npm run check + scrape-lint + scrape-unit
   - Sourcing telemetry: `src/components/sources/SourcesView.tsx`
 - Candidate Profile & Scoring:
   - Profile preferences & target criteria: `src/components/profile/ProfileView.tsx`
-  - Sub-views: `ProfileGeneralInfo.tsx`, `ProfileTargetPreferences.tsx`, `ProfileQualifications.tsx`, `ProfileMatchingTerms.tsx`, `ProfileDocuments.tsx`, `ScoringRulesEditor.tsx`
+  - Sub-views: `ProfileGeneralInfo.tsx`, `ProfileTargetPreferences.tsx`, `ProfileQualifications.tsx`,
+    `ProfileMatchingTerms.tsx`, `ProfileDocuments.tsx`, `ScoringRulesEditor.tsx`
   - Profile storage & defaults: `src/lib/userProfile.ts`, `src/lib/defaultProfile.ts`
 - Authentication & Fault Tolerance: `src/components/auth/`, `src/components/ui/`
   - Login view: `src/components/auth/LoginView.tsx`
@@ -94,10 +95,11 @@ make check         # npm run check + scrape-lint + scrape-unit
   - Domain types: `src/types/job.ts` (Canonical statuses: `new`, `applied`, `interviewing`, `interested`, `not_interested`)
 - Scraper & Ingestion Pipeline (`services/scraper/`):
   - Configuration: `services/scraper/config/websites.yaml`, `rules.py`, `loader.py`
-  - Extraction & Crawling: `services/scraper/extractors/`, `services/scraper/scrapers/generic/` (dispatcher `listing.py`, `crawler.py`), `services/scraper/scrapers/core/`
+  - Extraction & Crawling: `services/scraper/extractors/`, `services/scraper/scrapers/generic/`
+    (dispatcher `listing.py`, `crawler.py`), `services/scraper/scrapers/core/`
   - Provider Adapters: `services/scraper/scrapers/providers/` (18+ modular ATS and board adapters)
   - Scoring & Validation Engine: `services/scraper/engine/` (SentenceTransformers Apple Metal GPU acceleration)
-  - Supabase Service Role Integration: `services/scraper/database/` (thread-safe client, safe deduplication, safe pruning)
+  - Supabase Service Role Integration: `services/scraper/database/` (thread-safe client, candidate-safe deduplication)
   - Local API & Daemon: `services/scraper/server/` (`api.py`), `app.py`
 
 ## Documentation & Progressive Discovery
@@ -118,6 +120,7 @@ Consult the relevant guides progressively based on the task domain:
 | **Accessibility & Quality** | [`docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md`](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) | Modifying keyboard navigation, focus management, or i18n | WCAG 2.1 AA baseline; keyboard shortcuts (`↑`/`↓`, `Cmd+K`); full i18n strings. |
 | **Local Workflow & Backups** | [`docs/LOCAL_DEVELOPMENT.md`](docs/LOCAL_DEVELOPMENT.md) | Working with local Supabase, Docker, seed data, or backups | Use local credentials; never commit `.backups/` or secrets. |
 | **Release & Recovery** | [`docs/RELEASE_AND_RECOVERY.md`](docs/RELEASE_AND_RECOVERY.md) | Pre-deployment verification, launch gates, or incident response | Run `npm run check`; verify backup snapshots before schema changes. |
+| **Regression Prevention** | [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) | Changing private data flows, matching, telemetry, catalog queries, or removing old code | Preserve the failure-to-test matrix; remove redundant paths without removing safety evidence. |
 
 Progressive discovery index: [`docs/`](docs/).
 
@@ -148,12 +151,14 @@ Progressive discovery index: [`docs/`](docs/).
 ## Update Triggers
 
 - If database tables, RLS, or schema change: create a forward migration
-  (`npm run db:migration <name>`), test it with a local reset (`make db-reset`),
+  (`npm run db:migration <name>`), test the complete chain with a reset on a disposable local stack,
   synchronize both TypeScript and Python types atomically (`make db-types` or `npm run db:types`),
   verify parity across both codebases (`git diff src/types/database.types.ts services/scraper/database/models.py`),
   inspect parity against remote (`npm run db:diff`), and push when ready (`npm run db:push`).
   Never edit an applied migration. CI enforces zero drift across both `src/types/database.types.ts`
   and `services/scraper/database/models.py`.
+  On an existing developer database, apply pending versions with `supabase migration up --local`.
+  A reset deletes local data; never use it as an automatic recovery from a stale tenant-test ledger.
 - If data fetching or mutations change: update `src/hooks/useQueries.ts` and maintain clean query cache
   invalidation via `queryKeys`.
 - If job models or pipeline stages change: update `src/types/job.ts`, `src/components/jobs/`, and charts together.
@@ -212,13 +217,39 @@ Progressive discovery index: [`docs/`](docs/).
 - Always run `npm run check` and verify zero errors before reporting completion.
 - Keep generated artifacts out of git reviews.
 
-## Production matching and privacy invariants
+## Production Regression Contract
 
-- Never perform per-candidate scoring in a shared job/vector write trigger. Advance the catalog generation and use the bounded durable worker. Profile/vector writes must enqueue matching atomically.
-- Preserve exact shortlist coverage, incremental hash checks, fair scheduling, retry state, and tenant-scoped progress. Run `tenant_scoring_queue.sql` after scoring changes.
-- Overview match distributions and averages include assessed jobs only. Keep coverage visible and categories complete; filter facets come from the full server catalog, never the currently loaded page.
-- Error telemetry must use the diagnostic allowlist. No user IDs, arbitrary exception messages, request bodies, headers, query parameters, breadcrumbs, or candidate context. Explicit DSN configuration only.
-- Age or source failure is not closure evidence. Do not re-enable global destructive vacancy pruning.
-- Keep dependency advisory gates enabled and stage same-origin, checksum-pinned model/runtime assets. Verify inference in a browser before shipping an inference upgrade.
+Read [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) before changing the affected
+subsystem. Instructions and lint are tripwires; database authorization and behavioral tests enforce
+the contract. Do not claim that documentation guarantees future isolation.
 
-- Account view state must remount when the authenticated UID changes. Tenant query/mutation functions use `withActiveUser` to reject work when session identity differs from the cache-key owner, including after asynchronous responses. Never carry tenant `placeholderData` between query keys; CI rejects it. Recheck identity after long-running inference before calling a caller-scoped write RPC.
+- Account view state must remount when the authenticated UID changes. Tenant query/mutation functions
+  use `withActiveUser` before and after asynchronous work. Never retain tenant `placeholderData`.
+  After inference, verify both the active UID and the current profile content hash before saving a vector.
+- PostgreSQL owns matching-input comparisons and atomic enqueueing. Profile/vector writes enqueue
+  work in their transaction; the browser must not duplicate that logic or treat `rescore_user` returning
+  zero as completed scoring. Use it for explicit failed-work retry or a shortlist-limit request.
+- Shared job/vector writes advance catalog generation without per-candidate fan-out. Preserve exact
+  shortlist coverage (up to 1,500), bounded slices, fair scheduling, durable missing-vector state,
+  retries and tenant failure rollback. Weight-only edits recompose existing factors.
+- Count and page results must use the same filtered SQL statement; CTEs never survive into a second
+  statement. Preserve totals for empty/high-offset pages and stable ID tie breaks. Validate the shared
+  status/salary/sort contract, bounded literal search, and location inputs at the database boundary.
+- Overview match averages/distributions use assessed jobs only. Keep coverage visible, include
+  Uncategorized jobs, and derive facets from the full server catalog. Search must expose loading,
+  failure/retry and empty states without showing stale results after an error.
+- Import Sentry only in `src/lib/sentry.ts`; application diagnostics use `reportError` or development-only
+  `warn` from `src/lib/logger.ts`. No direct browser console output, user IDs, raw messages, request
+  data, private context, tracing or replay. Consume invitation URL parameters before initializing telemetry.
+- Defaults and fixtures must be neutral/synthetic. New personal fields require a documented purpose,
+  owner-only access, export/deletion coverage and retention review. Never reuse real profiles or
+  documents as fixtures. Explicit public operator contact copy is permitted; private identity is not.
+- Age, an empty crawl or source failure is not closure evidence. Never restore age-only vacancy
+  pruning. Deduplication must preserve candidate tracking through the service-only database contract.
+- Keep dependency audits and secret scans enabled. Serve checksum-pinned model/runtime assets from
+  the site origin in a bounded worker; verify inference under production CSP before an inference upgrade.
+- When removing code, verify import/call references and external contracts. Remove its obsolete copy
+  and tests, retain the negative regression for the unsafe behavior, and preserve applied migrations,
+  generated schema parity, valid private backups and intentional compatibility APIs.
+- Report repository fixes, applied database migrations and deployed frontend commits separately.
+  A green local build is not a hosted load test or proof that alerts, retention and recovery work.

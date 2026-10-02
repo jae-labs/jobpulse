@@ -45,7 +45,7 @@ const CustomTooltip = ({ active, payload, label, onSelectSkill, t }: CustomToolt
     const skillName = data.skill || label || '';
     return (
       <div
-        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 z-50 ${
+        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 z-50 ${
           onSelectSkill ? 'cursor-pointer' : ''
         }`}
         onClick={() => onSelectSkill?.(skillName)}

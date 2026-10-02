@@ -84,14 +84,14 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className="flex flex-col rounded-xl border border-ds-border-strong bg-ds-surface p-4 sm:p-5 space-y-3.5 shadow-xs">
+    <div className="flex flex-col rounded-ds-card border border-ds-border-strong bg-ds-surface p-4 sm:p-5 space-y-3.5 shadow-xs">
       <h3 className="text-xs font-semibold text-ds-text-primary tracking-tight">
         {title}
       </h3>
 
       {notice && (
         <div
-          className={`rounded-lg p-2.5 text-xs flex items-center gap-2 ${
+          className={`rounded-ds-control p-2.5 text-xs flex items-center gap-2 ${
             notice.type === 'success'
               ? 'border border-ds-positive/30 bg-ds-positive/10 text-ds-positive'
               : 'border border-ds-negative/30 bg-ds-negative/10 text-ds-negative'
@@ -108,14 +108,14 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
 
       <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
         {items.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-ds-border-strong p-4 text-center text-xs text-ds-text-muted">
+          <div className="rounded-ds-control border border-dashed border-ds-border-strong p-4 text-center text-xs text-ds-text-muted">
             {emptyText}
           </div>
         ) : (
           items.map((item) => (
             <div
               key={item.id || item.file_name}
-              className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-ds-border-strong bg-ds-surface hover:border-ds-border-strong transition-colors"
+              className="flex items-center justify-between gap-2 p-2.5 rounded-ds-control border border-ds-border-strong bg-ds-surface hover:border-ds-border-strong transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
                   size="icon"
                   onClick={() => onDownload(item.id, item.file_name)}
                   disabled={downloadingId === item.id}
-                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover hover:bg-ds-hover text-ds-text-secondary"
+                  className="size-7 rounded-ds-control border border-ds-border-strong bg-ds-hover hover:bg-ds-hover text-ds-text-secondary"
                   title={downloadTitle}
                   aria-label={downloadTitle}
                 >
@@ -156,7 +156,7 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => onDelete(item.id, item.file_name)}
-                  className="size-7 rounded-lg border border-ds-border-strong bg-ds-hover/80 text-ds-text-secondary hover:text-ds-negative hover:border-ds-negative/40"
+                  className="size-7 rounded-ds-control border border-ds-border-strong bg-ds-hover/80 text-ds-text-secondary hover:text-ds-negative hover:border-ds-negative/40"
                   title={deleteTitle}
                   aria-label={deleteTitle}
                 >
@@ -385,7 +385,7 @@ export const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ userId }) =>
       </div>
 
       {documentLoadError && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative">
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-ds-control border border-ds-negative/30 bg-ds-negative/10 p-3 text-xs text-ds-negative">
           <span>{t('profile.documents.loadDocumentsFailed')}</span>
           <Button size="sm" variant="secondary" onClick={() => { void refetchCvs(); void refetchCoverLetters(); }}>
             {t('common.retry')}

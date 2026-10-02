@@ -8,9 +8,15 @@ Set `VITE_SENTRY_DSN` explicitly for a production build. There is no default DSN
 
 ## Payload contract
 
-`src/lib/sentry.ts` constructs an allowlisted error event. It retains generic JavaScript error types, bundled static-code filenames and line/column positions, event identifiers, timestamp and environment. Error messages are replaced with a generic description. Arbitrary context, request metadata, headers, URLs, user identifiers, breadcrumbs and attachments are discarded. `setSentryUser` clears identity instead of assigning an account identifier.
+`src/lib/sentry.ts` constructs an allowlisted error event. It retains generic JavaScript error types, bundled static-code filenames and line/column positions, event identifiers, timestamp and environment. Error messages are replaced with a generic description. Arbitrary context, request metadata, headers, URLs, user identifiers, breadcrumbs and attachments are discarded. Initialization clears SDK identity; authentication does not pass account identifiers to telemetry.
 
 SDK data collection, replay and tracing are disabled. Transactions and breadcrumbs are dropped. Do not attach profile data, documents, salary preferences, job URLs, session identifiers or raw exceptions to a second telemetry integration. Synthetic sentinel tests cover the error envelope and must accompany collection changes.
+
+Application code imports `reportError` or development-only `warn` from `src/lib/logger.ts`.
+Runtime Sentry imports outside the boundary and common direct console calls fail source
+lint. Sanitization remains enforced by event construction and synthetic payload tests;
+static lint does not prove that every possible integration is safe. See
+[Regression Prevention](REGRESSION_PREVENTION.md) before changing collection behavior.
 
 ## Content security policy
 

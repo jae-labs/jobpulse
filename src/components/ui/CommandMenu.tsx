@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Command } from 'cmdk';
 import { Search } from 'lucide-react';
 import type { Job } from '../../types/job';
+import { Button } from '@jae-labs/ui';
 import { StatusPill } from './StatusPill';
 import { useTranslation } from 'react-i18next';
 import { useJobsPageQuery } from '../../hooks/useQueries';
@@ -68,13 +69,13 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
           onValueChange={value => setSearchQuery(value.slice(0, 80))}
           maxLength={80}
         />
-        <kbd className="hidden sm:inline-block rounded border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted">
+        <kbd className="hidden sm:inline-block rounded-ds-control border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted">
           ESC
         </kbd>
       </div>
 
       <Command.List>
-        {isError ? <div role="alert" className="p-4"><p>{t('common.loadError')}</p><button onClick={() => void refetch()}>{t('common.retry')}</button></div>
+        {isError ? <div role="alert" className="p-4 space-y-2"><p className="text-xs text-ds-negative">{t('common.loadError')}</p><Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button></div>
           : searching ? <div role="status" className="p-4">{t('common.loading')}</div>
           : commandJobs.length === 0 ? <div role="status" className="p-4">{t('command.noResults')}</div> : null}
 

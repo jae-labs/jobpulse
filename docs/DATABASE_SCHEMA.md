@@ -78,6 +78,8 @@ erDiagram
 | `user_job_evaluations` | Candidate match scores, fit tier & analysis | Candidate RLS (`user_id = auth.uid()`) |
 | `job_scoring_embeddings` | Versioned shared job vectors | Service role only; RLS enabled |
 | `profile_scoring_embeddings` | Versioned private candidate vectors | Private table; own-vector write RPC; RLS enabled |
+| `candidate_scoring_work` | Durable candidate matching progress, retry state and bounded shortlist work | Backend-only; RLS and no browser grants |
+| `scoring_catalog_generation` | Statement-level shared vector catalog revision | Backend-only; RLS and no browser grants |
 | `user_cvs` | Uploaded resume metadata | Candidate RLS (`user_id = auth.uid()`) |
 | `user_cover_letters` | Uploaded cover letter metadata | Candidate RLS (`user_id = auth.uid()`) |
 
@@ -108,7 +110,7 @@ use `keywords` and `disqualifiers`; explicitly empty lists remain empty.
 Access is strictly invite-only:
 1. An authorized user creates an invitation with an email. The database generates a cryptographic `invite_code` and records `invited_by = auth.uid()`, with `status = 'pending'`.
 2. When the invitee signs up and confirms their email, the `bind_verified_invitation()` trigger binds `auth.users.id` to `authorized_users.user_id`, transitions status to `accepted`, and sets `accepted_at`.
-3. If an existing invitation is pending, team members can re-share the invitation link or hard-delete it to revoke access.
+3. Only the issuer can recover/re-share a pending invitation code or hard-delete their invitation. Another authorized member cannot read its code or delete it.
 4. Authorization is enforced across all tables and RPCs via `public.is_authorized_user()`, requiring a confirmed Auth account and `status = 'accepted'`.
 
 ## Account Deletion
@@ -128,7 +130,8 @@ The Profile danger zone calls the authenticated `delete-account` Edge Function:
   `supabase/tests/jobs_pagination.sql` verifies pagination, empty pages, literal locations, and browser filter/sort options.
 - **`rescore_user(uid, top_k)`**: Enqueues caller-owned durable scoring work and returns immediately. The private worker ranks an exact shortlist of up to 1,500 jobs and scores at most 100 changed jobs per call.
 - **`save_profile_embedding(...)` / `get_profile_embedding_state()`**: Submit the caller's validated, nonzero 384-dimensional vector and read its hash, model version and durable scoring progress. Neither RPC returns a vector.
-- **`prune_stale_catalog_jobs(...)` / `merge_duplicate_catalog_jobs(...)`**: Service-only catalog maintenance; tenant status and evaluation handling remains inside PostgreSQL.
+- **`merge_duplicate_catalog_jobs(...)`**: Service-only deduplication; tenant statuses and evaluations are transferred inside PostgreSQL.
+- **`prune_stale_catalog_jobs(...)`**: Service-only compatibility RPC returning zero. Age-only pruning is disabled; the current scraper has no pruning CLI/wrapper.
 
 The catalog and overview functions use `SECURITY DEFINER` and enforce
 `is_authorized_user()` and `user_id = auth.uid()`. The profile and scoring RPCs
@@ -138,12 +141,12 @@ keys remove vectors when the associated job or profile is deleted.
 
 ## Migration Workflow
 
-The single initial migration builds a new database at the current schema. The
-linked production project's migration history is aligned to that baseline;
-subsequent changes use forward migrations. Follow [Local Development](LOCAL_DEVELOPMENT.md#migration-workflow)
+The initial migration creates the baseline; the complete ordered forward migration
+chain builds the current schema. Never delete or edit applied versions as cleanup.
+Follow [Local Development](LOCAL_DEVELOPMENT.md#migration-workflow)
 and regenerate both language types with `make db-types`. CI checks parity.
 
-## Native scoring (2026-09-29)
+## Durable native scoring
 
 `profile_scoring_embeddings` remains private. Authenticated users submit only their own
 384-dimensional MiniLM vector through `save_profile_embedding`; its hash and model

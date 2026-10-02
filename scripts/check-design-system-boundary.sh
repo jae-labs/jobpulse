@@ -34,8 +34,18 @@ if rg --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' "(?:bg|text|bo
   exit 1
 fi
 
-if rg --line-number --glob '*.{ts,tsx}' '#[[:xdigit:]]{3,8}\b|\b(?:rgba?|hsla?)\(' "$design_system_dir"; then
-  echo "Literal colors belong in packages/ui/src/tokens.css, not UI component source." >&2
+if rg --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' '#[[:xdigit:]]{3,8}\b|\b(?:rgba?|hsla?)\(' "$design_system_dir" src; then
+  echo "Literal colors belong in packages/ui/src/tokens.css or CSS variables, not UI component source." >&2
+  exit 1
+fi
+
+if rg --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' '\brounded-(?:none|sm|md|lg|xl|2xl|3xl)\b' "$design_system_dir" src; then
+  echo "Use semantic radius tokens (rounded-ds-control, rounded-ds-card, or rounded-full) instead of arbitrary Tailwind radius classes." >&2
+  exit 1
+fi
+
+if rg --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' "['\" ]rounded['\" ]" "$design_system_dir" src; then
+  echo "Use semantic radius tokens (rounded-ds-control, rounded-ds-card, or rounded-full) instead of bare 'rounded'." >&2
   exit 1
 fi
 

@@ -46,7 +46,7 @@ export const AccessDeniedView: React.FC<AccessDeniedViewProps> = ({ email, error
         </p>
 
         {error && (
-          <div className="w-full text-left rounded-xl border border-ds-warning-border bg-ds-warning-subtle p-3.5 mb-6 text-xs space-y-1">
+          <div className="w-full text-left rounded-ds-card border border-ds-warning-border bg-ds-warning-subtle p-3.5 mb-6 text-xs space-y-1">
             <div className="font-medium text-ds-warning">
               {t('auth.verificationError', 'Unable to verify access')}
             </div>

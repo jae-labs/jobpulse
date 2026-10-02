@@ -42,7 +42,7 @@ const SortableWidgetComponent: React.FC<SortableWidgetProps> = ({
         ref={setActivatorNodeRef}
         type="button"
         aria-label={reorderLabel}
-        className="absolute right-4 top-4 z-10 flex size-8 cursor-grab items-center justify-center rounded-lg border border-ds-border bg-ds-control/80 text-ds-text-muted opacity-0 transition-opacity hover:text-ds-text-secondary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 active:cursor-grabbing group-hover:opacity-100"
+        className="absolute right-4 top-4 z-10 flex size-8 cursor-grab items-center justify-center rounded-ds-control border border-ds-border bg-ds-control/80 text-ds-text-muted opacity-0 transition-opacity hover:text-ds-text-secondary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 active:cursor-grabbing group-hover:opacity-100"
         {...attributes}
         {...listeners}
       >

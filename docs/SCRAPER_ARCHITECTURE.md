@@ -31,6 +31,11 @@ The scraper hashes scoring job facts separately from the embedding document. A s
 
 ## Safety
 
-The scraper service role key stays in the local process. Candidate records remain behind Supabase RLS. Deduplication transfers user statuses and evaluations before deleting a duplicate; stale job pruning halts if the status check fails. The scraper never returns candidate data in API responses.
+The scraper service role key stays in the local process. Candidate records remain behind Supabase RLS. Deduplication transfers user statuses and evaluations through the service-only database RPC before deleting a duplicate. Age, an empty crawl or source failure never authorizes vacancy deletion. The retired `--prune-only` command is rejected; the old SQL pruning RPC is retained only as a no-op for deployed callers. The scraper never returns candidate data in API responses.
+
+Full sync responses retain `prune_stats: {}` for compatibility with existing consumers;
+there is no pruning phase. New retirement behavior requires source-specific closure
+evidence, preservation of candidate tracking and regression tests. See
+[Regression Prevention](REGRESSION_PREVENTION.md).
 
 Run `make scrape-lint` and `make scrape-unit` after changes to this service.
