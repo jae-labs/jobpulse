@@ -190,9 +190,14 @@ export function useKeyboardNavigation({
           }
         }
       } else if (e.key === 'Enter' && selectedJob) {
-        if (target?.closest('button, a, [role="button"]')) {
+        if (
+          target?.closest(
+            'button:not([data-job-card]), a, [role="button"]:not([data-job-card])'
+          )
+        ) {
           return;
         }
+        e.preventDefault();
         const safeUrl = toSafeHttpUrl(selectedJob.url);
         if (safeUrl) {
           window.open(safeUrl, '_blank', 'noopener,noreferrer');

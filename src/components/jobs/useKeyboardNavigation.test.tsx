@@ -322,4 +322,270 @@ describe('useKeyboardNavigation', () => {
     expect(updateUrlParam).toHaveBeenCalledWith('job', '1');
     document.body.removeChild(dialog);
   });
+
+  describe('Enter key shortcut (apply)', () => {
+    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    });
+
+    it('opens application URL when Enter is pressed on a focused job card', () => {
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: false,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      const cardButton = document.createElement('button');
+      cardButton.setAttribute('data-job-card', 'true');
+      cardButton.setAttribute('data-job-id', '1');
+      document.body.appendChild(cardButton);
+      cardButton.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      cardButton.dispatchEvent(event);
+
+      expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/1', '_blank', 'noopener,noreferrer');
+      expect(event.defaultPrevented).toBe(true);
+
+      document.body.removeChild(cardButton);
+    });
+
+    it('opens application URL for the second item after navigating down with ArrowDown and pressing Enter', () => {
+      const card1 = document.createElement('button');
+      card1.setAttribute('data-job-card', 'true');
+      card1.setAttribute('data-job-id', '1');
+      const card2 = document.createElement('button');
+      card2.setAttribute('data-job-card', 'true');
+      card2.setAttribute('data-job-id', '2');
+      document.body.appendChild(card1);
+      document.body.appendChild(card2);
+
+      const cardRefs = {
+        current: new Map<number, HTMLElement>([
+          [mockJobs[0].id, card1],
+          [mockJobs[1].id, card2],
+        ]),
+      };
+
+      const { rerender } = renderHook(
+        (props: { selected: Job }) =>
+          useKeyboardNavigation({
+            displayedJobs: mockJobs,
+            selectedJob: props.selected,
+            onSelectJob,
+            onUpdateStatus,
+            isDetailFullScreen: false,
+            setIsDetailFullScreen,
+            layoutMode: 'split',
+            updateUrlParam,
+            scrollToIndex,
+            cardRefs,
+          }),
+        { initialProps: { selected: mockJobs[0] } }
+      );
+
+      // Move down from first item to second item
+      card1.focus();
+      const downEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+      card1.dispatchEvent(downEvent);
+
+      expect(onSelectJob).toHaveBeenCalledWith(mockJobs[1]);
+      expect(document.activeElement).toBe(card2);
+
+      rerender({ selected: mockJobs[1] });
+
+      // Press Enter while focused on the second item's card
+      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      card2.dispatchEvent(enterEvent);
+
+      expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/2', '_blank', 'noopener,noreferrer');
+      expect(enterEvent.defaultPrevented).toBe(true);
+
+      document.body.removeChild(card1);
+      document.body.removeChild(card2);
+    });
+
+    it('opens application URL when Enter is pressed with no element focused (initial page load)', () => {
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: false,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      window.dispatchEvent(event);
+
+      expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/1', '_blank', 'noopener,noreferrer');
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not open URL when Enter is pressed on a non-card button', () => {
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: false,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      const regularButton = document.createElement('button');
+      document.body.appendChild(regularButton);
+      regularButton.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      regularButton.dispatchEvent(event);
+
+      expect(windowOpenSpy).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+
+      document.body.removeChild(regularButton);
+    });
+
+    it('does not open URL when Enter is pressed on an anchor link', () => {
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: false,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      const link = document.createElement('a');
+      link.href = '#';
+      document.body.appendChild(link);
+      link.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      link.dispatchEvent(event);
+
+      expect(windowOpenSpy).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+
+      document.body.removeChild(link);
+    });
+
+    it('does not open URL when Enter is pressed inside an input', () => {
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: false,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      input.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+
+      expect(windowOpenSpy).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+
+      document.body.removeChild(input);
+    });
+
+    it('opens application URL when Enter is pressed in full-screen reading mode on the scroll container', () => {
+      const dialog = document.createElement('div');
+      dialog.id = 'fullscreen-job-dialog';
+      const scrollBody = document.createElement('div');
+      scrollBody.setAttribute('data-inspector-scroll-body', '');
+      scrollBody.tabIndex = 0;
+      dialog.appendChild(scrollBody);
+      document.body.appendChild(dialog);
+
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: true,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      scrollBody.focus();
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      scrollBody.dispatchEvent(event);
+
+      expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/1', '_blank', 'noopener,noreferrer');
+      expect(event.defaultPrevented).toBe(true);
+
+      document.body.removeChild(dialog);
+    });
+
+    it('does not open application URL when Enter is pressed in full-screen reading mode on a dialog button', () => {
+      const dialog = document.createElement('div');
+      dialog.id = 'fullscreen-job-dialog';
+      const closeBtn = document.createElement('button');
+      closeBtn.setAttribute('aria-label', 'Close');
+      dialog.appendChild(closeBtn);
+      document.body.appendChild(dialog);
+
+      renderHook(() =>
+        useKeyboardNavigation({
+          displayedJobs: mockJobs,
+          selectedJob: mockJobs[0],
+          onSelectJob,
+          onUpdateStatus,
+          isDetailFullScreen: true,
+          setIsDetailFullScreen,
+          layoutMode: 'split',
+          updateUrlParam,
+          scrollToIndex,
+        })
+      );
+
+      closeBtn.focus();
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      closeBtn.dispatchEvent(event);
+
+      expect(windowOpenSpy).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+
+      document.body.removeChild(dialog);
+    });
+  });
 });
+
