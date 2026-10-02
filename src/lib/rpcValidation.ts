@@ -59,13 +59,6 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
   )
     throw new Error("Invalid overview stage count");
   return {
-    sectors: obj.sectors === undefined ? undefined : (() => {
-      if (!Array.isArray(obj.sectors)) throw new Error("Invalid overview sectors");
-      return obj.sectors.map((value) => {
-        const row = record(value);
-        return { name: string(row.name), value: count(row.value), avgMatch: count(row.avgMatch) };
-      });
-    })(),
     evaluated: obj.evaluated as number,
     locations: obj.locations.map((value) => {
       const row = record(value);
@@ -85,7 +78,10 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
             ),
           )
         : {},
-    categories: obj.categories.map((c) => ({
+    categories: (obj.sectors === undefined ? obj.categories : (() => {
+      if (!Array.isArray(obj.sectors)) throw new Error("Invalid overview domains");
+      return obj.sectors;
+    })()).map((c) => ({
       name: string(record(c).name),
       value: count(record(c).value),
       avgMatch: count(record(c).avgMatch),
@@ -146,7 +142,9 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
     if ((latitude === null) !== (longitude === null)) throw new Error("Incomplete RPC coordinates");
     return {
       employer_id: item.employer_id == null ? null : Number(item.employer_id),
-      employer_sector: item.employer_sector === undefined ? undefined : string(item.employer_sector),
+      domain: item.domain === undefined
+        ? (item.employer_sector === undefined ? 'Uncategorized' : string(item.employer_sector))
+        : string(item.domain),
       latitude,
       longitude,
       id: Number(item.id),
@@ -201,4 +199,21 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
   });
 
   return { total, items };
+}
+
+export function validateJobMapResult(data: unknown): import('../types/job').JobMapResult {
+  const obj = record(data);
+  if (!Array.isArray(obj.pins) || obj.pins.length > 2000 || typeof obj.truncated !== 'boolean') throw new Error('Invalid map result');
+  return {
+    total: count(obj.total), mapped: count(obj.mapped), in_view: count(obj.in_view), truncated: obj.truncated,
+    pins: obj.pins.map((raw) => {
+      const pin = record(raw);
+      const latitude = nullableCoordinate(pin.latitude, 90);
+      const longitude = nullableCoordinate(pin.longitude, 180);
+      if (latitude === null || longitude === null || !Array.isArray(pin.job_ids) || pin.job_ids.length > 5 ||
+          pin.job_ids.some((id) => !Number.isSafeInteger(id))) throw new Error('Invalid map pin');
+      return { latitude, longitude, count: count(pin.count), job_ids: pin.job_ids as number[],
+        title: string(pin.title), company: string(pin.company), domain: string(pin.domain), precision: string(pin.precision) };
+    }),
+  };
 }

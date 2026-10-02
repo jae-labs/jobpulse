@@ -9,7 +9,7 @@ interface UseKeyboardNavigationOptions {
   onUpdateStatus?: (job: Job, status: JobStatus) => Promise<void>;
   isDetailFullScreen: boolean;
   setIsDetailFullScreen: React.Dispatch<React.SetStateAction<boolean>>;
-  layoutMode: 'split' | 'list';
+  layoutMode: 'split' | 'list' | 'map';
   updateUrlParam: (key: string, value: string | null) => void;
   scrollToIndex?: (
     index: number,
@@ -71,6 +71,7 @@ export function useKeyboardNavigation({
         scrollToIndex,
         cardRefs,
       } = optionsRef.current;
+      if (layoutMode === 'map' && !isDetailFullScreen) return;
       const target = e.target instanceof Element ? e.target : null;
       const isInput = target?.closest(
         'input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]'

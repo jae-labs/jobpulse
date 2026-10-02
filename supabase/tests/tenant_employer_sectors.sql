@@ -1,4 +1,4 @@
--- Shared employer industry never replaces tenant classifications or leaks foreign scores.
+-- Shared catalog domains never rewrite private assessments or leak foreign scores.
 INSERT INTO public.employers(id,name,sector,careers_url,metadata_source)
 VALUES (-980501,'Synthetic Sector Employer','Synthetic Sector','https://example.invalid/careers','verified');
 UPDATE public.jobs SET employer_id=-980501,latitude=53,longitude=-6,coordinate_source=NULL
@@ -28,12 +28,16 @@ BEGIN
  IF (category->>'value')::integer<>2 OR (category->>'avgMatch')::integer<>own_score THEN
   RAISE EXCEPTION 'Sector averages included unassessed or foreign scores';
  END IF;
- page:=public.get_jobs_page(p_sector=>'Synthetic Sector',p_sort_by=>'title',p_offset=>100);
+ IF metrics->'categories' IS DISTINCT FROM metrics->'sectors' THEN
+  RAISE EXCEPTION 'Legacy sector alias differs from unified domains';
+ END IF;
+ page:=public.get_jobs_page(p_domain=>'Synthetic Sector',p_sort_by=>'title',p_offset=>100);
  IF page->'items'<>'[]'::jsonb OR (page->>'total')::integer<>2 THEN
   RAISE EXCEPTION 'Sector high-offset page lost total';
  END IF;
- page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_sector=>'Synthetic Sector',p_domain=>'Uncategorized');
- IF (page->>'total')::integer<>1 OR page->'items'->0->>'id'<>'-910002'
+ page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_domain=>'Synthetic Sector',p_limit=>1,p_offset=>1);
+ IF (page->>'total')::integer<>2 OR page->'items'->0->>'id'<>'-910002'
+  OR page->'items'->0->>'domain'<>'Synthetic Sector'
   OR page->'items'->0->>'role_domain'<>'Uncategorized'
   OR (page->'items'->0->>'latitude')::numeric<>0 OR (page->'items'->0->>'longitude')::numeric<>0 THEN
   RAISE EXCEPTION 'Unassessed domain or zero posting coordinates lost';

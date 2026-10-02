@@ -6,9 +6,11 @@ unknown; ingestion does not call external search or public geocoding services.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import threading
+from pathlib import Path
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
@@ -297,15 +299,6 @@ CURATED_IRISH_EMPLOYERS: dict[str, dict[str, Any]] = {
         "description": "Community respite and in-home dementia care across Western Ireland",
         "website": "https://westernalzheimers.ie",
     },
-    "jobsireland employer": {
-        "name": "JobsIreland Employer",
-        "sector": "Public Employment Service",
-        "location": "Dublin, Ireland",
-        "latitude": 53.3501,
-        "longitude": -6.2575,
-        "description": "National employment service verified employer vacancy",
-        "website": "https://jobsireland.ie",
-    },
     "accenture": {
         "name": "Accenture",
         "sector": "Professional Services & IT Consulting",
@@ -504,6 +497,50 @@ def normalize_company_key(company: str) -> str:
     return re.sub(r"(?:\s+(?:ireland|limited|ltd|plc|dac|inc|corp|corporation|group|llc))+$", "", name).strip()
 
 
+def load_evidence_registry(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Reviewed first-party facts, keyed by explicit full aliases only.
+
+    Missing or conflicting evidence is a configuration error, never a sector guess.
+    These addresses describe employers. Coordinates require separate evidence.
+    """
+    path = path or Path(__file__).resolve().parent.parent / "config" / "employer_evidence.json"
+    records = json.loads(path.read_text(encoding="utf-8"))
+    registry = {}
+    for record in records:
+        if not record.get("sources") or not record.get("checked_on") or not record.get("sector"):
+            raise ValueError("Employer evidence requires sources, observation date and sector")
+        latitude, longitude = record.get("latitude"), record.get("longitude")
+        if latitude is not None or longitude is not None:
+            if (
+                isinstance(latitude, bool)
+                or isinstance(longitude, bool)
+                or not isinstance(latitude, (int, float))
+                or not isinstance(longitude, (int, float))
+                or not -90 <= latitude <= 90
+                or not -180 <= longitude <= 180
+                or not record.get("location")
+                or not record.get("coordinate_sources")
+                or not all(url in record["sources"] for url in record["coordinate_sources"])
+            ):
+                raise ValueError("Employer coordinates require a valid pair, address and separate source evidence")
+        for alias in record["aliases"]:
+            key = " ".join(alias.split()).casefold()
+            if key in registry:
+                raise ValueError("Duplicate employer evidence alias")
+            registry[key] = {**record, "latitude": latitude, "longitude": longitude}
+    return registry
+
+
+EVIDENCED_EMPLOYERS = load_evidence_registry()
+
+
+def curated_employer(company_name: str) -> dict[str, Any] | None:
+    clean_name = " ".join(company_name.split()).casefold()
+    if clean_name in {"jobsireland employer", "employer", "confidential", "undisclosed"}:
+        return None
+    return EVIDENCED_EMPLOYERS.get(clean_name) or CURATED_IRISH_EMPLOYERS.get(normalize_company_key(company_name))
+
+
 class EmployerLookupService:
     """Exact identity resolution; failed writes are retried on subsequent calls."""
 
@@ -531,14 +568,19 @@ class EmployerLookupService:
         persist=False performs reads only, including on a cache miss.
         """
         clean_name = " ".join((company_name or "").split())
-        if not clean_name or clean_name.casefold() in {"employer", "confidential", "undisclosed"}:
+        if not clean_name or clean_name.casefold() in {
+            "jobsireland employer",
+            "employer",
+            "confidential",
+            "undisclosed",
+        }:
             return None
         cache_key = clean_name.casefold()
         with _CACHE_LOCK:
             cached = _EMPLOYER_CACHE.get(cache_key)
         if cached:
             return cached
-        curated = CURATED_IRISH_EMPLOYERS.get(normalize_company_key(clean_name))
+        curated = curated_employer(clean_name)
         canonical_name = curated["name"] if curated else clean_name
         existing = self.lookup_employer_in_db(canonical_name)
         if existing:

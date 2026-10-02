@@ -66,3 +66,13 @@ current authenticated JWT; the key itself grants no tenant ownership. Account vi
 state remounts per UID, and query/mutation helpers reject responses after an identity
 change. PostgreSQL owns atomic scoring enqueueing; browser profile saves do not
 duplicate matching comparisons. See [Regression Prevention](REGRESSION_PREVENTION.md).
+
+## Opportunity map and catalog domains
+
+List, Split and Map share catalog filters. The map is lazy-loaded and queries bounded
+server viewport clusters through a UID-scoped TanStack Query key, independently of
+list pagination. Shared trusted employer domains drive catalog facets; candidate
+role-domain assessments remain private matching data. Backend Geoapify verification
+checks posting locations after persistence and records precision. Employer
+headquarters never become vacancy pins. See
+[map operations](JOB_MAP_AND_LOCATION_VERIFICATION.md).

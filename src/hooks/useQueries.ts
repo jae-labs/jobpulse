@@ -22,7 +22,7 @@ import {
   type DocumentUpload,
 } from "../lib/userProfile";
 
-import { validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
+import { validateJobMapResult, validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
 export { validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
 
 /** Refuse results and actions when the query-key owner is no longer the active session. */
@@ -68,7 +68,6 @@ export function useJobsPageQuery(
       const { data, error } = await supabase.rpc("get_jobs_page", {
         p_status: params.status || "all",
         p_domain: params.domain || "all",
-        p_sector: params.sector || "all",
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || "all",
         p_salary: params.salary || "all",
@@ -103,7 +102,6 @@ export function useJobsInfiniteQuery(
       const { data, error } = await supabase.rpc('get_jobs_page', {
         p_status: params.status || 'all',
         p_domain: params.domain || 'all',
-        p_sector: params.sector || 'all',
         p_min_match: params.minMatch ?? 0,
         p_location: params.location || 'all',
         p_salary: params.salary || 'all',
@@ -215,7 +213,7 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
       if (!supabase || !jobId) return null;
       const userId = activeUserId ? await getCurrentUserId() : null;
       const [jobResult, statusResult, evaluationResult, profileResult] = await Promise.all([
-        supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
+        supabase.from('jobs').select('*, employers(sector, metadata_source)').eq('id', jobId).maybeSingle(),
         userId
           ? supabase.from('user_job_statuses').select('status').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
@@ -232,8 +230,10 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
       const evaluation = evaluationResult.data;
       return {
         ...jobResult.data,
-        latitude: jobResult.data.coordinate_source === 'posting' ? jobResult.data.latitude : null,
-        longitude: jobResult.data.coordinate_source === 'posting' ? jobResult.data.longitude : null,
+        domain: jobResult.data.employers && ['curated', 'verified', 'watchlist'].includes(jobResult.data.employers.metadata_source)
+          ? jobResult.data.employers.sector || 'Uncategorized' : 'Uncategorized',
+        latitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.latitude : null,
+        longitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.longitude : null,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),
         ...candidateEvaluationFields(evaluation, resolveScoringRules(profileResult.data?.scoring_rules as unknown as ScoringRules)),
         status: (statusResult.data?.status ?? 'new') as JobStatus,
@@ -350,6 +350,7 @@ export function useUpdateJobStatusMutation(activeUserId?: string | null) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
     },
     onSettled: (_data, _error, _variables, context) => {
@@ -357,6 +358,7 @@ export function useUpdateJobStatusMutation(activeUserId?: string | null) {
         void queryClient.invalidateQueries({ queryKey: context.jobByIdKey });
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) });
     },
@@ -588,6 +590,7 @@ export function useScoringStateQuery(activeUserId?: string | null, enabled = tru
   useEffect(() => {
     if (!revision || !activeUserId) return;
     void client.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) });
+    void client.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) });
     void client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
     void client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) });
     void client.invalidateQueries({ queryKey: queryKeys.scoringPreviewJobs(activeUserId) });
@@ -625,5 +628,26 @@ export function useExportAccountMutation() {
       return true;
     },
     gcTime: 0,
+  });
+}
+
+/** Complete filtered catalog, clustered and bounded on the server; never page-local pins. */
+export function useJobMapQuery(userId: string | null | undefined, params: import('../types/job').JobsPageParams,
+  bounds: number[], zoom: number) {
+  return useQuery({
+    queryKey: queryKeys.jobMap(userId, { ...params, bounds, zoom }),
+    enabled: Boolean(supabase) && Boolean(userId),
+    queryFn: () => withActiveUser(userId, async () => {
+      if (!supabase) throw new Error('Supabase is not initialized');
+      const { data, error } = await supabase.rpc('get_job_map', {
+        p_status: params.status || 'all', p_domain: params.domain || 'all', p_min_match: params.minMatch || 0,
+        p_location: params.location || 'all', p_salary: params.salary || 'all', p_search: params.search || undefined,
+        p_bounds: bounds, p_zoom: zoom,
+      });
+      if (error) throw new Error(error.message);
+      return validateJobMapResult(data);
+    }),
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 }

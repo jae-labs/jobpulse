@@ -33,13 +33,12 @@ export function useJobFilters({
   const statusParam = searchParams.get('status') as JobStatus | null;
   const statusFilter: 'all' | JobStatus = statusParam || initialStatusFilter || 'all';
 
-  const domainParam = searchParams.get('domain');
+  const domainParam = searchParams.get('domain') || searchParams.get('sector');
   const domainFilter = domainParam || initialDomainFilter || 'all';
 
   const matchParam = searchParams.get('match');
   const minMatch = matchParam !== null ? Number(matchParam) : initialMinMatch;
 
-  const sectorFilter = searchParams.get('sector') || 'all';
   const locationFilter = searchParams.get('location') || 'all';
   const salaryFilter = searchParams.get('salary') || 'all';
   const urlJobId = searchParams.get('job') ? Number(searchParams.get('job')) : null;
@@ -49,6 +48,7 @@ export function useJobFilters({
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
+          if (key === 'domain') next.delete('sector');
           if (!value || value === 'all' || value === '0') {
             next.delete(key);
           } else {
@@ -93,11 +93,6 @@ export function useJobFilters({
     (domain: string) => {
       updateUrlParam('domain', domain === 'all' ? null : domain);
     },
-    [updateUrlParam]
-  );
-
-  const setSectorFilter = useCallback(
-    (sector: string) => updateUrlParam('sector', sector === 'all' ? null : sector),
     [updateUrlParam]
   );
 
@@ -158,8 +153,7 @@ export function useJobFilters({
   const queryParams = useMemo(
     () => ({
       status: statusFilter,
-      domain: domainFilter,
-      sector: sectorFilter.slice(0, 100),
+      domain: domainFilter.slice(0, 100),
       minMatch,
       location: locationFilter.slice(0, 80),
       salary: salaryFilter,
@@ -167,7 +161,7 @@ export function useJobFilters({
       sortBy: sortField,
       sortDir,
     }),
-    [statusFilter, domainFilter, sectorFilter, minMatch, locationFilter, salaryFilter, activeSearch, sortField, sortDir]
+    [statusFilter, domainFilter, minMatch, locationFilter, salaryFilter, activeSearch, sortField, sortDir]
   );
 
   const resetFilters = useCallback(() => {
@@ -196,8 +190,6 @@ export function useJobFilters({
     setStatusFilter,
     domainFilter,
     setDomainFilter,
-    sectorFilter,
-    setSectorFilter,
     minMatch,
     setMinMatch,
     locationFilter,

@@ -236,11 +236,10 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   }, [deleteAccount]);
 
   const handleNavigateToJobs = useCallback(
-    (filters?: { status?: 'all' | JobStatus; domain?: string; sector?: string; minMatch?: number; q?: string }) => {
+    (filters?: { status?: 'all' | JobStatus; domain?: string; minMatch?: number; q?: string }) => {
       const params = new URLSearchParams();
       if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
       if (filters?.domain && filters.domain !== 'all') params.set('domain', filters.domain);
-      if (filters?.sector && filters.sector !== 'all') params.set('sector', filters.sector);
       if (filters?.minMatch !== undefined && filters.minMatch > 0) params.set('match', String(filters.minMatch));
       if (filters?.q) params.set('q', filters.q);
       const queryString = params.toString();

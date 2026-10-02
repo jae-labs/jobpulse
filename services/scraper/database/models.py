@@ -172,6 +172,7 @@ class PublicJobs(BaseModel):
     last_seen_at: Optional[datetime.datetime] = Field(alias="last_seen_at")
     latitude: Optional[float] = Field(alias="latitude")
     location: str = Field(alias="location")
+    location_verification: Optional[Json[Any]] = Field(alias="location_verification")
     longitude: Optional[float] = Field(alias="longitude")
     salary_currency: Optional[str] = Field(alias="salary_currency")
     salary_max_amount: Optional[int] = Field(alias="salary_max_amount")
@@ -195,6 +196,7 @@ class PublicJobsInsert(TypedDict):
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
+    location_verification: NotRequired[Annotated[Optional[Json[Any]], Field(alias="location_verification")]]
     longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]
@@ -218,6 +220,7 @@ class PublicJobsUpdate(TypedDict):
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
+    location_verification: NotRequired[Annotated[Optional[Json[Any]], Field(alias="location_verification")]]
     longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]

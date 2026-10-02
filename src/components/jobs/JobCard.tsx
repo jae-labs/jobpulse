@@ -79,9 +79,9 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
               </span>
             )}
 
-            {job.role_domain && (
+            {job.domain && (
               <span className="text-ds-text-muted font-sans truncate max-w-[180px]">
-                {job.role_domain}
+                {job.domain}
               </span>
             )}
           </div>

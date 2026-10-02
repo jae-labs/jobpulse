@@ -77,17 +77,63 @@ and writes `coordinate_source='posting'`. Legacy coordinates remain stored with 
 provenance and are hidden in paginated results and deep-link details.
 
 `employers.metadata_source` distinguishes `curated`, `watchlist`, `verified`, and
-`unverified` metadata. Unknown sectors are `Uncategorized`; historical inferred sectors
-are excluded from established industry facets until evidence is supplied. Overview
-`sectors` and `p_sector` filter the same shared catalog population. Overview `categories`
-and `p_domain` remain tenant-specific role classifications, including `Uncategorized`
-for unassessed jobs. Sector averages use assessed jobs only. The canonical SQL scorer
-owns matching; employer industry is display metadata and does not modify scoring factors.
+`unverified` metadata. Trusted `employers.sector` values define the single public
+catalog domain; unknown and historical inferred values contribute `Uncategorized`.
+Overview `categories` and page `p_domain` share this definition. `sectors` and
+`p_sector` remain database compatibility aliases. Candidate role-domain assessments
+remain private scoring inputs; this display classification does not rewrite them.
+Match averages include assessed jobs only.
+
+After persistence, when `GEOAPIFY_API_KEY` is configured, the synchronization runner
+checks up to 100 pending job locations through a separate bounded verification stage.
+It caches external results, records each job's original location and precision, and
+never substitutes employer headquarters. Provider failures do not roll back ingestion.
+See [job location verification](JOB_MAP_AND_LOCATION_VERIFICATION.md).
 
 `make scrape-backfill-employers` is read-only by default. Set `ARGS="--apply --limit 100"`
 to link a bounded scan. It uses ID keyset pagination, counts unresolved rows toward the
 limit, and guards writes against concurrent company/link changes. It never substitutes
 headquarters or increments scoring generations.
+
+Employer linking and metadata enrichment are separate operations. Run
+`cd services/scraper && uv run --locked python tools/enrich_employers.py --report /tmp/employers.csv`
+to preview all unverified employer records, including those already referenced by jobs.
+Use `--apply` to persist the reviewed registry; `--limit N` bounds scanned records.
+Updates preserve the existing employer ID and compare its ID, name and metadata source
+before writing. A concurrent upgrade or rename is reported as a conflict. Unknown
+identities and placeholder employers remain unresolved in the report. No jobs, candidate
+data, coordinates from postings, vectors or scoring generations are changed.
+
+`config/employer_evidence.json` records explicit full aliases, first-party evidence URLs
+and review dates for additions to the curated registry. Only documented employer addresses
+are supplied; conflicting addresses and coordinates without evidence stay null. Employer
+coordinates are separate from posting coordinates. Do not assign a hiring platform's
+industry to vacancies belonging to its clients. Automatic employer research remains outside ingestion; extending company coverage
+requires reviewed identity and field evidence. Vacancy geocoding runs separately
+after persistence when the backend key is configured.
+
+To reconcile using the live database only, add `--database-only`. This mode does not
+use the external-source registry or fetch any websites. It matches trusted employer
+records using punctuation and legal suffix differences, retaining geography and
+business-unit names, and rejects conflicting trusted sectors. Optional
+`--stored-evidence PATH` accepts reviewed employer self-descriptions from stored jobs:
+each JSON record supplies `employer_name`, `sector`, `job_id`, `description_sha256`,
+`excerpt` and `reviewed_on`. The job must still belong to that employer, its company
+name must match, and its complete body hash and excerpt must remain unchanged.
+These records are explicit evidence reviews, not automatic role-keyword classifications.
+Keep operational witnesses with the ignored recovery snapshot and retain the outcome report.
+
+Reviewed witnesses can also supply an optional `description`, which must be an exact
+substring of the validated business excerpt. Unsupported description claims are rejected.
+Explicitly named Community Employment programmes can be individually reviewed as
+programme sponsors, with a stored placement witness; this does not classify their
+client organisations or introduce an automatic name-based classification rule.
+Database-only repairs clear unsupported legacy employer location, coordinates and
+website fields before marking that employer metadata verified. They retain only the
+reviewed business description, when supplied, rather than promoting legacy guesses.
+Vacancy records and coordinates remain untouched. Platform/account labels that contain
+postings for multiple hiring companies require separate job identity repairs; never
+apply one posting's industry to every vacancy in such an account.
 
 For proven historical headquarters substitutions, `tools/repair_employer_locations.py`
 reads only the public catalog section of the approved pre-enrichment snapshot. Supply
@@ -95,3 +141,13 @@ reads only the public catalog section of the approved pre-enrichment snapshot. S
 identity/location compare-and-set writes. It refreshes scoring documents/hashes through
 `prepare_embeddings`; a retry refreshes already restored matching facts too. No private
 snapshot data is imported or used as fixtures.
+
+## External company research
+
+`tools/research_employers.py` reads linked employer identities from stored JobsIreland
+and WhatJobs catalog rows, independently of job-board availability. Provider access
+and the response cache live in `pipeline/company_research.py`; Wikidata supplies
+company discovery and Geoapify supplies explicit street-address geocoding. Results
+are review proposals, never ingestion-time industry or vacancy-location inference.
+Reviewed metadata can be previewed/applied through `tools/enrich_employers.py --registry`.
+See [the operational guide](EMPLOYER_RESEARCH.md) for configuration and evidence rules.

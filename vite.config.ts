@@ -43,7 +43,7 @@ function sameOriginOnnxRuntimePlugin(): Plugin {
   };
 }
 
-function addSupabaseCspOrigins(content: string, apiUrl: string): string {
+export function addSupabaseCspOrigins(content: string, apiUrl: string): string {
   if (!apiUrl) return content;
   const url = new URL(apiUrl);
   if (url.protocol !== "https:" && url.protocol !== "http:") {
@@ -53,8 +53,8 @@ function addSupabaseCspOrigins(content: string, apiUrl: string): string {
   websocketUrl.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   return content
     .replace(
-      "img-src 'self' data: blob:;",
-      `img-src 'self' data: blob: ${url.origin};`,
+      /img-src\s+([^;]+);/,
+      (_, origins) => `img-src ${origins} ${url.origin};`,
     )
     .replace(
       /connect-src\s+([^;]+);/,

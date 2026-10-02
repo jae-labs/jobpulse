@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   Search,
   ArrowDown,
@@ -9,6 +9,7 @@ import {
   X,
   Columns2,
   Rows3,
+  Map as MapIcon,
 } from 'lucide-react';
 import type { Job, JobStatus, OverviewMetrics } from '../../types/job';
 import { STATUS_LIST } from '../../types/job';
@@ -25,6 +26,7 @@ import { useJobFilters, type SortField } from './useJobFilters';
 import { useKeyboardNavigation } from './useKeyboardNavigation';
 
 export type { SortField };
+const JobsMapView = lazy(() => import('./JobsMapView'));
 
 interface JobsViewProps {
   jobs?: Job[];
@@ -76,7 +78,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   // TanStack Virtual mutates its instance; React Compiler must not memoize this component.
   "use no memo";
   const { t, i18n } = useTranslation('translation');
-  const [layoutMode, setLayoutMode] = useState<'split' | 'list'>('split');
+  const [layoutMode, setLayoutMode] = useState<'split' | 'list' | 'map'>('split');
   const [isDetailFullScreen, setIsDetailFullScreen] = useState(false);
 
   const {
@@ -84,8 +86,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
     setStatusFilter,
     domainFilter,
     setDomainFilter,
-    sectorFilter,
-    setSectorFilter,
     minMatch,
     setMinMatch,
     locationFilter,
@@ -186,10 +186,11 @@ export const JobsView: React.FC<JobsViewProps> = ({
         count: c.value,
       }));
     }
+    if (isServerPaginated) return [];
     const counts = new Map<string, number>();
-    const sourceJobs = isServerPaginated ? pageItems : jobs;
+    const sourceJobs = jobs;
     for (const j of sourceJobs) {
-      const domain = (j.role_domain || 'Uncategorized').trim();
+      const domain = (j.domain || 'Uncategorized').trim();
       counts.set(domain, (counts.get(domain) || 0) + 1);
     }
     return Array.from(counts.entries())
@@ -225,7 +226,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
     minMatch > 0 ||
     activeLocationFilter !== 'all' ||
     activeDomainFilter !== 'all' ||
-    sectorFilter !== 'all' ||
     salaryFilter !== 'all' ||
     sortField !== 'match' ||
     sortDir !== 'desc' ||
@@ -284,7 +284,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
       // Only open full-screen once on initial deep-link arrival, not when simply toggling layoutMode
       if (initialDeepLinkHandledRef.current !== urlJobId) {
         initialDeepLinkHandledRef.current = urlJobId;
-        if (match && (layoutMode === 'list' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
+        if (match && (layoutMode === 'list' || layoutMode === 'map' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
           setIsDetailFullScreen(true);
         }
       }
@@ -372,7 +372,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             )}
           </div>
 
-          <div className="hidden lg:flex items-center rounded-ds-control border border-ds-border bg-ds-surface p-0.5">
+          <div className="flex items-center rounded-ds-control border border-ds-border bg-ds-surface p-0.5">
             <button
               type="button"
               onClick={() => {
@@ -384,6 +384,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
+              aria-pressed={layoutMode === 'split'}
               title={t('jobs.layoutSplitTitle')}
             >
               <Columns2 className="size-3.5" />
@@ -400,10 +401,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
+              aria-pressed={layoutMode === 'list'}
               title={t('jobs.layoutListTitle')}
             >
               <Rows3 className="size-3.5" />
               <span>{t('jobs.layoutList')}</span>
+            </button>
+            <button type="button" onClick={() => { setLayoutMode('map'); setIsDetailFullScreen(false); }}
+              aria-pressed={layoutMode === 'map'} title={t('jobs.layoutMapTitle')}
+              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
+              <MapIcon className="size-3.5" /><span>{t('jobs.layoutMap')}</span>
             </button>
           </div>
         </div>
@@ -460,6 +467,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   <option value="all" className="bg-ds-panel text-ds-text-secondary">
                     {t('jobs.allDomains')} ({totalCatalogCount})
                   </option>
+                  {activeDomainFilter !== 'all' && !availableDomains.some(({ domain }) => domain === activeDomainFilter) && (
+                    <option value={activeDomainFilter}>{activeDomainFilter}</option>
+                  )}
                   {availableDomains.map(({ domain, count }) => (
                     <option key={domain} value={domain} className="bg-ds-panel text-ds-text-secondary">
                       {domain} ({count})
@@ -484,22 +494,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <div className="ds-field-shell flex w-full items-center rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
-              <select
-                aria-label={t('jobs.allSectors')}
-                value={sectorFilter}
-                onChange={(event) => setSectorFilter(event.target.value)}
-                className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-primary outline-none"
-              >
-                <option value="all">{t('jobs.allSectors')}</option>
-                {sectorFilter !== 'all' && !overviewMetrics?.sectors?.some((sector) => sector.name === sectorFilter) && (
-                  <option value={sectorFilter}>{sectorFilter}</option>
-                )}
-                {overviewMetrics?.sectors?.map((sector) => (
-                  <option key={sector.name} value={sector.name}>{sector.name} ({formatNumber(sector.value, i18n.language)})</option>
-                ))}
-              </select>
-            </div>
 
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
               <div className="flex items-center min-w-0 flex-1">
@@ -636,7 +630,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
         </div>
       </Card>
 
-      <div className="shrink-0 flex items-center justify-between px-1 text-xs text-ds-text-secondary font-mono">
+      {layoutMode !== 'map' && <div className="shrink-0 flex items-center justify-between px-1 text-xs text-ds-text-secondary font-mono">
         <div className="flex items-center gap-3">
           <span>
             {t('jobs.showing')} <strong className="text-ds-text-primary font-semibold">{displayedJobs.length}</strong> {t('jobs.of')} {totalMatchingCount} {t('jobs.opportunities')}
@@ -646,9 +640,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
             {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')}
           </span>
         </div>
-      </div>
+      </div>}
 
-      {isPageError && displayedJobs.length === 0 ? (
+      {layoutMode === 'map' ? (
+        <Suspense fallback={<div role="status">{t('jobs.mapLoading')}</div>}>
+          <JobsMapView userId={userId} filters={queryParams} onSelectJob={(id) => {
+            updateUrlParam('job', String(id)); setIsDetailFullScreen(true);
+          }} />
+        </Suspense>
+      ) : isPageError && displayedJobs.length === 0 ? (
         <div className="flex-1 min-h-0 flex items-center justify-center p-6">
           <EmptyState
             icon={SlidersHorizontal}

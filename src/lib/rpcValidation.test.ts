@@ -10,7 +10,7 @@ const job = {
 describe('employer RPC boundary', () => {
   it('preserves employer identity, shared sector and zero coordinates', () => {
     expect(validateJobsPageResult({ total: 1, items: [job] }).items[0]).toMatchObject({
-      employer_id: 12, employer_sector: 'Synthetic Sector', latitude: 0, longitude: 0,
+      employer_id: 12, domain: 'Synthetic Sector', latitude: 0, longitude: 0,
     });
   });
   it.each([
@@ -25,7 +25,7 @@ describe('employer RPC boundary', () => {
       categories: [{ name: 'Uncategorized', value: 1, avgMatch: 0 }],
       sectors: [{ name: 'Synthetic Sector', value: 1, avgMatch: 0 }], relevance_distribution: [], top_skills: [],
     };
-    expect(validateOverviewMetrics(metrics)).toMatchObject({ sectors: metrics.sectors, categories: metrics.categories });
+    expect(validateOverviewMetrics(metrics)).toMatchObject({ categories: metrics.sectors });
     expect(() => validateOverviewMetrics({ ...metrics, sectors: {} })).toThrow();
   });
 });

@@ -226,6 +226,7 @@ export type Database = {
           last_seen_at: string | null
           latitude: number | null
           location: string
+          location_verification: Json | null
           longitude: number | null
           salary_currency: string | null
           salary_max_amount: number | null
@@ -248,6 +249,7 @@ export type Database = {
           last_seen_at?: string | null
           latitude?: number | null
           location?: string
+          location_verification?: Json | null
           longitude?: number | null
           salary_currency?: string | null
           salary_max_amount?: number | null
@@ -270,6 +272,7 @@ export type Database = {
           last_seen_at?: string | null
           latitude?: number | null
           location?: string
+          location_verification?: Json | null
           longitude?: number | null
           salary_currency?: string | null
           salary_max_amount?: number | null
@@ -616,6 +619,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_job_location_verifications: {
+        Args: { p_records: Json }
+        Returns: Json
+      }
       create_invitation: { Args: { target_email: string }; Returns: Json }
       delete_invitation: { Args: { invitation_id: number }; Returns: Json }
       enqueue_candidate_scoring: {
@@ -623,6 +630,19 @@ export type Database = {
         Returns: undefined
       }
       fit_tier_for_score: { Args: { p_score: number }; Returns: string }
+      get_job_map: {
+        Args: {
+          p_bounds?: number[]
+          p_domain?: string
+          p_location?: string
+          p_min_match?: number
+          p_salary?: string
+          p_search?: string
+          p_status?: string
+          p_zoom?: number
+        }
+        Returns: Json
+      }
       get_jobs_page: {
         Args: {
           p_domain?: string

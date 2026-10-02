@@ -1,0 +1,56 @@
+# Job map and location verification
+
+Opportunities supports List, Split and Map. Map pins come from the entire filtered
+server catalog, independently of the loaded list page. Viewport clustering is bounded
+at 2,000 groups; popups offer up to five sample jobs and zooming. Filters use the
+same shared catalog domains and caller-owned matching/status contract as the list.
+
+Pins verify the **place named in the stored posting**, not the employer's headquarters
+or an independently proven exact workplace. The popup states precision, including
+city, county and country centroids. Remote, ambiguous and unresolved locations remain
+visible in coverage totals without invented coordinates.
+
+## Backend operations
+
+Configure `GEOAPIFY_API_KEY` in the scraper environment or backend `.env`. Never expose
+it through `VITE_` variables, reports or Git. Preview before applying:
+
+```sh
+cd services/scraper
+uv run --locked python tools/verify_job_locations.py --limit 100 \
+  --report ../../.backups/job-locations-preview.json
+uv run --locked python tools/verify_job_locations.py --apply --limit 100 \
+  --report ../../.backups/job-locations-applied.json
+```
+
+The worker scans jobs by ID, skips unchanged persisted outcomes, and uses a 30-day
+provider cache. Each job receives its own provenance record even when multiple jobs
+reuse one location lookup. Up to 100 pending jobs are checked after each synchronization
+when the key is present. Changing the posting location invalidates previous verification.
+The service-only write RPC checks the original text to avoid overwriting a concurrent
+scrape. Reports record conflicts and provider failures; five failures stop the batch.
+A shared local budget caps Geoapify attempts at 2,500 per UTC day. Other applications
+using the same account are outside this counter.
+
+The browser loads Leaflet and OpenStreetMap tiles with visible attribution. A custom
+`VITE_MAP_TILE_URL` requires corresponding exact CSP image origins in `public/_headers`.
+Do not prefetch/download tiles for offline use. Provider terms and capacity must be
+reviewed before changing tile providers or substantially increasing traffic.
+
+## Hosted backfill on 2026-10-03
+
+All 9,012 stored jobs were checked: 8,589 verified places, 263 ambiguous, 106 unresolved
+and 54 remote. Only 52 distinct location strings needed consideration; cache reuse
+keeps the provider request count much smaller than the number of job records.
+No employer headquarters were used for job pins.
+
+The shared domain pass assigned 1,859 JobsIreland CE programme vacancies to
+Community Employment & Training using exact named sponsor evidence. This describes
+the programme domain, not a claim about the sponsor's legal industry or address.
+There remain 2,742 Uncategorized jobs requiring company evidence or identity repair.
+Wikidata discovery was blocked with HTTP 403; those employers were not guessed.
+All jobs already have an employer link, which does not itself establish a verified domain.
+
+The two forward migrations were applied to hosted Supabase. Frontend changes remain
+in the repository until deployed; hosted database changes and web deployment are
+separate release steps.

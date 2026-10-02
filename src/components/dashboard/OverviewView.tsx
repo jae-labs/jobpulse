@@ -71,7 +71,6 @@ interface OverviewViewProps {
   onNavigateToJobs: (filters?: {
     status?: 'all' | JobStatus;
     domain?: string;
-    sector?: string;
     minMatch?: number;
     q?: string;
   }) => void;
@@ -147,7 +146,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
   }, [onNavigateToJobs]);
 
   const handleSelectCategory = useCallback((domain: string) => {
-    onNavigateToJobs({ status: 'all', domain: 'all', sector: domain, minMatch: 0 });
+    onNavigateToJobs({ status: 'all', domain: domain, minMatch: 0 });
   }, [onNavigateToJobs]);
 
   const handleSelectStatus = useCallback((status: JobStatus) => {
@@ -206,7 +205,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
             <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadCategoryChart')}>
               <CategoryBreakdownChart
                 title={t('overview.categoryBreakdown')}
-                categories={overviewMetrics?.sectors ?? []}
+                categories={overviewMetrics?.categories ?? []}
                 totalJobs={overviewMetrics?.total}
                 onSelectCategory={handleSelectCategory}
               />

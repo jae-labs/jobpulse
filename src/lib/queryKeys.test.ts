@@ -6,6 +6,7 @@ const second = 'b2222222-2222-4222-8222-222222222222';
 const cases = {
   scoringState: (uid: string) => queryKeys.scoringState(uid),
   overviewMetrics: (uid: string) => queryKeys.overviewMetrics(uid),
+  jobMap: (uid: string) => queryKeys.jobMap(uid, { domain: "same domain" }),
   jobsPage: (uid: string) => queryKeys.jobsPage(uid, { search: 'same query' }),
   jobsSearchPage: (uid: string) => queryKeys.jobsSearchPage(uid, { search: 'same query' }),
   scoringPreviewJobs: (uid: string) => queryKeys.scoringPreviewJobs(uid),

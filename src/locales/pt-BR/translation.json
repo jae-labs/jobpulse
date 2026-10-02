@@ -90,7 +90,7 @@
     "pipelineBreakdown": "Pipeline de Candidaturas",
     "relevanceDistribution": "Distribuição de Compatibilidade",
     "skillsFrequency": "Competências nas vagas avaliadas",
-    "categoryBreakdown": "Setores dos Empregadores",
+    "categoryBreakdown": "Domínios",
     "assessmentCoverage": "{{evaluated}} de {{total}} vagas avaliadas. Os gráficos de correspondência incluem apenas vagas avaliadas."
   },
   "jobs": {
@@ -108,7 +108,6 @@
     "searchPlaceholder": "Buscar por cargo, empresa, habilidades ou local...",
     "allSalaries": "Todas as Faixas Salariais",
     "disclosedOnly": "Apenas divulgados",
-    "allSectors": "Todos os Setores",
     "allDomains": "Todos os Domínios",
     "allLocations": "Todas as Localizações",
     "minMatch": "Match Mínimo",
@@ -152,7 +151,37 @@
       "noApplicationUrl": "Nenhum link de candidatura disponível",
       "statusGroup": "Seleção do status da vaga",
       "detailLoadError": "Não foi possível carregar os detalhes da vaga."
-    }
+    },
+    "layoutMap": "Mapa",
+    "layoutMapTitle": "Mapa mundial de oportunidades",
+    "mapCluster": "{{count}} oportunidades",
+    "mapPrecision": "Precisão da localização: {{precision}}",
+    "mapOpenJob": "Abrir vaga {{id}}",
+    "mapZoomCluster": "Ampliar este grupo",
+    "mapLoading": "Carregando localizações verificadas…",
+    "mapError": "Não foi possível carregar as localizações.",
+    "mapCoverage": "{{mapped}} de {{total}} vagas têm localização verificada no mapa",
+    "mapUnlocated": "{{count}} vagas são remotas ou aguardam verificação",
+    "mapEmpty": "Nenhuma localização verificada corresponde aos filtros.",
+    "mapZoomMore": "Amplie para mostrar grupos menores.",
+    "mapTilesError": "Não foi possível carregar o mapa.",
+    "mapLocationNote": "Os marcadores usam a localização da vaga e sua precisão verificada. Cidades e regiões são aproximadas; a sede do empregador nunca é usada como substituta.",
+    "locationPrecision": {
+      "building": "endereço",
+      "amenity": "local",
+      "street": "rua",
+      "postcode": "área postal",
+      "city": "cidade",
+      "district": "distrito",
+      "county": "condado",
+      "state": "região",
+      "country": "país",
+      "mixed": "localizações variadas"
+    },
+    "mapProvider": "Mapeamento por Geoapify",
+    "mapDomain": "Domínio: {{domain}}",
+    "mapZoomIn": "Ampliar",
+    "mapZoomOut": "Reduzir"
   },
   "sources": {
     "title": "Fontes de Dados",

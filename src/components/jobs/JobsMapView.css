@@ -1,0 +1,8 @@
+.job-world-map.leaflet-container { background: var(--ds-color-canvas); color: var(--ds-color-text-primary); font: inherit; z-index: 0; }
+.job-world-map .leaflet-popup-content-wrapper, .job-world-map .leaflet-popup-tip,
+.job-world-map .leaflet-control-zoom a { background: var(--ds-color-panel); color: var(--ds-color-text-primary); }
+.job-world-map .leaflet-control-attribution { background: var(--ds-color-panel); color: var(--ds-color-text-secondary); }
+.job-world-map .leaflet-control-attribution a { color: var(--ds-color-text-primary); }
+.job-map-pin { display: grid; place-items: center; border: 1px solid var(--ds-color-border-strong); border-radius: 50%; background: var(--ds-color-panel); color: var(--ds-color-text-primary); font-weight: 700; }
+.job-map-open { display: block; margin-top: 8px; padding: 4px 8px; border: 1px solid var(--ds-color-border-strong); border-radius: var(--ds-radius-control); background: var(--ds-color-panel); color: var(--ds-color-text-primary); cursor: pointer; }
+.job-map-open:focus-visible, .job-map-pin:focus-visible { outline: 2px solid var(--ds-color-text-primary); outline-offset: 2px; }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 
@@ -25,7 +26,22 @@ def synchronize(
     core_only: bool = False,
 ) -> dict[str, Any]:
     """Ingest vacancy facts and job embeddings only."""
-    return _scrape(employer, limit, full, skip_core, core_only)
+    result = _scrape(employer, limit, full, skip_core, core_only)
+    if os.environ.get("GEOAPIFY_API_KEY"):
+        from pipeline.job_locations import verify_catalog_locations
+
+        try:
+            result["locations"] = verify_catalog_locations(apply=True, limit=100)
+        except Exception:
+            # External enrichment cannot erase or fail already-ingested vacancies.
+            log_scraper_event(
+                "WARNING",
+                "Job location verification",
+                "Location verification unavailable; retry the verification worker.",
+                method="Geoapify",
+            )
+            result["locations"] = {"failed": 1}
+    return result
 
 
 def _scrape(

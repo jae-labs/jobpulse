@@ -2,6 +2,7 @@
 export const queryKeys = {
   scoringState: (userId?: string | null) => ["scoring-state", userId ?? null] as const,
   overviewMetrics: (userId?: string | null) => ["overview-metrics", userId ?? null] as const,
+  jobMap: (userId?: string | null, params?: unknown) => ["job-map", userId ?? null, ...(params === undefined ? [] : [params])] as const,
   jobsPage: (userId?: string | null, params?: unknown) => ["jobs-page", userId ?? null, ...(params === undefined ? [] : [params])] as const,
   jobsSearchPage: (userId?: string | null, params?: unknown) => ["jobs-search-page", userId ?? null, ...(params === undefined ? [] : [params])] as const,
   scoringPreviewJobs: (userId?: string | null) => ["scoring-preview-jobs", userId ?? null] as const,

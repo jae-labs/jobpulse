@@ -110,7 +110,8 @@ shared job status or `is_admin()` authorization alias.
 `get_jobs_page`, `get_overview_metrics`, and browser detail/preview queries read
 only the current user's evaluation. An absent evaluation returns relevance `0`,
 fit tier `Unassessed`, empty matched skills, and no explanation. It never falls
-back to another candidate's score. Unassessed domain defaults to `Uncategorized`.
+back to another candidate's score. Unassessed private role classification defaults to `Uncategorized`; the shared
+catalog domain remains independently available from trusted employer metadata.
 
 Profile matching uses `salary_min` for the annual EUR target. There is no
 `minimum_salary` alias in application code. Job salary amounts, currency, and
@@ -173,18 +174,28 @@ version are exposed through `get_profile_embedding_state` without exposing the v
 Existing evaluations for jobs without vectors remain until those jobs receive a
 vector; this avoids losing match data during a staged migration.
 
-### Employer industry and matching domains
+### Catalog domains and verified job locations
 
-Employer metadata has an explicit `metadata_source`; only curated, watchlist, or
-verified sectors contribute established employer industry facets. Legacy inferred
-values are retained as unverified. Vacancy coordinates have `coordinate_source`;
-only posting coordinates are exposed by catalog RPCs. Employer headquarters never
-replace a vacancy location.
+The product exposes one shared catalog **domain**, derived from trusted employer
+metadata (`metadata_source` is curated, watchlist or verified). The physical
+`employers.sector` column remains for compatibility. Unknown employers contribute
+`Uncategorized`. Candidate role classifications stay private matching inputs and do
+not replace the catalog domain or mutate shared employer facts.
 
-`get_overview_metrics` returns both private role-domain `categories` and shared
-employer `sectors`; `get_jobs_page` retains the existing arguments and adds the
-optional final `p_sector` argument. Domain and sector filters intersect, use the
-same count/page CTE, and remain bounded at the database boundary. The old signature
-is replaced to avoid PostgREST overload ambiguity. Only authenticated authorized
-callers and service workers may invoke it. The unused duplicate scorer is removed;
-canonical scoring is requeued in bounded slices to repair historical domain rewrites.
+`get_overview_metrics.categories` and `by_domain`, and `get_jobs_page.p_domain`, use
+this same shared classification. The overview `sectors` key and page `p_sector`
+argument are compatibility aliases; the application exposes no separate sector filter.
+Overview match statistics still use assessed jobs only.
+
+`jobs.location_verification` records the original posting location, provider,
+verification timestamp, status, confidence and precision. The service-only
+`apply_job_location_verifications` RPC guards both ID and unchanged location text.
+Changing that text invalidates old verification and geocoded coordinates. Employer
+headquarters never replace a vacancy location.
+
+The authorized browser RPC `get_job_map` applies the catalog filters and each
+caller's own scores/statuses, then returns bounded viewport clusters with full
+filtered and verified-location counts. Pins require Geoapify verification matching
+the current posting text; city, region and country centroids retain their precision.
+Remote, ambiguous and unresolved jobs remain in catalog totals without a pin.
+See [the operational map guide](JOB_MAP_AND_LOCATION_VERIFICATION.md).

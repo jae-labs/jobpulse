@@ -55,7 +55,7 @@ export interface Job {
   url: string;
   source: string;
   employer_id?: number | null;
-  employer_sector?: string;
+  domain?: string;
   latitude?: number | null;
   longitude?: number | null;
   relevance: number;
@@ -187,13 +187,11 @@ export interface OverviewMetrics {
   counts: Record<string, number>;
   stage_averages: Record<string, number>;
   categories: OverviewCategory[];
-  sectors?: OverviewCategory[];
   relevance_distribution: Array<{ range: string; min: number; max: number; count: number }>;
   top_skills: Array<{ skill: string; count: number; percentage: number }>;
 }
 
 export interface JobsPageParams {
-  sector?: string;
   status?: string;
   domain?: string;
   minMatch?: number;
@@ -209,4 +207,22 @@ export interface JobsPageParams {
 export interface JobsPageResult {
   total: number;
   items: Job[];
+}
+
+export interface JobMapPin {
+  latitude: number;
+  longitude: number;
+  count: number;
+  job_ids: number[];
+  title: string;
+  company: string;
+  domain: string;
+  precision: string;
+}
+export interface JobMapResult {
+  pins: JobMapPin[];
+  total: number;
+  mapped: number;
+  in_view: number;
+  truncated: boolean;
 }

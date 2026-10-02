@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
 
+vi.mock('./JobsMapView', () => ({ default: () => <section aria-label="Synthetic map view" /> }));
+
 vi.mock('../../hooks/useQueries', () => ({
   useJobByIdQuery: () => ({ data: null, isLoading: false }),
   useJobDetailQuery: () => ({ data: null, isLoading: false, isError: false }),
@@ -69,14 +71,25 @@ describe('JobsView Search Input', () => {
     );
   };
 
-  it('preserves and clears an employer sector deep link independently of domains', () => {
-    renderJobsView(['/opportunities?sector=Synthetic%20Sector&domain=Cloud']);
-    const sectors = screen.getByRole('combobox', { name: 'All Sectors' });
-    expect(sectors).toHaveValue('Synthetic Sector');
-    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
-    fireEvent.change(sectors, { target: { value: 'all' } });
-    expect(sectors).toHaveValue('all');
-    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
+  it('switches to map without displaying the loaded list count and restores list mode', async () => {
+    renderJobsView();
+    const map = screen.getByRole('button', { name: 'Map' });
+    fireEvent.click(map);
+    expect(await screen.findByRole('region', { name: 'Synthetic map view' })).toBeInTheDocument();
+    expect(map).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText(/^Showing/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
+    expect(screen.getByText(/^Showing/)).toBeInTheDocument();
+  });
+
+  it('unifies legacy sector links into the single domain filter and clears them', () => {
+    renderJobsView(['/opportunities?sector=Synthetic%20Domain']);
+    const domains = screen.getByRole('combobox', { name: 'All Domains' });
+    expect(domains).toHaveValue('Synthetic Domain');
+    expect(screen.queryByRole('combobox', { name: 'All Sectors' })).not.toBeInTheDocument();
+    fireEvent.change(domains, { target: { value: 'all' } });
+    expect(domains).toHaveValue('all');
   });
 
   it('allows user to type without losing focus or cursor jumping', async () => {
@@ -131,7 +144,7 @@ describe('JobsView Search Input', () => {
 
     // Domain dropdown options have counts
     expect(screen.getByRole('option', { name: 'All Domains (1)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Cloud (1)' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Cloud (1)' })).not.toBeInTheDocument();
 
     // Salary dropdown options have counts
     expect(screen.getByRole('option', { name: 'All Salaries' })).toBeInTheDocument();
