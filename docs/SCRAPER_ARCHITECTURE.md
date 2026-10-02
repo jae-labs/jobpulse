@@ -76,3 +76,9 @@ a persistent catalog of employers (`employers` table):
 - **Map & Spatial Readiness**: Opportunities link to `employers(id)` via `jobs.employer_id`
   and receive `latitude` and `longitude` coordinates (inherited from employer headquarters
   if the vacancy location is vague, e.g. "Ireland" or "Hybrid").
+- **Domain & Sector Classification Fallback**: Candidate evaluations and dashboard metrics
+  fall back to `employers.sector` when candidate-specific profile domain rules do not match,
+  enriching catalog categorization.
+- **Catalog Backfill**: Existing vacancies can be linked and geocoded via
+  `make scrape-backfill-employers` (`tools/backfill_employers.py`).
+

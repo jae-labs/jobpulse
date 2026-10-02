@@ -616,6 +616,10 @@ export type Database = {
         Args: { p_top_k?: number; p_user_id: string }
         Returns: undefined
       }
+      evaluate_candidate_job: {
+        Args: { p_job_id: number; p_similarity: number; p_user_id: string }
+        Returns: undefined
+      }
       fit_tier_for_score: { Args: { p_score: number }; Returns: string }
       get_jobs_page: {
         Args: {

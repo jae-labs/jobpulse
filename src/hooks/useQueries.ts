@@ -247,7 +247,7 @@ export function useSourcesQuery(enabled = true) {
       if (!supabase) {
         throw new Error("Supabase is not initialized.");
       }
-      const { data, error } = await supabase.from("sources").select("*").order("name", { ascending: true }).limit(200);
+      const { data, error } = await supabase.from("sources").select("*").order("name", { ascending: true }).limit(1000);
       if (error) throw new Error(error.message);
       return (data || []) as Source[];
     },

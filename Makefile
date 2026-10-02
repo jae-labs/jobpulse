@@ -52,6 +52,9 @@ scrape-core: ## Run only core scrapers (universities, councils, PublicJobs).
 scrape-backfill: ## Generate missing vectors for existing jobs without crawling.
 	@cd services/scraper && uv run --locked python app.py --backfill-embeddings
 
+scrape-backfill-employers: ## Link existing jobs to employers, sectors, and coordinates; set ARGS="--limit 100".
+	@cd services/scraper && uv run --locked python tools/backfill_employers.py $(ARGS)
+
 scrape-descriptions: ## Audit/repair catalog bodies; set ARGS="--apply --report /tmp/descriptions.csv" to write.
 	@cd services/scraper && uv run --locked python tools/repair_descriptions.py $(ARGS)
 
