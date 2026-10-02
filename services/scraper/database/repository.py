@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 import urllib.parse
 from collections import defaultdict
@@ -19,9 +20,15 @@ from config.loader import (
 )
 from database.client import get_supabase, retry_supabase, utc_now
 from database.embeddings import prepare_embeddings
+from engine.description_quality import has_description_body, needs_description_repair
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import clean_description_text, normalize_location
+from engine.text_cleaner import WORK_MODE_TAGS, clean_description_text, normalize_location
 from engine.validators import is_valid_job_title, is_valid_location
+from pipeline.employer_lookup import (
+    CURATED_IRISH_EMPLOYERS,
+    get_employer_lookup_service,
+    normalize_company_key,
+)
 
 
 def normalize_company_name(company: str) -> str:
@@ -174,14 +181,12 @@ def _enrich_job(job: dict[str, Any]) -> dict[str, Any]:
 
     # Deep Spec Enrichment: if description is a stub or short, fetch full spec from source URL
     raw_desc = job.get("description", "")
-    if job.get("url") and (
-        len(raw_desc) < 250 or "Check the official vacancy post" in raw_desc or "opportunity:" in raw_desc
-    ):
+    if job.get("url") and (job.get("description_is_snippet") or needs_description_repair(raw_desc)):
         try:
             from extractors.universal import extract_universal_job_spec
 
             spec = extract_universal_job_spec(job["url"], job.get("company", ""), job.get("title", ""))
-            if spec and len(spec.get("description", "")) > 250:
+            if spec and has_description_body(spec.get("description")):
                 job["description"] = spec["description"]
                 if spec.get("salary_text") and not job.get("salary_text"):
                     job["salary_text"] = spec["salary_text"]
@@ -189,13 +194,17 @@ def _enrich_job(job: dict[str, Any]) -> dict[str, Any]:
                     job["location"] = spec["location"]
                 if spec.get("employment_type") and job.get("employment_type") in ("See job post", "Not specified", ""):
                     job["employment_type"] = spec["employment_type"]
+            elif job.get("description_is_snippet"):
+                job["description"] = ""
         except Exception:
-            pass
+            if job.get("description_is_snippet"):
+                job["description"] = ""
+            logging.getLogger(__name__).warning("Job detail extraction failed; existing catalog body will be retained")
 
     return job
 
 
-def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = False) -> int:
+def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
     """Validate, enrich, persist, and embed shared vacancy facts."""
     if not jobs:
         return 0
@@ -215,25 +224,64 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = False) -> int:
         key = normalized_key(
             job["company"], job["title"], job.get("url", ""), job.get("location", ""), job.get("employment_type", "")
         )
+
+        employer = None
+        try:
+            lookup_service = get_employer_lookup_service()
+            employer = lookup_service.resolve_employer(
+                job.get("company", ""),
+                careers_url=job.get("url", ""),
+                scraped_location=job.get("location", ""),
+            )
+        except Exception as lookup_err:
+            logging.getLogger(__name__).debug("Employer lookup skipped for %s: %s", job.get("company"), lookup_err)
+
+        norm_loc = normalize_location(job.get("location", ""))
+        if (
+            norm_loc in ("Ireland", "Ireland (Hybrid)", "Ireland (Remote)", "Ireland (On-site)")
+            and employer
+            and employer.get("location")
+            and employer.get("location") != "Ireland"
+        ):
+            emp_loc = employer["location"]
+            work_mode = next(
+                (label for key, label in WORK_MODE_TAGS.items() if key in (job.get("location", "")).lower()),
+                None,
+            )
+            if work_mode and work_mode not in emp_loc:
+                norm_loc = f"{emp_loc} ({work_mode})"
+            else:
+                norm_loc = emp_loc
+
+        latitude = job.get("latitude") or (employer.get("latitude") if employer else None)
+        longitude = job.get("longitude") or (employer.get("longitude") if employer else None)
+        employer_id = employer.get("id") if employer else None
+
         valid_payloads.append(
             {
                 "dedupe_key": key,
                 "title": _sanitize_val(job["title"]),
                 "company": _sanitize_val(job["company"]),
-                "location": _sanitize_val(normalize_location(job.get("location", ""))),
+                "location": _sanitize_val(norm_loc),
                 "employment_type": _sanitize_val(job.get("employment_type") or "Not specified"),
                 "salary_text": _sanitize_val(salary_text),
                 "description": _sanitize_val(clean_desc),
                 "url": _sanitize_val(job["url"]),
                 "source": _sanitize_val(job["source"]),
+                "employer_id": employer_id,
+                "latitude": latitude,
+                "longitude": longitude,
                 "last_seen_at": now,
             }
         )
 
-    # Deduplicate within the batch by dedupe_key (keeps last occurrence)
+    # Deduplicate within the batch without losing a hydrated body to a later stub
     # to prevent PostgreSQL 21000 "ON CONFLICT DO UPDATE command cannot affect row a second time"
     unique_payloads: dict[str, dict[str, Any]] = {}
     for item in valid_payloads:
+        previous = unique_payloads.get(item["dedupe_key"])
+        if previous and has_description_body(previous["description"]) and not has_description_body(item["description"]):
+            item["description"] = previous["description"]
         unique_payloads[item["dedupe_key"]] = item
     payloads_to_save = list(unique_payloads.values())
 
@@ -246,6 +294,34 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = False) -> int:
 
     for i in range(0, len(payloads_to_save), batch_size):
         chunk = payloads_to_save[i : i + batch_size]
+        # A detail failure must never replace a hydrated body with listing metadata.
+        existing_rows = (
+            retry_supabase(
+                lambda c=chunk: (
+                    supabase.table("jobs")
+                    .select("dedupe_key,description")
+                    .in_("dedupe_key", [item["dedupe_key"] for item in c])
+                    .execute()
+                )
+            ).data
+            or []
+        )
+        existing = {row["dedupe_key"]: row for row in existing_rows}
+        for item in chunk:
+            previous = existing.get(item["dedupe_key"], {}).get("description", "")
+            if not has_description_body(item["description"]) and has_description_body(previous):
+                item["description"] = previous
+        # Unresolved listings are not new semantic documents. Existing rows remain intact
+        # for repair/retry; source failure never deletes a vacancy or candidate tracking.
+        complete_chunk = [item for item in chunk if has_description_body(item["description"])]
+        if len(complete_chunk) != len(chunk):
+            logging.getLogger(__name__).warning(
+                "%d listings lack a published description body; retained for source retry",
+                len(chunk) - len(complete_chunk),
+            )
+        chunk = complete_chunk
+        if not chunk:
+            continue
         try:
             persisted = (
                 retry_supabase(
@@ -493,12 +569,20 @@ def sync_watchlist_metadata() -> None:
         for emp in employers_tuples:
             name = _sanitize_val(emp[0])
             if name:
-                unique_employers[name] = {
+                curated = CURATED_IRISH_EMPLOYERS.get(normalize_company_key(name))
+                emp_dict: dict[str, Any] = {
                     "name": name,
                     "sector": _sanitize_val(emp[1]),
                     "priority": emp[2],
                     "careers_url": _sanitize_val(emp[3]),
                 }
+                if curated:
+                    emp_dict["location"] = curated.get("location")
+                    emp_dict["latitude"] = curated.get("latitude")
+                    emp_dict["longitude"] = curated.get("longitude")
+                    emp_dict["description"] = curated.get("description")
+                    emp_dict["website"] = curated.get("website")
+                unique_employers[name] = emp_dict
         employer_payloads = list(unique_employers.values())
         try:
             supabase.table("employers").upsert(employer_payloads, on_conflict="name").execute()

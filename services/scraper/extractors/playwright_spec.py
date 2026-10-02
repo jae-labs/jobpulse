@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from engine.description_quality import has_description_body
 from engine.salary import extract_salary_from_context
 from engine.text_cleaner import clean_html_description, strip_cookie_boilerplate
 
@@ -52,17 +53,12 @@ def extract_playwright_job_spec(url: str, title: str, company: str, page: Any = 
                             t = clean_html_description(h)
                         else:
                             t = el.inner_text()
-                        if len(t) > 200:
+                        if has_description_body(t):
                             return strip_cookie_boilerplate(t)
                 except Exception:
                     continue
 
-            body = pg.query_selector("body")
-            if body:
-                h = body.inner_html()
-                if h and "<" in h and ">" in h:
-                    return strip_cookie_boilerplate(clean_html_description(h))
-            return strip_cookie_boilerplate(pg.inner_text("body") or "")
+            return ""
 
         if page:
             clean = _extract_from_page(page)
@@ -77,10 +73,10 @@ def extract_playwright_job_spec(url: str, title: str, company: str, page: Any = 
                 finally:
                     browser.close()
 
-        if len(clean) > 200:
+        if has_description_body(clean):
             sal = extract_salary_from_context(clean, title)
             return {
-                "description": clean[:25000].strip(),
+                "description": clean.strip(),
                 "salary_text": sal,
             }
     except Exception:

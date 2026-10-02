@@ -8,6 +8,7 @@ from typing import Any
 from urllib.request import Request
 
 from engine.salary import extract_salary_from_context
+from engine.text_cleaner import clean_html_description
 from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 from scrapers.providers.location import is_explicit_ireland_location
@@ -43,7 +44,16 @@ def extract_lever_opportunities(
                         continue
                     job_url = j.get("hostedUrl") or j.get("applyUrl")
                     desc_plain = j.get("descriptionPlain") or ""
-                    desc = f"{employer_name} position: {title}. Location: {loc}. {desc_plain[:300]}".strip()
+                    desc = clean_html_description(
+                        "\n".join(
+                            [desc_plain or j.get("description", "")]
+                            + [
+                                f"{section.get('text', '')}\n{section.get('content', '')}"
+                                for section in j.get("lists", [])
+                            ]
+                            + [j.get("additionalPlain") or j.get("additional", "")]
+                        )
+                    )
                     salary = extract_salary_from_context(desc_plain or desc, title)
                     if title and job_url and job_url not in seen_urls:
                         seen_urls.add(job_url)

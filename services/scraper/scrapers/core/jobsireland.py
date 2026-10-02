@@ -186,7 +186,7 @@ def sync_jobsireland(max_pages: int = 100, page_size: int = 100) -> tuple[int, s
             total_read += len(page_opps)
             saved = 0
             if new_opps:
-                saved = save_jobs_batch(new_opps, enrich=False)
+                saved = save_jobs_batch(new_opps, enrich=True)
                 total_saved += saved
 
             print(

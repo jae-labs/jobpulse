@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-validate scrape-lint scrape-format scrape-unit db-types check
+.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit db-types check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -51,6 +51,12 @@ scrape-core: ## Run only core scrapers (universities, councils, PublicJobs).
 
 scrape-backfill: ## Generate missing vectors for existing jobs without crawling.
 	@cd services/scraper && uv run --locked python app.py --backfill-embeddings
+
+scrape-descriptions: ## Audit/repair catalog bodies; set ARGS="--apply --report /tmp/descriptions.csv" to write.
+	@cd services/scraper && uv run --locked python tools/repair_descriptions.py $(ARGS)
+
+scrape-description-audit: ## Read-only coverage; set ARGS="--report /tmp/audit.csv --summary /tmp/audit.json".
+	@cd services/scraper && uv run --locked python tools/audit_descriptions.py $(ARGS)
 
 scrape-validate: ## Validate websites.yaml configuration.
 	@cd services/scraper && uv run --locked python app.py --validate-config

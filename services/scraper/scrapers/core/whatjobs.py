@@ -77,6 +77,7 @@ def extract_whatjobs_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "employment_type": emp_type,
                 "salary_text": salary_text,
                 "description": cleaned_desc,
+                "description_is_snippet": True,
                 "url": url,
                 "source": "WhatJobs Ireland",
             }
@@ -145,7 +146,7 @@ def sync_whatjobs(
             total_read += len(page_opps)
             saved = 0
             if new_opps:
-                saved = save_jobs_batch(new_opps, enrich=False)
+                saved = save_jobs_batch(new_opps, enrich=True)
                 total_saved += saved
 
             print(

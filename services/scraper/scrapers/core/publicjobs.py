@@ -77,7 +77,7 @@ def extract_publicjobs_detail(job_url: str, title: str) -> dict[str, str]:
         if desc_m:
             job_summary = desc_m.group(1).strip()
         else:
-            job_summary = cl[:25000].strip()
+            job_summary = cl.strip()
 
         booklet_m = re.search(r'<a [^>]*href="([^"]+)"[^>]*>[^<]*Information Booklet[^<]*</a>', jp, re.IGNORECASE)
         booklet_url = urljoin(job_url, booklet_m.group(1)) if booklet_m else ""

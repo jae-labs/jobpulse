@@ -87,38 +87,53 @@ class PublicAuthorizedUsersUpdate(TypedDict):
 
 class PublicEmployers(BaseModel):
     careers_url: str = Field(alias="careers_url")
+    description: Optional[str] = Field(alias="description")
     discovered_jobs_url: Optional[str] = Field(alias="discovered_jobs_url")
     id: int = Field(alias="id")
     last_scraped_at: Optional[datetime.datetime] = Field(alias="last_scraped_at")
+    latitude: Optional[float] = Field(alias="latitude")
+    location: Optional[str] = Field(alias="location")
+    longitude: Optional[float] = Field(alias="longitude")
     name: str = Field(alias="name")
     opportunities_found: Optional[int] = Field(alias="opportunities_found")
     priority: int = Field(alias="priority")
     sector: str = Field(alias="sector")
     status: Optional[str] = Field(alias="status")
+    website: Optional[str] = Field(alias="website")
 
 
 class PublicEmployersInsert(TypedDict):
     careers_url: Annotated[str, Field(alias="careers_url")]
+    description: NotRequired[Annotated[Optional[str], Field(alias="description")]]
     discovered_jobs_url: NotRequired[Annotated[Optional[str], Field(alias="discovered_jobs_url")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_scraped_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_scraped_at")]]
+    latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
+    location: NotRequired[Annotated[Optional[str], Field(alias="location")]]
+    longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     name: Annotated[str, Field(alias="name")]
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
     sector: Annotated[str, Field(alias="sector")]
     status: NotRequired[Annotated[Optional[str], Field(alias="status")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
 
 
 class PublicEmployersUpdate(TypedDict):
     careers_url: NotRequired[Annotated[str, Field(alias="careers_url")]]
+    description: NotRequired[Annotated[Optional[str], Field(alias="description")]]
     discovered_jobs_url: NotRequired[Annotated[Optional[str], Field(alias="discovered_jobs_url")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_scraped_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_scraped_at")]]
+    latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
+    location: NotRequired[Annotated[Optional[str], Field(alias="location")]]
+    longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     name: NotRequired[Annotated[str, Field(alias="name")]]
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
     sector: NotRequired[Annotated[str, Field(alias="sector")]]
     status: NotRequired[Annotated[Optional[str], Field(alias="status")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
 
 
 class PublicJobScoringEmbeddings(BaseModel):
@@ -146,11 +161,14 @@ class PublicJobs(BaseModel):
     company: str = Field(alias="company")
     dedupe_key: str = Field(alias="dedupe_key")
     description: str = Field(alias="description")
+    employer_id: Optional[int] = Field(alias="employer_id")
     employment_type: str = Field(alias="employment_type")
     first_seen_at: Optional[datetime.datetime] = Field(alias="first_seen_at")
     id: int = Field(alias="id")
     last_seen_at: Optional[datetime.datetime] = Field(alias="last_seen_at")
+    latitude: Optional[float] = Field(alias="latitude")
     location: str = Field(alias="location")
+    longitude: Optional[float] = Field(alias="longitude")
     salary_currency: Optional[str] = Field(alias="salary_currency")
     salary_max_amount: Optional[int] = Field(alias="salary_max_amount")
     salary_min_amount: Optional[int] = Field(alias="salary_min_amount")
@@ -165,11 +183,14 @@ class PublicJobsInsert(TypedDict):
     company: Annotated[str, Field(alias="company")]
     dedupe_key: Annotated[str, Field(alias="dedupe_key")]
     description: Annotated[str, Field(alias="description")]
+    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
     employment_type: NotRequired[Annotated[str, Field(alias="employment_type")]]
     first_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="first_seen_at")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
+    latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
+    longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]
     salary_min_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_min_amount")]]
@@ -184,11 +205,14 @@ class PublicJobsUpdate(TypedDict):
     company: NotRequired[Annotated[str, Field(alias="company")]]
     dedupe_key: NotRequired[Annotated[str, Field(alias="dedupe_key")]]
     description: NotRequired[Annotated[str, Field(alias="description")]]
+    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
     employment_type: NotRequired[Annotated[str, Field(alias="employment_type")]]
     first_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="first_seen_at")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_seen_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_seen_at")]]
+    latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
     location: NotRequired[Annotated[str, Field(alias="location")]]
+    longitude: NotRequired[Annotated[Optional[float], Field(alias="longitude")]]
     salary_currency: NotRequired[Annotated[Optional[str], Field(alias="salary_currency")]]
     salary_max_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_max_amount")]]
     salary_min_amount: NotRequired[Annotated[Optional[int], Field(alias="salary_min_amount")]]

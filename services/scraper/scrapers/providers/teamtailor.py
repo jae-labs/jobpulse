@@ -9,7 +9,7 @@ from typing import Any
 from urllib.request import Request
 
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import clean_text
+from engine.text_cleaner import clean_html_description, clean_text
 from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 from scrapers.providers.location import IRELAND_LOCATION_KEYWORDS, is_ireland_location
@@ -63,7 +63,7 @@ def extract_teamtailor_opportunities(
                     # Extract locations from description, title, and teamtailor tags
                     desc_el = item.find("description")
                     raw_desc = desc_el.text if desc_el is not None and desc_el.text else ""
-                    cleaned_desc = clean_text(raw_desc)
+                    cleaned_desc = clean_html_description(raw_desc)
 
                     # Check for location in any element ending with 'location' or 'city'
                     loc_texts: list[str] = []
@@ -100,9 +100,7 @@ def extract_teamtailor_opportunities(
                         continue
 
                     seen_urls.add(job_url)
-                    short_desc = (
-                        f"{employer_name} position: {title}. Location: {matched_loc}. {cleaned_desc[:300]}".strip()
-                    )
+                    short_desc = cleaned_desc
                     salary = extract_salary_from_context(cleaned_desc or short_desc, title)
 
                     opportunities.append(
@@ -157,8 +155,8 @@ def extract_teamtailor_opportunities(
                     continue
 
                 seen_urls.add(job_url)
-                body = clean_text(attrs.get("body", "") or attrs.get("pitch", ""))
-                short_desc = f"{employer_name} position: {title}. Location: {loc_text}. {body[:300]}".strip()
+                body = clean_html_description(attrs.get("body", "") or attrs.get("pitch", ""))
+                short_desc = body
                 salary = extract_salary_from_context(body or short_desc, title)
 
                 opportunities.append(

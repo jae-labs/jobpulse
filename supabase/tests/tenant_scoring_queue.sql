@@ -42,14 +42,14 @@ DO $$ DECLARE vec extensions.vector:=('[1,'||repeat('0,',382)||'0]')::extensions
  PERFORM public.process_candidate_scoring(100);
  IF (SELECT cursor FROM public.candidate_scoring_work WHERE user_id='a1111111-1111-4111-8111-111111111111')>100 THEN RAISE EXCEPTION 'Worker exceeded batch'; END IF;
  PERFORM pg_temp.drain_queue();
- IF (SELECT count(*) FROM public.user_job_evaluations WHERE user_id='a1111111-1111-4111-8111-111111111111' AND scoring_version='native-sql-v1')<>1500 THEN RAISE EXCEPTION 'Exact shortlist did not cover 1500 jobs'; END IF;
+ IF (SELECT count(*) FROM public.user_job_evaluations WHERE user_id='a1111111-1111-4111-8111-111111111111' AND scoring_version='native-sql-v2')<>1500 THEN RAISE EXCEPTION 'Exact shortlist did not cover 1500 jobs'; END IF;
  IF EXISTS(SELECT 1 FROM public.user_job_evaluations WHERE user_id='b2222222-2222-4222-8222-222222222222' AND job_id<-940000) THEN RAISE EXCEPTION 'Queue crossed ownership'; END IF;
  -- If inference fails after a text edit, persistent setup state survives refresh and old results remain usable.
  UPDATE public.user_profiles SET summary='Synthetic changed matching document' WHERE user_id='a1111111-1111-4111-8111-111111111111';
  IF (SELECT state FROM public.candidate_scoring_work WHERE user_id='a1111111-1111-4111-8111-111111111111')<>'awaiting_embedding' THEN RAISE EXCEPTION 'Text edit lost desired embedding state'; END IF;
  PERFORM public.process_candidate_scoring_queue(50);
  IF (SELECT state FROM public.candidate_scoring_work WHERE user_id='a1111111-1111-4111-8111-111111111111')<>'awaiting_embedding' THEN RAISE EXCEPTION 'Worker completed against an outdated profile vector'; END IF;
- IF (SELECT count(*) FROM public.user_job_evaluations WHERE user_id='a1111111-1111-4111-8111-111111111111' AND scoring_version='native-sql-v1')<>1500 THEN RAISE EXCEPTION 'Awaiting inference discarded usable results'; END IF;
+ IF (SELECT count(*) FROM public.user_job_evaluations WHERE user_id='a1111111-1111-4111-8111-111111111111' AND scoring_version='native-sql-v2')<>1500 THEN RAISE EXCEPTION 'Awaiting inference discarded usable results'; END IF;
  PERFORM public.save_profile_embedding(vec,repeat('b',64),'all-MiniLM-L6-v2:384:v1');
  PERFORM pg_temp.drain_queue();
  -- Weight-only changes reuse cached factors and completed work.

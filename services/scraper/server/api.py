@@ -20,7 +20,6 @@ from pipeline.runner import synchronize
 
 GLOBAL_DATA_VERSION = int(time.time() * 1000)
 ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
-ALLOWED_ORIGIN_SUFFIX = ".ngrok-free.app"
 MAX_PAGE_SIZE = 100
 MAX_REQUEST_BYTES = 64 * 1024
 
@@ -35,15 +34,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin", "").strip()
         if not origin:
             return ""
-        if origin in ALLOWED_ORIGINS:
+        configured_origin = os.environ.get("JOBPULSE_ALLOWED_ORIGIN", "").strip()
+        if origin in ALLOWED_ORIGINS or (configured_origin and origin == configured_origin):
             return origin
-        try:
-            parsed = urllib.parse.urlparse(origin)
-            hostname = (parsed.hostname or "").lower()
-            if hostname.endswith(ALLOWED_ORIGIN_SUFFIX):
-                return origin
-        except Exception:
-            pass
         return ""
 
     def send_json(self, payload: Any, status: HTTPStatus = HTTPStatus.OK) -> None:
@@ -63,6 +56,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         if use_gzip:
             self.send_header("Content-Encoding", "gzip")
+        self.send_header("Vary", "Origin, Accept-Encoding")
 
         allowed_origin = self._cors_origin()
         if allowed_origin:
@@ -72,7 +66,6 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "Access-Control-Allow-Headers",
                 "Content-Type, ngrok-skip-browser-warning, Authorization, Accept, Origin, X-Requested-With",
             )
-            self.send_header("Access-Control-Allow-Credentials", "true")
         self.end_headers()
         self.wfile.write(body)
 
@@ -86,13 +79,19 @@ class ApiHandler(BaseHTTPRequestHandler):
         return payload
 
     def _authorized(self) -> bool:
-        """Allow loopback access or require a configured bearer token."""
+        """Reject untrusted browser origins before checking loopback/token access."""
+        origin = self.headers.get("Origin")
+        if origin is not None and not self._cors_origin():
+            return False
         token = os.environ.get("JOBPULSE_API_TOKEN", "")
         client_ip = self.client_address[0] if self.client_address else ""
         if not token:
-            return client_ip in {"127.0.0.1", "::1"}
-        supplied = self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-        return bool(supplied) and hmac.compare_digest(supplied, token)
+            return client_ip in {"127.0.0.1", "::1"} and (origin is None or origin.strip() in ALLOWED_ORIGINS)
+        authorization = self.headers.get("Authorization", "")
+        if not authorization.startswith("Bearer "):
+            return False
+        supplied = authorization.removeprefix("Bearer ").strip()
+        return bool(supplied) and hmac.compare_digest(supplied.encode("utf-8"), token.encode("utf-8"))
 
     def _require_write_authorization(self) -> bool:
         if self._authorized():
@@ -101,8 +100,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         return False
 
     def do_OPTIONS(self) -> None:
-        self.send_response(HTTPStatus.NO_CONTENT)
         allowed_origin = self._cors_origin()
+        if self.headers.get("Origin") is not None and not allowed_origin:
+            self.send_json({"error": "Origin not allowed"}, HTTPStatus.FORBIDDEN)
+            return
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Vary", "Origin")
         if allowed_origin:
             self.send_header("Access-Control-Allow-Origin", allowed_origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
@@ -110,7 +113,6 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "Access-Control-Allow-Headers",
                 "Content-Type, ngrok-skip-browser-warning, Authorization, Accept, Origin, X-Requested-With",
             )
-            self.send_header("Access-Control-Allow-Credentials", "true")
             self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
 

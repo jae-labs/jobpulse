@@ -29,6 +29,20 @@ The scraper hashes scoring job facts separately from the embedding document. A s
 - `make scrape-validate` checks source configuration.
 - The local API exposes catalog and sync endpoints. It does not expose profiles or candidate evaluations.
 
+The API permits token-free requests only from loopback clients with no `Origin`
+header (local CLI tools), or the exact local dashboard origins
+`http://localhost:5173` and `http://127.0.0.1:5173`. Untrusted browser origins
+are rejected before catalog reads or sync execution, including simple POSTs
+that do not need a CORS preflight.
+
+For an external dashboard, set `JOBPULSE_ALLOWED_ORIGIN` to its exact origin
+(scheme, hostname and optional port, without a path or trailing slash) and set
+`JOBPULSE_API_TOKEN`. Send the token as `Authorization: Bearer <token>`.
+Setting a token requires it for all protected requests, including local clients;
+external origins and non-loopback clients cannot use token-free access. Origin
+checks apply even with a valid token. Health/version endpoints remain public.
+Wildcard tunnel domains are never trusted implicitly.
+
 ## Safety
 
 The scraper service role key stays in the local process. Candidate records remain behind Supabase RLS. Deduplication transfers user statuses and evaluations through the service-only database RPC before deleting a duplicate. Age, an empty crawl or source failure never authorizes vacancy deletion. The retired `--prune-only` command is rejected; the old SQL pruning RPC is retained only as a no-op for deployed callers. The scraper never returns candidate data in API responses.
@@ -39,3 +53,26 @@ evidence, preservation of candidate tracking and regression tests. See
 [Regression Prevention](REGRESSION_PREVENTION.md).
 
 Run `make scrape-lint` and `make scrape-unit` after changes to this service.
+
+## Full description ingestion
+
+Ingestion retrieves missing posting details by default and preserves complete API
+bodies rather than listing snippets. Failed detail requests cannot erase a stored
+body, and new metadata-only listings are not embedded. The catalog repair command
+updates descriptions in place, preserving job IDs and candidate tracking. Job
+embeddings cover the complete body through token windows. See
+[Published job descriptions and semantic coverage](JOB_DESCRIPTION_COMPLETENESS.md)
+for repair commands, body-gate limits and unresolved-source handling.
+
+## Employer Metadata & Geocoding
+
+Ingestion resolves company entities through `pipeline/employer_lookup.py` to maintain
+a persistent catalog of employers (`employers` table):
+- **Database & Cache First**: Reuses existing `employers` database records and curated
+  Irish anchors (county councils, universities, enterprise campuses) with 0 network calls.
+- **On-Demand Resolution**: Discovered employers missing from the database are resolved
+  via Wikidata (industry sector & description) and OpenStreetMap Nominatim (Irish address
+  and GPS coordinates), then persisted permanently to `employers`.
+- **Map & Spatial Readiness**: Opportunities link to `employers(id)` via `jobs.employer_id`
+  and receive `latitude` and `longitude` coordinates (inherited from employer headquarters
+  if the vacancy location is vague, e.g. "Ireland" or "Hybrid").

@@ -8,7 +8,7 @@ from typing import Any
 from urllib.request import Request
 
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import clean_text
+from engine.text_cleaner import clean_html_description
 from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 from scrapers.providers.location import is_explicit_ireland_location
@@ -47,8 +47,8 @@ def extract_greenhouse_opportunities(
                 if not is_explicit_ireland_location(loc):
                     continue
                 job_url = j.get("absolute_url") or f"https://job-boards.greenhouse.io/{gh_token}/jobs/{j.get('id')}"
-                content = clean_text(j.get("content", ""))
-                desc = f"{employer_name} position: {title}. Location: {loc}. {content[:300]}".strip()
+                content = clean_html_description(j.get("content", ""))
+                desc = content
                 salary = extract_salary_from_context(content or desc, title)
                 if title and job_url not in seen_urls:
                     seen_urls.add(job_url)

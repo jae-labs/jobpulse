@@ -4,6 +4,21 @@ import { DEFAULT_SCORING_WEIGHTS as DEFAULT_WEIGHTS } from './scoringRules';
 import type { Job } from '../types/job';
 
 describe('previewWeightedScore', () => {
+  it('gives 90 points for 90 percent across default base factors and caps bonuses', () => {
+    const sub_scores = {
+      domain: 0.9, semantic: 0.9, competency: 0.9, seniority: 0.9,
+      salary: 0.9, contract: 0.9, target_role: 0, location: 0,
+      work_mode: 0, fixed_term: 0,
+    };
+    expect(previewWeightedScore({ sub_scores, relevance: 0 }, DEFAULT_WEIGHTS)).toBe(90);
+    expect(previewWeightedScore({ sub_scores, relevance: 0 }, {
+      ...DEFAULT_WEIGHTS, domain: 25, salary: 15,
+    })).toBe(99);
+    expect(previewWeightedScore({
+      sub_scores: { ...sub_scores, target_role: 1, location: 1, work_mode: 1 }, relevance: 0,
+    }, DEFAULT_WEIGHTS)).toBe(100);
+  });
+
   it('matches the SQL scoring formula, including deductions and caps', () => {
     const job: Job = {
       id: 101,
@@ -34,7 +49,7 @@ describe('previewWeightedScore', () => {
       },
     };
 
-    expect(previewWeightedScore(job, DEFAULT_WEIGHTS)).toBe(41);
+    expect(previewWeightedScore(job, DEFAULT_WEIGHTS)).toBe(36);
     expect(previewWeightedScore(job, { ...DEFAULT_WEIGHTS, domain: 15 })).toBe(31);
     expect(previewWeightedScore({ ...job, sub_scores: { ...job.sub_scores!, disqualified: 1 } }, DEFAULT_WEIGHTS)).toBe(10);
     expect(previewWeightedScore({ ...job, sub_scores: { ...job.sub_scores!, negative_domain: 1 } }, DEFAULT_WEIGHTS)).toBe(15);
@@ -63,7 +78,7 @@ describe('previewWeightedScore', () => {
         : { ...subs, semantic: (0.9 - index * 0.1) },
     }));
 
-    expect(topPreviewJobs(jobs, DEFAULT_WEIGHTS).map((job) => job.id)).toEqual([6, 1, 2, 3, 4]);
+    expect(topPreviewJobs(jobs, DEFAULT_WEIGHTS).map((job) => job.id)).toEqual([1, 6, 2, 3, 4]);
     expect(topPreviewJobs(jobs, { ...DEFAULT_WEIGHTS, domain: 5 }).map((job) => job.id)).toEqual([1, 2, 3, 4, 5]);
   });
 });

@@ -60,7 +60,7 @@ def extract_ashby_opportunities(
 
                 job_url = j.get("jobUrl") or j.get("applyUrl")
                 desc_plain = j.get("descriptionPlain") or ""
-                desc = f"{employer_name} position: {title}. Location: {loc}. {desc_plain[:300]}".strip()
+                desc = desc_plain
                 salary = extract_salary_from_context(desc_plain or desc, title)
                 if title and job_url and job_url not in seen_urls:
                     seen_urls.add(job_url)

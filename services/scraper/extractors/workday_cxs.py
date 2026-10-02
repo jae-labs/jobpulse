@@ -6,6 +6,7 @@ import json
 import re
 from urllib.request import Request
 
+from engine.description_quality import has_description_body
 from engine.salary import extract_salary_from_context
 from engine.text_cleaner import clean_html_description, clean_text
 from network.http_client import get_ssl_context
@@ -35,12 +36,12 @@ def extract_workday_cxs_job_spec(url: str, title: str) -> dict[str, str]:
             clean_desc = (
                 clean_html_description(raw_desc) if ("<" in raw_desc and ">" in raw_desc) else clean_text(raw_desc)
             )
-            if len(clean_desc) > 150:
+            if has_description_body(clean_desc):
                 loc = info.get("location", "")
                 time_type = info.get("timeType", "Full time")
                 sal = extract_salary_from_context(clean_desc, title)
                 return {
-                    "description": clean_desc[:25000].strip(),
+                    "description": clean_desc.strip(),
                     "location": loc if loc else "Ireland",
                     "employment_type": "Permanent" if "full" in time_type.lower() else time_type[:25],
                     "salary_text": sal,

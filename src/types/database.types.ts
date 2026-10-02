@@ -133,36 +133,51 @@ export type Database = {
       employers: {
         Row: {
           careers_url: string
+          description: string | null
           discovered_jobs_url: string | null
           id: number
           last_scraped_at: string | null
+          latitude: number | null
+          location: string | null
+          longitude: number | null
           name: string
           opportunities_found: number | null
           priority: number
           sector: string
           status: string | null
+          website: string | null
         }
         Insert: {
           careers_url: string
+          description?: string | null
           discovered_jobs_url?: string | null
           id?: number
           last_scraped_at?: string | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
           name: string
           opportunities_found?: number | null
           priority?: number
           sector: string
           status?: string | null
+          website?: string | null
         }
         Update: {
           careers_url?: string
+          description?: string | null
           discovered_jobs_url?: string | null
           id?: number
           last_scraped_at?: string | null
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
           name?: string
           opportunities_found?: number | null
           priority?: number
           sector?: string
           status?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -200,11 +215,14 @@ export type Database = {
           company: string
           dedupe_key: string
           description: string
+          employer_id: number | null
           employment_type: string
           first_seen_at: string | null
           id: number
           last_seen_at: string | null
+          latitude: number | null
           location: string
+          longitude: number | null
           salary_currency: string | null
           salary_max_amount: number | null
           salary_min_amount: number | null
@@ -218,11 +236,14 @@ export type Database = {
           company: string
           dedupe_key: string
           description: string
+          employer_id?: number | null
           employment_type?: string
           first_seen_at?: string | null
           id?: number
           last_seen_at?: string | null
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           salary_currency?: string | null
           salary_max_amount?: number | null
           salary_min_amount?: number | null
@@ -236,11 +257,14 @@ export type Database = {
           company?: string
           dedupe_key?: string
           description?: string
+          employer_id?: number | null
           employment_type?: string
           first_seen_at?: string | null
           id?: number
           last_seen_at?: string | null
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           salary_currency?: string | null
           salary_max_amount?: number | null
           salary_min_amount?: number | null
@@ -250,7 +274,15 @@ export type Database = {
           title?: string
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_scoring_embeddings: {
         Row: {
@@ -603,6 +635,10 @@ export type Database = {
       get_overview_metrics: { Args: never; Returns: Json }
       get_profile_embedding_state: { Args: never; Returns: Json }
       is_authorized_user: { Args: never; Returns: boolean }
+      jobpulse_has_literal_skill: {
+        Args: { p_skill: string; p_text: string }
+        Returns: boolean
+      }
       jobpulse_literal_search_pattern: {
         Args: { input: string }
         Returns: string

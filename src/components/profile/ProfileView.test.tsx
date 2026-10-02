@@ -126,7 +126,7 @@ describe('ProfileView', () => {
     expect(preview).toHaveClass('min-[1200px]:sticky');
     expect(preview.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(preview).getByRole('list').children).toHaveLength(5);
-    expect(within(preview).getByText('25%')).toBeInTheDocument();
+    expect(within(preview).getByText('Platform Engineer').closest('li')).toHaveTextContent('20%');
     expect(within(preview).queryByText('Role 6')).not.toBeInTheDocument();
 
     fireEvent.change(slider, { target: { value: '15' } });

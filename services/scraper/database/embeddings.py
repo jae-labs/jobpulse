@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
+from engine.description_quality import has_description_body
 from engine.embeddings import EMBEDDING_MODEL_VERSION, build_job_document, encode_documents
 
 EMBEDDING_BATCH_SIZE = 100
@@ -21,19 +22,22 @@ def job_scoring_hash(job: dict[str, Any]) -> str:
     """Hash every job fact used by PostgreSQL's rule scorer."""
     return content_hash(
         {
-            key: job.get(key)
-            for key in (
-                "title",
-                "description",
-                "company",
-                "location",
-                "salary_text",
-                "salary_min_amount",
-                "salary_max_amount",
-                "salary_currency",
-                "salary_period",
-                "employment_type",
-            )
+            "document_version": "full-body-token-windows:v2",
+            **{
+                key: job.get(key)
+                for key in (
+                    "title",
+                    "description",
+                    "company",
+                    "location",
+                    "salary_text",
+                    "salary_min_amount",
+                    "salary_max_amount",
+                    "salary_currency",
+                    "salary_period",
+                    "employment_type",
+                )
+            },
         }
     )
 
@@ -55,6 +59,16 @@ def prepare_embeddings(jobs: list[dict[str, Any]]) -> None:
             or []
         )
         existing = {row["job_id"]: row for row in rows}
+        invalid_ids = [
+            job["id"] for job in chunk if not has_description_body(job.get("description")) and job["id"] in existing
+        ]
+        if invalid_ids:
+            # Withdraw derived stub vectors, not vacancies or candidate tracking.
+            # The existing DELETE trigger advances catalog generation for SQL rescoring.
+            retry_supabase(
+                lambda ids=invalid_ids: client.table("job_scoring_embeddings").delete().in_("job_id", ids).execute()
+            )
+        chunk = [job for job in chunk if has_description_body(job.get("description"))]
         missing = []
         for job in chunk:
             scoring_hash = job_scoring_hash(job)

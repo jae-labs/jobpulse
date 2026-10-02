@@ -16,12 +16,23 @@ erDiagram
         text status
         timestamptz accepted_at
     }
+    EMPLOYERS {
+        bigint id PK
+        text name UK
+        text sector
+        text location
+        float latitude
+        float longitude
+    }
     JOBS {
         bigint id PK
+        bigint employer_id FK
         text dedupe_key UK
         text title
         text company
         text location
+        float latitude
+        float longitude
     }
     USER_PROFILES {
         bigint id PK
@@ -60,6 +71,7 @@ erDiagram
     }
 
     AUTHORIZED_USERS ||--o{ AUTHORIZED_USERS : "invites colleague"
+    EMPLOYERS ||--o{ JOBS : "publishes"
     JOBS ||--o{ USER_JOB_STATUSES : "tracks status"
     JOBS ||--o{ USER_JOB_EVALUATIONS : "candidate score"
     USER_PROFILES ||--o{ USER_CVS : "resumes"
@@ -71,6 +83,7 @@ erDiagram
 | Table | Description | Access & Isolation |
 | :--- | :--- | :--- |
 | `jobs` | Shared vacancy facts; no candidate scores or explanations | Shared read for authorized users |
+| `employers` | Shared employer registry, sectors, headquarters locations, and coordinates | Shared read for authorized users |
 | `sources` | Feed sync status and crawl telemetry | Shared read for authorized users |
 | `authorized_users` | Team member access list & invitations (`pending`, `accepted`, `revoked`) | Self-lookup by `user_id = auth.uid()` or invitation claim |
 | `user_profiles` | Preferences, target skills, scoring rules | Candidate RLS (`user_id = auth.uid()`) |

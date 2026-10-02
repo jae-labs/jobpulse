@@ -54,6 +54,9 @@ export interface Job {
   description?: string;
   url: string;
   source: string;
+  employer_id?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   relevance: number;
   matched_skills: string[];
   fit_tier?: string;
@@ -75,6 +78,21 @@ export interface Source {
   last_synced_at: string | null;
   detail: string | null;
   opportunities_found?: number | null;
+}
+
+export interface Employer {
+  id: number;
+  name: string;
+  sector: string;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  careers_url: string;
+  description?: string | null;
+  website?: string | null;
+  status?: string | null;
+  opportunities_found?: number | null;
+  last_scraped_at?: string | null;
 }
 
 export interface ScoringWeights {

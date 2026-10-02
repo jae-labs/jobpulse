@@ -56,7 +56,7 @@ BEGIN
     WHERE user_id=v_user_id AND job_id=101;
   IF v_stored <> 10 OR NOT EXISTS (
     SELECT 1 FROM public.user_job_evaluations WHERE user_id=v_user_id AND job_id=101
-      AND scoring_version='native-sql-v1'
+      AND scoring_version='native-sql-v2'
       AND (ai_analysis->>'semantic_similarity')::numeric=1) THEN
     RAISE EXCEPTION 'Expected cosine similarity 1 and a 10-point SQL score, got %', v_stored;
   END IF;
@@ -95,7 +95,7 @@ BEGIN
   PERFORM pg_temp.drain_scoring();
   IF NOT EXISTS (SELECT 1 FROM public.user_job_evaluations
     WHERE user_id='11111111-1111-1111-1111-111111111111' AND job_id=103
-      AND scoring_version='native-sql-v1') THEN
+      AND scoring_version='native-sql-v2') THEN
     RAISE EXCEPTION 'Updated low-similarity job did not refresh its existing evaluation';
   END IF;
 END;

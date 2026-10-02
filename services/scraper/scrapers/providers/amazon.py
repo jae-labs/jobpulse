@@ -7,7 +7,7 @@ from typing import Any
 from urllib.request import Request
 
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import clean_text
+from engine.text_cleaner import clean_html_description
 from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 
@@ -40,7 +40,11 @@ def extract_amazon_opportunities(employer_name: str, listing_url: str) -> list[d
                 job_url = (
                     f"https://www.amazon.jobs{job_path}" if job_path.startswith("/") else (j.get("url_next_step") or "")
                 )
-                desc = clean_text(j.get("description", ""))
+                desc = clean_html_description(
+                    "\n\n".join(
+                        j.get(key) or "" for key in ("description", "basic_qualifications", "preferred_qualifications")
+                    )
+                )
                 if not desc:
                     desc = f"{employer_name} position: {title}. Location: {loc}."
                 salary = extract_salary_from_context(desc, title)
@@ -53,7 +57,7 @@ def extract_amazon_opportunities(employer_name: str, listing_url: str) -> list[d
                             "location": loc,
                             "employment_type": j.get("job_schedule_type") or "See job post",
                             "salary_text": salary,
-                            "description": desc[:500],
+                            "description": desc,
                             "url": job_url,
                             "source": employer_name,
                         }

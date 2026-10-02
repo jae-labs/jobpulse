@@ -8,7 +8,7 @@ from typing import Any
 from urllib.request import Request
 
 from engine.salary import extract_salary_from_context
-from engine.text_cleaner import clean_text
+from engine.text_cleaner import clean_html_description, clean_text
 from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 from scrapers.providers.location import IRELAND_LOCATION_KEYWORDS, is_ireland_location
@@ -128,14 +128,14 @@ def extract_personio_opportunities(
             name_el = desc_el.find("name")
             val_el = desc_el.find("value")
             name_text = clean_text(name_el.text) if name_el is not None and name_el.text else ""
-            val_text = clean_text(val_el.text) if val_el is not None and val_el.text else ""
+            val_text = clean_html_description(val_el.text) if val_el is not None and val_el.text else ""
             if name_text and val_text:
                 desc_parts.append(f"{name_text}: {val_text}")
             elif val_text:
                 desc_parts.append(val_text)
 
-        full_desc = " ".join(desc_parts)
-        short_desc = f"{employer_name} position: {title}. Location: {matched_location_name}. {full_desc[:300]}".strip()
+        full_desc = "\n\n".join(desc_parts)
+        short_desc = full_desc
 
         emp_type_el = pos.find("employmentType")
         emp_type = emp_type_el.text.strip().title() if emp_type_el is not None and emp_type_el.text else "See job post"

@@ -208,12 +208,12 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 {' '}{t('shortcuts.cycle')} ·{' '}
                 <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd>
                 {' '}{t('shortcuts.fullscreen')} ·{' '}
-                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd>
-                {' '}{t('shortcuts.apply')} ·{' '}
                 <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd>
                 {' / '}
                 <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd>
-                {' '}{t('shortcuts.status')}
+                {' '}{t('shortcuts.status')} ·{' '}
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd>
+                {' '}{t('shortcuts.apply')}
               </span>
             </div>
           )}
