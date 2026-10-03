@@ -5,6 +5,13 @@
 
 /* JobPulse owns the meaning of pipeline colors; the UI package supplies their palette. */
 :root {
+  /* Geographic surfaces use a navy/slate palette independent of panel chrome. */
+  --jp-map-water: #0f172a;
+  --jp-map-land: #334155;
+  --jp-map-road: #475569;
+  --jp-map-label: #e2e8f0;
+  --jp-map-point: #667dff;
+  --jp-map-point-ring: #9aabff;
   --jp-color-status-new: var(--ds-color-data-1);
   --jp-color-status-applied: var(--ds-color-data-2);
   --jp-color-status-interviewing: var(--ds-color-data-3);

@@ -1,12 +1,13 @@
-.job-world-map.leaflet-container { background: var(--ds-color-canvas); color: var(--ds-color-text-primary); font: inherit; z-index: 0; }
-.job-world-map .leaflet-control-zoom a { background: var(--ds-color-panel); color: var(--ds-color-text-primary); }
-.job-world-map .leaflet-control-attribution { background: var(--ds-color-panel); color: var(--ds-color-text-secondary); }
-.job-world-map .leaflet-control-attribution a { color: var(--ds-color-text-primary); }
-.job-map-pin { display: grid; place-items: center; border: 1px solid var(--ds-color-border-strong); border-radius: 50%; background: var(--ds-color-panel); color: var(--ds-color-text-primary); font-weight: 700; }
+.job-world-map.maplibregl-map { background: var(--jp-map-water); color: var(--ds-color-text-primary); font: inherit; z-index: 0; }
+.job-world-map .maplibregl-ctrl-group { background: var(--ds-color-panel); border: 1px solid var(--ds-color-border); box-shadow: none; }
+.job-world-map .maplibregl-ctrl-group button { border-color: var(--ds-color-border); }
+.job-world-map .maplibregl-ctrl-icon { filter: invert(1); }
+.job-world-map .maplibregl-ctrl-attrib, .job-world-map .maplibregl-ctrl-attrib.maplibregl-compact { background: var(--ds-color-panel); color: var(--ds-color-text-secondary); }
+.job-world-map .maplibregl-ctrl-attrib a { color: var(--ds-color-text-primary); }
+.job-map-message { position: absolute; z-index: 2; left: 12px; bottom: 36px; max-width: calc(100% - 24px); }
 .job-map-workspace { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .job-map-workspace.has-selection { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); }
 .job-map-canvas-wrap { position: relative; min-height: 320px; }
-.job-map-framing { position: absolute; z-index: 1; top: 12px; right: 12px; }
 .job-map-browser { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .job-map-browser-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .job-map-job { cursor: pointer; }
@@ -15,4 +16,5 @@
   .job-map-workspace.has-selection { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 1fr) minmax(220px, 1fr); overflow-y: auto; }
   .job-map-browser { min-height: 220px; }
 }
-.job-map-pin:focus-visible { outline: 2px solid var(--ds-color-text-primary); outline-offset: 2px; }
+
+.job-world-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { background-color: var(--ds-color-panel); filter: invert(0.8); }

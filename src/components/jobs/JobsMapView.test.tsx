@@ -2,14 +2,16 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import JobsMapView from './JobsMapView';
 
-const state = vi.hoisted(() => ({ error: false, previewError: false, pageError: false, page: vi.fn() }));
+vi.mock('./JobsMapCanvas', () => ({ default: () => <div />, pinKey: (pin: { longitude: number; latitude: number }) => `${pin.longitude}:${pin.latitude}` }));
+
+const state = vi.hoisted(() => ({ error: false, previewError: false, multiplePlaces: false, pageError: false, page: vi.fn() }));
 const example = { id: 42, title: 'Example Role', company: 'Example Company', location: 'Dublin, Ireland' };
 vi.mock('../../hooks/useQueries', () => ({
   useJobMapQuery: () => ({ isPending: false, isFetching: false, isError: state.error, refetch: vi.fn(),
     data: { total: 100, mapped: 90, in_view: 90, truncated: false, pins: [{ latitude: 53.35, longitude: -6.26,
       count: 10, job_ids: [42], title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'city' }] },
   }),
-  useJobMapPreviewQuery: () => ({ isPending: false, isFetching: false, isError: state.previewError, refetch: vi.fn(), data: [example] }),
+  useJobMapPreviewQuery: () => ({ isPending: false, isFetching: false, isError: state.previewError, refetch: vi.fn(), data: state.multiplePlaces ? [example, { ...example, id: 43, location: 'Galway, Ireland' }] : [example] }),
   useJobsPageQuery: (...args: unknown[]) => {
     state.page(...args);
     return { isPending: false, isFetching: false, isError: state.pageError, refetch: vi.fn(), data: { total: 42, items: [example] } };
@@ -18,24 +20,43 @@ vi.mock('../../hooks/useQueries', () => ({
 beforeEach(() => {
   state.error = false;
   state.previewError = false;
+  state.multiplePlaces = false;
   state.pageError = false;
   state.page.mockClear();
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
 });
 
-function openGroup() { fireEvent.click(screen.getByRole('button', { name: '10 opportunities' })); }
+function openGroup() { fireEvent.change(screen.getByRole('combobox'), { target: { value: '-6.26:53.35' } }); }
 
 describe('verified job map', () => {
   it('shows role and company labels, precision and opens the selected job without showing database IDs', () => {
     const select = vi.fn();
     render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={select} />);
-    expect(screen.getByText('90 of 100 jobs have verified map locations')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ireland' })).toBeInTheDocument();
     openGroup();
     expect(screen.getByText('Location precision: city')).toBeInTheDocument();
     expect(screen.queryByText('Open job 42')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Example Role at Example Company/ }));
     expect(select).toHaveBeenCalledWith(42);
+  });
+  it('resolves a mobile dot to its stored posting location', () => {
+    const selectLocation = vi.fn();
+    render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} onSelectLocation={selectLocation} />);
+    openGroup();
+    expect(selectLocation).toHaveBeenCalledWith('Dublin, Ireland');
+  });
+  it('requires an explicit place for multi-location mobile groups and does not navigate on lookup failure', () => {
+    state.multiplePlaces = true;
+    const selectLocation = vi.fn();
+    const { rerender } = render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} onSelectLocation={selectLocation} />);
+    openGroup();
+    expect(selectLocation).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Browse all jobs in Galway, Ireland' }));
+    expect(selectLocation).toHaveBeenCalledWith('Galway, Ireland');
+    selectLocation.mockClear();
+    state.multiplePlaces = false;
+    state.previewError = true;
+    rerender(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} onSelectLocation={selectLocation} />);
+    expect(selectLocation).not.toHaveBeenCalled();
   });
   it('browses every page at the named location while preserving active catalog filters', () => {
     render(<JobsMapView userId="synthetic-user" filters={{ domain: 'Engineering', status: 'interested', search: 'Engineer' }} onSelectJob={vi.fn()} />);
@@ -63,7 +84,7 @@ describe('verified job map', () => {
     openGroup();
     state.error = true;
     rerender(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} />);
-    expect(screen.queryByRole('button', { name: '10 opportunities' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeDisabled();
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Job locations could not be loaded.');
   });

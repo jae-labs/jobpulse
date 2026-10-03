@@ -37,12 +37,21 @@ scrape. Reports record conflicts and provider failures; five failures stop the b
 A shared local budget caps Geoapify attempts at 2,500 per UTC day. Other applications
 using the same account are outside this counter.
 
-The browser loads Leaflet and OpenStreetMap tiles with visible attribution. A custom
-`VITE_MAP_TILE_URL` requires corresponding exact CSP image origins in both `index.html` and `public/_headers`.
-Leaflet remains the renderer. MapLibre GL JS is a WebGL alternative for a future
-renderer migration; a suitable vector basemap requires a separately selected
-production tile source. Do not prefetch/download tiles for offline use. Provider terms and capacity must be
-reviewed before changing tile providers or substantially increasing traffic.
+The browser uses MapLibre GL JS with GPU-rendered job circles and OpenFreeMap vector
+basemaps. Navy water, slate land and blue points use application CSS tokens. The
+MapLibre worker is bundled by Vite and served from the site origin. Provider attribution
+remains visible. OpenFreeMap's public service needs no API key; it has no SLA.
+A custom `VITE_MAP_STYLE_URL` requires exact style, tile, font and sprite origins in
+both CSP policies (`index.html` and `public/_headers`), including `connect-src` and
+`img-src`. Do not hotlink Rezi's basemap or job tiles, or prefetch offline tiles.
+
+The camera starts over Ireland and supports fractional animated zoom. Reduced-motion
+preferences disable camera transitions. Same-filter viewport requests keep existing
+GPU dots until the replacement response arrives; query errors and identity/filter
+changes clear them. Native group selection supports keyboard browsing and remains
+available if WebGL initialization fails. The location panel shows roles and companies,
+with bounded pagination for the selected location. Pins retain their verified precision;
+city-level geocoding does not establish an employer's street address.
 
 ## Hosted backfill on 2026-10-03
 

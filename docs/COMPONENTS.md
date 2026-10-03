@@ -48,8 +48,14 @@ To prevent rendering cascades across heavy views:
 
 ## Geographic browsing
 
-`JobsMapView` owns the map camera and pin selection. `JobsMapLocationPanel` shows
+`JobsMapView` owns viewport queries and pin selection. `JobsMapCanvas` owns the
+MapLibre camera, GPU source and controls; `jobMapStyle` applies semantic map colors. `JobsMapLocationPanel` shows
 role/company labels and bounded location pages using the existing catalog RPC.
 Public sample labels use `useJobMapPreviewQuery` with an account-scoped key and
 before/after identity checks. No candidate scores or tracking fields are read from
 shared job rows. The map remains independent of loaded list pages.
+
+Compact opportunity layouts default to list. A mobile map selection resolves stored
+posting locations through the account-scoped preview query, then updates the location
+filter, returns to list and focuses/scrolls the results. Multi-location groups require
+an explicit location choice. Desktop selections retain the map side panel.

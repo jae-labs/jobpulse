@@ -158,12 +158,8 @@
     "mapPrecision": "Precisão da localização: {{precision}}",
     "mapLoading": "Carregando localizações verificadas…",
     "mapError": "Não foi possível carregar as localizações.",
-    "mapCoverage": "{{mapped}} de {{total}} vagas têm localização verificada no mapa",
-    "mapUnlocated": "{{count}} vagas são remotas ou aguardam verificação",
-    "mapEmpty": "Nenhuma localização verificada corresponde aos filtros.",
     "mapZoomMore": "Amplie para mostrar grupos menores.",
     "mapTilesError": "Não foi possível carregar o mapa.",
-    "mapLocationNote": "Os marcadores usam a localização da vaga e sua precisão verificada. Cidades e regiões são aproximadas; a sede do empregador nunca é usada como substituta.",
     "locationPrecision": {
       "building": "endereço",
       "amenity": "local",
@@ -176,12 +172,9 @@
       "country": "país",
       "mixed": "localizações variadas"
     },
-    "mapProvider": "Mapeamento por Geoapify",
     "mapDomain": "Domínio: {{domain}}",
     "mapZoomIn": "Ampliar",
     "mapZoomOut": "Reduzir",
-    "mapIreland": "Irlanda",
-    "mapWorld": "Mundo",
     "mapBrowseTitle": "Vagas neste local",
     "mapCloseBrowser": "Fechar vagas do local",
     "mapLoadingJobs": "Carregando vagas…",
@@ -192,8 +185,10 @@
     "mapNoJobs": "Nenhuma vaga corresponde aos filtros neste local.",
     "mapPrevious": "Anterior",
     "mapNext": "Próxima",
-    "mapSelectLocation": "Selecione um marcador para ver cargos e empresas.",
-    "mapOpenRole": "{{role}} na {{company}} · {{location}}"
+    "mapOpenRole": "{{role}} na {{company}} · {{location}}",
+    "mapChooseGroup": "Explorar um grupo do mapa",
+    "mapGroupLabel": "{{countLabel}} vagas · {{company}} · {{role}}",
+    "mapGraphicsUnavailable": "Os gráficos do mapa não estão disponíveis neste navegador. Use o seletor acima para explorar as vagas."
   },
   "sources": {
     "title": "Fontes de Dados",

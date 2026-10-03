@@ -158,12 +158,8 @@
     "mapPrecision": "Location precision: {{precision}}",
     "mapLoading": "Loading verified job locations…",
     "mapError": "Job locations could not be loaded.",
-    "mapCoverage": "{{mapped}} of {{total}} jobs have verified map locations",
-    "mapUnlocated": "{{count}} jobs are remote or awaiting location verification",
-    "mapEmpty": "No verified locations match these filters yet.",
     "mapZoomMore": "Zoom in to show smaller groups.",
     "mapTilesError": "Map tiles could not be loaded.",
-    "mapLocationNote": "Pins show posting locations, with their verified precision. City and region pins are approximate; employer headquarters are never substituted.",
     "locationPrecision": {
       "building": "address",
       "amenity": "place",
@@ -176,12 +172,9 @@
       "country": "country",
       "mixed": "mixed locations"
     },
-    "mapProvider": "Powered by Geoapify",
     "mapDomain": "Domain: {{domain}}",
     "mapZoomIn": "Zoom in",
     "mapZoomOut": "Zoom out",
-    "mapIreland": "Ireland",
-    "mapWorld": "World",
     "mapBrowseTitle": "Jobs at this location",
     "mapCloseBrowser": "Close location jobs",
     "mapLoadingJobs": "Loading jobs…",
@@ -192,8 +185,10 @@
     "mapNoJobs": "No jobs match your filters at this location.",
     "mapPrevious": "Previous",
     "mapNext": "Next",
-    "mapSelectLocation": "Select a pin to browse roles and companies.",
-    "mapOpenRole": "{{role}} at {{company}} · {{location}}"
+    "mapOpenRole": "{{role}} at {{company}} · {{location}}",
+    "mapChooseGroup": "Browse a map group",
+    "mapGroupLabel": "{{countLabel}} jobs · {{company}} · {{role}}",
+    "mapGraphicsUnavailable": "Map graphics are unavailable in this browser. Use the group selector above to browse jobs."
   },
   "sources": {
     "title": "Data Sources",

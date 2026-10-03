@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
 
-vi.mock('./JobsMapView', () => ({ default: () => <section aria-label="Synthetic map view" /> }));
+vi.mock('./JobsMapView', () => ({ default: ({ onSelectLocation }: { onSelectLocation?: (location: string) => void }) => <section aria-label="Synthetic map view">{onSelectLocation ? <button onClick={() => onSelectLocation("Dublin")}>Synthetic Dublin dot</button> : null}</section> }));
 
 vi.mock('../../hooks/useQueries', () => ({
   useJobByIdQuery: () => ({ data: null, isLoading: false }),
@@ -48,6 +48,7 @@ vi.mock('../../hooks/useQueries', () => ({
 }));
 
 describe('JobsView Search Input', () => {
+  afterEach(() => { vi.unstubAllGlobals(); Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView'); });
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -81,6 +82,21 @@ describe('JobsView Search Input', () => {
     fireEvent.click(screen.getByRole('button', { name: 'List' }));
     expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
     expect(screen.getByText(/^Showing/)).toBeInTheDocument();
+  });
+
+  it('returns a mobile map selection to a filtered list and scrolls/focuses the results', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll });
+    renderJobsView(['/opportunities?domain=Cloud&salary=specified&q=Engineer']);
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Synthetic Dublin dot' }));
+    expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'All Locations' })).toHaveValue('Dublin');
+    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
+    expect(screen.getByRole('searchbox')).toHaveValue('Engineer');
+    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+    expect(document.activeElement).toHaveAttribute('tabindex', '-1');
   });
 
   it('unifies legacy sector links into the single domain filter and clears them', () => {

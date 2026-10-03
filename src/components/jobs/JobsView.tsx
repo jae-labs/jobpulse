@@ -24,6 +24,7 @@ import { statusPillTone } from '../../lib/statusTone';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useJobFilters, type SortField } from './useJobFilters';
 import { useKeyboardNavigation } from './useKeyboardNavigation';
+import { useJobLayout } from './useJobLayout';
 
 export type { SortField };
 const JobsMapView = lazy(() => import('./JobsMapView'));
@@ -78,7 +79,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   // TanStack Virtual mutates its instance; React Compiler must not memoize this component.
   "use no memo";
   const { t, i18n } = useTranslation('translation');
-  const [layoutMode, setLayoutMode] = useState<'split' | 'list' | 'map'>('split');
+  const { layoutMode, setLayoutMode, toggleMap, isCompact } = useJobLayout();
   const [isDetailFullScreen, setIsDetailFullScreen] = useState(false);
 
   const {
@@ -135,6 +136,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
     return cb;
   }, []);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const scrollToLocationResults = useRef(false);
+  const selectMapLocation = useCallback((location: string) => {
+    setLocationFilter(location);
+    setLayoutMode('list');
+    setIsDetailFullScreen(false);
+    onSelectJob(null);
+    scrollToLocationResults.current = true;
+  }, [setLocationFilter, setLayoutMode, onSelectJob]);
+
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -251,6 +261,14 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const displayedJobs = isServerPaginated ? pageItems : jobs;
   const totalMatchingCount = pageQueryData ? pageTotal : displayedJobs.length;
   const hasMoreRow = Boolean(hasNextPage);
+
+  useEffect(() => {
+    if (layoutMode !== 'list' || !scrollToLocationResults.current || !listContainerRef.current) return;
+    const list = listContainerRef.current;
+    scrollToLocationResults.current = false;
+    list.focus({ preventScroll: true });
+    list.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [layoutMode, isPageLoading, displayedJobs.length]);
 
   const getScrollElement = useCallback(() => listContainerRef.current, []);
   const estimateSize = useCallback(() => 140, []);
@@ -379,7 +397,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 setLayoutMode('split');
                 setIsDetailFullScreen(false);
               }}
-              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+              className={`hidden lg:flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'split'
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
@@ -396,7 +414,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 setLayoutMode('list');
                 setIsDetailFullScreen(false);
               }}
-              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+              className={`hidden lg:flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'list'
                   ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
@@ -407,7 +425,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <Rows3 className="size-3.5" />
               <span>{t('jobs.layoutList')}</span>
             </button>
-            <button type="button" onClick={() => { setLayoutMode('map'); setIsDetailFullScreen(false); }}
+            <button type="button" onClick={() => { toggleMap(); setIsDetailFullScreen(false); }}
               aria-pressed={layoutMode === 'map'} title={t('jobs.layoutMapTitle')}
               className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
               <MapIcon className="size-3.5" /><span>{t('jobs.layoutMap')}</span>
@@ -551,6 +569,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   <option value="all" className="bg-ds-panel text-ds-text-secondary">
                     {t('jobs.allLocations')} ({totalCatalogCount})
                   </option>
+                  {activeLocationFilter !== 'all' &&
+                    !REGIONAL_LOCATIONS.some((region) => region.id === activeLocationFilter) &&
+                    !availableLocations.some(({ loc }) => loc.slice(0, 80) === activeLocationFilter && !REGIONAL_LOCATIONS.some((region) => region.id === loc.toLowerCase())) ?
+                    <option value={activeLocationFilter}>{activeLocationFilter}</option> : null}
                   <optgroup label={t('jobs.regionalHubs')} className="bg-ds-panel text-ds-text-muted">
                     {REGIONAL_LOCATIONS.map((region) => (
                       <option key={region.id} value={region.id} className="bg-ds-panel text-ds-text-secondary">
@@ -644,7 +666,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
       {layoutMode === 'map' ? (
         <Suspense fallback={<div role="status">{t('jobs.mapLoading')}</div>}>
-          <JobsMapView userId={userId} filters={queryParams} onSelectJob={(id) => {
+          <JobsMapView userId={userId} filters={queryParams} onSelectLocation={isCompact ? selectMapLocation : undefined} onSelectJob={(id) => {
             updateUrlParam('job', String(id)); setIsDetailFullScreen(true);
           }} />
         </Suspense>
@@ -669,6 +691,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
         <div className={`flex-1 min-h-0 grid gap-3.5 ${layoutMode === 'split' ? 'lg:grid-cols-12' : 'grid-cols-1'}`}>
           <div
             ref={listContainerRef}
+            tabIndex={-1}
             className={`h-full min-h-0 overflow-y-auto overscroll-contain pr-1 ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
           >
             <div

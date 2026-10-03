@@ -12,10 +12,11 @@ type Props = {
   filters: JobsPageParams;
   onSelectJob: (id: number) => void;
   onClose: () => void;
+  onSelectLocation?: (location: string) => void;
 };
 
 /** A group may contain different places; browse one explicit posting location at a time. */
-export default function JobsMapLocationPanel({ pin, userId, filters, onSelectJob, onClose }: Props) {
+export default function JobsMapLocationPanel({ pin, userId, filters, onSelectJob, onClose, onSelectLocation }: Props) {
   const { t, i18n } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -41,7 +42,7 @@ export default function JobsMapLocationPanel({ pin, userId, filters, onSelectJob
       {active.isError ? <div role="alert"><p>{t('jobs.mapJobsError')}</p><Button variant="secondary" onClick={() => void active.refetch()}>{t('common.retry')}</Button></div> : null}
       {!location && !previews.isError && previews.data ? <>
         <p className="mb-3 text-xs text-ds-text-muted">{t('jobs.mapSampleJobs', { count: previews.data.length, total: formatNumber(pin.count, i18n.language) })}</p>
-        <div className="mb-3 flex flex-col gap-2">{locations.map((place) => <Button key={place} variant="secondary" size="sm" onClick={() => { setLocation(place); setOffset(0); }}>{t('jobs.mapBrowseLocation', { location: place })}</Button>)}</div>
+        <div className="mb-3 flex flex-col gap-2">{locations.map((place) => <Button key={place} variant="secondary" size="sm" onClick={() => { if (onSelectLocation) onSelectLocation(place); else { setLocation(place); setOffset(0); } }}>{t('jobs.mapBrowseLocation', { location: place })}</Button>)}</div>
       </> : null}
       {location && !page.isError && page.data ? <p className="mb-3 text-xs text-ds-text-muted">{t('jobs.mapLocationTotal', { count: page.data.total, countLabel: formatNumber(page.data.total, i18n.language) })}</p> : null}
       <div className="flex flex-col gap-2">{jobs.map((job) => <button key={job.id} type="button" onClick={() => onSelectJob(job.id)} aria-label={t('jobs.mapOpenRole', { role: job.title, company: job.company, location: job.location })} className="job-map-job rounded-ds-control border border-ds-border p-3 text-left hover:bg-ds-hover">
