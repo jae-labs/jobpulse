@@ -71,7 +71,7 @@ class ResearchClient:
         if path.exists() and time.time() - path.stat().st_mtime < 30 * 86400:
             return json.loads(path.read_text())
         for attempt in range(3):
-            if url == GEOAPIFY_API:
+            if url.startswith("https://api.geoapify.com/"):
                 self.reserve_geocoding_request()
             time.sleep(max(0, self.interval - (time.monotonic() - self.last_request)))
             self.last_request = time.monotonic()

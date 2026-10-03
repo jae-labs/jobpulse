@@ -4,7 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dashboardNavigation, getNavLabel, type DashboardTab } from './navigation';
 import { ProjectSwitcher } from './ProjectSwitcher';
-import { Button } from '@jae-labs/ui';
+import { Button, Tooltip } from '@jae-labs/ui';
 
 interface DashboardSidebarProps {
   activeTab: DashboardTab;
@@ -41,21 +41,22 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
             const shortcutKey = String(index + 1);
 
             return (
+              <Tooltip key={id} label={t('nav.goTo', { page: displayLabel })} shortcut={shortcutKey} side="right" className="w-full">
               <Link
-                key={id}
                 to={path}
-                title={isCollapsed ? `${displayLabel} (${shortcutKey})` : undefined}
+                aria-label={displayLabel}
+                aria-keyshortcuts={shortcutKey}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={(event) => {
                   if (event.detail > 0) event.currentTarget.blur();
                 }}
-                className={`group flex items-center rounded-ds-control text-xs font-medium transition-colors cursor-pointer outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 ${
+                className={`group flex items-center rounded-ds-control text-xs font-medium ds-motion-control cursor-pointer outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ds-accent/50 ${
                   isCollapsed
                     ? 'size-9 justify-center mx-auto'
                     : 'w-full justify-between px-2 py-1.5 text-left'
                 } ${
                   isActive
-                    ? 'bg-ds-hover text-ds-text-primary border border-ds-border shadow-xs'
+                    ? 'bg-ds-selected text-ds-text-primary border border-transparent'
                     : 'text-ds-text-muted hover:bg-ds-hover hover:text-ds-text-secondary border border-transparent'
                 }`}
               >
@@ -63,12 +64,8 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
                   <Icon className={`size-3.5 ${isActive ? 'text-ds-text-primary' : 'text-ds-text-muted'}`} />
                   {!isCollapsed && <span>{displayLabel}</span>}
                 </div>
-                {!isCollapsed && (
-                  <kbd className="rounded-ds-control border border-ds-border bg-ds-control px-1.5 py-0.5 text-[10px] font-mono text-ds-text-muted select-none leading-none group-hover:border-ds-border-strong group-hover:text-ds-text-secondary">
-                    {shortcutKey}
-                  </kbd>
-                )}
               </Link>
+              </Tooltip>
             );
           })}
         </nav>

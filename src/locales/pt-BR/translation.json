@@ -12,7 +12,8 @@
     "mobileNavigation": "Navegação móvel",
     "dashboardNavigation": "Navegação do painel",
     "expandSidebar": "Expandir barra lateral",
-    "collapseSidebar": "Recolher barra lateral"
+    "collapseSidebar": "Recolher barra lateral",
+    "goTo": "Ir para {{page}}"
   },
   "common": {
     "verifyingAuth": "Verificando autorização...",
@@ -90,8 +91,7 @@
     "pipelineBreakdown": "Pipeline de Candidaturas",
     "relevanceDistribution": "Distribuição de Compatibilidade",
     "skillsFrequency": "Competências nas vagas avaliadas",
-    "categoryBreakdown": "Domínios",
-    "assessmentCoverage": "{{evaluated}} de {{total}} vagas avaliadas. Os gráficos de correspondência incluem apenas vagas avaliadas."
+    "categoryBreakdown": "Domínios"
   },
   "jobs": {
     "saveJob": "Salvar vaga",
@@ -188,9 +188,14 @@
       "county": "condado",
       "state": "região",
       "country": "país",
-      "mixed": "localizações variadas"
+      "mixed": "localizações variadas",
+      "company_office": "escritório da empresa (local de trabalho não confirmado)"
     },
-    "mapTooManyLocations": "Há muitas localizações para exibir. Refine os filtros."
+    "mapTooManyLocations": "Há muitas localizações para exibir. Refine os filtros.",
+    "mapPostingLayer": "Locais dos anúncios",
+    "mapOfficeLayer": "Escritórios das empresas",
+    "mapOfficeEvidence": "Endereços de escritórios; os locais de trabalho destas vagas não foram confirmados.",
+    "openDetails": "Abrir detalhes"
   },
   "sources": {
     "title": "Fontes de Dados",
@@ -488,9 +493,7 @@
   },
   "scoring": {
     "progress": "Atualizando correspondências: {{completed}} de {{total}} vagas processadas.",
-    "retryScheduled": "A avaliação será repetida automaticamente. Os últimos resultados continuam disponíveis.",
-    "completeSetup": "Concluir a configuração de correspondência",
-    "setupFailed": "A configuração falhou. Tente novamente."
+    "retryScheduled": "A avaliação será repetida automaticamente. Os últimos resultados continuam disponíveis."
   },
   "privacy": {
     "exportAccount": "Exportar meus dados",

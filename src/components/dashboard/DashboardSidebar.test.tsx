@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { DashboardSidebar } from './DashboardSidebar';
 
 describe('DashboardSidebar', () => {
-  it('renders navigation items with numeric shortcut badges', () => {
+  it('shows numeric shortcuts only in the navigation tooltip', () => {
     render(
       <MemoryRouter>
         <DashboardSidebar activeTab="overview" />
@@ -15,12 +15,14 @@ describe('DashboardSidebar', () => {
     expect(screen.getByText('Opportunities')).toBeInTheDocument();
     expect(screen.getByText('Data Sources')).toBeInTheDocument();
 
-    const badges = screen.getAllByText(/^[1-3]$/);
-    expect(badges).toHaveLength(3);
-    expect(badges.map((b) => b.textContent)).toEqual(['1', '2', '3']);
+    expect(screen.queryAllByText(/^[1-3]$/)).toHaveLength(0);
+    const opportunitiesLink = screen.getByRole('link', { name: 'Opportunities' });
+    fireEvent.focus(opportunitiesLink);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('2');
+    expect(opportunitiesLink.querySelector('kbd')).toBeNull();
   });
 
-  it('updates title with shortcut number when sidebar is collapsed', () => {
+  it('exposes the navigation shortcut when a collapsed link receives focus', () => {
     render(
       <MemoryRouter>
         <DashboardSidebar activeTab="overview" />
@@ -31,7 +33,10 @@ describe('DashboardSidebar', () => {
     fireEvent.click(collapseButton);
 
     const overviewLink = screen.getByRole('link', { name: /overview/i });
-    expect(overviewLink).toHaveAttribute('title', expect.stringContaining('(1)'));
+    fireEvent.focus(overviewLink);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Go to Overview');
+    expect(screen.getByRole('tooltip')).toHaveTextContent('1');
+    expect(overviewLink).toHaveAttribute('aria-keyshortcuts', '1');
   });
 
   it('releases sidebar link focus after a pointer click', () => {

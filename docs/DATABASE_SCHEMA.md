@@ -215,3 +215,12 @@ The canonical application uses Saved filters/counts; legacy RPC count aliases ar
 kept for previously deployed clients. Saved can overlap pipeline stages, so the
 active-pipeline metric counts Applied and Interview only. Catalog merge logic ORs
 bookmark flags while retaining existing progress conflict checks.
+
+### Employer office research
+
+`employer_offices` is an authorized-read shared directory of multiple company addresses,
+coordinates, website domains and provider category evidence. It contains no candidate
+data or verified vacancy-workplace claim. `employer_office_lookups` is backend-only
+persistent scheduling state. Both tables have RLS; the two research RPCs are service-only.
+The optional map office layer reuses the tenant-filtered catalog and labels workplace
+uncertainty. See [employer office enrichment](EMPLOYER_OFFICE_ENRICHMENT.md).

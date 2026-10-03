@@ -221,6 +221,8 @@ export interface JobMapPin {
   precision: string;
 }
 export interface JobMapResult {
+  office_pins?: JobMapPin[];
+  office_truncated?: boolean;
   pins: JobMapPin[];
   total: number;
   mapped: number;

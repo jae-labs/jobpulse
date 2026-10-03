@@ -33,7 +33,7 @@ const StatCardComponent: React.FC<StatCardProps> = ({
             onClick();
           }
         }}
-        className={`flex flex-col justify-between space-y-2.5 p-3.5 sm:space-y-3 sm:p-5 ds-interactive-surface ds-focus-ring cursor-pointer active:scale-[0.99] transition-transform rounded-ds-card bg-ds-panel border border-ds-border shadow-sm overflow-hidden text-left w-full h-full`}
+        className={`flex flex-col justify-between space-y-2.5 p-3.5 sm:space-y-3 sm:p-5 ds-interactive-surface ds-focus-ring cursor-pointer active:scale-[0.99] ds-motion-control rounded-ds-card bg-ds-panel border border-ds-border shadow-sm overflow-hidden text-left w-full h-full`}
       >
         <div className="space-y-1">
           <div className="flex items-center justify-between w-full">
@@ -50,7 +50,7 @@ const StatCardComponent: React.FC<StatCardProps> = ({
             )}
           </div>
           <div className="pt-1 sm:pt-1.5">
-            <span className="font-sans tabular-nums text-2xl sm:text-3xl font-bold tracking-tight text-ds-text-primary">
+            <span className="font-sans tabular-nums text-2xl sm:text-3xl font-semibold tracking-tight text-ds-text-primary">
               {value}
             </span>
           </div>
@@ -96,7 +96,7 @@ const StatCardComponent: React.FC<StatCardProps> = ({
           )}
         </div>
         <div className="pt-1 sm:pt-1.5">
-          <span className="font-sans tabular-nums text-2xl sm:text-3xl font-bold tracking-tight text-ds-text-primary">
+          <span className="font-sans tabular-nums text-2xl sm:text-3xl font-semibold tracking-tight text-ds-text-primary">
             {value}
           </span>
         </div>

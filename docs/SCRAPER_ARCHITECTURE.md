@@ -84,6 +84,12 @@ Overview `categories` and page `p_domain` share this definition. `sectors` and
 remain private scoring inputs; this display classification does not rewrite them.
 Match averages include assessed jobs only.
 
+After persistence, a bounded employer-office worker researches distinct company/place
+pairs and saves additive addresses, coordinates and website/category evidence. It uses
+persistent retry dates rather than repeating research for each vacancy. The map's
+separate office layer labels workplaces as unconfirmed; vacancy facts remain independent.
+See [employer office enrichment](EMPLOYER_OFFICE_ENRICHMENT.md).
+
 After persistence, when `GEOAPIFY_API_KEY` is configured, the synchronization runner
 checks up to 100 pending job locations through a separate bounded verification stage.
 It caches external results, records each job's original location and precision, and

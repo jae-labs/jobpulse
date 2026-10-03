@@ -12,7 +12,8 @@
     "mobileNavigation": "Mobile navigation",
     "dashboardNavigation": "Dashboard navigation",
     "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar"
+    "collapseSidebar": "Collapse sidebar",
+    "goTo": "Go to {{page}}"
   },
   "common": {
     "verifyingAuth": "Verifying authorization...",
@@ -90,8 +91,7 @@
     "pipelineBreakdown": "Application Pipeline",
     "relevanceDistribution": "Match Score Distribution",
     "skillsFrequency": "Skills matched in assessed vacancies",
-    "categoryBreakdown": "Domains",
-    "assessmentCoverage": "{{evaluated}} of {{total}} vacancies assessed. Match charts describe assessed vacancies only."
+    "categoryBreakdown": "Domains"
   },
   "jobs": {
     "saveJob": "Save job",
@@ -188,9 +188,14 @@
       "county": "county",
       "state": "region",
       "country": "country",
-      "mixed": "mixed locations"
+      "mixed": "mixed locations",
+      "company_office": "company office (workplace unconfirmed)"
     },
-    "mapTooManyLocations": "Too many locations to show. Narrow your filters."
+    "mapTooManyLocations": "Too many locations to show. Narrow your filters.",
+    "mapPostingLayer": "Posting locations",
+    "mapOfficeLayer": "Company offices",
+    "mapOfficeEvidence": "Company office addresses; workplaces for these roles are unconfirmed.",
+    "openDetails": "Open details"
   },
   "sources": {
     "title": "Data Sources",
@@ -488,9 +493,7 @@
   },
   "scoring": {
     "progress": "Updating matches: {{completed}} of {{total}} vacancies processed.",
-    "retryScheduled": "Matching will retry automatically. Your last results remain available.",
-    "completeSetup": "Complete matching setup or retry profile inference",
-    "setupFailed": "Matching setup failed. Please try again."
+    "retryScheduled": "Matching will retry automatically. Your last results remain available."
   },
   "privacy": {
     "exportAccount": "Export my account data",

@@ -266,8 +266,6 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
   };
 
   return (
-    <>
-    {overviewMetrics && <p className="px-1 pb-3 text-xs text-ds-text-muted">{t('overview.assessmentCoverage', { evaluated: overviewMetrics.evaluated, total: overviewMetrics.total })}</p>}
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
@@ -291,7 +289,6 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
         </div>
       </SortableContext>
     </DndContext>
-    </>
   );
 };
 

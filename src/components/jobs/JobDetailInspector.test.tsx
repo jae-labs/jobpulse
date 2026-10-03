@@ -1,11 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { JobDetailInspector } from './JobDetailInspector';
 import type { Job } from '../../types/job';
 
+const queryState = vi.hoisted(() => ({ loading: false, data: null as { description: string } | null }));
+afterEach(() => { queryState.loading = false; queryState.data = null; });
+
 vi.mock('../../hooks/useQueries', () => ({
   useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
-  useJobDetailQuery: () => ({ data: null, isLoading: false, isError: false, refetch: vi.fn() }),
+  useJobDetailQuery: () => ({ data: queryState.data, isLoading: queryState.loading, isError: false, refetch: vi.fn() }),
 }));
 
 const job: Job = {
@@ -26,6 +29,20 @@ const job: Job = {
 };
 
 describe('JobDetailInspector', () => {
+  it('shows an accessible loading state without retaining the previous specification', () => {
+    const props = { onUpdateStatus: vi.fn().mockResolvedValue(undefined) };
+    const { rerender } = render(<JobDetailInspector job={job} {...props} />);
+    queryState.loading = true;
+    const nextJob = { ...job, id: 2, title: 'Synthetic next role', description: undefined };
+    rerender(<JobDetailInspector job={nextJob} {...props} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Retrieving detailed job description');
+    expect(screen.queryByText('Build platform services.')).not.toBeInTheDocument();
+    queryState.loading = false;
+    queryState.data = { description: 'The newly loaded specification.' };
+    rerender(<JobDetailInspector job={{ ...nextJob }} {...props} />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByText('The newly loaded specification.')).toBeInTheDocument();
+  });
   it('keeps status button geometry stable when the selected opportunity changes', () => {
     const onUpdateStatus = vi.fn().mockResolvedValue(undefined);
     const { rerender } = render(

@@ -590,3 +590,81 @@ class PublicCandidateScoringWorkUpdate(TypedDict):
     top_k: NotRequired[Annotated[int, Field(alias="top_k")]]
     updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
     user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
+
+
+class PublicEmployerOffices(BaseModel):
+    address: str = Field(alias="address")
+    categories: Json[Any] = Field(alias="categories")
+    checked_at: datetime.datetime = Field(alias="checked_at")
+    city: Optional[str] = Field(alias="city")
+    country_code: Optional[str] = Field(alias="country_code")
+    employer_id: int = Field(alias="employer_id")
+    latitude: float = Field(alias="latitude")
+    longitude: float = Field(alias="longitude")
+    name: str = Field(alias="name")
+    place_id: str = Field(alias="place_id")
+    source: str = Field(alias="source")
+    website: Optional[str] = Field(alias="website")
+    website_domain: Optional[str] = Field(alias="website_domain")
+
+
+class PublicEmployerOfficesInsert(TypedDict):
+    address: Annotated[str, Field(alias="address")]
+    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
+    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
+    employer_id: Annotated[int, Field(alias="employer_id")]
+    latitude: Annotated[float, Field(alias="latitude")]
+    longitude: Annotated[float, Field(alias="longitude")]
+    name: Annotated[str, Field(alias="name")]
+    place_id: Annotated[str, Field(alias="place_id")]
+    source: NotRequired[Annotated[str, Field(alias="source")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
+    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
+
+
+class PublicEmployerOfficesUpdate(TypedDict):
+    address: NotRequired[Annotated[str, Field(alias="address")]]
+    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
+    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
+    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
+    latitude: NotRequired[Annotated[float, Field(alias="latitude")]]
+    longitude: NotRequired[Annotated[float, Field(alias="longitude")]]
+    name: NotRequired[Annotated[str, Field(alias="name")]]
+    place_id: NotRequired[Annotated[str, Field(alias="place_id")]]
+    source: NotRequired[Annotated[str, Field(alias="source")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
+    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
+
+
+class PublicEmployerOfficeLookups(BaseModel):
+    checked_at: datetime.datetime = Field(alias="checked_at")
+    employer_id: int = Field(alias="employer_id")
+    employer_name: str = Field(alias="employer_name")
+    location: str = Field(alias="location")
+    office_place_ids: Json[Any] = Field(alias="office_place_ids")
+    retry_after: datetime.datetime = Field(alias="retry_after")
+    status: str = Field(alias="status")
+
+
+class PublicEmployerOfficeLookupsInsert(TypedDict):
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    employer_id: Annotated[int, Field(alias="employer_id")]
+    employer_name: Annotated[str, Field(alias="employer_name")]
+    location: Annotated[str, Field(alias="location")]
+    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
+    retry_after: Annotated[datetime.datetime, Field(alias="retry_after")]
+    status: Annotated[str, Field(alias="status")]
+
+
+class PublicEmployerOfficeLookupsUpdate(TypedDict):
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
+    employer_name: NotRequired[Annotated[str, Field(alias="employer_name")]]
+    location: NotRequired[Annotated[str, Field(alias="location")]]
+    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
+    retry_after: NotRequired[Annotated[datetime.datetime, Field(alias="retry_after")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]

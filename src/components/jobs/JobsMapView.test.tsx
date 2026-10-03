@@ -8,7 +8,9 @@ const state = vi.hoisted(() => ({ fetching: false, error: false, previewError: f
 const example = { id: 42, title: 'Example Role', company: 'Example Company', location: 'Dublin, Ireland' };
 vi.mock('../../hooks/useQueries', () => ({
   useJobMapQuery: () => ({ isPending: false, isFetching: state.fetching, isError: state.error, refetch: vi.fn(),
-    data: { total: 100, mapped: 90, in_view: 90, truncated: false, pins: [{ latitude: 53.35, longitude: -6.26,
+    data: { total: 100, mapped: 90, in_view: 90, truncated: false, office_truncated: false,
+      office_pins: [{ latitude: 53.34, longitude: -6.25, count: 1, job_ids: [42],
+        title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'company_office' }], pins: [{ latitude: 53.35, longitude: -6.26,
       count: 10, job_ids: [42], title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'city' }] },
   }),
   useJobMapPreviewQuery: () => ({ isPending: false, isFetching: false, isError: state.previewError, refetch: vi.fn(), data: state.multiplePlaces ? [example, { ...example, id: 43, location: 'Galway, Ireland' }] : [example] }),
@@ -30,6 +32,17 @@ beforeEach(() => {
 function openGroup() { fireEvent.click(screen.getByRole('button', { name: '10 jobs · Example Company · Example Role' })); }
 
 describe('verified job map', () => {
+  it('separates company offices from posting places and labels unconfirmed workplaces', () => {
+    const selectLocation = vi.fn();
+    render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} onSelectLocation={selectLocation} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Company offices' }));
+    expect(screen.getByText('Company office addresses; workplaces for these roles are unconfirmed.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '1 jobs · Example Company · Example Role' }));
+    expect(screen.getByText('Location precision: company office (workplace unconfirmed)')).toBeInTheDocument();
+    expect(selectLocation).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Posting locations' }));
+    expect(screen.queryByText('Location precision: company office (workplace unconfirmed)')).not.toBeInTheDocument();
+  });
   it('keeps camera requests quiet and omits the map-group dropdown', () => {
     state.fetching = true;
     render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} />);

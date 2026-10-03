@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Briefcase,
-  Loader2,
   X,
   Building2,
   Maximize2,
@@ -16,7 +15,7 @@ import { formatCompactSalary } from '../../lib/formatSalary';
 import { cn, toSafeHttpUrl } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../lib/i18n';
-import { Button, EmptyState } from '@jae-labs/ui';
+import { Button, EmptyState, Tooltip } from '@jae-labs/ui';
 
 interface JobDetailInspectorProps {
   job: Job | null;
@@ -48,7 +47,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (isFullScreen && scrollContainerRef.current) {
+    if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
   }, [isFullScreen, job?.id]);
@@ -103,14 +102,21 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             <div className="flex items-center gap-1.5 shrink-0">
               <SavedJobButton job={job} userId={userId} />
               {onToggleFullScreen && (
+                <Tooltip label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')} shortcut="F">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={onToggleFullScreen}
+                  onKeyDown={(event) => {
+                    if (event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+                      event.preventDefault();
+                      onToggleFullScreen();
+                    }
+                  }}
                   className="size-8"
                   aria-label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')}
-                  title={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')}
+                  aria-keyshortcuts="F"
                 >
                   {isFullScreen ? (
                     <Minimize2 className="size-4" />
@@ -118,19 +124,25 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                     <Maximize2 className="size-4" />
                   )}
                 </Button>
+                </Tooltip>
               )}
               {onClose && (
+                <Tooltip label={t('jobs.inspector.close')} shortcut="Esc">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={onClose}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+                  }}
                   className="size-8"
                   aria-label={t('jobs.inspector.close')}
-                  title={t('jobs.inspector.close')}
+                  aria-keyshortcuts="Escape"
                 >
                   <X className="size-4" />
                 </Button>
+                </Tooltip>
               )}
             </div>
           </div>
@@ -226,7 +238,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
         data-inspector-scroll-body
         className={cn('flex-1 overflow-y-auto overscroll-contain outline-none p-4 sm:p-5 pb-16 sm:pb-6', isFullScreen && 'sm:p-8 sm:pb-20')}
       >
-        <div className={cn('space-y-4 sm:space-y-5', isFullScreen && 'max-w-5xl mx-auto')}>
+        <div key={job.id} className={cn('ds-content-enter space-y-4 sm:space-y-5', isFullScreen && 'max-w-5xl mx-auto')}>
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5 sm:grid-cols-4">
             <div className="rounded-ds-control border border-ds-border bg-ds-panel p-2.5 sm:p-3 flex flex-col justify-between">
               <span className="text-[10px] sm:text-[11px] font-medium text-ds-warning uppercase tracking-wider block">
@@ -293,13 +305,19 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               </span>
             </div>
 
-            <div className={cn('rounded-ds-card border border-ds-border bg-ds-panel p-4 text-xs leading-relaxed text-ds-text-secondary whitespace-pre-line select-text font-sans', isFullScreen && 'sm:text-sm sm:p-6')}>
+            <div aria-busy={isLoadingDetail && !formattedDescription} className={cn('rounded-ds-card border border-ds-border bg-ds-panel p-4 text-xs leading-relaxed text-ds-text-secondary whitespace-pre-line select-text font-sans', isFullScreen && 'sm:text-sm sm:p-6')}>
               {formattedDescription ? (
-                formattedDescription
+                <div key={`${job.id}:ready`} className="ds-content-enter">{formattedDescription}</div>
               ) : isLoadingDetail ? (
-                <div className="flex flex-col items-center justify-center py-8 text-ds-text-muted space-y-2">
-                  <Loader2 className="size-4 animate-spin text-ds-text-muted" />
-                  <span className="text-xs">{t('jobs.inspector.loadingDescription')}</span>
+                <div role="status" className="ds-content-enter space-y-3 py-2 text-ds-text-muted">
+                  <span className="sr-only">{t('jobs.inspector.loadingDescription')}</span>
+                  <div aria-hidden="true" className="space-y-3">
+                    <div className="h-3 w-3/4 rounded-ds-control bg-ds-control" />
+                    <div className="h-3 w-full rounded-ds-control bg-ds-control" />
+                    <div className="h-3 w-5/6 rounded-ds-control bg-ds-control" />
+                    <div className="h-3 w-full rounded-ds-control bg-ds-control" />
+                    <div className="h-3 w-2/3 rounded-ds-control bg-ds-control" />
+                  </div>
                 </div>
               ) : isDetailError ? (
                 <div role="alert" className="py-6 text-center text-xs text-ds-negative space-y-2">

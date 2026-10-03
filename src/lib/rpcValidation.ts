@@ -206,6 +206,11 @@ export function validateJobMapResult(data: unknown): import('../types/job').JobM
   const obj = record(data);
   if (!Array.isArray(obj.pins) || obj.pins.length > 2000 || typeof obj.truncated !== 'boolean') throw new Error('Invalid map result');
   return {
+    ...(obj.office_pins !== undefined ? {
+      office_pins: validateJobMapResult({ ...obj, pins: obj.office_pins, office_pins: undefined,
+        truncated: obj.office_truncated }).pins,
+      office_truncated: obj.office_truncated as boolean,
+    } : {}),
     total: count(obj.total), mapped: count(obj.mapped), in_view: count(obj.in_view), truncated: obj.truncated,
     pins: obj.pins.map((raw) => {
       const pin = record(raw);

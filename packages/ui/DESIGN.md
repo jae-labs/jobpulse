@@ -25,7 +25,7 @@ data, routing, and business behavior. The dependency direction is always applica
 
 1. **Tokens** describe semantic color, radius, and shadow values.
 2. **Primitives** provide generic controls and surfaces: `Button`, `TextField`, `Select`, `Textarea`, `Range`,
-   `Card`, `Pill`, `Dialog`, and `Sheet`.
+   `Card`, `Pill`, `Dialog`, `Sheet`, and `Tooltip`.
 3. **Patterns** compose primitives into generic arrangements: `PageHeader` and `EmptyState`.
 4. **Application components** compose the package with domain behavior, such as a job card or application
    timeline. They stay in their application.
@@ -144,3 +144,24 @@ token vocabulary.
 From the repository root, run `npm run check` after changes. It runs lint, package boundary and token checks,
 TypeScript, tests, and a production build. Run `npm run storybook` to inspect component states locally and
 `npm run build-storybook` to verify the standalone component catalog. CI builds Storybook on every change.
+
+## Motion and shortcut hints
+
+Neutral charcoal surfaces, a flat persistent selection and indigo primary actions
+keep everyday navigation quieter than keyboard focus. Text selection has a separate
+semantic token so it does not inherit the row-selection background. Inter Variable
+remains the application font; use medium control/title weights and semibold metrics.
+
+Use `ds-motion-control` for transitions of color, opacity and transforms: 160 ms with
+`--ds-motion-ease`. Use `ds-content-enter` for a 220 ms opacity-only reveal when content
+arrives. Do not animate dimensions, delay data display artificially, or retain stale
+private content for a crossfade. Sheets use a short 8 px entrance with matching opacity.
+All shared motion helpers also disable animation in reduced-motion mode without relying
+on the consumer's CSS. Static loading skeletons avoid continuous shimmer/spinner motion.
+
+`Tooltip` accepts one accessible control, a consumer-owned `label`, an optional
+`shortcut`, and `side="right"` or `side="bottom"`. Hints open after 350 ms of pointer
+hover, immediately on keyboard focus, and close on blur, activation or Escape. The
+existing control description is preserved. The small keycap uses its own tighter radius.
+Hints contain no links or controls and are supplementary to an accessible control name.
+Do not add instructions to data-chart tooltips.

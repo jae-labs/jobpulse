@@ -159,3 +159,15 @@ def test_catalog_pages_and_combines_both_sources_without_private_reads(monkeypat
     assert len(result) == 1
     assert result[1]["job_count"] == 501
     assert set(result[1]["job_sources"]) == {"JobsIreland.ie", "WhatJobs Ireland"}
+
+
+@pytest.mark.parametrize(
+    "endpoint", ["https://api.geoapify.com/v2/places", "https://api.geoapify.com/v2/place-details"]
+)
+def test_office_endpoints_share_existing_provider_budget(tmp_path, endpoint):
+    researcher = client(tmp_path / "office-cache", lambda request: httpx.Response(200, json={"features": []}))
+    researcher.get(endpoint, {"apiKey": "synthetic-secret"})
+    budgets = list(tmp_path.glob("geoapify-budget-*.txt"))
+    assert len(budgets) == 1 and budgets[0].read_text() == "1"
+    researcher.get(endpoint, {"apiKey": "another-secret"})
+    assert budgets[0].read_text() == "1"  # cached requests spend no additional allowance

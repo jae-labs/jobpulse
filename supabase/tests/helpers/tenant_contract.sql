@@ -4,6 +4,7 @@ CREATE TEMP TABLE tenant_contract (table_name text PRIMARY KEY, access_kind text
 INSERT INTO tenant_contract VALUES
   ('authorized_users', 'invitations'),
   ('jobs', 'shared'), ('sources', 'shared'), ('employers', 'shared'),
+  ('employer_offices', 'shared'), ('employer_office_lookups', 'backend'),
   ('user_profiles', 'owner'), ('user_job_statuses', 'owner'),
   ('user_job_evaluations', 'owner'), ('user_cvs', 'owner'), ('user_cover_letters', 'owner'),
   ('scoring_catalog_generation', 'backend'), ('candidate_scoring_work', 'backend'),

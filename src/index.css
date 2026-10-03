@@ -43,6 +43,8 @@
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    font-optical-sizing: auto;
+    letter-spacing: -0.011em;
   }
 
   #root {
@@ -105,9 +107,9 @@
   }
 }
 
-/* Text Selection (Linear Neutral) */
+/* Text selection has its own contrast, independent of persistent row selection. */
 ::selection {
-  background: var(--ds-color-selected);
+  background: var(--ds-color-text-selection);
   color: inherit;
 }
 
@@ -226,4 +228,15 @@
 @keyframes cmdkScaleIn {
   from { opacity: 0; transform: translate(-50%, -8px) scale(0.98); }
   to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* Keep the mobile navigation above the home indicator and content above the bar. */
+@media (width < 64rem) {
+  .mobile-navigation-safe-area {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-navigation-clearance {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }

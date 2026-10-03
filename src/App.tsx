@@ -324,8 +324,8 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
           ref={workspaceRef}
           className={`min-w-0 flex-1 overflow-x-hidden ${
             activeTab === 'jobs'
-              ? 'flex flex-col overflow-hidden p-3 sm:p-4 lg:p-6 pb-16 lg:pb-6'
-              : 'overflow-y-auto p-3 sm:p-4 lg:p-6 pb-20 lg:pb-6'
+              ? 'flex flex-col overflow-hidden p-3 sm:p-4 lg:p-6 mobile-navigation-clearance lg:pb-6'
+              : 'overflow-y-auto p-3 sm:p-4 lg:p-6 mobile-navigation-clearance lg:pb-6'
           }`}
         >
           <div
@@ -465,7 +465,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
       </div>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-ds-border bg-ds-surface/95 px-2 py-1 backdrop-blur-xl lg:hidden safe-bottom select-none"
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-ds-border bg-ds-surface/95 px-2 pt-2 mobile-navigation-safe-area backdrop-blur-xl lg:hidden select-none"
         aria-label={t('nav.mobileNavigation')}
       >
         {dashboardNavigation
@@ -480,22 +480,22 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 type="button"
                 onClick={() => setActiveTab(id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 text-[11px] font-medium transition-colors cursor-pointer active:scale-95 ${
+                className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-1 text-sm font-medium ds-motion-control cursor-pointer rounded-ds-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent active:scale-95 ${
                   isActive
                     ? 'text-ds-text-primary font-semibold'
                     : 'text-ds-text-muted hover:text-ds-text-secondary'
                 }`}
               >
                 <div
-                  className={`flex size-8 items-center justify-center rounded-ds-control transition-colors ${
+                  className={`flex h-9 w-16 items-center justify-center rounded-full ds-motion-control ${
                     isActive
-                      ? 'border border-ds-border-strong bg-ds-hover text-ds-text-primary shadow-xs'
+                      ? 'bg-ds-selected text-ds-text-primary'
                       : 'text-ds-text-muted'
                   }`}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-6" />
                 </div>
-                <span className="text-[10px] tracking-tight">{shortLabel}</span>
+                <span className="max-w-full text-center leading-5">{shortLabel}</span>
               </button>
             );
           })}

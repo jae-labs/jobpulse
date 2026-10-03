@@ -25,10 +25,22 @@ def synchronize(
     skip_core: bool = False,
     core_only: bool = False,
 ) -> dict[str, Any]:
-    """Ingest vacancy facts and job embeddings only."""
+    """Ingest vacancies, then run bounded independent public enrichment stages."""
     result = _scrape(employer, limit, full, skip_core, core_only)
     if os.environ.get("GEOAPIFY_API_KEY"):
+        from pipeline.employer_offices import enrich_offices
         from pipeline.job_locations import verify_catalog_locations
+
+        try:
+            result["employer_offices"] = enrich_offices(apply=True, limit=25)
+        except Exception:
+            log_scraper_event(
+                "WARNING",
+                "Employer office research",
+                "Office research unavailable; retry the enrichment worker.",
+                method="Geoapify",
+            )
+            result["employer_offices"] = {"failed": 1}
 
         try:
             result["locations"] = verify_catalog_locations(apply=True, limit=100)

@@ -9,3 +9,5 @@ export { Range, type RangeProps } from './components/Range';
 export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetContent } from './components/Sheet';
 export { Dialog, DialogTrigger, DialogClose, DialogPortal, DialogOverlay, DialogContent } from './components/Dialog';
 export { Pill, type PillProps, type PillTone } from './components/Pill';
+
+export { Tooltip, type TooltipProps } from './components/Tooltip';

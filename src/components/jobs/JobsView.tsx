@@ -794,7 +794,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
       <DialogPrimitive.Root open={isDetailFullScreen} onOpenChange={setIsDetailFullScreen}>
       {selectedJob && isDetailFullScreen && (
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ds-canvas/65" />
+          <DialogPrimitive.Overlay className="ds-content-enter fixed inset-0 z-50 bg-ds-canvas/65" />
           <DialogPrimitive.Content
             ref={dialogContentRef}
             aria-label={t('jobs.inspector')}
@@ -803,7 +803,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               e.preventDefault();
               dialogContentRef.current?.focus({ preventScroll: true });
             }}
-            className="fixed inset-0 z-50 flex flex-col bg-ds-surface animate-in fade-in-0 duration-150 focus:outline-none focus-visible:outline-none"
+            className="fixed inset-0 z-50 flex flex-col bg-ds-surface ds-content-enter focus:outline-none focus-visible:outline-none"
           >
           <div className="flex h-full w-full flex-col overflow-hidden bg-ds-surface">
             <JobDetailInspector

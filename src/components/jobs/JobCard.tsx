@@ -1,4 +1,5 @@
 import React from 'react';
+import { Tooltip } from '@jae-labs/ui';
 import { ChevronRight, MapPin, Banknote, Building2 } from 'lucide-react';
 import type { Job } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
@@ -19,6 +20,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
     const { t } = useTranslation();
     return (
       <div className="relative">
+      <Tooltip label={t('jobs.openDetails')} shortcut="Enter" className="w-full">
       <button
         ref={ref}
         type="button"
@@ -27,10 +29,11 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         tabIndex={tabIndex}
         onClick={() => onSelect(job)}
         aria-pressed={isSelected}
+        aria-keyshortcuts="Enter Space"
         className={cn(
-          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 pr-12 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
+          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 pr-12 text-left ds-motion-control outline-none select-none scroll-mt-24',
           isSelected
-            ? 'border-ds-accent bg-ds-selected shadow-xs focus-visible:border-ds-accent'
+            ? 'border-ds-border-strong bg-ds-selected focus-visible:border-ds-accent'
             : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-accent',
         )}
       >
@@ -108,6 +111,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
           )}
         </div>
       </button>
+      </Tooltip>
       <div className="absolute right-2 top-2"><SavedJobButton job={job} userId={userId} /></div>
       </div>
     );

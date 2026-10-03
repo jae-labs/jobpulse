@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit db-types check
+.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit scrape-enrich-offices db-types check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -69,6 +69,9 @@ scrape-harvest: ## Scan candidate ATS boards for Ireland vacancies; set ARGS="--
 
 scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set ARGS="--apply" to persist.
 	@cd services/scraper && uv run --locked python tools/sniff_ats.py $(ARGS)
+
+scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
+	@cd services/scraper && uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
 
 scrape-lint: ## Run ruff lint & format check on scraper code.
 	@cd services/scraper && uv run --locked ruff check .

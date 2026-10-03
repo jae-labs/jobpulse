@@ -130,6 +130,100 @@ export type Database = {
         }
         Relationships: []
       }
+      employer_office_lookups: {
+        Row: {
+          checked_at: string
+          employer_id: number
+          employer_name: string
+          location: string
+          office_place_ids: Json
+          retry_after: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          employer_id: number
+          employer_name: string
+          location: string
+          office_place_ids?: Json
+          retry_after: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          employer_id?: number
+          employer_name?: string
+          location?: string
+          office_place_ids?: Json
+          retry_after?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_office_lookups_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employer_offices: {
+        Row: {
+          address: string
+          categories: Json
+          checked_at: string
+          city: string | null
+          country_code: string | null
+          employer_id: number
+          latitude: number
+          longitude: number
+          name: string
+          place_id: string
+          source: string
+          website: string | null
+          website_domain: string | null
+        }
+        Insert: {
+          address: string
+          categories?: Json
+          checked_at?: string
+          city?: string | null
+          country_code?: string | null
+          employer_id: number
+          latitude: number
+          longitude: number
+          name: string
+          place_id: string
+          source?: string
+          website?: string | null
+          website_domain?: string | null
+        }
+        Update: {
+          address?: string
+          categories?: Json
+          checked_at?: string
+          city?: string | null
+          country_code?: string | null
+          employer_id?: number
+          latitude?: number
+          longitude?: number
+          name?: string
+          place_id?: string
+          source?: string
+          website?: string | null
+          website_domain?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_offices_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employers: {
         Row: {
           careers_url: string
@@ -682,6 +776,10 @@ export type Database = {
         Returns: number
       }
       owns_document_object: { Args: { object_name: string }; Returns: boolean }
+      pending_employer_office_lookups: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       process_candidate_scoring: {
         Args: { p_batch_size?: number }
         Returns: number
@@ -697,6 +795,10 @@ export type Database = {
       rescore_user: {
         Args: { p_top_k?: number; p_user_id: string }
         Returns: number
+      }
+      save_employer_office_lookup: {
+        Args: { p_record: Json }
+        Returns: boolean
       }
       save_profile_embedding: {
         Args: {

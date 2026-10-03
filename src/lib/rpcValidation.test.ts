@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateJobsPageResult, validateOverviewMetrics } from './rpcValidation';
+import { validateJobMapResult, validateJobsPageResult, validateOverviewMetrics } from './rpcValidation';
 
 const job = {
   id: 1, title: 'Example Engineer', company: 'Example', location: 'Cork', url: 'https://example.invalid',
@@ -27,5 +27,17 @@ describe('employer RPC boundary', () => {
     };
     expect(validateOverviewMetrics(metrics)).toMatchObject({ categories: metrics.sectors });
     expect(() => validateOverviewMetrics({ ...metrics, sectors: {} })).toThrow();
+  });
+});
+
+describe('office map boundary', () => {
+  const pin = { latitude: 0, longitude: 0, count: 1, job_ids: [1], title: 'Synthetic',
+    company: 'Example', domain: 'Uncategorized', precision: 'company_office' };
+  const result = { total: 1, mapped: 1, in_view: 1, truncated: false, pins: [], office_pins: [pin], office_truncated: false };
+  it('validates office coordinates and accepts rolling deployments without the new layer', () => {
+    expect(validateJobMapResult(result).office_pins).toEqual([pin]);
+    expect(validateJobMapResult({ ...result, office_pins: undefined }).office_pins).toBeUndefined();
+    expect(() => validateJobMapResult({ ...result, office_pins: [{ ...pin, latitude: 91 }] })).toThrow();
+    expect(() => validateJobMapResult({ ...result, office_truncated: 'false' })).toThrow();
   });
 });

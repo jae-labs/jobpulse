@@ -7,7 +7,7 @@ describe('Button', () => {
     render(<Button>Click me</Button>);
     const btn = screen.getByRole('button', { name: /click me/i });
     expect(btn).toBeInTheDocument();
-    expect(btn).toHaveClass('bg-ds-text-primary');
+    expect(btn).toHaveClass('bg-ds-action-primary');
   });
 
   it('renders with secondary and ghost variants', () => {

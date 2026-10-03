@@ -11,7 +11,13 @@ applied. A coarse group can contain several locations, so each sample location h
 its own explicit browsing action. Raw database IDs are never action labels. Filters use
 the same shared catalog domains and caller-owned matching/status contract as the list.
 
-Pins verify the **place named in the stored posting**, not the employer's headquarters
+The optional **Company offices** layer shows a fresh unique directory-discovered
+company address for a verified city/district posting. It explicitly marks the workplace
+as unconfirmed and preserves the default **Posting locations** layer. Multiple offices,
+remote roles and country-only postings receive no office estimate. See
+[office enrichment](EMPLOYER_OFFICE_ENRICHMENT.md).
+
+Posting-location pins verify the **place named in the stored posting**, not the employer's headquarters
 or an independently proven exact workplace. The location browser states precision, including
 city, county and country centroids. Remote, ambiguous and unresolved locations remain
 visible in coverage totals without invented coordinates.
