@@ -85,3 +85,17 @@ Source lint also rejects runtime Sentry imports outside `src/lib/sentry.ts` and 
 direct console diagnostics outside `src/lib/logger.ts`. Use `reportError` for sanitized
 production reporting and `warn` for development-only diagnostics. Never log profile or
 document content as a workaround, or add an exception to silence a security failure.
+
+## Verification and reviewable changes
+
+Run `make check` for frontend, scraper lint, Pyright and behavioral tests.
+TypeScript rejects unused locals and parameters. Static translation keys must
+resolve to text in both bundles; dynamic keys still need behavior coverage.
+Domain query modules sit behind the compatible `useQueries.ts` facade; persistence
+services do not own query caches. Bind initiating identity through services and
+freeze transport identity for mutations whose RPC/Function infers the owner.
+
+Use focused, descriptive commit subjects that identify the behavior changed
+(e.g. `fix: reject stale-account profile writes`). Repeating a generic subject
+meets Conventional Commit syntax but does not help reviewers or incident triage.
+Preserve existing history; improve future commits instead of rewriting shared work.

@@ -41,6 +41,7 @@ import { AccessDeniedView } from './components/auth/AccessDeniedView';
 import { InvitationsModal } from './components/dashboard/InvitationsModal';
 import { clearAppCache } from './lib/queryClient';
 import { useAuthSession } from './hooks/useAuthSession';
+import { useErrorDismissal } from './hooks/useErrorDismissal';
 import {
   useOverviewMetricsQuery,
   useSourcesQuery,
@@ -144,6 +145,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
     data: sources = [],
     isLoading: isSourcesLoading,
     error: sourcesQueryError,
+    refetch: refetchSources,
   } = useSourcesQuery(isAuthorized && isSourcesNeeded);
 
   const {
@@ -160,15 +162,14 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const [selectedJobState, setSelectedJobState] = useState<Job | null>(null);
   const selectedJob = selectedJobState;
 
-  const [isDbErrorDismissed, setIsDbErrorDismissed] = useState(false);
-
   const isUpdatingStatus = updateJobStatusMutation.isPending;
   const isLoading = isOverviewNeeded
     ? isOverviewLoading && !overviewMetrics
     : isSourcesNeeded && isSourcesLoading;
 
   const activeQueryError = isSourcesNeeded ? sourcesQueryError : isOverviewNeeded ? overviewQueryError : null;
-  useEffect(() => setIsDbErrorDismissed(false), [activeTab, activeQueryError, customDbError]);
+  const { isDismissed: isDbErrorDismissed, dismiss: dismissDbError, reset: resetDbErrorDismissal } =
+    useErrorDismissal(activeTab, activeQueryError, customDbError);
   const dbError =
     !isDbErrorDismissed &&
     (customDbError ||
@@ -351,9 +352,10 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     variant="danger"
                     size="sm"
                     onClick={() => {
-                      setIsDbErrorDismissed(false);
+                      resetDbErrorDismissal();
                       setCustomDbError(null);
-                      void refetchOverview();
+                      if (isSourcesNeeded) void refetchSources();
+                      else void refetchOverview();
                     }}
                   >
                     <span>{t('common.retry')}</span>
@@ -362,7 +364,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => setIsDbErrorDismissed(true)}
+                    onClick={dismissDbError}
                     aria-label={t('common.dismissError')}
                   >
                     <X className="size-4" />
