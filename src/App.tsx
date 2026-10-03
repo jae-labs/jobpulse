@@ -495,7 +495,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 >
                   <Icon className="size-6" />
                 </div>
-                <span className="max-w-full text-center leading-5">{shortLabel}</span>
+                <span className="max-w-full text-center leading-5 max-[359px]:text-[13px]">{shortLabel}</span>
               </button>
             );
           })}
