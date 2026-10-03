@@ -203,10 +203,10 @@ describe('useKeyboardNavigation', () => {
     cardButton.dispatchEvent(rightEvent);
     expect(onUpdateStatus).toHaveBeenCalledWith(mockJobs[0], 'applied');
 
-    // ArrowLeft wraps from 'new' backwards to 'not_interested'
+    // ArrowLeft wraps from 'new' backwards to 'rejected'
     const leftEvent = new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true });
     cardButton.dispatchEvent(leftEvent);
-    expect(onUpdateStatus).toHaveBeenCalledWith(mockJobs[0], 'not_interested');
+    expect(onUpdateStatus).toHaveBeenCalledWith(mockJobs[0], 'rejected');
 
     document.body.removeChild(cardButton);
   });

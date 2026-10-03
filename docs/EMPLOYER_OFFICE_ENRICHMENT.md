@@ -36,6 +36,8 @@ A 30-day local HTTP cache reuses identical requests across employers. All Geoapi
 requests share the existing conservative 2,500-attempt UTC daily budget and retries.
 The counter is local to this checkout; it is not a cross-machine account quota.
 API keys remain in the backend environment and never enter reports or browser code.
+Company searches allow 60 seconds for a response, with a 10-second connection limit,
+because provider boundary searches can exceed 20 seconds even when successful.
 
 ## Operating the worker
 

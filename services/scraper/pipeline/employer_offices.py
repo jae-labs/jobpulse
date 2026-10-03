@@ -159,7 +159,9 @@ def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None 
     )
     records = []
     cache = Path(__file__).resolve().parents[3] / ".backups/employer-office-cache"
-    with httpx.Client(timeout=20, headers={"User-Agent": "JobPulseEmployerOffices/1.0"}) as http:
+    with httpx.Client(
+        timeout=httpx.Timeout(60, connect=10), headers={"User-Agent": "JobPulseEmployerOffices/1.0"}
+    ) as http:
         researcher = ResearchClient(cache, http)
         for row in rows:
             try:

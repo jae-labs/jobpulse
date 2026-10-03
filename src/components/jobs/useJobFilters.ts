@@ -15,7 +15,7 @@ interface UseJobFiltersOptions {
 export function useJobFilters({
   searchQuery: controlledSearch,
   onSearchChange: setControlledSearch,
-  initialStatusFilter = 'all',
+  initialStatusFilter = 'new',
   initialDomainFilter = 'all',
   initialMinMatch = 0,
 }: UseJobFiltersOptions = {}) {

@@ -8,6 +8,7 @@ afterEach(() => { queryState.loading = false; queryState.data = null; });
 
 vi.mock('../../hooks/useQueries', () => ({
   useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useUpdateJobStatusMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   useJobDetailQuery: () => ({ data: queryState.data, isLoading: queryState.loading, isError: false, refetch: vi.fn() }),
 }));
 
@@ -52,8 +53,8 @@ describe('JobDetailInspector', () => {
     const buttons = within(statusGroup).getAllByRole('button');
 
     expect(buttons).toHaveLength(4);
-    expect(within(statusGroup).queryByTitle('Saved')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save job' })).toBeInTheDocument();
+    expect(within(statusGroup).queryByTitle('Favorite')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Favorite job' })).toBeInTheDocument();
     for (const button of buttons) {
       expect(button).toHaveClass('border');
       expect(button).not.toHaveClass('transition-colors');

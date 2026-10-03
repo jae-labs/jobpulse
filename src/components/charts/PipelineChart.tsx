@@ -38,6 +38,10 @@ const STAGE_CONFIG: Record<
     token: '--jp-color-status-interviewing',
     fallback: 'currentColor',
   },
+  rejected: {
+    token: '--jp-color-status-rejected',
+    fallback: 'currentColor',
+  },
   not_interested: {
     token: '--jp-color-status-muted',
     fallback: 'currentColor',
@@ -94,12 +98,13 @@ import { getCachedCssVar } from '../../lib/chartTheme';
 const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], counts, stageAverages, onSelectStatus }) => {
   const { t, i18n } = useTranslation();
   const data = React.useMemo(() => {
-    const keys: JobStatus[] = ['new', 'applied', 'interviewing', 'not_interested'];
+    const keys: JobStatus[] = ['new', 'applied', 'interviewing', 'rejected'];
 
     const stats: Record<JobStatus, { count: number; totalScore: number }> = {
       new: { count: 0, totalScore: 0 },
       applied: { count: 0, totalScore: 0 },
       interviewing: { count: 0, totalScore: 0 },
+      rejected: { count: 0, totalScore: 0 },
       not_interested: { count: 0, totalScore: 0 },
     };
 

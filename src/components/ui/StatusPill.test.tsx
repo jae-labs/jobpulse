@@ -14,7 +14,7 @@ describe('StatusPill', () => {
     expect(screen.getByText('Interview')).toBeInTheDocument();
 
     rerender(<StatusPill status="not_interested" />);
-    expect(screen.getByText('Not Interested')).toBeInTheDocument();
+    expect(screen.getByText('Archived')).toBeInTheDocument();
   });
 
   it('toggles dot visibility based on showDot prop', () => {

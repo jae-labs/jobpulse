@@ -83,7 +83,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const [notice, setNotice] = useState('');
   const [customDbError, setCustomDbError] = useState<string | null>(null);
 
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobFilterStatus>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobFilterStatus>('new');
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>('all');
   const [selectedMinMatch, setSelectedMinMatch] = useState<number>(0);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
@@ -480,22 +480,22 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 type="button"
                 onClick={() => setActiveTab(id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-1 text-sm font-medium ds-motion-control cursor-pointer rounded-ds-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent active:scale-95 ${
+                className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[11px] font-medium tracking-wide ds-motion-control cursor-pointer rounded-ds-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent active:scale-95 ${
                   isActive
-                    ? 'text-ds-text-primary font-semibold'
+                    ? 'text-ds-text-primary'
                     : 'text-ds-text-muted hover:text-ds-text-secondary'
                 }`}
               >
                 <div
-                  className={`flex h-9 w-16 items-center justify-center rounded-full ds-motion-control ${
+                  className={`flex h-8 w-14 items-center justify-center rounded-full ds-motion-control ${
                     isActive
                       ? 'bg-ds-selected text-ds-text-primary'
                       : 'text-ds-text-muted'
                   }`}
                 >
-                  <Icon className="size-6" />
+                  <Icon className="size-5" strokeWidth={isActive ? 2.5 : 2} />
                 </div>
-                <span className="max-w-full text-center leading-5 max-[359px]:text-[13px]">{shortLabel}</span>
+                <span className="max-w-full text-center leading-tight truncate px-1">{shortLabel}</span>
               </button>
             );
           })}

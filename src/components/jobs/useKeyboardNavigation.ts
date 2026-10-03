@@ -205,12 +205,12 @@ export function useKeyboardNavigation({
         }
       } else if (e.key === 'ArrowRight' && selectedJob && onUpdateStatus) {
         e.preventDefault();
-        const currentIndex = STATUS_LIST.indexOf(selectedJob.status);
+        const currentIndex = STATUS_LIST.indexOf(selectedJob.status as typeof STATUS_LIST[number]);
         const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % STATUS_LIST.length : 0;
         void onUpdateStatus(selectedJob, STATUS_LIST[nextIndex]);
       } else if (e.key === 'ArrowLeft' && selectedJob && onUpdateStatus) {
         e.preventDefault();
-        const currentIndex = STATUS_LIST.indexOf(selectedJob.status);
+        const currentIndex = STATUS_LIST.indexOf(selectedJob.status as typeof STATUS_LIST[number]);
         const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + STATUS_LIST.length) % STATUS_LIST.length : STATUS_LIST.length - 1;
         void onUpdateStatus(selectedJob, STATUS_LIST[prevIndex]);
       } else if ((e.key === 'f' || e.key === 'F') && selectedJob) {

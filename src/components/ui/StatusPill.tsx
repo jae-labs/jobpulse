@@ -24,6 +24,9 @@ const STATUS_CONFIG: Record<
   interviewing: {
     dotClass: 'bg-status-interviewing',
   },
+  rejected: {
+    dotClass: 'bg-status-rejected',
+  },
   not_interested: {
     dotClass: 'bg-status-muted',
   },

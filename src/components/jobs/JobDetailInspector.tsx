@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { Job, JobStatus } from '../../types/job';
 import SavedJobButton from './SavedJobButton';
+import IgnoredJobButton from './IgnoredJobButton';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import { useJobDetailQuery } from '../../hooks/useQueries';
 import { formatJobDescription } from '../../lib/formatDescription';
@@ -101,6 +102,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
 
             <div className="flex items-center gap-1.5 shrink-0">
               <SavedJobButton job={job} userId={userId} />
+              <IgnoredJobButton job={job} userId={userId} />
               {onToggleFullScreen && (
                 <Tooltip label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')} shortcut="F">
                 <Button
@@ -157,7 +159,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 { id: 'new', label: t('status.new'), shortLabel: t('status.short.new', { defaultValue: 'New' }) },
                 { id: 'applied', label: t('status.applied'), shortLabel: t('status.short.applied', { defaultValue: 'Applied' }) },
                 { id: 'interviewing', label: t('status.interviewing'), shortLabel: t('status.short.interviewing', { defaultValue: 'Interview' }) },
-                { id: 'not_interested', label: t('status.not_interested'), shortLabel: t('status.short.not_interested', { defaultValue: 'Not Int.' }) },
+                { id: 'rejected', label: t('status.rejected'), shortLabel: t('status.short.rejected', { defaultValue: 'Rejected' }) },
               ].map(({ id, label, shortLabel }) => {
                 const active = job.status === id;
                 return (

@@ -2,10 +2,10 @@ export const STATUS_LIST = [
   'new',
   'applied',
   'interviewing',
-  'not_interested',
+  'rejected',
 ] as const;
 
-export type JobStatus = (typeof STATUS_LIST)[number];
+export type JobStatus = (typeof STATUS_LIST)[number] | 'not_interested';
 export type JobFilterStatus = JobStatus | 'saved';
 
 /** Normalized scoring factors; auth_deduction is an absolute point deduction. */

@@ -18,7 +18,7 @@ import {
   Briefcase,
   Sparkles,
   Send,
-  Heart,
+  Star,
   RefreshCw,
 } from 'lucide-react';
 import type { Job, JobFilterStatus, OverviewMetrics } from '../../types/job';
@@ -41,12 +41,12 @@ const CategoryBreakdownChart = React.lazy(() =>
 );
 
 const overviewWidgetIds = [
+  'application-pipeline',
   'tracked-opportunities',
   'high-fit-opportunities',
   'pipeline-progress',
   'saved-jobs',
   'category-breakdown',
-  'application-pipeline',
   'relevance-distribution',
   'skills-radar',
 ] as const;
@@ -205,7 +205,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
       case 'saved-jobs':
         return (
           <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('status.saved') })} className="sm:col-span-2 md:col-span-3">
-            <StatCard title={t('status.saved')} value={counts.saved || 0} icon={Heart} onClick={() => handleSelectStatus('saved')} />
+            <StatCard title={t('status.saved')} value={counts.saved || 0} icon={Star} onClick={() => handleSelectStatus('saved')} />
           </SortableWidget>
         );
 

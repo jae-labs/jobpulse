@@ -60,14 +60,16 @@
     "new": "New",
     "applied": "Applied",
     "interviewing": "Interview",
-    "saved": "Saved",
-    "not_interested": "Not Interested",
+    "rejected": "Rejected",
+    "saved": "Favorite",
+    "not_interested": "Archived",
     "short": {
       "new": "New",
       "applied": "Applied",
       "interviewing": "Interview",
-      "saved": "Saved",
-      "not_interested": "Not Int."
+      "rejected": "Rejected",
+      "saved": "Favorite",
+      "not_interested": "Archived"
     }
   },
   "shortcuts": {
@@ -94,9 +96,12 @@
     "categoryBreakdown": "Domains"
   },
   "jobs": {
-    "saveJob": "Save job",
-    "unsaveJob": "Remove from Saved",
-    "saveJobError": "Could not update Saved. Try again.",
+    "saveJob": "Favorite job",
+    "unsaveJob": "Remove from Favorites",
+    "saveJobError": "Could not update Favorite. Try again.",
+    "ignoreJob": "Archive job",
+    "unignoreJob": "Restore job",
+    "statusUpdateError": "Could not update status. Try again.",
     "unassessed": "Unassessed",
     "salary50k": "€50k+",
     "salary60k": "€60k+",

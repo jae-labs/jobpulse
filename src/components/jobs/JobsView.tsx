@@ -69,7 +69,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   isUpdating = false,
   searchQuery: controlledSearch,
   onSearchChange: setControlledSearch,
-  initialStatusFilter = 'all',
+  initialStatusFilter = 'new',
   initialDomainFilter = 'all',
   initialMinMatch = 0,
   onFilterReset,
@@ -180,6 +180,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     for (const s of STATUS_LIST) {
       counts[s] = 0;
     }
+    counts['not_interested'] = 0;
     for (let i = 0; i < sourceJobs.length; i++) {
       const st = sourceJobs[i].status;
       if (st in counts) {
@@ -618,15 +619,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
             <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
-              <Pill
-                label={t('common.all')}
-                count={formatNumber(statusCounts.all || 0, i18n.language)}
-                active={statusFilter === 'all'}
-                tone="neutral"
-                onClick={() => setStatusFilter('all')}
-              />
-
-              {[...STATUS_LIST, 'saved' as const].map((status) => {
+              {[...STATUS_LIST, 'not_interested' as const, 'saved' as const].map((status) => {
                 const active = statusFilter === status;
                 return (
                   <Pill

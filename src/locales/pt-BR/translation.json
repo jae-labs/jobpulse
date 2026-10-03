@@ -60,14 +60,16 @@
     "new": "Novo",
     "applied": "Candidatou-se",
     "interviewing": "Entrevista",
-    "saved": "Salvo",
-    "not_interested": "Não Interessado",
+    "rejected": "Rejeitado",
+    "saved": "Favorito",
+    "not_interested": "Arquivado",
     "short": {
       "new": "Novo",
       "applied": "Aplicado",
       "interviewing": "Entrevista",
-      "saved": "Salvo",
-      "not_interested": "Não Int."
+      "rejected": "Rejeitado",
+      "saved": "Favorito",
+      "not_interested": "Arquivado"
     }
   },
   "shortcuts": {
@@ -94,9 +96,12 @@
     "categoryBreakdown": "Domínios"
   },
   "jobs": {
-    "saveJob": "Salvar vaga",
-    "unsaveJob": "Remover de Salvos",
-    "saveJobError": "Não foi possível atualizar Salvos. Tente novamente.",
+    "saveJob": "Favoritar vaga",
+    "unsaveJob": "Remover dos Favoritos",
+    "saveJobError": "Não foi possível atualizar Favoritos. Tente novamente.",
+    "ignoreJob": "Arquivar vaga",
+    "unignoreJob": "Restaurar vaga",
+    "statusUpdateError": "Não foi possível atualizar o status. Tente novamente.",
     "unassessed": "Não avaliada",
     "salary50k": "€50k+",
     "salary60k": "€60k+",

@@ -5,6 +5,7 @@ export const statusPillTone = {
   new: 'data-1',
   applied: 'data-2',
   interviewing: 'data-3',
-  saved: 'data-4',
+  saved: 'warning',
+  rejected: 'negative',
   not_interested: 'muted',
 } as const satisfies Record<JobFilterStatus, PillTone>;

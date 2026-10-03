@@ -80,7 +80,7 @@ describe('JobsView Search Input', () => {
     const snapshot: Job = { id: 1, title: 'Synthetic job', company: 'Synthetic company', status: 'applied', is_saved: false, relevance: 0, location: 'Dublin', employment_type: 'Full time', salary_text: null, matched_skills: [], url: 'https://example.invalid', source: 'Synthetic', last_seen_at: '2026-01-01' };
     linked.data = { ...snapshot, is_saved: true };
     renderJobsView(['/opportunities'], snapshot);
-    expect(screen.getByRole('button', { name: 'Remove from Saved' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Remove from Favorites' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('switches to map without displaying the loaded list count and restores list mode', async () => {

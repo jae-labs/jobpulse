@@ -15,7 +15,8 @@
   --jp-color-status-new: var(--ds-color-data-1);
   --jp-color-status-applied: var(--ds-color-data-2);
   --jp-color-status-interviewing: var(--ds-color-data-3);
-  --jp-color-status-saved: var(--ds-color-data-4);
+  --jp-color-status-saved: #eab308;
+  --jp-color-status-rejected: var(--ds-color-negative);
   --jp-color-status-muted: var(--ds-color-text-muted);
 }
 
@@ -25,6 +26,7 @@
   --color-status-applied: var(--jp-color-status-applied);
   --color-status-interviewing: var(--jp-color-status-interviewing);
   --color-status-saved: var(--jp-color-status-saved);
+  --color-status-rejected: var(--jp-color-status-rejected);
   --color-status-muted: var(--jp-color-status-muted);
 }
 

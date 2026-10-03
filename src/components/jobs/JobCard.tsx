@@ -4,6 +4,7 @@ import { ChevronRight, MapPin, Banknote, Building2 } from 'lucide-react';
 import type { Job } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import SavedJobButton from './SavedJobButton';
+import IgnoredJobButton from './IgnoredJobButton';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -112,7 +113,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         </div>
       </button>
       </Tooltip>
-      <div className="absolute right-2 top-2"><SavedJobButton job={job} userId={userId} /></div>
+      <div className="absolute right-2 top-2 flex flex-col gap-1"><SavedJobButton job={job} userId={userId} /><IgnoredJobButton job={job} userId={userId} /></div>
       </div>
     );
   },
