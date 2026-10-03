@@ -8,7 +8,7 @@ import {
 export const dashboardNavigation = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '/overview' },
   { id: 'jobs', label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
-  { id: 'sources', label: 'Data Sources', icon: Radio, path: '/datasources' },
+  { id: 'sources', label: 'Data Sources', icon: Radio, path: '/sources' },
   { id: 'profile', label: 'Profile', icon: UserCheck, path: '/profile' },
 ] as const;
 

@@ -39,6 +39,13 @@ vi.mock('./supabase', () => {
 });
 
 describe('profile scoring synchronization', () => {
+  it('rejects a stale initiating account before writing the profile', async () => {
+    vi.mocked(supabase!.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: 'account-b' } } as unknown as Session }, error: null,
+    });
+    expect(await saveUserProfile(DEFAULT_PROFILE, 'account-a')).toEqual({ success: false, error: 'Active account changed' });
+    expect(supabase!.from).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(supabase!.auth.getSession).mockResolvedValue({
@@ -98,7 +105,7 @@ describe('profile scoring synchronization', () => {
 
     expect(await saveUserProfile(profile)).toEqual({ success: true });
     expect(embedProfile).toHaveBeenCalledWith(profile);
-    expect(rpc).toHaveBeenCalledWith('save_profile_embedding', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('save_profile_embedding_guarded', expect.objectContaining({
       p_content_hash: 'a'.repeat(64), p_model_version: 'all-MiniLM-L6-v2:384:v1',
     }));
     expect(rpc).not.toHaveBeenCalledWith('rescore_user', expect.anything());
@@ -113,10 +120,10 @@ describe('profile scoring synchronization', () => {
     (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
 
     expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
-      success: false, error: 'Active account changed during inference',
+      success: true, matchingPending: true,
     });
     expect(embedProfile).toHaveBeenCalled();
-    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding_guarded', expect.anything());
     expect(rpc).not.toHaveBeenCalledWith('rescore_user', expect.anything());
   });
 
@@ -130,9 +137,9 @@ describe('profile scoring synchronization', () => {
     (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
 
     expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
-      success: false, error: 'Profile changed during inference',
+      success: true, matchingPending: true,
     });
-    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding_guarded', expect.anything());
   });
 
   it('rechecks identity after the asynchronous profile verification', async () => {
@@ -148,9 +155,9 @@ describe('profile scoring synchronization', () => {
     (supabase as unknown as { rpc: typeof rpc }).rpc = rpc;
 
     expect(await saveUserProfile(DEFAULT_PROFILE)).toEqual({
-      success: false, error: 'Active account changed during inference',
+      success: true, matchingPending: true,
     });
-    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding', expect.anything());
+    expect(rpc).not.toHaveBeenCalledWith('save_profile_embedding_guarded', expect.anything());
   });
 });
 

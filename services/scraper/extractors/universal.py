@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from engine.description_quality import has_description_body
@@ -15,7 +16,7 @@ from extractors.whatjobs import extract_whatjobs_job_spec
 from extractors.workday_cxs import extract_workday_cxs_job_spec
 
 
-def extract_universal_job_spec(url: str, company: str, title: str, page: Any = None) -> dict[str, str]:
+def extract_universal_job_spec(url: str, company: str, title: str, page: Any = None) -> Mapping[str, str | None]:
     """
     Intelligently route URL to the most suitable extractor:
     - PDF candidate booklets

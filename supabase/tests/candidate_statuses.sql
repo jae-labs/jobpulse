@@ -1,3 +1,4 @@
+-- @tenant-fixtures
 -- Tracking belongs to a candidate, never the shared vacancy.
 \set ON_ERROR_STOP on
 BEGIN;
@@ -14,19 +15,19 @@ BEGIN
   END IF;
 END;
 $$;
-DELETE FROM public.user_job_statuses WHERE job_id=102 AND user_id='11111111-1111-1111-1111-111111111111';
-UPDATE public.user_job_statuses SET status='interviewing' WHERE job_id=101 AND user_id='11111111-1111-1111-1111-111111111111';
+DELETE FROM public.user_job_statuses WHERE job_id=-910002 AND user_id='a1111111-1111-4111-8111-111111111111';
+UPDATE public.user_job_statuses SET status='interviewing' WHERE job_id=-910001 AND user_id='a1111111-1111-4111-8111-111111111111';
 SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"admin@example.com"}',true);
+SELECT set_config('request.jwt.claims','{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated","email":"tenant-a@example.invalid"}',true);
 DO $$
 DECLARE item jsonb; metrics jsonb;
 BEGIN
-  SELECT value INTO item FROM jsonb_array_elements(public.get_jobs_page(p_status=>'interviewing',p_limit=>100)->'items') WHERE value->>'id'='101';
+  SELECT value INTO item FROM jsonb_array_elements(public.get_jobs_page(p_status=>'interviewing',p_search=>'TenantGuardVacancy',p_limit=>100)->'items') WHERE value->>'id'='-910001';
   IF item IS NULL OR item->>'status'<>'interviewing' THEN RAISE EXCEPTION 'Candidate status missing: %',item; END IF;
-  SELECT value INTO item FROM jsonb_array_elements(public.get_jobs_page(p_status=>'new',p_limit=>100)->'items') WHERE value->>'id'='102';
+  SELECT value INTO item FROM jsonb_array_elements(public.get_jobs_page(p_status=>'new',p_search=>'TenantGuardVacancy',p_limit=>100)->'items') WHERE value->>'id'='-910002';
   IF item IS NULL OR item->>'status'<>'new' THEN RAISE EXCEPTION 'Missing candidate status must default to new: %',item; END IF;
   metrics:=public.get_overview_metrics();
-  IF (metrics->'counts'->>'interviewing')::integer<>2 THEN RAISE EXCEPTION 'Candidate overview counts changed: %',metrics; END IF;
+  IF (metrics->'counts'->>'interviewing')::integer<>1 THEN RAISE EXCEPTION 'Candidate overview counts changed: %',metrics; END IF;
 END;
 $$;
 RESET ROLE;

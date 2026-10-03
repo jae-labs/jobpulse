@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 from pipeline.company_research import BLOCKED_NAMES
 
 
@@ -50,7 +51,7 @@ def main() -> None:
         )
         if cursor is not None:
             query = query.gt("id", cursor)
-        rows = retry_supabase(query.execute).data or []
+        rows = response_records(retry_supabase(query.execute).data)
         employers.extend(rows)
         if len(rows) < 500:
             break
@@ -68,7 +69,7 @@ def main() -> None:
             )
             if cursor is not None:
                 query = query.gt("id", cursor)
-            rows = retry_supabase(query.execute).data or []
+            rows = response_records(retry_supabase(query.execute).data)
             jobs.extend(rows)
             if len(rows) < 500:
                 break

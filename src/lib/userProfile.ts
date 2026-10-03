@@ -1,18 +1,15 @@
-import { getCurrentUserId } from "./userSession";
+import { getCurrentUserId, requireActiveUser } from "./userSession";
 import { supabase } from "./supabase";
 import { reportError } from "./logger";
 import type {
   Profile,
   UserDocumentMetadata,
-  ScoringRules,
 } from "../types/job";
 import { DEFAULT_PROFILE } from "./defaultProfile";
-import { DEFAULT_SCORING_RULES } from "./scoringRules";
+import { resolveScoringRules } from "./scoringRules";
 import { validateDocumentFile, validateAvatarFile } from "./fileValidation";
 import type { Json, TablesInsert } from "../types/database.types";
 import { embedProfile, profileContentHash, PROFILE_EMBEDDING_MODEL_VERSION } from './browserEmbedding';
-import { queryClient } from './queryClient';
-import { queryKeys } from './queryKeys';
 
 const DOCUMENTS_BUCKET = "user-documents";
 const AVATARS_BUCKET = "avatars";
@@ -20,6 +17,7 @@ const AVATARS_BUCKET = "avatars";
 /** Uploads user avatar to private storage. */
 export async function saveUserAvatar(
   file: File,
+  expectedUserId?: string | null,
 ): Promise<{ path: string } | { error: string }> {
   if (!supabase) return { error: "Database unavailable" };
 
@@ -33,7 +31,7 @@ export async function saveUserAvatar(
   }
 
   try {
-    const storagePath = `${await getCurrentUserId()}/avatar`;
+    const storagePath = `${await requireActiveUser(expectedUserId)}/avatar`;
     const { error: uploadError } = await supabase.storage
       .from(AVATARS_BUCKET)
       .upload(storagePath, file, { contentType: file.type, upsert: true });
@@ -97,12 +95,7 @@ export async function loadUserProfile(): Promise<Profile> {
         : [],
       summary: data.summary || "",
       keywords: Array.isArray(data.keywords) ? data.keywords : [],
-      scoring_rules:
-        data.scoring_rules &&
-        typeof data.scoring_rules === 'object' &&
-        Object.keys(data.scoring_rules).length > 0
-          ? (data.scoring_rules as unknown as ScoringRules)
-          : DEFAULT_SCORING_RULES,
+      scoring_rules: resolveScoringRules(data.scoring_rules),
       avatar_url: data.avatar_url || "",
     };
     return profile;
@@ -134,7 +127,14 @@ async function ensureProfileScoringEmbedding(profile: Profile, userId: string): 
   const currentProfile = await loadUserProfile();
   if (await profileContentHash(currentProfile) !== contentHash) throw new Error('Profile changed during inference');
   if (await getCurrentUserId() !== userId) throw new Error('Active account changed during inference');
-  const { error } = await supabase.rpc('save_profile_embedding', {
+  const { error } = await supabase.rpc('save_profile_embedding_guarded', {
+    p_expected_user_id: userId,
+    p_profile_snapshot: {
+      headline: profile.headline || '', current_role: profile.current_role || '',
+      summary: profile.summary || '', keywords: profile.keywords ?? [],
+      tools_software: profile.tools_software ?? [], languages: profile.languages ?? [],
+      certifications: profile.certifications || '', education: profile.education || '',
+    },
     p_embedding: `[${embedding.join(',')}]`,
     p_content_hash: contentHash,
     p_model_version: PROFILE_EMBEDDING_MODEL_VERSION,
@@ -143,20 +143,19 @@ async function ensureProfileScoringEmbedding(profile: Profile, userId: string): 
   // The embedding-write trigger enqueues durable work in the same transaction.
 }
 
-function invalidateScoringQueries(userId: string): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(userId) });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(userId) });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(userId) });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.scoringPreviewJobs(userId) });
-  void queryClient.invalidateQueries({ predicate: q =>
-    (q.queryKey[0] === 'job-by-id' || q.queryKey[0] === 'job-detail') && q.queryKey[2] === userId });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.scoringState(userId) });
+/** Recover an interrupted setup from the persisted profile, bound to its owner. */
+export async function resumeProfileMatching(userId: string): Promise<void> {
+  await requireActiveUser(userId);
+  const profile = await loadUserProfile();
+  await requireActiveUser(userId);
+  await ensureProfileScoringEmbedding(profile, userId);
 }
 
 /** Saves or updates a user profile in Supabase. */
 export async function saveUserProfile(
   profile: Profile,
-): Promise<{ success: boolean; error?: string }> {
+  expectedUserId?: string | null,
+): Promise<{ success: boolean; error?: string; matchingPending?: boolean }> {
   if (!supabase) {
     return { success: false, error: "Database connection not initialized." };
   }
@@ -167,7 +166,7 @@ export async function saveUserProfile(
       : profile.name || "";
 
   try {
-    const userId = await getCurrentUserId();
+    const userId = await requireActiveUser(expectedUserId);
     const payload: TablesInsert<"user_profiles"> = {
       user_id: userId,
       name: fullName,
@@ -208,12 +207,16 @@ export async function saveUserProfile(
       return { success: false, error: error.message };
     }
 
-    void queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.scoringState(userId) });
     // PostgreSQL owns matching-input comparisons and atomic enqueueing.
     // An explicit rescore RPC is needed only to retry already-failed work.
-    await ensureProfileScoringEmbedding(profile, userId);
-    invalidateScoringQueries(userId);
+    try {
+      await ensureProfileScoringEmbedding(profile, userId);
+    } catch {
+      // Persistence already succeeded. Durable awaiting_embedding state survives
+      // interruption and must not make the user believe their edits were lost.
+      reportError(new Error('Profile matching setup interrupted'));
+      return { success: true, matchingPending: true };
+    }
 
     return { success: true };
   } catch (err: unknown) {
@@ -297,7 +300,7 @@ export const MAX_DOCUMENTS_PER_TYPE = 10;
 type DocumentSaveResult = { success: boolean; error?: string };
 export type DocumentUpload = { file: File; description?: string };
 
-async function saveDocument(table: DocumentTable, file: File, description: string): Promise<DocumentSaveResult> {
+async function saveDocument(table: DocumentTable, file: File, description: string, expectedUserId?: string | null): Promise<DocumentSaveResult> {
   if (!supabase) return { success: false, error: "Database unavailable" };
   if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
     return { success: false, error: "File exceeds the 10MB size limit." };
@@ -309,7 +312,7 @@ async function saveDocument(table: DocumentTable, file: File, description: strin
   const isCv = table === "user_cvs";
   const label = isCv ? "CV" : "Cover letter";
   try {
-    const userId = await getCurrentUserId();
+    const userId = await requireActiveUser(expectedUserId);
     const { count, error: countError } = await supabase.from(table)
       .select("id", { count: "exact", head: true }).eq("user_id", userId);
     if (countError) return { success: false, error: countError.message };
@@ -350,15 +353,15 @@ async function saveDocument(table: DocumentTable, file: File, description: strin
 }
 
 /** Upload metadata comes from the actual file; ownership comes from the session. */
-export function saveUserCV(file: File, description = ""): Promise<DocumentSaveResult> {
-  return saveDocument("user_cvs", file, description);
+export function saveUserCV(file: File, description = "", expectedUserId?: string | null): Promise<DocumentSaveResult> {
+  return saveDocument("user_cvs", file, description, expectedUserId);
 }
 
-async function deleteDocument(table: DocumentTable, documentId: number): Promise<boolean> {
+async function deleteDocument(table: DocumentTable, documentId: number, expectedUserId?: string | null): Promise<boolean> {
   if (!supabase || !Number.isSafeInteger(documentId) || documentId <= 0) return false;
 
   try {
-    const userId = await getCurrentUserId();
+    const userId = await requireActiveUser(expectedUserId);
     const { data: row, error: lookupError } = await supabase
       .from(table)
       .select("storage_path")
@@ -381,8 +384,8 @@ async function deleteDocument(table: DocumentTable, documentId: number): Promise
 }
 
 /** Deletes the authenticated user's specific CV and its storage object. */
-export function deleteUserCV(documentId: number): Promise<boolean> {
-  return deleteDocument("user_cvs", documentId);
+export function deleteUserCV(documentId: number, expectedUserId?: string | null): Promise<boolean> {
+  return deleteDocument("user_cvs", documentId, expectedUserId);
 }
 
 /** Generates a signed download URL for the authenticated user's specific cover letter. */
@@ -393,11 +396,11 @@ export function getUserCoverLetterSignedUrl(
   return getDocumentSignedUrl("user_cover_letters", documentId, expiresInSeconds, "Cover letter not found");
 }
 
-export function saveUserCoverLetter(file: File, description = ""): Promise<DocumentSaveResult> {
-  return saveDocument("user_cover_letters", file, description);
+export function saveUserCoverLetter(file: File, description = "", expectedUserId?: string | null): Promise<DocumentSaveResult> {
+  return saveDocument("user_cover_letters", file, description, expectedUserId);
 }
 
 /** Deletes the authenticated user's specific cover letter and its storage object. */
-export function deleteUserCoverLetter(documentId: number): Promise<boolean> {
-  return deleteDocument("user_cover_letters", documentId);
+export function deleteUserCoverLetter(documentId: number, expectedUserId?: string | null): Promise<boolean> {
+  return deleteDocument("user_cover_letters", documentId, expectedUserId);
 }

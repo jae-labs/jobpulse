@@ -9,7 +9,7 @@ from engine.salary import extract_salary_from_context
 from engine.text_cleaner import clean_html_description, strip_cookie_boilerplate
 
 
-def extract_playwright_job_spec(url: str, title: str, company: str, page: Any = None) -> dict[str, str]:
+def extract_playwright_job_spec(url: str, title: str, company: str, page: Any = None) -> dict[str, str | None]:
     """Render dynamic JavaScript/SPA job pages and extract job spec text from target containers."""
     try:
         from playwright.sync_api import sync_playwright

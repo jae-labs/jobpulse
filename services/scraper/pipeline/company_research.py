@@ -10,11 +10,16 @@ import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import httpx
 
 from pipeline.stored_employer_evidence import company_identity_key
+
+
+class ResearchProvider(Protocol):
+    def get(self, url: str, params: dict[str, str]) -> dict[str, Any]: ...
+
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 GEOAPIFY_API = "https://api.geoapify.com/v1/geocode/search"

@@ -39,7 +39,7 @@ class _JobBodyParser(HTMLParser):
             self.parts = []
             self.dedicated = is_body
         if self.capture_depth is not None:
-            self.parts.append(self.get_starttag_text())
+            self.parts.append(self.get_starttag_text() or "")
         if tag not in {
             "area",
             "base",

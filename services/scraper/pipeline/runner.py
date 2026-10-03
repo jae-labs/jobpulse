@@ -8,6 +8,7 @@ from typing import Any
 
 from config.loader import get_employers_tuples
 from database.repository import (
+    IngestionIncompleteError,
     deduplicate_database_jobs,
     get_employer,
     update_employer_status,
@@ -99,7 +100,13 @@ def _scrape(
                 update_source_status(name, "Unavailable", err_detail)
                 update_employer_status(name, "Unavailable", opportunities_found=0, discovered_jobs_url=url)
                 log_scraper_event("ERROR", name, f"Error ({err_detail})", url, method=method)
-                return {"added": 0, "messages": [f"{name}: error ({err_detail})"], "scraped_employers": 1}
+                return {
+                    "added": error.persisted if isinstance(error, IngestionIncompleteError) else 0,
+                    "status": "incomplete",
+                    "failed_sources": 1,
+                    "messages": [f"{name}: error ({err_detail})"],
+                    "scraped_employers": 1,
+                }
 
         # 2. Check in loaded watchlist configuration
         watchlist = get_employers_tuples()
@@ -158,6 +165,9 @@ def _scrape(
                 else:
                     log_scraper_event("SUCCESS", name, clean_msg, url, method=method)
             except Exception as error:
+                persisted = error.persisted if isinstance(error, IngestionIncompleteError) else 0
+                added += persisted
+                outcomes.append({"employer": name, "outcome": "failed", "added": persisted})
                 err_detail = format_error_message(error)
                 update_source_status(name, "Unavailable", err_detail)
                 update_employer_status(name, "Unavailable", opportunities_found=0, discovered_jobs_url=url)
@@ -196,6 +206,8 @@ def _scrape(
 
     return {
         "added": added,
+        "status": "incomplete" if any(outcome.get("outcome") == "failed" for outcome in outcomes) else "complete",
+        "failed_sources": sum(outcome.get("outcome") == "failed" for outcome in outcomes),
         "messages": messages,
         "outcomes": outcomes,
         "scraped_employers": scraped_employers_count,

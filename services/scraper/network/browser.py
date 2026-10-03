@@ -10,6 +10,7 @@ try:
 
     HAS_PLAYWRIGHT = True
 except ImportError:
+    sync_playwright = None
     HAS_PLAYWRIGHT = False
 
 
@@ -78,7 +79,7 @@ def fetch_via_browser(url: str, timeout: int = 25000, wait_for_idle: bool = Fals
 
 def with_browser(action: Callable[[Any], Any]) -> Any:
     """Execute an action within a managed, stealth-configured Playwright browser session."""
-    if not HAS_PLAYWRIGHT:
+    if sync_playwright is None:
         raise RuntimeError("Playwright is not installed or available in this environment.")
 
     with sync_playwright() as playwright:

@@ -63,8 +63,8 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab: DashboardTab =
-    dashboardNavigation.find((item) => item.path === location.pathname)?.id ??
-    (location.pathname === '/jobs' ? 'jobs' : 'overview');
+    dashboardNavigation.find((item) => item.path === location.pathname)?.id ?? 'overview';
+
 
   useEffect(() => {
     document.title = `${getNavLabel(t, activeTab)} | JobPulse`;
@@ -143,6 +143,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const {
     data: sources = [],
     isLoading: isSourcesLoading,
+    error: sourcesQueryError,
   } = useSourcesQuery(isAuthorized && isSourcesNeeded);
 
   const {
@@ -154,7 +155,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
   const updateJobStatusMutation = useUpdateJobStatusMutation(userId);
   const saveProfileMutation = useSaveProfileMutation(userId);
-  const { mutateAsync: deleteAccount } = useDeleteAccountMutation();
+  const { mutateAsync: deleteAccount } = useDeleteAccountMutation(userId);
 
   const [selectedJobState, setSelectedJobState] = useState<Job | null>(null);
   const selectedJob = selectedJobState;
@@ -166,13 +167,13 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
     ? isOverviewLoading && !overviewMetrics
     : isSourcesNeeded && isSourcesLoading;
 
-  const activeQueryError = overviewQueryError;
+  const activeQueryError = isSourcesNeeded ? sourcesQueryError : isOverviewNeeded ? overviewQueryError : null;
   const dbError =
     !isDbErrorDismissed &&
     (customDbError ||
       (activeQueryError
         ? t('common.dbConnectionDetail', {
-            message: activeQueryError.message || t('common.networkError'),
+            message: t('common.networkError'),
           })
         : null));
 
@@ -196,13 +197,11 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
   const updateStatus = useCallback(
     async (job: Job, status: JobStatus) => {
-      setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status } : prev));
-
       try {
         await updateJobStatusMutation.mutateAsync({ job, status });
-      } catch (err: unknown) {
-        setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status: job.status } : prev));
-        setNotice(t('common.statusSaveFailed', { message: err instanceof Error ? err.message : t('common.networkError') }));
+        setSelectedJobState((prev) => (prev && prev.id === job.id ? { ...prev, status } : prev));
+      } catch {
+        setNotice(t('common.statusSaveFailed', { message: t('common.networkError') }));
       }
     },
     [t, updateJobStatusMutation]
@@ -322,7 +321,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
         <main
           ref={workspaceRef}
-          className={`min-w-0 flex-1 overflow-x-hidden ${
+          className={`min-w-0 min-h-0 flex-1 overflow-x-hidden ${
             activeTab === 'jobs'
               ? 'flex flex-col overflow-hidden p-3 sm:p-4 lg:p-6 mobile-navigation-clearance lg:pb-6'
               : 'overflow-y-auto p-3 sm:p-4 lg:p-6 mobile-navigation-clearance lg:pb-6'

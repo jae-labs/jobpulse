@@ -183,10 +183,13 @@ def main() -> None:
             if len(failures) > 10:
                 print(f"    - ... and {len(failures) - 10} more.")
 
-    print("\nVacancy facts and job embeddings saved to Supabase.")
-
+    incomplete = result.get("status") == "incomplete"
+    if incomplete:
+        print("\nScraper incomplete: persisted vacancies retained; failed sources require retry.")
+    else:
+        print("\nVacancy facts and job embeddings saved to Supabase.")
     print("\nScraper completed. Exiting.")
-    sys.exit(0)
+    sys.exit(1 if incomplete else 0)
 
 
 if __name__ == "__main__":

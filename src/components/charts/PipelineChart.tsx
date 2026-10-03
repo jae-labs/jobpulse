@@ -51,6 +51,7 @@ const STAGE_CONFIG: Record<
 interface PipelineDataPoint {
   status: JobStatus;
   name: string;
+  fullName?: string;
   count: number;
   avgMatch: number | null;
   fill: string;
@@ -73,7 +74,7 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTool
         className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 cursor-pointer z-50"
         onClick={() => onSelectStatus?.(data.status)}
       >
-        <div className="font-semibold text-ds-text-primary">{label}</div>
+        <div className="font-semibold text-ds-text-primary">{data.fullName || label}</div>
         <div className="flex items-center gap-2 text-ds-text-secondary">
           <span
             className="size-2 rounded-full inline-block shrink-0"
@@ -135,7 +136,8 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
 
       return {
         status,
-        name: t(`status.${status}`),
+        name: t(`status.short.${status}`, { defaultValue: t(`status.${status}`) }),
+        fullName: t(`status.${status}`),
         count,
         avgMatch,
         fill: colorValue,
@@ -144,7 +146,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
   }, [jobs, counts, stageAverages, t]);
 
   const renderCustomTick = (tickProps: { x?: number | string; y?: number | string; payload?: { value?: string } }) => {
-    const { x, y, payload } = tickProps;
+    const { x = 0, y = 0, payload } = tickProps;
     const stage = data.find((d) => d.name === payload?.value);
     return (
       <g transform={`translate(${x},${y})`}>
@@ -154,8 +156,8 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
           dy={14}
           textAnchor="middle"
           fill="var(--ds-color-text-muted)"
-          fontSize={11}
-          className="cursor-pointer hover:fill-ds-text-primary transition-colors select-none font-medium"
+          fontSize={10}
+          className="cursor-pointer hover:fill-ds-text-primary transition-colors select-none font-medium text-[10px] sm:text-xs"
           onClick={(e) => {
             e.stopPropagation();
             if (stage) onSelectStatus?.(stage.status);
@@ -202,6 +204,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
               stroke="var(--ds-color-chart-axis)"
               tick={renderCustomTick}
               tickLine={false}
+              interval={0}
             />
             <YAxis
               allowDecimals={false}
@@ -242,7 +245,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-2 border-t border-ds-border">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-ds-border">
         {data.map((stage) => {
           return (
             <Pill
@@ -252,7 +255,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
               onClick={() => onSelectStatus?.(stage.status)}
             >
               <span className="flex items-center justify-between gap-1.5">
-                <span className="truncate">{stage.name}</span>
+                <span className="truncate">{stage.fullName || stage.name}</span>
                 <span className="shrink-0 font-mono text-[10px] font-semibold opacity-80">{formatNumber(stage.count, i18n.language)}</span>
               </span>
               {stage.avgMatch !== null && (

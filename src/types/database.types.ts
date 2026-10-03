@@ -229,6 +229,7 @@ export type Database = {
           careers_url: string
           description: string | null
           discovered_jobs_url: string | null
+          enriched_at: string | null
           id: number
           last_scraped_at: string | null
           latitude: number | null
@@ -239,6 +240,7 @@ export type Database = {
           opportunities_found: number | null
           priority: number
           sector: string
+          size: string | null
           status: string | null
           website: string | null
         }
@@ -246,6 +248,7 @@ export type Database = {
           careers_url: string
           description?: string | null
           discovered_jobs_url?: string | null
+          enriched_at?: string | null
           id?: number
           last_scraped_at?: string | null
           latitude?: number | null
@@ -256,6 +259,7 @@ export type Database = {
           opportunities_found?: number | null
           priority?: number
           sector: string
+          size?: string | null
           status?: string | null
           website?: string | null
         }
@@ -263,6 +267,7 @@ export type Database = {
           careers_url?: string
           description?: string | null
           discovered_jobs_url?: string | null
+          enriched_at?: string | null
           id?: number
           last_scraped_at?: string | null
           latitude?: number | null
@@ -273,6 +278,7 @@ export type Database = {
           opportunities_found?: number | null
           priority?: number
           sector?: string
+          size?: string | null
           status?: string | null
           website?: string | null
         }
@@ -805,6 +811,16 @@ export type Database = {
           p_content_hash: string
           p_embedding: string
           p_model_version: string
+        }
+        Returns: undefined
+      }
+      save_profile_embedding_guarded: {
+        Args: {
+          p_content_hash: string
+          p_embedding: string
+          p_expected_user_id: string
+          p_model_version: string
+          p_profile_snapshot: Json
         }
         Returns: undefined
       }

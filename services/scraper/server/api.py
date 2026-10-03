@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import re
+import threading
 import time
 import urllib.parse
 from datetime import datetime
@@ -14,14 +15,18 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
+from postgrest.types import CountMethod
+
 from config.loader import get_employers_tuples
 from database.client import get_supabase, utc_now
+from database.records import response_records
 from pipeline.runner import synchronize
 
 GLOBAL_DATA_VERSION = int(time.time() * 1000)
 ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
 MAX_PAGE_SIZE = 100
 MAX_REQUEST_BYTES = 64 * 1024
+SYNC_LOCK = threading.Lock()
 
 
 class ApiHandler(BaseHTTPRequestHandler):
@@ -177,7 +182,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     pass
 
             res = query.execute()
-            self.send_json(res.data or [])
+            self.send_json(response_records(res.data))
             return
 
         if path.startswith("/api/jobs/"):
@@ -195,16 +200,16 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if path == "/api/sources":
             res = supabase.table("sources").select("*").order("id").execute()
-            self.send_json(res.data or [])
+            self.send_json(response_records(res.data))
             return
 
         if path == "/api/employers":
             res = supabase.table("employers").select("*").order("priority", desc=True).order("name").execute()
-            self.send_json(res.data or [])
+            self.send_json(response_records(res.data))
             return
 
         if path == "/api/dashboard":
-            res = supabase.table("jobs").select("id", count="exact", head=True).execute()
+            res = supabase.table("jobs").select("id", count=CountMethod.exact, head=True).execute()
             employers_count = len(get_employers_tuples())
             self.send_json(
                 {
@@ -237,6 +242,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             ):
                 self.send_json({"error": "Invalid sync parameters"}, HTTPStatus.BAD_REQUEST)
                 return
+            if not SYNC_LOCK.acquire(blocking=False):
+                self.send_json({"error": "A sync is already running. Retry after it completes."}, HTTPStatus.CONFLICT)
+                return
             try:
                 sync_result = synchronize(employer=employer, limit=limit, full=full)
             except RuntimeError:
@@ -247,8 +255,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
                 return
+            finally:
+                SYNC_LOCK.release()
             GLOBAL_DATA_VERSION = int(time.time() * 1000)
-            self.send_json(sync_result)
+            status = HTTPStatus.OK
+            if sync_result.get("status") == "incomplete":
+                status = HTTPStatus.MULTI_STATUS if sync_result.get("added", 0) else HTTPStatus.SERVICE_UNAVAILABLE
+            self.send_json(sync_result, status)
         else:
             self.send_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
 

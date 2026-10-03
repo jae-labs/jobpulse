@@ -44,6 +44,12 @@ if (!files.some((name) => name.startsWith('tenant_'))) throw new Error('Tenant r
 let failures = 0;
 for (const file of files) {
   let input = readFileSync(`${testDir}/${file}`, 'utf8');
+  if (input.includes('-- @tenant-fixtures') && !file.startsWith('tenant_')) {
+    const contract = readFileSync(`${testDir}/helpers/tenant_contract.sql`, 'utf8');
+    const fixtures = readFileSync(`${testDir}/helpers/tenant_fixtures.sql`, 'utf8');
+    if (!input.includes('BEGIN;')) throw new Error(`${file} must isolate its fixtures in a transaction`);
+    input = input.replace('BEGIN;', () => `BEGIN;\n${contract}\n${fixtures}`);
+  }
   if (file.startsWith('tenant_')) {
     const contract = readFileSync(`${testDir}/helpers/tenant_contract.sql`, 'utf8');
     const fixtures = file === 'tenant_catalog.sql' ? '' : readFileSync(`${testDir}/helpers/tenant_fixtures.sql`, 'utf8');

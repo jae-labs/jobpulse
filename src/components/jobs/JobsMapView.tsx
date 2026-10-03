@@ -55,7 +55,7 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
               type="button"
               aria-pressed={!officeLayer}
               onClick={() => { setOfficeLayer(false); setSelectedPin(null); }}
-              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${!officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-background'}`}
+              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${!officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
             >
               <MapPin className="size-4" strokeWidth={!officeLayer ? 2.5 : 2} />
               <span className="sr-only">{t('jobs.mapPostingLayer')}</span>
@@ -66,7 +66,7 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
               type="button"
               aria-pressed={officeLayer}
               onClick={() => { setOfficeLayer(true); setSelectedPin(null); }}
-              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-background'}`}
+              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
             >
               <Building2 className="size-4" strokeWidth={officeLayer ? 2.5 : 2} />
               <span className="sr-only">{t('jobs.mapOfficeLayer')}</span>

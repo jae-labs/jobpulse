@@ -148,7 +148,9 @@ def test_tail_chunk_changes_semantic_vector(monkeypatch: pytest.MonkeyPatch) -> 
     model = SimpleNamespace(tokenizer=tokenizer, max_seq_length=64, encode=encode)
     monkeypatch.setattr(scoring, "_DOCUMENT_EMB_CACHE", OrderedDict())
     monkeypatch.setattr(scoring, "get_semantic_model", lambda: model)
-    vector = scoring.encode_documents(["introduction " * 200 + "tail_requirement"])[0]
+    vectors = scoring.encode_documents(["introduction " * 200 + "tail_requirement"])
+    assert vectors is not None
+    vector = vectors[0]
     assert vector[1] > 0
     assert sum(value * value for value in vector) == pytest.approx(1.0)
 

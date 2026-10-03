@@ -20,6 +20,7 @@ from supabase import Client
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 from pipeline.company_research import BLOCKED_NAMES, ResearchClient, ResearchError
 from pipeline.employer_lookup import load_evidence_registry
 
@@ -36,7 +37,7 @@ def catalog_employers(client: Client, sources: list[str]) -> dict[int, dict[str,
             query = query.in_("source", sources)
         if cursor is not None:
             query = query.gt("id", cursor)
-        rows = retry_supabase(query.execute).data or []
+        rows = response_records(retry_supabase(query.execute).data)
         for row in rows:
             if row["employer_id"] is not None:
                 item = employers.setdefault(row["employer_id"], {"job_count": 0, "job_sources": []})
@@ -48,7 +49,7 @@ def catalog_employers(client: Client, sources: list[str]) -> dict[int, dict[str,
         cursor = rows[-1]["id"]
     ids = sorted(employers)
     for start in range(0, len(ids), 200):
-        rows = (
+        rows = response_records(
             retry_supabase(
                 lambda start=start: (
                     client.table("employers")
@@ -57,7 +58,6 @@ def catalog_employers(client: Client, sources: list[str]) -> dict[int, dict[str,
                     .execute()
                 )
             ).data
-            or []
         )
         for row in rows:
             employers[row["id"]].update(row)

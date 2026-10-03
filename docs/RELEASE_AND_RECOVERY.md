@@ -9,6 +9,12 @@ Operational checklist for deploying and recovering JobPulse.
   - Run `npm run db:diff` to ensure local migrations match linked production schema.
   - Verify all candidate tables enforce `user_id = auth.uid()` with RLS enabled.
 - **Storage Policies**: Test that avatars and documents can only be accessed by their owning `auth.uid()`.
+  Run `supabase functions serve delete-account` and `npm run db:test:account-deletion`
+  against a local stack. The test creates and cleans up two random synthetic users,
+  verifies forged target denial and foreign-file survival, races avatar uploads with
+  deletion, checks retry cleanup, and verifies that the deleted session loses access.
+  CI runs this alongside the tenant gate. Repeat a controlled equivalent on an
+  explicitly approved hosted test environment before release.
 - **Pre-Release Snapshot**: Run `make backup` before applying schema migrations.
 - **Automated Gate**: Confirm `npm run check` and `npm run db:test:tenancy` pass with zero errors.
   Require the **Tenant Isolation Guardrails** CI status in the `main` ruleset; a red tenant suite blocks release.
@@ -77,7 +83,7 @@ The repository's `main` protection now requires Tenant Isolation Guardrails, Sup
 - Verify provider access and retention for Supabase, Cloudflare and Sentry against
   the one-year ceiling, including historical telemetry/backups and incomplete exports.
 - Keep recovery drill results and a hosted load test with realistic read concurrency
-  alongside scoring. The [local capacity probe](CAPACITY_PROBE_2026_10_01.md) is limited
+  alongside scoring. The [local capacity probe](OPERATIONS.md#historical-local-capacity-evidence) is limited
   SQL evidence; it does not certify 1,000 hosted users or simultaneous profile edits.
 - Before offering password login, verify leaked-password protection or disable the
   unused provider after checking its effects. Recheck hosted settings rather than

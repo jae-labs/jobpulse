@@ -1,3 +1,4 @@
+-- @tenant-fixtures
 -- Regression coverage for statement-scoped CTEs, empty pages and the browser filter/sort contract.
 \set ON_ERROR_STOP on
 BEGIN;
@@ -9,10 +10,14 @@ INSERT INTO public.jobs(id,dedupe_key,title,company,location,description,url,sou
  (-920004,'paging-probe-delta','PagingProbe Delta','Fixture','Hybrid Remote','','https://example.invalid/paging/4','test','€90,000 hourly',90000,90000,'EUR','hourly'),
  (-920005,'paging-probe-epsilon','PagingProbe Epsilon','Fixture','Belfast','','https://example.invalid/paging/5','test',NULL,NULL,NULL,NULL,NULL);
 INSERT INTO public.user_job_evaluations(user_id,job_id,relevance,ai_analysis) VALUES
- ('11111111-1111-1111-1111-111111111111',-920001,10,'{"role_domain":"Zeta"}'),
- ('11111111-1111-1111-1111-111111111111',-920002,90,'{"role_domain":"Alpha"}');
+ ('a1111111-1111-4111-8111-111111111111',-920001,10,'{"role_domain":"Zeta"}'),
+ ('a1111111-1111-4111-8111-111111111111',-920002,90,'{"role_domain":"Alpha"}');
+INSERT INTO public.employers(id,name,sector,careers_url,metadata_source) VALUES
+ (-920001,'Paging Zeta Employer','Zeta','https://example.invalid/zeta','verified'),
+ (-920002,'Paging Alpha Employer','Alpha','https://example.invalid/alpha','verified');
+UPDATE public.jobs SET employer_id=id WHERE id IN (-920001,-920002);
 SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"admin@example.com"}',true);
+SELECT set_config('request.jwt.claims','{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated","email":"tenant-a@example.invalid"}',true);
 DO $$
 DECLARE result jsonb; offset_value integer; seen_ids bigint[]:='{}'; ids bigint[]; salary_filter text; expected bigint[];
 BEGIN

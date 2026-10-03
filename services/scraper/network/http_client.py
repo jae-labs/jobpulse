@@ -14,6 +14,7 @@ try:
 
     HAS_CURL_CFFI = True
 except ImportError:
+    cffi_requests = None
     HAS_CURL_CFFI = False
 
 DEFAULT_USER_AGENT = (
@@ -91,7 +92,7 @@ def fetch_url_with_final(url: str, timeout: int = 12) -> tuple[str, str]:
         with _stdlib_urlopen(req, timeout=timeout, context=ssl_context) as resp:
             return resp.geturl(), _read_and_decompress(resp)
     except HTTPError as e:
-        if e.code in (401, 403) and HAS_CURL_CFFI:
+        if e.code in (401, 403) and cffi_requests is not None:
             try:
                 r = cffi_requests.get(url, impersonate="chrome124", timeout=timeout)
                 if r.status_code == 200 and len(r.text) > 500:

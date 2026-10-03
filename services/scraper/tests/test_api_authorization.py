@@ -1,9 +1,9 @@
 """The scraper's service-role API must protect candidate data."""
 
 from http import HTTPStatus
-from http.client import HTTPConnection
+from http.client import HTTPConnection, HTTPMessage
 from http.server import ThreadingHTTPServer
-from threading import Thread
+from threading import Event, Thread
 from unittest.mock import Mock
 
 import pytest
@@ -42,6 +42,40 @@ def request_api(address, method, path, headers):
         return response.status, dict(response.getheaders())
     finally:
         connection.close()
+
+
+def test_concurrent_sync_is_rejected_and_next_sync_can_run(api_server):
+    address, sync, _ = api_server
+    started, release = Event(), Event()
+
+    def blocking_sync(**kwargs):
+        started.set()
+        assert release.wait(timeout=2)
+        return {"synced": True}
+
+    sync.side_effect = blocking_sync
+    first = Thread(target=request_api, args=(address, "POST", "/api/sync", {}))
+    first.start()
+    try:
+        assert started.wait(timeout=1)
+        status, _ = request_api(address, "POST", "/api/sync", {})
+        assert status == HTTPStatus.CONFLICT
+        assert sync.call_count == 1
+    finally:
+        release.set()
+        first.join(timeout=2)
+    sync.side_effect = None
+    status, _ = request_api(address, "POST", "/api/sync", {})
+    assert status == HTTPStatus.OK
+    assert sync.call_count == 2
+
+
+@pytest.mark.parametrize("persisted,status", [(0, HTTPStatus.SERVICE_UNAVAILABLE), (2, HTTPStatus.MULTI_STATUS)])
+def test_incomplete_ingestion_is_not_reported_as_success(api_server, persisted, status):
+    address, sync, _ = api_server
+    sync.return_value = {"status": "incomplete", "added": persisted, "failed_sources": 1}
+    actual, _ = request_api(address, "POST", "/api/sync", {})
+    assert actual == status
 
 
 @pytest.mark.parametrize(
@@ -126,7 +160,8 @@ def test_valid_token_cannot_bypass_untrusted_origin(api_server, monkeypatch):
 def test_non_loopback_client_requires_token(monkeypatch, token, authorization, allowed):
     monkeypatch.setenv("JOBPULSE_API_TOKEN", token)
     handler = object.__new__(api.ApiHandler)
-    handler.headers = {"Authorization": authorization}
+    handler.headers = HTTPMessage()
+    handler.headers["Authorization"] = authorization
     handler.client_address = ("192.0.2.1", 12345)
     assert handler._authorized() is allowed
 
@@ -136,7 +171,7 @@ def test_profile_read_requires_authorization(monkeypatch) -> None:
     monkeypatch.setattr(api, "get_supabase", Mock(side_effect=AssertionError("database must not be read")))
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/profile"
-    handler.headers = {}
+    handler.headers = HTTPMessage()
     handler.client_address = ("192.0.2.1", 12345)
     handler.send_json = Mock()
 
@@ -151,7 +186,7 @@ def test_catalog_rejects_candidate_domain_filter(monkeypatch) -> None:
     monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/jobs?domain=Engineering"
-    handler.headers = {}
+    handler.headers = HTTPMessage()
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
 
@@ -166,7 +201,7 @@ def test_profile_endpoint_is_not_available(monkeypatch) -> None:
     monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/profile"
-    handler.headers = {}
+    handler.headers = HTTPMessage()
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
     handler.do_GET()
@@ -179,7 +214,7 @@ def test_catalog_rejects_candidate_status_filter(monkeypatch) -> None:
     monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/jobs?status=applied"
-    handler.headers = {}
+    handler.headers = HTTPMessage()
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
     handler.do_GET()

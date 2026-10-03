@@ -26,6 +26,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -34,7 +35,10 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
       }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
     };
 
     if (isOpen) {
@@ -58,10 +62,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   return (
     <div className="relative inline-flex items-center" ref={menuRef}>
       <button
+        ref={triggerRef}
         type="button"
         data-account-settings-trigger
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative size-8 shrink-0 rounded-full border border-ds-border-strong bg-ds-hover text-ds-text-secondary hover:border-ds-border-strong hover:ring-2 hover:ring-ds-accent/30 transition-all cursor-pointer flex items-center justify-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
+        className="relative size-8 shrink-0 rounded-full border border-ds-border-strong bg-ds-hover text-ds-text-secondary hover:border-ds-border-strong hover:ring-2 hover:ring-ds-accent/30 transition-colors ds-motion-control cursor-pointer flex items-center justify-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
         aria-expanded={isOpen}
         aria-controls={menuId}
         title={`${t('nav.accountSettings')} (${displayName})`}
@@ -81,7 +86,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div id={menuId} className="absolute top-full right-0 mt-2 w-56 sm:w-60 rounded-ds-card border border-ds-border bg-ds-panel p-2 shadow-2xl z-50 text-xs text-ds-text-secondary animate-in fade-in-50 zoom-in-95 duration-100 divide-y divide-ds-border">
+        <div id={menuId} className="absolute top-full right-0 mt-2 w-56 sm:w-60 rounded-ds-card border border-ds-border bg-ds-panel p-2 shadow-ds-overlay z-50 text-xs text-ds-text-secondary animate-in fade-in-50 zoom-in-95 duration-100 divide-y divide-ds-border">
           <div className="px-2.5 py-2">
             <p className="font-semibold text-ds-text-primary truncate">{displayName}</p>
             {userEmail && (

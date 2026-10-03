@@ -10,7 +10,7 @@ export default function IgnoredJobButton({ job, userId, className }: { job: Job;
   const ignored = job.status === 'not_interested';
   const label = t(ignored ? 'jobs.unignoreJob' : 'jobs.ignoreJob', { defaultValue: ignored ? 'Restore Job' : 'Archive Job' });
   return <div className="flex flex-col items-end">
-    <Tooltip label={label}>
+    <Tooltip label={label} shortcut="d">
       <Button variant="ghost" size="icon" className={className} aria-label={label} aria-pressed={ignored}
         disabled={!userId || mutation.isPending} onClick={() => mutation.mutate({ job, status: ignored ? 'new' : 'not_interested' })}>
         {ignored ? (

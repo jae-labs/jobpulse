@@ -1,9 +1,9 @@
 import type {
   Job,
-  JobStatus,
   JobsPageResult,
   OverviewMetrics,
 } from "../types/job";
+import { isJobStatus } from '../types/job';
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid RPC object");
@@ -117,6 +117,8 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
     throw new Error("Invalid jobs total");
   const items: Job[] = rawItems.map((raw) => {
     const item = record(raw);
+    const status = item.status === 'interested' ? 'new' : item.status;
+    if (!isJobStatus(status)) throw new Error('Invalid job status');
     if (
       !Number.isSafeInteger(item.id) ||
       !Array.isArray(item.matched_skills) ||
@@ -185,16 +187,7 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
           ? (item.sub_scores as Job["sub_scores"])
           : undefined,
       is_saved: item.is_saved === true || item.status === "interested",
-      status:
-        typeof item.status === "string" &&
-        [
-          "new",
-          "applied",
-          "interviewing",
-          "not_interested",
-        ].includes(item.status)
-          ? (item.status as JobStatus)
-          : "new",
+      status,
       last_seen_at: String(item.last_seen_at ?? new Date().toISOString()),
     };
   });

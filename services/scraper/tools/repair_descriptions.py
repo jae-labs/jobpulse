@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database.client import get_supabase, retry_supabase  # noqa: E402
 from database.embeddings import prepare_embeddings  # noqa: E402
+from database.records import response_records
 from engine.description_quality import has_description_body, needs_description_repair  # noqa: E402
 from engine.text_cleaner import clean_description_text  # noqa: E402
 from extractors.universal import extract_universal_job_spec  # noqa: E402
@@ -30,7 +31,7 @@ def recover_description(job: dict[str, Any]) -> str | None:
     spec = extract_universal_job_spec(job["url"], job["company"], job["title"])
     if spec.get("detail_error") == "source_blocked":
         raise DescriptionSourceBlocked("Posting source denied access")
-    body = clean_description_text(spec.get("description", ""), job["company"], job["title"])
+    body = clean_description_text(spec.get("description") or "", job["company"], job["title"])
     # A source can publish a complete but very short ad. Preserve that exact
     # body in the catalog; embedding preparation still enforces its 100-char gate.
     published_short = spec.get("description_origin") == "published_detail" and has_description_body(
@@ -58,7 +59,7 @@ def _repair_one(client: Any, job: dict[str, Any], apply: bool) -> tuple[str, str
         update = update.is_("description", "null")
     else:
         update = update.eq("description", job["description"])
-    saved = retry_supabase(update.execute).data or []
+    saved = response_records(retry_supabase(update.execute).data)
     return ("updated" if saved else "concurrent_change"), body, saved
 
 
@@ -91,7 +92,7 @@ def repair_descriptions(
             query = client.table("jobs").select("*").gt("id", after_id).order("id").limit(100)
             if source:
                 query = query.eq("source", source)
-            rows = retry_supabase(query.execute).data or []
+            rows = response_records(retry_supabase(query.execute).data)
             if not rows:
                 break
             after_id = rows[-1]["id"]

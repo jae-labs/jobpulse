@@ -1,9 +1,10 @@
+-- @tenant-fixtures
 -- Run after applying migrations to a database with the local development seed.
 \set ON_ERROR_STOP on
 
 BEGIN;
 SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"admin@example.com"}', true);
+SELECT set_config('request.jwt.claims', '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated","email":"tenant-a@example.invalid"}', true);
 
 DO $$
 DECLARE
@@ -19,11 +20,11 @@ BEGIN
 
   total_jobs := (metrics->>'total')::integer;
   SELECT COALESCE(sum(value::integer), 0) INTO pipeline_jobs
-  FROM jsonb_each_text(metrics->'counts');
+  FROM jsonb_each_text(metrics->'counts') WHERE key IN ('new','applied','interviewing','rejected','not_interested');
   IF EXISTS (
     SELECT 1 FROM jsonb_each_text(metrics->'counts') AS stage(status, count)
-    WHERE NOT (metrics->'stage_averages' ? stage.status)
-      OR (metrics->'stage_averages'->>stage.status)::integer NOT BETWEEN 0 AND 100
+    WHERE stage.status IN ('new','applied','interviewing','rejected','not_interested') AND (NOT (metrics->'stage_averages' ? stage.status)
+      OR (metrics->'stage_averages'->>stage.status)::integer NOT BETWEEN 0 AND 100)
   ) THEN
     RAISE EXCEPTION 'Pipeline stages are missing valid average match scores';
   END IF;

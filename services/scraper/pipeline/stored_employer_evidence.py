@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from database.client import retry_supabase
+from database.records import response_records
 
 TRUSTED_SOURCES = {"curated", "watchlist", "verified"}
 PLACEHOLDERS = {"employer", "confidential", "undisclosed", "jobsireland employer", "employer (via whatjobs)"}
@@ -31,7 +32,7 @@ def trusted_sector_index(client: Any) -> dict[str, list[dict[str, Any]]]:
                 query = query.gt("id", cursor)
             return query.execute()
 
-        rows = retry_supabase(fetch_page).data or []
+        rows = response_records(retry_supabase(fetch_page).data)
         for row in rows:
             if (
                 row["metadata_source"] in TRUSTED_SOURCES
@@ -84,7 +85,7 @@ def stored_sector_evidence(
         if len({row["sector"].casefold() for row in candidates}) != 1:
             return None
         donor = candidates[0]
-        current = (
+        current = response_records(
             retry_supabase(
                 lambda: (
                     client.table("employers")
@@ -96,13 +97,12 @@ def stored_sector_evidence(
                     .execute()
                 )
             ).data
-            or []
         )
         if not current:
             return None
         sector, source = donor["sector"], f"database.employers/{donor['id']}"
     elif witness := reviewed.get(name):
-        postings = (
+        postings = response_records(
             retry_supabase(
                 lambda: (
                     client.table("jobs")
@@ -112,7 +112,6 @@ def stored_sector_evidence(
                     .execute()
                 )
             ).data
-            or []
         )
         if len(postings) != 1 or " ".join(postings[0]["company"].split()).casefold() != name:
             return None

@@ -11,6 +11,7 @@ interface UseKeyboardNavigationOptions {
   isDetailFullScreen: boolean;
   setIsDetailFullScreen: React.Dispatch<React.SetStateAction<boolean>>;
   layoutMode: 'split' | 'list' | 'map';
+  setLayoutMode: (mode: 'split' | 'list' | 'map') => void;
   updateUrlParam: (key: string, value: string | null) => void;
   scrollToIndex?: (
     index: number,
@@ -28,6 +29,7 @@ export function useKeyboardNavigation({
   isDetailFullScreen,
   setIsDetailFullScreen,
   layoutMode,
+  setLayoutMode,
   updateUrlParam,
   scrollToIndex,
   cardRefs,
@@ -76,8 +78,12 @@ export function useKeyboardNavigation({
         scrollToIndex,
         cardRefs,
       } = optionsRef.current;
-      if (layoutMode === 'map' && !isDetailFullScreen) return;
-      if (displayedJobs.length === 0 && !isDetailFullScreen) return;
+      if (layoutMode === 'map' && !isDetailFullScreen) {
+        if (e.key !== 'L' && e.key !== 'S' && e.key !== 'M') return;
+      }
+      if (displayedJobs.length === 0 && !isDetailFullScreen) {
+        if (e.key !== 'L' && e.key !== 'S' && e.key !== 'M') return;
+      }
       const target = e.target instanceof Element ? e.target : null;
       const isInput = target?.closest(
         'input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]'
@@ -86,7 +92,6 @@ export function useKeyboardNavigation({
         (e.key === 'ArrowUp' || e.key === 'ArrowDown') &&
         Boolean(target?.closest('[data-dashboard-navigation] a'));
       const isInteractiveElement =
-        !isDetailFullScreen &&
         !isSidebarArrowNavigation &&
         target?.closest(
           'button:not([data-job-card]), a, [role="button"]:not([data-job-card])'
@@ -140,7 +145,7 @@ export function useKeyboardNavigation({
         if (nextJob) {
           onSelectJob(nextJob);
           updateUrlParam('job', String(nextJob.id));
-          scrollToIndex?.(nextIndex, { align: 'auto', behavior: 'smooth' });
+          scrollToIndex?.(nextIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 
           if (!isDetailFullScreen) {
             const nextEl = cardRefs?.current?.get(nextJob.id) ||
@@ -172,7 +177,7 @@ export function useKeyboardNavigation({
         if (prevJob) {
           onSelectJob(prevJob);
           updateUrlParam('job', String(prevJob.id));
-          scrollToIndex?.(prevIndex, { align: 'auto', behavior: 'smooth' });
+          scrollToIndex?.(prevIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 
           if (!isDetailFullScreen) {
             const prevEl = cardRefs?.current?.get(prevJob.id) ||
@@ -219,6 +224,15 @@ export function useKeyboardNavigation({
         const currentIndex = STATUS_LIST.indexOf(selectedJob.status as typeof STATUS_LIST[number]);
         const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + STATUS_LIST.length) % STATUS_LIST.length : STATUS_LIST.length - 1;
         void onUpdateStatus(selectedJob, STATUS_LIST[prevIndex]);
+      } else if (e.key === 'L') {
+        e.preventDefault();
+        setLayoutMode('list');
+      } else if (e.key === 'S') {
+        e.preventDefault();
+        setLayoutMode('split');
+      } else if (e.key === 'M') {
+        e.preventDefault();
+        setLayoutMode('map');
       } else if ((e.key === 'f' || e.key === 'F') && selectedJob) {
         e.preventDefault();
         setIsDetailFullScreen((prev) => {
@@ -229,7 +243,7 @@ export function useKeyboardNavigation({
           }
           return next;
         });
-      } else if ((e.key === 's' || e.key === 'S') && selectedJob && onToggleSaved) {
+      } else if (e.key === 's' && selectedJob && onToggleSaved) {
         e.preventDefault();
         onToggleSaved(selectedJob);
       } else if ((e.key === 'd' || e.key === 'D') && selectedJob && onUpdateStatus) {
@@ -244,7 +258,7 @@ export function useKeyboardNavigation({
             if (nextJob) {
               onSelectJob(nextJob);
               updateUrlParam('job', String(nextJob.id));
-              scrollToIndex?.(nextIndex, { align: 'auto', behavior: 'smooth' });
+              scrollToIndex?.(nextIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
               if (!isDetailFullScreen) {
                 const nextEl = cardRefs?.current?.get(nextJob.id) || document.querySelector<HTMLElement>(`[data-job-id="${nextJob.id}"]`);
                 if (nextEl) nextEl.focus({ preventScroll: true });
@@ -275,11 +289,23 @@ export function useKeyboardNavigation({
         }
       }
     },
-    []
+    [
+      displayedJobs,
+      selectedJob,
+      isDetailFullScreen,
+      layoutMode,
+      onSelectJob,
+      onToggleSaved,
+      onUpdateStatus,
+      updateUrlParam,
+      scrollToIndex,
+      cardRefs,
+      setLayoutMode,
+    ]
   );
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [handleKeyDown]);
 }

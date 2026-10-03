@@ -1,16 +1,17 @@
 import type { Profile } from "../types/job";
+import { PROFILE_PREPROCESSING_VERSION } from './embeddingWindows';
 
 export const PROFILE_EMBEDDING_MODEL_VERSION = "all-MiniLM-L6-v2:384:v1";
 export function profileDocument(profile: Profile): string {
   const parts = [
     profile.headline,
     profile.current_role,
-    profile.summary,
     (profile.keywords ?? []).join(" "),
     (profile.tools_software ?? []).join(" "),
     (profile.languages ?? []).join(" "),
     profile.certifications,
     profile.education,
+    profile.summary,
   ];
   return (
     parts.filter(Boolean).join(" ").trim() || "Professional career experience"
@@ -21,7 +22,7 @@ export async function profileContentHash(profile: Profile): Promise<string> {
   const document = profileDocument(profile);
   const digest = await crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(document),
+    new TextEncoder().encode(`${PROFILE_PREPROCESSING_VERSION}\n${document}`),
   );
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0"),
@@ -29,6 +30,18 @@ export async function profileContentHash(profile: Profile): Promise<string> {
 }
 
 let inferenceQueue: Promise<unknown> = Promise.resolve();
+let cachedWorker: Worker | null = null;
+let idleTimeout: ReturnType<typeof setTimeout> | undefined;
+let cancelInference: (() => void) | null = null;
+
+export function disposeProfileEmbeddingWorker(): void {
+  clearTimeout(idleTimeout);
+  cachedWorker?.terminate();
+  cachedWorker = null;
+  cancelInference?.();
+  cancelInference = null;
+}
+
 export function embedProfile(profile: Profile): Promise<number[]> {
   const document = profileDocument(profile);
   const result = inferenceQueue
@@ -36,20 +49,28 @@ export function embedProfile(profile: Profile): Promise<number[]> {
     .then(
       () =>
         new Promise<number[]>((resolve, reject) => {
-          const worker = new Worker(
+          clearTimeout(idleTimeout);
+          const worker = cachedWorker ??= new Worker(
             new URL("./profileEmbedding.worker.ts", import.meta.url),
             { type: "module" },
           );
           const timeout = window.setTimeout(() => {
-            worker.terminate();
-            reject(new Error("Profile inference timed out"));
+            disposeProfileEmbeddingWorker();
           }, 120_000);
+          cancelInference = () => {
+            window.clearTimeout(timeout);
+            reject(new Error('Profile inference interrupted'));
+          };
           const finish = () => {
             window.clearTimeout(timeout);
-            worker.terminate();
+            cancelInference = null;
+            worker.onmessage = null;
+            worker.onerror = null;
+            idleTimeout = setTimeout(disposeProfileEmbeddingWorker, 60_000);
           };
           worker.onerror = () => {
             finish();
+            disposeProfileEmbeddingWorker();
             reject(new Error("Profile inference failed"));
           };
           worker.onmessage = (event: MessageEvent<unknown>) => {

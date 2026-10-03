@@ -37,6 +37,18 @@ const mockJobs: Job[] = [
 ];
 
 describe('useKeyboardNavigation', () => {
+  it('preserves Space activation on native controls in full-screen reading mode', () => {
+    renderHook(() => useKeyboardNavigation({ displayedJobs: mockJobs, selectedJob: mockJobs[0],
+      onSelectJob: vi.fn(), onUpdateStatus: vi.fn(), isDetailFullScreen: true,
+      setIsDetailFullScreen: vi.fn(), layoutMode: 'list', setLayoutMode: vi.fn(),
+      updateUrlParam: vi.fn(), scrollToIndex: vi.fn() }));
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+    button.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    button.remove();
+  });
   let onSelectJob: ReturnType<typeof vi.fn<(job: Job | null) => void>>;
   let onUpdateStatus: ReturnType<typeof vi.fn<(job: Job, status: JobStatus) => Promise<void>>>;
   let setIsDetailFullScreen: ReturnType<typeof vi.fn<React.Dispatch<React.SetStateAction<boolean>>>>;
@@ -72,7 +84,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -113,7 +125,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
         cardRefs,
@@ -157,7 +169,7 @@ describe('useKeyboardNavigation', () => {
         onSelectJob,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         cardRefs,
       })
@@ -187,7 +199,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -220,7 +232,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -246,7 +258,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: false,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -279,7 +291,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: true,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -309,7 +321,7 @@ describe('useKeyboardNavigation', () => {
         onUpdateStatus,
         isDetailFullScreen: true,
         setIsDetailFullScreen,
-        layoutMode: 'split',
+        layoutMode: 'split', setLayoutMode: vi.fn(),
         updateUrlParam,
         scrollToIndex,
       })
@@ -339,7 +351,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: false,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -386,7 +398,7 @@ describe('useKeyboardNavigation', () => {
             onUpdateStatus,
             isDetailFullScreen: false,
             setIsDetailFullScreen,
-            layoutMode: 'split',
+            layoutMode: 'split', setLayoutMode: vi.fn(),
             updateUrlParam,
             scrollToIndex,
             cardRefs,
@@ -424,7 +436,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: false,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -446,7 +458,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: false,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -474,7 +486,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: false,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -503,7 +515,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: false,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -539,7 +551,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: true,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -571,7 +583,7 @@ describe('useKeyboardNavigation', () => {
           onUpdateStatus,
           isDetailFullScreen: true,
           setIsDetailFullScreen,
-          layoutMode: 'split',
+          layoutMode: 'split', setLayoutMode: vi.fn(),
           updateUrlParam,
           scrollToIndex,
         })
@@ -588,4 +600,3 @@ describe('useKeyboardNavigation', () => {
     });
   });
 });
-

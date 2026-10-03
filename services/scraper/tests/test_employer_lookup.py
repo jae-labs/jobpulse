@@ -40,6 +40,7 @@ def test_unknown_metadata_and_dry_run_never_insert_or_infer_headquarters():
     client.table().select().ilike().limit().execute.return_value = SimpleNamespace(data=[])
     service = lookup.EmployerLookupService(client)
     employer = service.resolve_employer("Example Paint Supplies", scraped_location="Cork", persist=False)
+    assert employer is not None
     assert employer["sector"] == "Uncategorized"
     assert employer["metadata_source"] == "unverified"
     assert employer["location"] is None
@@ -57,7 +58,9 @@ def test_failed_insert_does_not_poison_cache():
     assert not lookup._EMPLOYER_CACHE
     client.table().insert().execute.side_effect = None
     client.table().insert().execute.return_value = SimpleNamespace(data=[{"id": 77, "name": "Example Retry"}])
-    assert service.resolve_employer("Example Retry")["id"] == 77
+    retried = service.resolve_employer("Example Retry")
+    assert retried is not None
+    assert retried["id"] == 77
 
 
 @pytest.mark.parametrize("location", ["Hybrid", "Remote", "Cork, Ireland"])
@@ -117,13 +120,16 @@ def test_curated_evidence_upgrades_guessed_metadata_without_dry_run_writes(monke
     monkeypatch.setitem(lookup.CURATED_IRISH_EMPLOYERS, "example anchor", curated)
     service = lookup.EmployerLookupService(client)
     preview = service.resolve_employer("Example Anchor", persist=False)
+    assert preview is not None
     assert preview["metadata_source"] == "curated"
     client.table().update.assert_not_called()
     assert not lookup._EMPLOYER_CACHE
     client.table().update().eq().eq().execute.return_value = SimpleNamespace(
         data=[{**existing, **curated, "metadata_source": "curated"}]
     )
-    assert service.resolve_employer("Example Anchor")["sector"] == "Verified Sector"
+    persisted = service.resolve_employer("Example Anchor")
+    assert persisted is not None
+    assert persisted["sector"] == "Verified Sector"
     assert client.table().update.call_args.args[0]["metadata_source"] == "curated"
     client.table().update().eq.assert_called_with("id", 8)
 

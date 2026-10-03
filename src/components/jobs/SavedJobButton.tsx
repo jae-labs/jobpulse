@@ -10,7 +10,7 @@ export default function SavedJobButton({ job, userId, className }: { job: Job; u
   const saved = job.is_saved === true;
   const label = t(saved ? 'jobs.unsaveJob' : 'jobs.saveJob');
   return <div className="flex flex-col items-end">
-    <Tooltip label={label}>
+    <Tooltip label={label} shortcut="s">
       <Button variant="ghost" size="icon" className={className} aria-label={label} aria-pressed={saved}
         disabled={!userId || mutation.isPending} onClick={() => mutation.mutate({ job, saved: !saved })}>
         <Star aria-hidden="true" className={`size-4 ${saved ? 'fill-current text-status-saved' : 'text-ds-text-muted'}`} />

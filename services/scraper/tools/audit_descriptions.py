@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database.client import get_supabase, retry_supabase  # noqa: E402
 from database.embeddings import job_scoring_hash  # noqa: E402
+from database.records import response_records
 from engine.description_quality import has_description_body  # noqa: E402
 from engine.embeddings import EMBEDDING_MODEL_VERSION  # noqa: E402
 
@@ -33,18 +34,17 @@ def audit_descriptions(*, report: Path, summary: Path, repair_reports: list[Path
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()
         while True:
-            jobs = (
+            jobs = response_records(
                 retry_supabase(
                     lambda current_id=last_id: (
                         client.table("jobs").select("*").gt("id", current_id).order("id").limit(500).execute()
                     )
                 ).data
-                or []
             )
             if not jobs:
                 break
             last_id = jobs[-1]["id"]
-            vectors = (
+            vectors = response_records(
                 retry_supabase(
                     lambda current_jobs=jobs: (
                         client.table("job_scoring_embeddings")
@@ -53,7 +53,6 @@ def audit_descriptions(*, report: Path, summary: Path, repair_reports: list[Path
                         .execute()
                     )
                 ).data
-                or []
             )
             by_id = {vector["job_id"]: vector for vector in vectors}
             for job in jobs:

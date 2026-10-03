@@ -13,10 +13,11 @@ from typing import Any
 import httpx
 
 from database.client import get_supabase, retry_supabase
-from pipeline.company_research import GEOAPIFY_API, ResearchClient, ResearchError
+from database.records import response_count, response_object, response_records
+from pipeline.company_research import GEOAPIFY_API, ResearchClient, ResearchError, ResearchProvider
 
 
-def verify_location(researcher: ResearchClient, location: str, key: str) -> dict[str, Any]:
+def verify_location(researcher: ResearchProvider, location: str, key: str) -> dict[str, Any]:
     evidence: dict[str, Any] = {
         "location": location,
         "provider": "Geoapify",
@@ -108,7 +109,7 @@ def verify_catalog_locations(*, apply: bool = False, limit: int = 100, report: P
             query = client.table("jobs").select("id,location,location_verification").order("id").limit(500)
             if cursor is not None:
                 query = query.gt("id", cursor)
-            rows = retry_supabase(query.execute).data or []
+            rows = response_records(retry_supabase(query.execute).data)
             for row in rows:
                 cursor = row["id"]
                 previous = row.get("location_verification")
@@ -133,13 +134,15 @@ def verify_catalog_locations(*, apply: bool = False, limit: int = 100, report: P
                 records.append(evidence)
                 batch.append(evidence)
                 if apply and len(batch) >= 100:
-                    result = retry_supabase(
-                        lambda batch=batch: client.rpc(
-                            "apply_job_location_verifications", {"p_records": batch}
-                        ).execute()
-                    ).data
-                    counts["updated"] += result["updated"]
-                    counts["conflicts"] += result["conflicts"]
+                    result = response_object(
+                        retry_supabase(
+                            lambda batch=batch: client.rpc(
+                                "apply_job_location_verifications", {"p_records": batch}
+                            ).execute()
+                        ).data
+                    )
+                    counts["updated"] += response_count(result["updated"])
+                    counts["conflicts"] += response_count(result["conflicts"])
                     batch = []
                 if report and counts["checked"] % 100 == 0:
                     with report.with_suffix(".jsonl").open("a") as stream:
@@ -149,11 +152,13 @@ def verify_catalog_locations(*, apply: bool = False, limit: int = 100, report: P
             if len(rows) < 500 or counts["failed"] >= 5:
                 break
         if apply and batch:
-            result = retry_supabase(
-                lambda batch=batch: client.rpc("apply_job_location_verifications", {"p_records": batch}).execute()
-            ).data
-            counts["updated"] += result["updated"]
-            counts["conflicts"] += result["conflicts"]
+            result = response_object(
+                retry_supabase(
+                    lambda batch=batch: client.rpc("apply_job_location_verifications", {"p_records": batch}).execute()
+                ).data
+            )
+            counts["updated"] += response_count(result["updated"])
+            counts["conflicts"] += response_count(result["conflicts"])
     if report:
         report.write_text(json.dumps({"counts": counts, "records": records}, indent=2) + "\n")
     return counts

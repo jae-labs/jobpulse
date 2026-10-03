@@ -20,6 +20,7 @@ from config.loader import (
 )
 from database.client import get_supabase, retry_supabase, utc_now
 from database.embeddings import prepare_embeddings
+from database.records import response_count, response_records
 from engine.description_quality import has_description_body, needs_description_repair
 from engine.salary import extract_salary_from_context
 from engine.text_cleaner import clean_description_text, normalize_location
@@ -29,6 +30,19 @@ from pipeline.employer_lookup import (
     get_employer_lookup_service,
     normalize_company_key,
 )
+
+
+class IngestionIncompleteError(RuntimeError):
+    """A partial batch remains persisted but must be retried and reported as incomplete."""
+
+    def __init__(self, persisted: int, failed: int, vectors_pending: int) -> None:
+        self.persisted = persisted
+        self.failed = failed
+        self.vectors_pending = vectors_pending
+        super().__init__(
+            f"Ingestion incomplete: {persisted} vacancies persisted, {failed} writes failed, "
+            f"{vectors_pending} vectors pending. Persisted vacancies were retained."
+        )
 
 
 def normalize_company_name(company: str) -> str:
@@ -286,11 +300,13 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
     supabase = get_supabase()
     batch_size = 50
     added = 0
+    failed = 0
+    vectors_pending = 0
 
     for i in range(0, len(payloads_to_save), batch_size):
         chunk = payloads_to_save[i : i + batch_size]
         # A detail failure must never replace a hydrated body with listing metadata.
-        existing_rows = (
+        existing_rows = response_records(
             retry_supabase(
                 lambda c=chunk: (
                     supabase.table("jobs")
@@ -299,7 +315,6 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
                     .execute()
                 )
             ).data
-            or []
         )
         existing = {row["dedupe_key"]: row for row in existing_rows}
         for item in chunk:
@@ -328,11 +343,10 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
         if not chunk:
             continue
         try:
-            persisted = (
+            persisted = response_records(
                 retry_supabase(
                     lambda c=chunk: supabase.table("jobs").upsert(c, on_conflict="dedupe_key").execute()
                 ).data
-                or []
             )
         except Exception as exc:
             print(f"  [SUPABASE] Batch write error: {exc}. Falling back to single inserts...")
@@ -342,17 +356,23 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
                     response = retry_supabase(
                         lambda it=item: supabase.table("jobs").upsert(it, on_conflict="dedupe_key").execute()
                     )
-                    persisted.extend(response.data or [])
+                    persisted.extend(response_records(response.data))
                 except Exception as write_error:
+                    failed += 1
                     print(f"  [SUPABASE] Single job write failed: {write_error}")
 
         if persisted:
             added += len(persisted)
             try:
-                prepare_embeddings(persisted)
+                pending = prepare_embeddings(persisted)
+                if isinstance(pending, int):
+                    vectors_pending += pending
             except Exception as emb_exc:
+                vectors_pending += len(persisted)
                 print(f"  [EMBEDDINGS] Warning: Could not prepare embeddings for batch: {emb_exc}")
 
+    if failed or vectors_pending:
+        raise IngestionIncompleteError(added, failed, vectors_pending)
     return added
 
 
@@ -373,7 +393,7 @@ def backfill_job_embeddings() -> int:
                 .execute()
             )
         )
-        jobs = response.data or []
+        jobs = response_records(response.data)
         if not jobs:
             break
         prepare_embeddings(jobs)
@@ -491,7 +511,7 @@ def deduplicate_database_jobs() -> dict[str, Any]:
                 .execute()
             )
         )
-        data = res.data or []
+        data = response_records(res.data)
         all_jobs.extend(data)
         if len(data) < page_size:
             break
@@ -541,7 +561,7 @@ def deduplicate_database_jobs() -> dict[str, Any]:
                     },
                 ).execute()
             )
-            deleted_total += int(response.data or 0)
+            deleted_total += response_count(response.data)
         except Exception as exc:
             print(f"  [DEDUPE] Could not merge duplicate jobs: {exc}")
 
@@ -554,7 +574,8 @@ def get_employer(name: str) -> dict[str, Any] | None:
     supabase = get_supabase()
     try:
         res = supabase.table("employers").select("*").eq("name", name).limit(1).execute()
-        return res.data[0] if res.data else None
+        rows = response_records(res.data)
+        return rows[0] if rows else None
     except Exception:
         return None
 

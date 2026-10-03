@@ -5,6 +5,9 @@ import {
   Building2,
   Maximize2,
   Minimize2,
+  MapPin,
+  Users,
+  Globe,
 } from 'lucide-react';
 import type { Job, JobStatus } from '../../types/job';
 import SavedJobButton from './SavedJobButton';
@@ -89,6 +92,15 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                   <Building2 className="size-3 text-ds-text-muted" />
                   {job.company || 'Public Sector'}
                 </span>
+                {detail?.employer?.size && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-ds-control border border-ds-border bg-ds-surface px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary"
+                    title={`${t('jobs.inspector.companySize')}: ${detail.employer.size} ${t('jobs.inspector.employees')}`}
+                  >
+                    <Users className="size-2.5 text-ds-text-muted" />
+                    {detail.employer.size}
+                  </span>
+                )}
                 <span className="text-ds-text-muted">·</span>
                 <span className="text-xs font-mono text-ds-text-muted">{job.source}</span>
                 <StatusPill status={job.status} />
@@ -104,7 +116,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               <IgnoredJobButton job={job} userId={userId} className="size-8" />
               <SavedJobButton job={job} userId={userId} className="size-8" />
               {onToggleFullScreen && (
-                <Tooltip label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')} shortcut="F">
+                <Tooltip label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')} shortcut="f">
                 <Button
                   type="button"
                   variant="ghost"
@@ -118,7 +130,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                   }}
                   className="size-8"
                   aria-label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')}
-                  aria-keyshortcuts="F"
+                  aria-keyshortcuts="f"
                 >
                   {isFullScreen ? (
                     <Minimize2 className="size-4" />
@@ -298,6 +310,44 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {detail?.employer && (detail.employer.size || (detail.employer.offices && detail.employer.offices.length > 0)) && (
+            <div className="space-y-2 rounded-ds-card border border-ds-border bg-ds-panel p-3.5 sm:p-4">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-ds-text-muted">
+                  <MapPin className="size-3 text-ds-primary" />
+                  {t('jobs.inspector.officesInIreland')}
+                  {detail.employer.offices && detail.employer.offices.length > 0 ? ` (${detail.employer.offices.length})` : ''}
+                </span>
+                {detail.employer.website && (
+                  <a
+                    href={toSafeHttpUrl(detail.employer.website) || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-ds-primary hover:underline"
+                    title={t('jobs.inspector.viewCompanyWebsite')}
+                  >
+                    <Globe className="size-3" />
+                    <span>{t('jobs.inspector.viewCompanyWebsite')}</span>
+                  </a>
+                )}
+              </div>
+
+              {detail.employer.offices && detail.employer.offices.length > 0 ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {detail.employer.offices.map((office) => (
+                    <div
+                      key={office.place_id}
+                      className="rounded-ds-control border border-ds-border/70 bg-ds-surface/60 p-2.5 text-xs"
+                    >
+                      <p className="font-medium text-ds-text-primary">{office.name}</p>
+                      <p className="mt-0.5 text-[11px] text-ds-text-muted leading-tight">{office.address}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           )}
 

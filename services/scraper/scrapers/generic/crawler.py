@@ -11,7 +11,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 
 from config.loader import get_employers_tuples
-from database.repository import save_jobs_batch, update_employer_status, update_source_status
+from database.repository import IngestionIncompleteError, save_jobs_batch, update_employer_status, update_source_status
 from network.browser import fetch_via_browser
 from pipeline.logger import format_error_message, log_scraper_event
 from scrapers.generic.discovery import discover_employer_careers, is_auth_wall
@@ -39,6 +39,8 @@ class EmployerSyncResult:
     message: str
     outcome: ScrapeOutcome
     detail: str
+    failed_writes: int = 0
+    vectors_pending: int = 0
 
     def as_dict(self, employer: str) -> dict[str, Any]:
         return {
@@ -46,6 +48,9 @@ class EmployerSyncResult:
             "outcome": self.outcome.value,
             "opportunities_found": self.opportunities_found,
             "added": self.added,
+            "persisted": self.added,
+            "failed_writes": self.failed_writes,
+            "vectors_pending": self.vectors_pending,
             "url": self.discovered_url,
             "detail": self.detail,
         }
@@ -77,6 +82,8 @@ def _result(
     message: str,
     outcome: ScrapeOutcome,
     detail: str,
+    failed_writes: int = 0,
+    vectors_pending: int = 0,
 ) -> EmployerSyncResult:
     return EmployerSyncResult(
         added=added,
@@ -85,6 +92,8 @@ def _result(
         message=message,
         outcome=outcome,
         detail=detail,
+        failed_writes=failed_writes,
+        vectors_pending=vectors_pending,
     )
 
 
@@ -346,7 +355,7 @@ def sync_single_employer(
         added = save_jobs_batch(opportunities)
 
         status_text = "Synced"
-        detail_text = f"Discovered job listing at {discovered_url}. Found {len(opportunities)} opportunities; added {added} new opportunities."
+        detail_text = f"Discovered job listing at {discovered_url}. Found {len(opportunities)} opportunities; saved or updated {added} vacancies."
 
         update_employer_status(
             name=name,
@@ -366,11 +375,11 @@ def sync_single_employer(
         log_scraper_event(
             "SUCCESS",
             name,
-            f"{len(opportunities)} opportunities found ({added} new opportunities added)",
+            f"{len(opportunities)} opportunities found ({added} vacancies saved or updated)",
             discovered_url,
             method=fetch_method,
         )
-        msg = f"{name}: {len(opportunities)} opportunities found at {discovered_url} ({added} new opportunities added)."
+        msg = f"{name}: {len(opportunities)} opportunities found at {discovered_url} ({added} vacancies saved or updated)."
         return _result(
             added=added,
             opportunities_found=len(opportunities),
@@ -385,6 +394,9 @@ def sync_single_employer(
         update_employer_status(name=name, status="Failed")
         update_source_status(name=name, status="Failed", detail=err_detail)
         return _result(
+            added=e.persisted if isinstance(e, IngestionIncompleteError) else 0,
+            failed_writes=e.failed if isinstance(e, IngestionIncompleteError) else 0,
+            vectors_pending=e.vectors_pending if isinstance(e, IngestionIncompleteError) else 0,
             discovered_url=discovered_url,
             message=f"{name}: failed during scraping ({err_detail}).",
             outcome=ScrapeOutcome.FAILED,

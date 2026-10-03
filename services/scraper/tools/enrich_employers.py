@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 from pipeline.employer_lookup import curated_employer, load_evidence_registry
 from pipeline.stored_employer_evidence import load_reviewed_evidence, stored_sector_evidence, trusted_sector_index
 
@@ -63,7 +64,7 @@ def run_enrichment(
                 query = query.gt("id", cursor)
             return query.execute()
 
-        rows = retry_supabase(fetch_page).data or []
+        rows = response_records(retry_supabase(fetch_page).data)
         if not rows:
             break
         for employer in rows:
@@ -104,7 +105,7 @@ def run_enrichment(
                             .execute()
                         )
                     )
-                    changed = len(result.data or [])
+                    changed = len(response_records(result.data))
                     counts["updated" if changed else "conflicts"] += 1
                     record["outcome"] = "updated" if changed else "conflict"
                 except Exception:

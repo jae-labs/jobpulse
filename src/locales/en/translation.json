@@ -29,6 +29,7 @@
     "dbConnectionError": "Supabase Connection Error",
     "dbConnectionDetail": "Unable to connect to Supabase: {{message}}. Verify your connection.",
     "apply": "Apply",
+    "filters": "Filters",
     "search": "Search...",
     "loading": "Loading...",
     "error": "An error occurred",
@@ -61,14 +62,14 @@
     "applied": "Applied",
     "interviewing": "Interview",
     "rejected": "Rejected",
-    "saved": "Favorite",
+    "saved": "Starred",
     "not_interested": "Archived",
     "short": {
       "new": "New",
       "applied": "Applied",
       "interviewing": "Interview",
       "rejected": "Rejected",
-      "saved": "Favorite",
+      "saved": "Starred",
       "not_interested": "Archived"
     }
   },
@@ -79,6 +80,7 @@
     "star": "star",
     "delete": "delete",
     "status": "status",
+    "layout": "layout",
     "press": "Press"
   },
   "command": {
@@ -98,8 +100,9 @@
     "categoryBreakdown": "Domains"
   },
   "jobs": {
-    "saveJob": "Favorite job",
-    "unsaveJob": "Remove from Favorites",
+    "linkedJobUnavailable": "This opportunity is unavailable.",
+    "saveJob": "Star job",
+    "unsaveJob": "Unstar job",
     "saveJobError": "Could not update Favorite. Try again.",
     "ignoreJob": "Archive job",
     "unignoreJob": "Restore job",
@@ -154,13 +157,18 @@
       "discovered": "Discovered {{date}}",
       "noOpportunitySelected": "No opportunity selected",
       "selectPrompt": "Select an opportunity from the list or press",
-      "expand": "Expand to full screen (f)",
-      "exit": "Exit full screen (f)",
+      "expand": "Expand to full screen",
+      "exit": "Exit full screen",
       "close": "Close inspector",
       "openApplication": "Open application page",
       "noApplicationUrl": "No application URL available",
       "statusGroup": "Job status selection",
-      "detailLoadError": "The job details could not be loaded."
+      "companySize": "Company Size",
+      "employees": "employees",
+      "officesInIreland": "Offices in Ireland",
+      "viewCompanyWebsite": "Visit company website",
+      "detailLoadError": "The job details could not be loaded.",
+      "title": "Opportunity details"
     },
     "layoutMap": "Map",
     "layoutMapTitle": "World map of opportunities",
@@ -202,7 +210,8 @@
     "mapPostingLayer": "Posting locations",
     "mapOfficeLayer": "Company offices",
     "mapOfficeEvidence": "Company office addresses; workplaces for these roles are unconfirmed.",
-    "openDetails": "Open details"
+    "openDetails": "Open details",
+    "salary": "Salary"
   },
   "sources": {
     "title": "Data Sources",
@@ -499,6 +508,7 @@
     "unableToLoadSkillsChart": "Unable to load skills chart"
   },
   "scoring": {
+    "matchingPending": "Profile saved. Matching setup is pending.",
     "progress": "Updating matches: {{completed}} of {{total}} vacancies processed.",
     "retryScheduled": "Matching will retry automatically. Your last results remain available."
   },

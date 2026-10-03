@@ -11,6 +11,7 @@ try:
 
     HAS_YAML = True
 except ImportError:
+    yaml = None
     HAS_YAML = False
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,7 +42,7 @@ def load_websites_config(path: Path | str | None = None) -> list[dict[str, Any]]
         try:
             with open(target_path, encoding="utf-8") as f:
                 content = f.read()
-                if HAS_YAML and (target_path.suffix in (".yaml", ".yml")):
+                if yaml is not None and (target_path.suffix in (".yaml", ".yml")):
                     parsed = yaml.safe_load(content)
                 else:
                     parsed = json.loads(content)

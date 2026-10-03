@@ -198,7 +198,7 @@ caller's own scores/statuses, then returns bounded viewport clusters with full
 filtered and verified-location counts. Pins require Geoapify verification matching
 the current posting text; city, region and country centroids retain their precision.
 Remote, ambiguous and unresolved jobs remain in catalog totals without a pin.
-See [the operational map guide](JOB_MAP_AND_LOCATION_VERIFICATION.md).
+See [the operational map guide](OPERATIONS.md#vacancy-location-verification).
 
 ## Saved jobs
 
@@ -223,4 +223,4 @@ coordinates, website domains and provider category evidence. It contains no cand
 data or verified vacancy-workplace claim. `employer_office_lookups` is backend-only
 persistent scheduling state. Both tables have RLS; the two research RPCs are service-only.
 The optional map office layer reuses the tenant-filtered catalog and labels workplace
-uncertainty. See [employer office enrichment](EMPLOYER_OFFICE_ENRICHMENT.md).
+uncertainty. See [employer office enrichment](OPERATIONS.md#employer-research-and-offices).

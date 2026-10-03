@@ -8,6 +8,10 @@ export const STATUS_LIST = [
 export type JobStatus = (typeof STATUS_LIST)[number] | 'not_interested';
 export type JobFilterStatus = JobStatus | 'saved';
 
+export function isJobStatus(value: unknown): value is JobStatus {
+  return value === 'not_interested' || STATUS_LIST.some(status => status === value);
+}
+
 /** Normalized scoring factors; auth_deduction is an absolute point deduction. */
 export interface SubScores {
   domain: number;
@@ -82,10 +86,21 @@ export interface Source {
   opportunities_found?: number | null;
 }
 
+export type EmployerSize = '1-10' | '11-50' | '51-200' | '201-500' | '501-1000' | '1001-5000' | '5000+';
+
+export interface EmployerOffice {
+  place_id: string;
+  name: string;
+  address: string;
+  city?: string | null;
+  country_code?: string | null;
+}
+
 export interface Employer {
   id: number;
   name: string;
   sector: string;
+  size?: EmployerSize | null;
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -95,6 +110,8 @@ export interface Employer {
   status?: string | null;
   opportunities_found?: number | null;
   last_scraped_at?: string | null;
+  enriched_at?: string | null;
+  offices?: EmployerOffice[];
 }
 
 export interface ScoringWeights {

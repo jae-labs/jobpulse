@@ -13,6 +13,8 @@ import sys
 import time
 from pathlib import Path
 
+from postgrest.types import CountMethod
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
@@ -62,7 +64,7 @@ def run_checks() -> bool:
         from database.client import get_supabase
 
         supabase = get_supabase()
-        res = supabase.table("jobs").select("id", count="exact").limit(1).execute()
+        res = supabase.table("jobs").select("id", count=CountMethod.exact).limit(1).execute()
         total_jobs = res.count if res.count is not None else len(res.data)
         print(f"  -> Connected to Supabase: {total_jobs:,} jobs currently in database.")
 

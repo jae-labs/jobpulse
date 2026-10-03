@@ -66,3 +66,16 @@ High frame rates (60fps) and rapid response to keyboard navigation require stric
 2. Benchmark `rescore_user`, `get_jobs_page` after a weight edit, and the job-vector trigger with a representative 30,000-job catalog and active-profile count before treating the subsecond latency goals as verified.
 3. Monitor browser heap and commit-phase times in Chrome DevTools Performance Profiler during rapid virtual list scrolling and first profile embedding.
 4. Verify chunk sizes and code-splitting boundaries with `npm run build`.
+
+The build enforces gzip budgets for the complete initial JavaScript import graph
+(275 KiB), jobs route (20 KiB), lazy map (300 KiB), map worker (165 KiB), and
+inference worker (175 KiB). These prevent regressions; they do not measure parse
+time, model transfer, memory, or GPU behavior on a target device.
+
+Infinite catalog pages have no passive polling or focus refresh. Explicit refresh,
+mutations and completed scoring revisions invalidate them. Loaded pages remain
+available for backward scrolling; do not impose `maxPages` without implementing
+previous-page navigation. Inference reuses one sequential worker, releases it after
+60 idle seconds, times out a request after 120 seconds, and disposes it on logout
+or identity changes. Structured profile fields precede summary text; versioned,
+bounded token windows prevent silent tail truncation.

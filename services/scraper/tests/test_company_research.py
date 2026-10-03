@@ -1,9 +1,11 @@
 """External identity and geolocation failures cannot become verified company facts."""
 
 import json
+from typing import cast
 
 import httpx
 import pytest
+from supabase import Client
 
 from pipeline.company_research import ResearchClient, ResearchError
 
@@ -155,7 +157,7 @@ def test_catalog_pages_and_combines_both_sources_without_private_reads(monkeypat
             return Query(name)
 
     monkeypatch.setattr(research_employers, "retry_supabase", lambda operation: operation())
-    result = research_employers.catalog_employers(Catalog(), ["JobsIreland.ie", "WhatJobs Ireland"])
+    result = research_employers.catalog_employers(cast(Client, Catalog()), ["JobsIreland.ie", "WhatJobs Ireland"])
     assert len(result) == 1
     assert result[1]["job_count"] == 501
     assert set(result[1]["job_sources"]) == {"JobsIreland.ie", "WhatJobs Ireland"}

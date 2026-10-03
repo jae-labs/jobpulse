@@ -13,8 +13,13 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"admin@example.com"}', true);
 
-UPDATE public.user_profiles SET user_id = '22222222-2222-2222-2222-222222222222'
-WHERE user_id = '11111111-1111-1111-1111-111111111111';
+DO $$ BEGIN
+  BEGIN
+    UPDATE public.user_profiles SET user_id = '22222222-2222-2222-2222-222222222222'
+    WHERE user_id = '11111111-1111-1111-1111-111111111111';
+    RAISE EXCEPTION 'Mismatched owner write was accepted';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
 
 DO $$
 BEGIN

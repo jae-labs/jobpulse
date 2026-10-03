@@ -11,7 +11,7 @@ needs its own behavioral tests even when every existing check passes.
 
 ## Failure-to-test matrix
 
-Finding IDs refer to the [original remediation record](PRODUCTION_REMEDIATION_2026_10_01.md).
+Finding IDs identify the continuing failure contracts below.
 Test paths in this table are relative to the repository root. SQL suites live under
 `supabase/tests/` and run with `npm run db:test`; tenant suites also run at pre-push.
 
@@ -22,7 +22,7 @@ Test paths in this table are relative to the repository root. SQL suites live un
 | F3: malformed input interrupted shared work | Validate JSON shape, size, lists, numbers and vectors at the database boundary; roll back only the failing tenant's slice | `tenant_scoring_queue.sql` |
 | F4: telemetry could collect private data | Use the explicit-DSN diagnostic allowlist; drop identity, free text, request data, breadcrumbs, tracing and replay; consume invitation parameters first | `src/lib/sentry.test.ts`, `src/lib/logger.test.ts`, `src/components/auth/LoginView.test.tsx`, source lint |
 | F5: browser and SQL filters disagreed | Keep status/salary/sort enums aligned; use annual EUR thresholds and bounded literal search/location input | `jobs_pagination.sql`, `salary_normalization.sql`, `src/components/jobs/JobsView.test.tsx` |
-| F6: ingestion multiplied work by users | Advance one generation per vector statement; enqueue profile/vector changes atomically; process bounded durable slices outside request/write paths | `tenant_scoring_queue.sql`; [capacity probe](CAPACITY_PROBE_2026_10_01.md) |
+| F6: ingestion multiplied work by users | Advance one generation per vector statement; enqueue profile/vector changes atomically; process bounded durable slices outside request/write paths | `tenant_scoring_queue.sql`; [capacity probe](OPERATIONS.md#historical-local-capacity-evidence) |
 | F7: approximate ranking underfilled results | Exact stable shortlist of up to 1,500 eligible vectors; trim native results only after completion | `tenant_scoring_queue.sql` with 1,601-vector fixture |
 | F8: save/retry lost unfinished work | Persist awaiting-embedding state; retain usable old results; failed current-vector work retries; check UID and profile hash after inference | `tenant_scoring_queue.sql`, `src/lib/userProfile.test.ts` |
 | F9: loaded-page counters misled users | Server catalog supplies shared domains and facets; map counts cover the filtered catalog independently of loaded pages | `overview_metrics.sql`, `src/components/jobs/JobsView.test.tsx` |

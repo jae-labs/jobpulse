@@ -13,7 +13,8 @@ from urllib.parse import urlsplit
 import httpx
 
 from database.client import get_supabase, retry_supabase
-from pipeline.company_research import BLOCKED_NAMES, GEOAPIFY_API, ResearchClient, ResearchError
+from database.records import response_records
+from pipeline.company_research import BLOCKED_NAMES, GEOAPIFY_API, ResearchClient, ResearchError, ResearchProvider
 from pipeline.stored_employer_evidence import company_identity_key
 
 PLACES_API = "https://api.geoapify.com/v2/places"
@@ -35,7 +36,7 @@ def website_domain(value: Any) -> str | None:
         return host.lower().removeprefix("www.") if host and "." in host else None
 
 
-def discover_offices(researcher: ResearchClient, employer: dict[str, Any], key: str) -> dict[str, Any]:
+def discover_offices(researcher: ResearchProvider, employer: dict[str, Any], key: str) -> dict[str, Any]:
     name, location = employer["name"], employer["location"]
     record = {**employer, "status": "unresolved", "offices": []}
     if re.search(r"\b(remote|worldwide|anywhere)\b", location, re.I):
@@ -154,8 +155,8 @@ def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None 
     if not 1 <= limit <= 100:
         raise ValueError("limit must be between 1 and 100")
     counts = dict(checked=0, found=0, unresolved=0, ambiguous=0, remote=0, provider_failed=0, updated=0, conflicts=0)
-    rows = (
-        retry_supabase(lambda: client.rpc("pending_employer_office_lookups", {"p_limit": limit}).execute()).data or []
+    rows = response_records(
+        retry_supabase(lambda: client.rpc("pending_employer_office_lookups", {"p_limit": limit}).execute()).data
     )
     records = []
     cache = Path(__file__).resolve().parents[3] / ".backups/employer-office-cache"

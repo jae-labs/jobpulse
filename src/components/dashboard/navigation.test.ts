@@ -9,7 +9,7 @@ describe('navigation', () => {
     const paths = dashboardNavigation.map((n) => n.path);
     expect(paths).toContain('/overview');
     expect(paths).toContain('/opportunities');
-    expect(paths).toContain('/datasources');
+    expect(paths).toContain('/sources');
     expect(paths).toContain('/profile');
   });
 });

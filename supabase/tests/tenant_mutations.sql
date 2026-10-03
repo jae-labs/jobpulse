@@ -1,6 +1,13 @@
 -- Prove the guard itself rejects realistic regressions. Each caught failure rolls its mutation back.
 DO $$ BEGIN
  BEGIN
+  GRANT TRUNCATE ON public.user_profiles TO authenticated;
+  PERFORM pg_temp.assert_tenant_catalog();
+  RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='Guard missed browser TRUNCATE privilege';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM NOT LIKE 'Tenant guard:%' THEN RAISE; END IF;
+ END;
+ BEGIN
   CREATE TABLE public.unguarded_feature(id bigint);
   PERFORM pg_temp.assert_tenant_catalog();
   RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='Guard missed an unclassified table';

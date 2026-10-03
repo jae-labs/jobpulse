@@ -81,8 +81,8 @@ private data paths; an inventory entry is not an authorization check.
 All tenant suites run inside transactions that roll back, including when a query
 fails. Their synthetic accounts do not rely on the development admin being the only
 user. They run row operations as `authenticated` or `anon`, never as a privileged
-service client. Owner-ID coercion by existing write triggers is allowed; a spoofed
-write must either fail or remain owned by the caller. Unfiltered UPDATE/DELETE
+service client. A supplied write owner must match the verified caller. Mismatched ownership is
+rejected before persistence; stale requests must never be rewritten into a new account. Unfiltered UPDATE/DELETE
 probes and INSERT probes without RETURNING prevent SELECT policies from masking
 unsafe write policies. Storage SQL probes exercise
 RLS on object metadata, using the Storage API deletion flag without bypassing RLS.

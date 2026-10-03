@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfileView } from './ProfileView';
 import type { Job, Profile } from '../../types/job';
+import i18n from '../../lib/i18n';
 
 vi.mock('../../hooks/useQueries', () => ({
   useUserCvsQuery: () => ({ data: [], isLoading: false }),
@@ -269,7 +270,8 @@ describe('ProfileView', () => {
       await vi.advanceTimersByTimeAsync(800);
     });
 
-    expect(screen.getByText('Network error saving profile')).toBeInTheDocument();
+    expect(screen.queryByText('Network error saving profile')).not.toBeInTheDocument();
+    expect(screen.getByText(i18n.t('profile.autoSaveError'))).toBeInTheDocument();
   });
 
   it('toggles work mode and triggers save', async () => {
@@ -288,6 +290,19 @@ describe('ProfileView', () => {
     });
 
     expect(handleSave).toHaveBeenCalled();
+  });
+
+  it('keeps unset work mode neutral and permits clearing the last preference', async () => {
+    vi.useFakeTimers();
+    const handleSave = vi.fn().mockResolvedValue({ success: true });
+    renderProfileView({ profile: { ...mockProfile, work_mode: '' }, onSaveProfile: handleSave });
+    const remote = screen.getAllByRole('button', { name: /^remote$/i })[0];
+    fireEvent.click(remote);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(handleSave).toHaveBeenLastCalledWith(expect.objectContaining({ work_mode: 'Remote' }));
+    fireEvent.click(remote);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(handleSave).toHaveBeenLastCalledWith(expect.objectContaining({ work_mode: '' }));
   });
 
   it('displays inline accessible alert when avatar file exceeds size limit', async () => {

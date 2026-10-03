@@ -29,6 +29,7 @@
     "dbConnectionError": "Erro de Conexão com Supabase",
     "dbConnectionDetail": "Não foi possível conectar ao Supabase: {{message}}. Verifique sua conexão.",
     "apply": "Candidatar-se",
+    "filters": "Filtros",
     "search": "Buscar...",
     "loading": "Carregando...",
     "error": "Ocorreu um erro",
@@ -79,6 +80,7 @@
     "star": "favoritar",
     "delete": "excluir",
     "status": "status",
+    "layout": "layout",
     "press": "Pressione"
   },
   "command": {
@@ -98,6 +100,7 @@
     "categoryBreakdown": "Domínios"
   },
   "jobs": {
+    "linkedJobUnavailable": "Esta oportunidade não está disponível.",
     "saveJob": "Favoritar vaga",
     "unsaveJob": "Remover dos Favoritos",
     "saveJobError": "Não foi possível atualizar Favoritos. Tente novamente.",
@@ -154,13 +157,18 @@
       "discovered": "Descoberta em {{date}}",
       "noOpportunitySelected": "Nenhuma oportunidade selecionada",
       "selectPrompt": "Selecione uma oportunidade na lista ou pressione",
-      "expand": "Expandir para tela cheia (f)",
-      "exit": "Sair da tela cheia (f)",
+      "expand": "Expandir para tela cheia",
+      "exit": "Sair da tela cheia",
       "close": "Fechar painel",
       "openApplication": "Abrir página de candidatura",
       "noApplicationUrl": "Nenhum link de candidatura disponível",
       "statusGroup": "Seleção do status da vaga",
-      "detailLoadError": "Não foi possível carregar os detalhes da vaga."
+      "companySize": "Tamanho da Empresa",
+      "employees": "funcionários",
+      "officesInIreland": "Escritórios na Irlanda",
+      "viewCompanyWebsite": "Visitar site da empresa",
+      "detailLoadError": "Não foi possível carregar os detalhes da vaga.",
+      "title": "Detalhes da oportunidade"
     },
     "layoutMap": "Mapa",
     "layoutMapTitle": "Mapa mundial de oportunidades",
@@ -202,7 +210,8 @@
     "mapPostingLayer": "Locais dos anúncios",
     "mapOfficeLayer": "Escritórios das empresas",
     "mapOfficeEvidence": "Endereços de escritórios; os locais de trabalho destas vagas não foram confirmados.",
-    "openDetails": "Abrir detalhes"
+    "openDetails": "Abrir detalhes",
+    "salary": "Salário"
   },
   "sources": {
     "title": "Fontes de Dados",
@@ -499,6 +508,7 @@
     "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências"
   },
   "scoring": {
+    "matchingPending": "Perfil salvo. A preparação das correspondências está pendente.",
     "progress": "Atualizando correspondências: {{completed}} de {{total}} vagas processadas.",
     "retryScheduled": "A avaliação será repetida automaticamente. Os últimos resultados continuam disponíveis."
   },

@@ -20,6 +20,7 @@ INSERT INTO browser_rpc_contract VALUES
   ('public.jobpulse_literal_search_pattern(text)'), ('public.owns_document_object(text)'),
   ('public.get_profile_embedding_state()'),
   ('public.save_profile_embedding(extensions.vector,text,text)'),
+  ('public.save_profile_embedding_guarded(uuid,jsonb,extensions.vector,text,text)'),
   ('public.rescore_user(uuid,integer)'), ('public.score_from_subscores(jsonb,jsonb)'),
   ('public.fit_tier_for_score(integer)'), ('public.normalize_job_salary()');
 
@@ -51,6 +52,11 @@ BEGIN
         END IF;
       END LOOP;
     END IF;
+    FOREACH role_name IN ARRAY ARRAY['anon','authenticated'] LOOP
+      IF has_table_privilege(role_name,r.oid,'TRUNCATE,REFERENCES,TRIGGER') THEN
+        RAISE EXCEPTION 'Tenant guard: maintenance privileges on % granted to %',r.relname,role_name;
+      END IF;
+    END LOOP;
   END LOOP;
   IF EXISTS (SELECT 1 FROM tenant_contract WHERE to_regclass('public.' || table_name) IS NULL) THEN
     RAISE EXCEPTION 'Tenant guard: classified table is missing';

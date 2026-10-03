@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 
 logger = logging.getLogger(__name__)
 _CACHE_LOCK = threading.Lock()
@@ -550,11 +551,10 @@ class EmployerLookupService:
     def lookup_employer_in_db(self, name: str) -> dict[str, Any] | None:
         # ILIKE without surrounding wildcards supports case differences only.
         literal = name.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        rows = (
+        rows = response_records(
             retry_supabase(
                 lambda: self._supabase.table("employers").select("*").ilike("name", literal).limit(2).execute()
             ).data
-            or []
         )
         if len(rows) > 1:
             raise ValueError("Ambiguous employer identity")
@@ -592,17 +592,16 @@ class EmployerLookupService:
                 }
                 evidence["metadata_source"] = "curated"
                 if persist:
-                    rows = (
+                    rows = response_records(
                         retry_supabase(
-                            lambda: (
+                            lambda existing_id=existing["id"]: (
                                 self._supabase.table("employers")
                                 .update(evidence)
-                                .eq("id", existing["id"])
+                                .eq("id", existing_id)
                                 .eq("metadata_source", "unverified")
                                 .execute()
                             )
                         ).data
-                        or []
                     )
                     existing = rows[0] if rows else self.lookup_employer_in_db(canonical_name)
                 else:
@@ -627,7 +626,9 @@ class EmployerLookupService:
         if not persist:
             return payload
         try:
-            rows = retry_supabase(lambda: self._supabase.table("employers").insert(payload).execute()).data or []
+            rows = response_records(
+                retry_supabase(lambda: self._supabase.table("employers").insert(payload).execute()).data
+            )
             created = rows[0] if rows else self.lookup_employer_in_db(canonical_name)
         except Exception:
             # A concurrent insert can win; other failures must not poison the cache.

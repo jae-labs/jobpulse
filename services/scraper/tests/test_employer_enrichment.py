@@ -140,9 +140,15 @@ def test_feed_placeholder_is_never_an_employer_or_sector():
 
 
 def test_whatjobs_evidence_resolves_named_employers_without_platform_sector_guesses():
-    assert employer_lookup.curated_employer("Fenergocareers")["name"] == "Fenergo"
-    assert employer_lookup.curated_employer("henryschein")["sector"] == "Healthcare Distribution & Technology"
-    assert employer_lookup.curated_employer("Infosys")["sector"] == "IT Services and Consulting"
+    curated = employer_lookup.curated_employer("Fenergocareers")
+    assert curated is not None
+    assert curated["name"] == "Fenergo"
+    curated = employer_lookup.curated_employer("henryschein")
+    assert curated is not None
+    assert curated["sector"] == "Healthcare Distribution & Technology"
+    curated = employer_lookup.curated_employer("Infosys")
+    assert curated is not None
+    assert curated["sector"] == "IT Services and Consulting"
     for platform in ("SmartRecruiters, Inc.", "Lever, Inc.", "Zohorecruit", "HireHive", "ACCA Careers"):
         assert employer_lookup.curated_employer(platform) is None
     assert employer_lookup.curated_employer("Fenergocareers UK") is None

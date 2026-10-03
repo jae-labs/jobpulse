@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 from database.repository import sync_watchlist_metadata
 from pipeline.employer_lookup import EmployerLookupService
 
@@ -39,7 +40,7 @@ def run_backfill(*, dry_run: bool = True, limit: int | None = None) -> dict[str,
                 query = query.gt("id", cursor)
             return query.execute()
 
-        rows = retry_supabase(fetch_page).data or []
+        rows = response_records(retry_supabase(fetch_page).data)
         if not rows:
             break
         for job in rows:
@@ -67,7 +68,7 @@ def run_backfill(*, dry_run: bool = True, limit: int | None = None) -> dict[str,
                         .execute()
                     )
                 )
-                counts["updated"] += len(result.data or [])
+                counts["updated"] += len(response_records(result.data))
             except Exception:
                 counts["failed"] += 1
                 logger.warning("Employer linking failed for catalog job %s", job["id"])

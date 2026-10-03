@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { reportError } from './logger';
+import { disposeProfileEmbeddingWorker } from './browserEmbedding';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,6 +15,7 @@ export const queryClient = new QueryClient({
 
 /** Purges TanStack Query cache upon session termination. */
 export function clearAppCache(): void {
+  disposeProfileEmbeddingWorker();
   try {
     queryClient.clear();
   } catch (err) {

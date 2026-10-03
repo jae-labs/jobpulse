@@ -87,7 +87,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setSaveStatus('saving');
       setErrorMessage(null);
 
-      const result = await onSaveProfile(dataToSave);
+      let result: { success: boolean };
+      try {
+        result = await onSaveProfile(dataToSave);
+      } catch {
+        setSaveStatus('error');
+        setErrorMessage(t('profile.autoSaveError'));
+        return;
+      }
 
       if (result.success) {
         setSaveStatus('saved');
@@ -96,7 +103,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         }, 3000);
       } else {
         setSaveStatus('error');
-        setErrorMessage(result.error || t('profile.autoSaveError'));
+        setErrorMessage(t('profile.autoSaveError'));
       }
     },
     [onSaveProfile, t]
@@ -167,13 +174,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   // Multiple work modes handler
   const currentWorkModes = formData.work_mode
     ? formData.work_mode.split(',').map((s) => s.trim()).filter(Boolean)
-    : ['Hybrid'];
+    : [];
 
   const handleToggleWorkMode = (mode: string) => {
     let nextModes: string[];
     if (currentWorkModes.includes(mode)) {
       nextModes = currentWorkModes.filter((m) => m !== mode);
-      if (nextModes.length === 0) nextModes = [mode];
     } else {
       nextModes = [...currentWorkModes, mode];
     }

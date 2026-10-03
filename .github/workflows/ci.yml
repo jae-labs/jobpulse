@@ -116,6 +116,18 @@ jobs:
           supabase db reset --local
           node scripts/test-database.mjs --tenancy
 
+      - name: Install integration test dependencies
+        run: |
+          npm install --global pnpm@10.29.3
+          pnpm install --frozen-lockfile
+
+      - name: Verify real account deletion isolation
+        run: |
+          supabase functions serve delete-account > /tmp/jobpulse-functions.log 2>&1 &
+          function_pid=$!
+          trap 'kill "$function_pid"' EXIT
+          npm run db:test:account-deletion
+
   scraper-check:
     name: Scraper Quality & Tests
     runs-on: ubuntu-latest
@@ -136,6 +148,7 @@ jobs:
           cd services/scraper
           uv run --locked ruff check .
           uv run --locked ruff format --check .
+          uv run --locked pyright
 
       - name: Audit locked Python dependencies
         run: |

@@ -39,7 +39,7 @@ flowchart TD
 
 1. The frontend uses typed Supabase clients and PostgreSQL RPCs.
 2. Candidate tables enforce RLS with `user_id = auth.uid()`.
-3. Pipeline status changes update optimistically and sync to Supabase.
+3. Mutation controls expose pending/error states; detail and paginated caches refresh from authoritative SQL after writes.
 4. `get_jobs_page` and `get_overview_metrics` join shared vacancy facts with the current user's evaluations for catalog queries and aggregation.
 5. `user_job_evaluations` stores candidate sub-scores. The browser generates profile vectors, a private durable PostgreSQL worker scores an exact bounded shortlist, and catalog RPCs compose scores from the current profile weights. Unassessed jobs never inherit another user's score.
 
@@ -75,4 +75,4 @@ list pagination. Shared trusted employer domains drive catalog facets; candidate
 role-domain assessments remain private matching data. Backend Geoapify verification
 checks posting locations after persistence and records precision. Employer
 headquarters never become vacancy pins. See
-[map operations](JOB_MAP_AND_LOCATION_VERIFICATION.md).
+[map operations](OPERATIONS.md#vacancy-location-verification).

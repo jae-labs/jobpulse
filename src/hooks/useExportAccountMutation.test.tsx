@@ -6,7 +6,10 @@ import { useExportAccountMutation } from "./useQueries";
 import { getCurrentUserId } from "../lib/userSession";
 
 const from = vi.hoisted(() => vi.fn());
-vi.mock("../lib/supabase", () => ({ supabase: { from } }));
+vi.mock("../lib/supabase", () => ({
+  supabase: { from },
+  getAccountClient: vi.fn(async () => ({ from })),
+}));
 vi.mock("../lib/userSession", () => ({ getCurrentUserId: vi.fn() }));
 
 function wrapper({ children }: { children: ReactNode }) {

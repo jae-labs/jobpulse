@@ -89,6 +89,7 @@ class PublicEmployers(BaseModel):
     careers_url: str = Field(alias="careers_url")
     description: Optional[str] = Field(alias="description")
     discovered_jobs_url: Optional[str] = Field(alias="discovered_jobs_url")
+    enriched_at: Optional[datetime.datetime] = Field(alias="enriched_at")
     id: int = Field(alias="id")
     last_scraped_at: Optional[datetime.datetime] = Field(alias="last_scraped_at")
     latitude: Optional[float] = Field(alias="latitude")
@@ -99,6 +100,7 @@ class PublicEmployers(BaseModel):
     opportunities_found: Optional[int] = Field(alias="opportunities_found")
     priority: int = Field(alias="priority")
     sector: str = Field(alias="sector")
+    size: Optional[str] = Field(alias="size")
     status: Optional[str] = Field(alias="status")
     website: Optional[str] = Field(alias="website")
 
@@ -107,6 +109,7 @@ class PublicEmployersInsert(TypedDict):
     careers_url: Annotated[str, Field(alias="careers_url")]
     description: NotRequired[Annotated[Optional[str], Field(alias="description")]]
     discovered_jobs_url: NotRequired[Annotated[Optional[str], Field(alias="discovered_jobs_url")]]
+    enriched_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="enriched_at")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_scraped_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_scraped_at")]]
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
@@ -117,6 +120,7 @@ class PublicEmployersInsert(TypedDict):
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
     sector: Annotated[str, Field(alias="sector")]
+    size: NotRequired[Annotated[Optional[str], Field(alias="size")]]
     status: NotRequired[Annotated[Optional[str], Field(alias="status")]]
     website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
 
@@ -125,6 +129,7 @@ class PublicEmployersUpdate(TypedDict):
     careers_url: NotRequired[Annotated[str, Field(alias="careers_url")]]
     description: NotRequired[Annotated[Optional[str], Field(alias="description")]]
     discovered_jobs_url: NotRequired[Annotated[Optional[str], Field(alias="discovered_jobs_url")]]
+    enriched_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="enriched_at")]]
     id: NotRequired[Annotated[int, Field(alias="id")]]
     last_scraped_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_scraped_at")]]
     latitude: NotRequired[Annotated[Optional[float], Field(alias="latitude")]]
@@ -135,6 +140,7 @@ class PublicEmployersUpdate(TypedDict):
     opportunities_found: NotRequired[Annotated[Optional[int], Field(alias="opportunities_found")]]
     priority: NotRequired[Annotated[int, Field(alias="priority")]]
     sector: NotRequired[Annotated[str, Field(alias="sector")]]
+    size: NotRequired[Annotated[Optional[str], Field(alias="size")]]
     status: NotRequired[Annotated[Optional[str], Field(alias="status")]]
     website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
 

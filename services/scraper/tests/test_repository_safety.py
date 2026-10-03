@@ -8,6 +8,35 @@ import pytest
 from database import repository
 
 
+@pytest.mark.parametrize("failure", ["writes", "vectors"])
+def test_incomplete_ingestion_never_returns_success(monkeypatch, failure):
+    client = MagicMock()
+    job = {
+        "title": "Engineer",
+        "company": "Synthetic",
+        "location": "Dublin",
+        "description": "Build production systems with our engineering team. " * 5,
+        "url": "https://example.invalid/ingestion",
+        "source": "test",
+    }
+    client.table.return_value.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(data=[])
+    writer = client.table.return_value.upsert.return_value.execute
+    if failure == "writes":
+        writer.side_effect = RuntimeError("Synthetic write failure")
+    else:
+        writer.return_value = SimpleNamespace(data=[{"id": 7, **job}])
+    monkeypatch.setattr(repository, "get_supabase", lambda: client)
+    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
+    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
+    monkeypatch.setattr(repository, "prepare_embeddings", lambda rows: len(rows))
+    with pytest.raises(repository.IngestionIncompleteError) as caught:
+        repository.save_jobs_batch([job], enrich=False)
+    assert caught.value.persisted == (1 if failure == "vectors" else 0)
+    assert caught.value.failed == (1 if failure == "writes" else 0)
+    assert caught.value.vectors_pending == (1 if failure == "vectors" else 0)
+
+
 def test_ingestion_writes_only_vacancy_facts_and_job_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
     client = MagicMock()
     job = {

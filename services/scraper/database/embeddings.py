@@ -8,8 +8,9 @@ import logging
 from typing import Any
 
 from database.client import get_supabase, retry_supabase
+from database.records import response_records
 from engine.description_quality import has_description_body
-from engine.embeddings import EMBEDDING_MODEL_VERSION, build_job_document, encode_documents
+from engine.embeddings import EMBEDDING_MODEL_REVISION, EMBEDDING_MODEL_VERSION, build_job_document, encode_documents
 
 EMBEDDING_BATCH_SIZE = 100
 
@@ -23,6 +24,7 @@ def job_scoring_hash(job: dict[str, Any]) -> str:
     return content_hash(
         {
             "document_version": "full-body-token-windows:v2",
+            "model_revision": EMBEDDING_MODEL_REVISION,
             **{
                 key: job.get(key)
                 for key in (
@@ -42,12 +44,13 @@ def job_scoring_hash(job: dict[str, Any]) -> str:
     )
 
 
-def prepare_embeddings(jobs: list[dict[str, Any]]) -> None:
+def prepare_embeddings(jobs: list[dict[str, Any]]) -> int:
     """Update vectors and enqueue durable SQL rescoring when any scoring fact changes."""
     client = get_supabase()
+    pending = 0
     for start in range(0, len(jobs), EMBEDDING_BATCH_SIZE):
         chunk = jobs[start : start + EMBEDDING_BATCH_SIZE]
-        rows = (
+        rows = response_records(
             retry_supabase(
                 lambda c=chunk: (
                     client.table("job_scoring_embeddings")
@@ -56,7 +59,6 @@ def prepare_embeddings(jobs: list[dict[str, Any]]) -> None:
                     .execute()
                 )
             ).data
-            or []
         )
         existing = {row["job_id"]: row for row in rows}
         invalid_ids = [
@@ -81,6 +83,7 @@ def prepare_embeddings(jobs: list[dict[str, Any]]) -> None:
         unique_documents = list(dict.fromkeys(document for _, _, document in missing))
         vectors = encode_documents(unique_documents)
         if vectors is None:
+            pending += len(missing)
             logging.getLogger(__name__).warning(
                 "Job embedding batch unavailable; %d vacancies await retry", len(missing)
             )
@@ -98,3 +101,4 @@ def prepare_embeddings(jobs: list[dict[str, Any]]) -> None:
         retry_supabase(
             lambda p=payload: client.table("job_scoring_embeddings").upsert(p, on_conflict="job_id").execute()
         )
+    return pending

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { JobFilterStatus } from '../../types/job';
+import { isJobStatus } from '../../types/job';
 
 export type SortField = 'match' | 'location' | 'category' | 'salary';
 
@@ -31,18 +32,22 @@ export function useJobFilters({
   const sortDir = sortConfig.dir;
 
   const rawStatus = searchParams.get('status');
-  const statusParam = (rawStatus === 'interested' ? 'saved' : rawStatus) as JobFilterStatus | null;
-  const statusFilter: 'all' | JobFilterStatus = statusParam || initialStatusFilter || 'all';
+  const statusParam = rawStatus === 'interested' ? 'saved' : rawStatus;
+  const statusFilter: 'all' | JobFilterStatus = statusParam === null
+    ? initialStatusFilter : statusParam === 'all' || statusParam === 'saved' || isJobStatus(statusParam)
+      ? statusParam : 'all';
 
   const domainParam = searchParams.get('domain') || searchParams.get('sector');
   const domainFilter = domainParam || initialDomainFilter || 'all';
 
   const matchParam = searchParams.get('match');
-  const minMatch = matchParam !== null ? Number(matchParam) : initialMinMatch;
+  const parsedMatch = matchParam !== null ? Number(matchParam) : initialMinMatch;
+  const minMatch = Number.isInteger(parsedMatch) && parsedMatch >= 0 && parsedMatch <= 100 ? parsedMatch : 0;
 
   const locationFilter = searchParams.get('location') || 'all';
   const salaryFilter = searchParams.get('salary') || 'all';
-  const urlJobId = searchParams.get('job') ? Number(searchParams.get('job')) : null;
+  const parsedJobId = Number(searchParams.get('job'));
+  const urlJobId = Number.isSafeInteger(parsedJobId) && parsedJobId > 0 ? parsedJobId : null;
 
   const updateUrlParam = useCallback(
     (key: string, value: string | null) => {
@@ -50,7 +55,7 @@ export function useJobFilters({
         (prev) => {
           const next = new URLSearchParams(prev);
           if (key === 'domain') next.delete('sector');
-          if (!value || value === 'all' || value === '0') {
+          if (!value) {
             next.delete(key);
           } else {
             next.set(key, value);
@@ -85,21 +90,21 @@ export function useJobFilters({
 
   const setStatusFilter = useCallback(
     (status: 'all' | JobFilterStatus) => {
-      updateUrlParam('status', status === 'all' ? null : status);
+      updateUrlParam('status', status);
     },
     [updateUrlParam]
   );
 
   const setDomainFilter = useCallback(
     (domain: string) => {
-      updateUrlParam('domain', domain === 'all' ? null : domain);
+      updateUrlParam('domain', domain);
     },
     [updateUrlParam]
   );
 
   const setMinMatch = useCallback(
     (match: number) => {
-      updateUrlParam('match', match === 0 ? null : String(match));
+      updateUrlParam('match', String(match));
     },
     [updateUrlParam]
   );
@@ -178,6 +183,9 @@ export function useJobFilters({
         for (const key of ['q', 'status', 'match', 'location', 'domain', 'sector', 'salary']) {
           next.delete(key);
         }
+        next.set('status', 'all');
+        next.set('domain', 'all');
+        next.set('match', '0');
         return next;
       },
       { replace: true }

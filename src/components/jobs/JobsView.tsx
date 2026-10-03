@@ -15,7 +15,7 @@ import type { Job, JobStatus, JobFilterStatus, OverviewMetrics } from '../../typ
 import { STATUS_LIST } from '../../types/job';
 import { JobCard } from './JobCard';
 import { JobDetailInspector } from './JobDetailInspector';
-import { Button, Card, EmptyState, Pill, TextField } from '@jae-labs/ui';
+import { Button, Card, EmptyState, Pill, Range, TextField } from '@jae-labs/ui';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { useJobByIdQuery, useJobsInfiniteQuery, useUpdateJobSavedMutation } from '../../hooks/useQueries';
@@ -81,6 +81,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const { t, i18n } = useTranslation('translation');
   const { layoutMode, setLayoutMode, toggleMap, isCompact } = useJobLayout();
   const [isDetailFullScreen, setIsDetailFullScreen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
 
   const {
     statusFilter,
@@ -111,7 +113,17 @@ export const JobsView: React.FC<JobsViewProps> = ({
     initialMinMatch,
   });
 
-  const { data: linkedJob } = useJobByIdQuery(urlJobId ?? selectedJob?.id, userId, Boolean(urlJobId || selectedJob));
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const activeDetailedFilterCount = useMemo(() => {
+    let count = 0;
+    if (domainFilter !== 'all') count++;
+    if (minMatch > 0) count++;
+    if (locationFilter !== 'all') count++;
+    if (salaryFilter !== 'all') count++;
+    return count;
+  }, [domainFilter, minMatch, locationFilter, salaryFilter]);
+
+  const { data: linkedJob, isLoading: isLinkedLoading, isError: isLinkedError, refetch: refetchLinked } = useJobByIdQuery(urlJobId ?? selectedJob?.id, userId, Boolean(urlJobId || selectedJob));
 
   useEffect(() => {
     if (!isDetailFullScreen) return;
@@ -150,8 +162,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const {
     data: pageQueryData,
     isLoading: isPageLoading,
+    isFetching: isPageFetching,
     isError: isPageError,
-    error: pageError,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -236,6 +248,24 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   const [explicitSortField, setExplicitSortField] = useState<SortField | null>(null);
 
+  const [localMatch, setLocalMatch] = useState(minMatch);
+  useEffect(() => setLocalMatch(minMatch), [minMatch]);
+
+  const salaryOptions = useMemo(() => ['all', 'disclosed', '50k', '60k', '70k', '80k'], []);
+  const initialSalaryIdx = salaryOptions.indexOf(salaryFilter);
+  const [localSalaryIndex, setLocalSalaryIndex] = useState(initialSalaryIdx >= 0 ? initialSalaryIdx : 0);
+  useEffect(() => {
+    const idx = salaryOptions.indexOf(salaryFilter);
+    setLocalSalaryIndex(idx >= 0 ? idx : 0);
+  }, [salaryFilter, salaryOptions]);
+
+  const getSalaryLabel = useCallback((idx: number) => {
+    const val = salaryOptions[idx];
+    if (val === 'all') return t('jobs.allSalaries');
+    if (val === 'disclosed') return t('jobs.disclosedOnly');
+    return t(`jobs.salary${val}`);
+  }, [salaryOptions, t]);
+
   const hasActiveFilters = Boolean(
     activeSearch.trim() ||
     statusFilter !== 'all' ||
@@ -293,33 +323,53 @@ export const JobsView: React.FC<JobsViewProps> = ({
     estimateSize,
     overscan: 6,
     getItemKey,
+    paddingEnd: isCompact ? 12 : 8,
   });
 
   // Detail state follows the owner-scoped query after save/unsave, even if the job leaves the active filter.
-  const inspectedJob = selectedJob
+  const inspectedJob = selectedJob && (!urlJobId || selectedJob.id === urlJobId)
     ? (linkedJob?.id === selectedJob.id ? linkedJob : displayedJobs.find((job) => job.id === selectedJob.id) ?? selectedJob)
     : null;
 
   const prevFilterSignature = useRef(JSON.stringify(queryParams));
+  const pendingAutoSelectRef = useRef<string | null>(null);
+
   useEffect(() => {
     const currentSignature = JSON.stringify(queryParams);
-    if (prevFilterSignature.current !== currentSignature) {
-      if (!isPageLoading) {
-        if (displayedJobs.length > 0) {
-          onSelectJob(displayedJobs[0]);
-          if (listContainerRef.current && document.activeElement && document.activeElement.tagName === 'BUTTON') {
-            listContainerRef.current.focus({ preventScroll: true });
-          }
-        } else {
-          onSelectJob(null);
-        }
-        prevFilterSignature.current = currentSignature;
-      }
+    if (urlJobId !== null) {
+      pendingAutoSelectRef.current = null;
+      return;
     }
-  }, [queryParams, isPageLoading, displayedJobs, onSelectJob]);
+    if (prevFilterSignature.current !== currentSignature) {
+      pendingAutoSelectRef.current = currentSignature;
+      prevFilterSignature.current = currentSignature;
+    }
+  }, [queryParams, urlJobId]);
+
+  useEffect(() => {
+    const currentSignature = JSON.stringify(queryParams);
+    if (urlJobId === null && pendingAutoSelectRef.current === currentSignature && !isPageFetching) {
+      if (displayedJobs.length > 0) {
+        onSelectJob(displayedJobs[0]);
+        if (listContainerRef.current && document.activeElement && document.activeElement.tagName === 'BUTTON') {
+          listContainerRef.current.focus({ preventScroll: true });
+        }
+      } else {
+        onSelectJob(null);
+      }
+      pendingAutoSelectRef.current = null;
+    }
+  }, [isPageFetching, displayedJobs, queryParams, onSelectJob, urlJobId]);
 
   // Track whether deep link has been handled so toggling layoutMode doesn't trigger full-screen
   const initialDeepLinkHandledRef = useRef<number | null>(null);
+  const selectionDismissedRef = useRef(false);
+  const closeInspector = useCallback(() => {
+    selectionDismissedRef.current = true;
+    setIsDetailFullScreen(false);
+    onSelectJob(null);
+    updateUrlParam('job', null);
+  }, [onSelectJob, updateUrlParam]);
 
   // Auto-select job from URL param or default to first in split mode
   useEffect(() => {
@@ -329,9 +379,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
         onSelectJob(match);
       }
       // Only open full-screen once on initial deep-link arrival, not when simply toggling layoutMode
-      if (initialDeepLinkHandledRef.current !== urlJobId) {
+      if (match && initialDeepLinkHandledRef.current !== urlJobId) {
         initialDeepLinkHandledRef.current = urlJobId;
-        if (match && (layoutMode === 'list' || layoutMode === 'map' || (typeof window !== 'undefined' && window.innerWidth < 1024))) {
+        if (layoutMode === 'list' || layoutMode === 'map' || isCompact) {
           setIsDetailFullScreen(true);
         }
       }
@@ -339,10 +389,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
     }
     initialDeepLinkHandledRef.current = null;
     if (displayedJobs.length === 0) return;
-    if (layoutMode === 'split' && !selectedJob && typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (layoutMode === 'split' && !selectedJob && !selectionDismissedRef.current && typeof window !== 'undefined' && window.innerWidth >= 1024) {
       onSelectJob(displayedJobs[0]);
     }
-  }, [urlJobId, layoutMode, selectedJob, displayedJobs, linkedJob, onSelectJob]);
+  }, [urlJobId, layoutMode, selectedJob, displayedJobs, linkedJob, onSelectJob, isCompact]);
 
   useKeyboardNavigation({
     displayedJobs,
@@ -353,6 +403,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     isDetailFullScreen,
     setIsDetailFullScreen,
     layoutMode,
+    setLayoutMode,
     updateUrlParam,
     scrollToIndex: (index, options) => virtualizer.scrollToIndex(index, options),
     cardRefs,
@@ -383,10 +434,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
   }, [layoutMode, onSelectJob, updateUrlParam]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-full space-y-3">
+    <div className="flex flex-col flex-1 min-h-0 space-y-3">
       <Card className="shrink-0 space-y-2.5 p-3 shadow-xs">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full min-w-0 sm:w-auto sm:flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-ds-text-muted" />
             <TextField
               type="search"
@@ -394,14 +445,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
               value={inputDisplayValue}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
-              placeholder={t('jobs.searchPlaceholder')}
-              className="h-auto border-ds-border bg-ds-surface py-1.5 pl-9 pr-16 text-xs focus:bg-ds-surface"
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              placeholder={isSearchFocused ? '' : t('jobs.searchPlaceholder')}
+              className="h-auto border-ds-border bg-ds-surface py-1.5 pl-9 pr-8 sm:pr-16 text-xs focus:bg-ds-surface"
             />
             {inputDisplayValue && (
               <button
                 type="button"
                 onClick={() => handleQueryChange('')}
-                className="absolute right-12 top-1/2 -translate-y-1/2 rounded-ds-control p-0.5 text-ds-text-muted hover:text-ds-text-primary"
+                className="absolute right-2 sm:right-12 top-1/2 -translate-y-1/2 rounded-ds-control p-0.5 text-ds-text-muted hover:text-ds-text-primary"
                 aria-label={t('jobs.clearSearch')}
               >
                 <X className="size-3" />
@@ -460,32 +513,45 @@ export const JobsView: React.FC<JobsViewProps> = ({
               className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
               <MapIcon className="size-3.5" /><span>{t('jobs.layoutMap')}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setIsFiltersOpen((prev) => !prev)}
+              aria-expanded={isFiltersOpen}
+              aria-label={t('common.filters')}
+              className={`flex lg:hidden items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                isFiltersOpen || activeDetailedFilterCount > 0
+                  ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
+                  : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
+              }`}
+            >
+              <SlidersHorizontal className="size-3.5" />
+              <span>{t('common.filters')}</span>
+              {activeDetailedFilterCount > 0 && (
+                <span className="rounded-full bg-ds-accent/20 px-1 text-[10px] font-semibold text-ds-accent">
+                  {activeDetailedFilterCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         <div className="flex flex-col gap-2.5 pt-2 border-t border-ds-border text-xs">
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-1.5">
+          <div className={`${isFiltersOpen ? 'grid' : 'hidden lg:grid'} grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-1.5`}>
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
-              <div className="flex items-center min-w-0 flex-1">
-                <select
+              <div className="flex items-center min-w-0 flex-1 gap-2 w-full sm:w-[160px] px-1">
+                <span className="text-[10px] text-ds-text-secondary leading-none shrink-0">{t('jobs.match')}</span>
+                <Range
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={localMatch}
+                  onChange={(e) => setLocalMatch(Number(e.target.value))}
+                  onPointerUp={() => setMinMatch(localMatch)}
+                  onKeyUp={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') setMinMatch(localMatch) }}
+                  className="w-full flex-1 min-w-0"
                   aria-label={t('jobs.minMatch')}
-                  value={minMatch}
-                  onChange={(e) => setMinMatch(Number(e.target.value))}
-                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[140px]"
-                >
-                  <option value={0} className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.allMatches')}
-                  </option>
-                  <option value={75} className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.fit75')}
-                  </option>
-                  <option value={55} className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.fit55')}
-                  </option>
-                  <option value={35} className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.fit35')}
-                  </option>
-                </select>
+                />
+                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 w-7 text-right tabular-nums">{localMatch === 0 ? t('jobs.allMatches') : `${localMatch}%+`}</span>
               </div>
               <button
                 type="button"
@@ -544,32 +610,20 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
 
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
-              <div className="flex items-center min-w-0 flex-1">
-                <select
+              <div className="flex items-center min-w-0 flex-1 gap-2 w-full sm:w-[150px] px-1">
+                <span className="text-[10px] text-ds-text-secondary leading-none shrink-0">{t('jobs.salary')}</span>
+                <Range
+                  min={0}
+                  max={salaryOptions.length - 1}
+                  step={1}
+                  value={localSalaryIndex}
+                  onChange={(e) => setLocalSalaryIndex(Number(e.target.value))}
+                  onPointerUp={() => setSalaryFilter(salaryOptions[localSalaryIndex])}
+                  onKeyUp={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') setSalaryFilter(salaryOptions[localSalaryIndex]) }}
+                  className="w-full flex-1 min-w-0"
                   aria-label={t('jobs.allSalaries')}
-                  value={salaryFilter}
-                  onChange={(e) => setSalaryFilter(e.target.value)}
-                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[130px]"
-                >
-                  <option value="all" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.allSalaries')}
-                  </option>
-                  <option value="50k" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.salary50k')}
-                  </option>
-                  <option value="60k" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.salary60k')}
-                  </option>
-                  <option value="70k" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.salary70k')}
-                  </option>
-                  <option value="80k" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.salary80k')}
-                  </option>
-                  <option value="disclosed" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.disclosedOnly')}
-                  </option>
-                </select>
+                />
+                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 w-[42px] text-right tabular-nums">{getSalaryLabel(localSalaryIndex)}</span>
               </div>
               <button
                 type="button"
@@ -681,23 +735,29 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </span>
           <span className="hidden sm:inline-block text-ds-text-muted">·</span>
           <span className="hidden sm:inline-block text-ds-text-muted font-sans">
-            {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">s</kbd> {t('shortcuts.star')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">d</kbd> {t('shortcuts.delete')}
+            {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">s</kbd> {t('shortcuts.star')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">d</kbd> {t('shortcuts.delete')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">S</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">L</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">M</kbd> {t('shortcuts.layout')}
           </span>
         </div>
       </div>}
 
+      {urlJobId && !linkedJob && !displayedJobs.some(job => job.id === urlJobId) && (
+        <div role={isLinkedError ? 'alert' : 'status'} className="border-b border-ds-border p-4 text-sm text-ds-text-secondary">
+          {isLinkedLoading ? t('common.loading') : isLinkedError ? t('common.loadError') : t('jobs.linkedJobUnavailable')}
+          {isLinkedError && <Button variant="secondary" size="sm" onClick={() => void refetchLinked()}>{t('common.retry')}</Button>}
+        </div>
+      )}
       {layoutMode === 'map' ? (
         <Suspense fallback={<div role="status">{t('jobs.mapLoading')}</div>}>
           <JobsMapView userId={userId} filters={queryParams} onSelectLocation={isCompact ? selectMapLocation : undefined} onSelectJob={(id) => {
             updateUrlParam('job', String(id)); setIsDetailFullScreen(true);
           }} />
         </Suspense>
-      ) : isPageError && displayedJobs.length === 0 ? (
+      ) : isPageError ? (
         <div className="flex-1 min-h-0 flex items-center justify-center p-6">
           <EmptyState
             icon={SlidersHorizontal}
             title={t('common.error')}
-            description={pageError instanceof Error ? pageError.message : t('jobs.noOpportunitiesPrompt')}
+            description={t('common.networkError')}
             action={<Button variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>}
             className="max-w-md mx-auto p-12"
           />
@@ -714,7 +774,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           <div
             ref={listContainerRef}
             tabIndex={-1}
-            className={`h-full min-h-0 overflow-y-auto overscroll-contain pr-1 ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
+            className={`h-full min-h-0 overflow-y-auto overscroll-contain pr-1 outline-none ${layoutMode === 'split' ? 'lg:col-span-5 xl:col-span-5' : 'w-full'}`}
           >
             <div
               className="relative w-full"
@@ -780,7 +840,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 job={inspectedJob}
                 onUpdateStatus={onUpdateStatus || (async () => {})}
                 isUpdating={isUpdating}
-                onClose={() => onSelectJob(null)}
+                onClose={closeInspector}
                 isFullScreen={false}
                 onToggleFullScreen={() => setIsDetailFullScreen(true)}
                 userId={userId}
@@ -808,13 +868,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
         </div>
       )}
 
-      <DialogPrimitive.Root open={isDetailFullScreen} onOpenChange={setIsDetailFullScreen}>
-      {selectedJob && isDetailFullScreen && (
+      <DialogPrimitive.Root open={isDetailFullScreen} onOpenChange={(open) => {
+        if (!open && (isCompact || layoutMode !== 'split')) closeInspector();
+        else setIsDetailFullScreen(open);
+      }}>
+      {inspectedJob && isDetailFullScreen && (
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="ds-content-enter fixed inset-0 z-50 bg-ds-canvas/65" />
           <DialogPrimitive.Content
             ref={dialogContentRef}
-            aria-label={t('jobs.inspector')}
+            aria-label={t('jobs.inspector.title')}
             id="fullscreen-job-dialog"
             onOpenAutoFocus={(e) => {
               e.preventDefault();
@@ -827,18 +890,11 @@ export const JobsView: React.FC<JobsViewProps> = ({
               job={inspectedJob}
               onUpdateStatus={onUpdateStatus || (async () => {})}
               isUpdating={isUpdating}
-              onClose={() => {
-                setIsDetailFullScreen(false);
-                if (layoutMode === 'list') {
-                  onSelectJob(null);
-                }
-              }}
+              onClose={closeInspector}
               isFullScreen={true}
               onToggleFullScreen={() => {
-                setIsDetailFullScreen(false);
-                if (layoutMode === 'list') {
-                  onSelectJob(null);
-                }
+                if (isCompact || layoutMode !== 'split') closeInspector();
+                else setIsDetailFullScreen(false);
               }}
               userId={userId}
             />

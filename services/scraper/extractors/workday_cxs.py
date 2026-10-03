@@ -13,7 +13,7 @@ from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 
 
-def extract_workday_cxs_job_spec(url: str, title: str) -> dict[str, str]:
+def extract_workday_cxs_job_spec(url: str, title: str) -> dict[str, str | None]:
     """Fetch structured job details directly via Workday CXS JSON endpoint."""
     try:
         match = re.match(r"https://([^.]+)\.([^/]+)/(?:[a-zA-Z]{2}-[a-zA-Z]{2}/)?([^/]+)/job/(.+)", url)

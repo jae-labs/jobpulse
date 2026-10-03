@@ -8,6 +8,13 @@ const job = {
 };
 
 describe('employer RPC boundary', () => {
+  it.each(['new', 'applied', 'interviewing', 'rejected', 'not_interested'])('preserves pipeline status %s', status => {
+    expect(validateJobsPageResult({ total: 1, items: [{ ...job, status }] }).items[0].status).toBe(status);
+  });
+  it('normalizes legacy bookmarks and rejects unknown pipeline states', () => {
+    expect(validateJobsPageResult({ total: 1, items: [{ ...job, status: 'interested' }] }).items[0]).toMatchObject({ status: 'new', is_saved: true });
+    expect(() => validateJobsPageResult({ total: 1, items: [{ ...job, status: 'invented' }] })).toThrow('Invalid job status');
+  });
   it('preserves employer identity, shared sector and zero coordinates', () => {
     expect(validateJobsPageResult({ total: 1, items: [job] }).items[0]).toMatchObject({
       employer_id: 12, domain: 'Synthetic Sector', latitude: 0, longitude: 0,

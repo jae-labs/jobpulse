@@ -12,7 +12,7 @@ from network.http_client import get_ssl_context
 from network.http_client import open_request as urlopen
 
 
-def extract_pdf_job_spec(url: str, title: str) -> dict[str, str]:
+def extract_pdf_job_spec(url: str, title: str) -> dict[str, str | None]:
     """Download and extract job specification text from a candidate information booklet PDF."""
     try:
         from pypdf import PdfReader

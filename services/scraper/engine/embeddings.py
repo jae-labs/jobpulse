@@ -12,6 +12,7 @@ _DOCUMENT_EMB_CACHE: OrderedDict[str, list[float]] = OrderedDict()
 _DOCUMENT_CACHE_LIMIT = 4096
 _model_lock = threading.RLock()
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 # This identifies the vector space shared with browser profile embeddings.
 # Job-only preprocessing revisions invalidate the job content hash separately.
 EMBEDDING_MODEL_VERSION = "all-MiniLM-L6-v2:384:v1"
@@ -27,7 +28,9 @@ def get_semantic_model() -> Any:
                 from sentence_transformers import SentenceTransformer
 
                 device = "mps" if torch.backends.mps.is_available() else "cpu"
-                _EMBEDDING_MODEL = SentenceTransformer(EMBEDDING_MODEL_NAME, device=device)
+                _EMBEDDING_MODEL = SentenceTransformer(
+                    EMBEDDING_MODEL_NAME, revision=EMBEDDING_MODEL_REVISION, device=device
+                )
             except Exception as exc:
                 print(
                     f"  [AI ENGINE] Notice: Local SentenceTransformer unavailable ({exc}). Job embeddings unavailable."

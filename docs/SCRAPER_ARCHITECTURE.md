@@ -61,7 +61,7 @@ bodies rather than listing snippets. Failed detail requests cannot erase a store
 body, and new metadata-only listings are not embedded. The catalog repair command
 updates descriptions in place, preserving job IDs and candidate tracking. Job
 embeddings cover the complete body through token windows. See
-[Published job descriptions and semantic coverage](JOB_DESCRIPTION_COMPLETENESS.md)
+[Published job descriptions and semantic coverage](OPERATIONS.md#published-descriptions)
 for repair commands, body-gate limits and unresolved-source handling.
 
 ## Employer metadata and vacancy locations
@@ -88,13 +88,13 @@ After persistence, a bounded employer-office worker researches distinct company/
 pairs and saves additive addresses, coordinates and website/category evidence. It uses
 persistent retry dates rather than repeating research for each vacancy. The map's
 separate office layer labels workplaces as unconfirmed; vacancy facts remain independent.
-See [employer office enrichment](EMPLOYER_OFFICE_ENRICHMENT.md).
+See [employer office enrichment](OPERATIONS.md#employer-research-and-offices).
 
 After persistence, when `GEOAPIFY_API_KEY` is configured, the synchronization runner
 checks up to 100 pending job locations through a separate bounded verification stage.
 It caches external results, records each job's original location and precision, and
 never substitutes employer headquarters. Provider failures do not roll back ingestion.
-See [job location verification](JOB_MAP_AND_LOCATION_VERIFICATION.md).
+See [job location verification](OPERATIONS.md#vacancy-location-verification).
 
 `make scrape-backfill-employers` is read-only by default. Set `ARGS="--apply --limit 100"`
 to link a bounded scan. It uses ID keyset pagination, counts unresolved rows toward the
@@ -156,4 +156,4 @@ and the response cache live in `pipeline/company_research.py`; Wikidata supplies
 company discovery and Geoapify supplies explicit street-address geocoding. Results
 are review proposals, never ingestion-time industry or vacancy-location inference.
 Reviewed metadata can be previewed/applied through `tools/enrich_employers.py --registry`.
-See [the operational guide](EMPLOYER_RESEARCH.md) for configuration and evidence rules.
+See [the operational guide](OPERATIONS.md#employer-research-and-offices) for configuration and evidence rules.

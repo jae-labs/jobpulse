@@ -10,6 +10,7 @@ import argparse
 import csv
 import re
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database.client import get_supabase, retry_supabase
 from database.embeddings import prepare_embeddings
+from database.records import response_records
 from engine.text_cleaner import normalize_location
 
 
@@ -46,7 +48,9 @@ def read_catalog_snapshot(path: Path) -> dict[int, dict[str, str | None]]:
     raise ValueError("Missing or incomplete public.jobs section")
 
 
-def restoration_location(job: dict[str, Any], baseline: dict[str, str | None], employer: dict[str, Any]) -> str | None:
+def restoration_location(
+    job: dict[str, Any], baseline: Mapping[str, str | None], employer: dict[str, Any]
+) -> str | None:
     if any(job.get(key) != baseline[key] for key in ("dedupe_key", "company", "url")):
         return None
     original = normalize_location(baseline.get("location") or "")
@@ -70,7 +74,7 @@ def repair_locations(snapshot: Path, report: Path, *, apply: bool = False) -> di
         writer = csv.DictWriter(output, fieldnames=["id", "old_location", "restored_location", "outcome"])
         writer.writeheader()
         while True:
-            rows = (
+            rows = response_records(
                 retry_supabase(
                     lambda c=cursor: (
                         client.table("jobs")
@@ -81,7 +85,6 @@ def repair_locations(snapshot: Path, report: Path, *, apply: bool = False) -> di
                         .execute()
                     )
                 ).data
-                or []
             )
             if not rows:
                 break
@@ -106,7 +109,7 @@ def repair_locations(snapshot: Path, report: Path, *, apply: bool = False) -> di
                 counts["proposed"] += 1
                 outcome = "would_restore"
                 if apply:
-                    saved = (
+                    saved = response_records(
                         retry_supabase(
                             lambda j=job, loc=restored: (
                                 client.table("jobs")
@@ -119,7 +122,6 @@ def repair_locations(snapshot: Path, report: Path, *, apply: bool = False) -> di
                                 .execute()
                             )
                         ).data
-                        or []
                     )
                     counts["updated"] += len(saved)
                     counts["conflicts"] += not bool(saved)

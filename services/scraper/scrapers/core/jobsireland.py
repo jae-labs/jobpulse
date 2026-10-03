@@ -136,7 +136,7 @@ def fetch_jobsireland_page(
     keyword: str = "",
 ) -> tuple[int, list[dict[str, Any]]]:
     """Fetch one paginated window from JobsIreland BrowseJobs endpoint."""
-    params = {
+    params: dict[str, str | int] = {
         "page": page,
         "pageSize": page_size,
         "VacancyTypeId": vacancy_type_id,

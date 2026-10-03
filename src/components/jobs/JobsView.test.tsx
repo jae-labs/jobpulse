@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
 import type { Job } from '../../types/job';
+import { useState } from 'react';
 const linked = vi.hoisted(() => ({ data: null as Job | null }));
 
 vi.mock('./JobsMapView', () => ({ default: ({ onSelectLocation }: { onSelectLocation?: (location: string) => void }) => <section aria-label="Synthetic map view">{onSelectLocation ? <button onClick={() => onSelectLocation("Dublin")}>Synthetic Dublin dot</button> : null}</section> }));
@@ -65,7 +66,7 @@ describe('JobsView Search Input', () => {
 
   const renderJobsView = (
     initialEntries: string[] = ['/opportunities'],
-    selectedJob: any = null
+    selectedJob: Job | null = null
   ) => {
     return render(
       <QueryClientProvider client={queryClient}>
@@ -80,17 +81,35 @@ describe('JobsView Search Input', () => {
     const snapshot: Job = { id: 1, title: 'Synthetic job', company: 'Synthetic company', status: 'applied', is_saved: false, relevance: 0, location: 'Dublin', employment_type: 'Full time', salary_text: null, matched_skills: [], url: 'https://example.invalid', source: 'Synthetic', last_seen_at: '2026-01-01' };
     linked.data = { ...snapshot, is_saved: true };
     renderJobsView(['/opportunities'], snapshot);
-    expect(screen.getByRole('button', { name: 'Remove from Favorites' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Unstar job' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('opens a compact cold deep link after its job arrives outside the first page', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const ColdLink = () => {
+      const [selectedJob, selectJob] = useState<Job | null>(null);
+      return <QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/opportunities?job=99']}>
+        <JobsView userId="synthetic-owner" selectedJob={selectedJob} onSelectJob={selectJob} />
+      </MemoryRouter></QueryClientProvider>;
+    };
+    const view = render(<ColdLink />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    linked.data = { id: 99, title: 'Delayed synthetic vacancy', company: 'Synthetic', status: 'new', relevance: 0,
+      location: 'Dublin', employment_type: 'Full time', salary_text: null, matched_skills: [],
+      url: 'https://example.invalid/99', source: 'test', last_seen_at: '2026-10-03' };
+    view.rerender(<ColdLink />);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveTextContent('Delayed synthetic vacancy');
   });
 
   it('switches to map without displaying the loaded list count and restores list mode', async () => {
     renderJobsView();
-    const map = screen.getByRole('button', { name: 'Map' });
+    const map = screen.getByRole('button', { name: /Map/i });
     fireEvent.click(map);
     expect(await screen.findByRole('region', { name: 'Synthetic map view' })).toBeInTheDocument();
     expect(map).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByText(/^Showing/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    fireEvent.click(screen.getByRole('button', { name: /List/i }));
     expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
     expect(screen.getByText(/^Showing/)).toBeInTheDocument();
   });
@@ -100,7 +119,7 @@ describe('JobsView Search Input', () => {
     const scroll = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll });
     renderJobsView(['/opportunities?domain=Cloud&salary=specified&q=Engineer']);
-    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: /Map/i }));
     fireEvent.click(await screen.findByRole('button', { name: 'Synthetic Dublin dot' }));
     expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'All Locations' })).toHaveValue('Dublin');
@@ -163,19 +182,15 @@ describe('JobsView Search Input', () => {
   it('keeps filter labels free of counts inferred from a partial page', () => {
     renderJobsView();
 
-    // Match score dropdown options have counts
-    expect(screen.getByRole('option', { name: 'All Matches' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '75%+ Match' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '55%+ Match' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '35%+ Match' })).toBeInTheDocument();
+    // Match score slider shows current value
+    expect(screen.getByText('All Matches')).toBeInTheDocument();
 
     // Domain dropdown options have counts
     expect(screen.getByRole('option', { name: 'All Domains (1)' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Cloud (1)' })).not.toBeInTheDocument();
 
-    // Salary dropdown options have counts
-    expect(screen.getByRole('option', { name: 'All Salaries' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Disclosed only' })).toBeInTheDocument();
+    // Salary slider shows current value
+    expect(screen.getByText('All Salaries')).toBeInTheDocument();
 
     // Location regional hubs and loaded results have counts
     expect(screen.getByRole('option', { name: 'All Locations (1)' })).toBeInTheDocument();

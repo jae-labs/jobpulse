@@ -1,6 +1,7 @@
 """Behavioral regressions for full-body ingestion and in-place catalog repair."""
 
 import json
+from http.client import HTTPMessage
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -398,6 +399,7 @@ def test_pdf_body_keeps_late_pages_and_text_beyond_old_cap(monkeypatch) -> None:
 
     monkeypatch.setattr(pdf, "urlopen", lambda *_args, **_kwargs: PDFResponse(None))
     spec = pdf.extract_pdf_job_spec("https://example.com/booklet.pdf", "Engineer")
+    assert spec["description"] is not None
     assert len(spec["description"]) > 25000
     assert spec["description"].endswith("FINAL_PAGE_REQUIREMENT")
 
@@ -513,7 +515,7 @@ def test_whatjobs_access_denial_is_not_a_body_and_backs_off(monkeypatch) -> None
     from extractors import whatjobs
 
     monkeypatch.setattr(whatjobs, "_blocked_until", 0)
-    fetch = MagicMock(side_effect=HTTPError("https://ie.whatjobs.com/job", 403, "Denied", None, None))
+    fetch = MagicMock(side_effect=HTTPError("https://ie.whatjobs.com/job", 403, "Denied", HTTPMessage(), None))
     monkeypatch.setattr(whatjobs, "fetch_page", fetch)
     for _ in range(2):
         assert whatjobs.extract_whatjobs_job_spec("https://ie.whatjobs.com/job", "Example", "Engineer") == {

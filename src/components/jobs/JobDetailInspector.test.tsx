@@ -3,7 +3,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { JobDetailInspector } from './JobDetailInspector';
 import type { Job } from '../../types/job';
 
-const queryState = vi.hoisted(() => ({ loading: false, data: null as { description: string } | null }));
+const queryState = vi.hoisted(() => ({
+  loading: false,
+  data: null as {
+    description?: string;
+    relevance?: number;
+    fit_tier?: string;
+    employer?: {
+      id: number;
+      name: string;
+      sector: string;
+      size?: string | null;
+      website?: string | null;
+      offices?: Array<{ place_id: string; name: string; address: string; city: string | null }>;
+    } | null;
+  } | null,
+}));
 afterEach(() => { queryState.loading = false; queryState.data = null; });
 
 vi.mock('../../hooks/useQueries', () => ({
@@ -54,7 +69,7 @@ describe('JobDetailInspector', () => {
 
     expect(buttons).toHaveLength(4);
     expect(within(statusGroup).queryByTitle('Favorite')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Favorite job' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Star job' })).toBeInTheDocument();
     for (const button of buttons) {
       expect(button).toHaveClass('border');
       expect(button).not.toHaveClass('transition-colors');
@@ -66,5 +81,50 @@ describe('JobDetailInspector', () => {
     );
     expect(within(statusGroup).getByTitle('Applied')).toHaveAttribute('aria-pressed', 'true');
     expect(within(statusGroup).getByTitle('New')).toHaveClass('border-transparent');
+  });
+
+  it('renders company size badge and Ireland offices when employer metadata is present', () => {
+    queryState.data = {
+      description: 'Platform engineer job spec.',
+      employer: {
+        id: 2,
+        name: 'Amazon Web Services',
+        sector: 'Cloud & Platform Engineering',
+        size: '5000+',
+        website: 'https://aws.amazon.com',
+        offices: [
+          {
+            place_id: 'ie-office-aws-1',
+            name: 'AWS Charlemont Square',
+            address: 'Charlemont Street, Dublin',
+            city: 'Dublin',
+          },
+          {
+            place_id: 'ie-office-aws-2',
+            name: 'Amazon Cork Office',
+            address: 'Airport Business Park, Cork',
+            city: 'Cork',
+          },
+        ],
+      },
+    };
+
+    render(
+      <JobDetailInspector
+        job={{ ...job, company: 'Amazon Web Services' }}
+        onUpdateStatus={vi.fn().mockResolvedValue(undefined)}
+      />
+    );
+
+    // Size badge
+    expect(screen.getByText('5000+')).toBeInTheDocument();
+
+    // Ireland offices section
+    expect(screen.getByText(/Offices in Ireland/i)).toBeInTheDocument();
+    expect(screen.getByText('AWS Charlemont Square')).toBeInTheDocument();
+    expect(screen.getByText('Charlemont Street, Dublin')).toBeInTheDocument();
+    expect(screen.getByText('Amazon Cork Office')).toBeInTheDocument();
+    expect(screen.getByText('Airport Business Park, Cork')).toBeInTheDocument();
+    expect(screen.getByTitle('Visit company website')).toHaveAttribute('href', 'https://aws.amazon.com/');
   });
 });

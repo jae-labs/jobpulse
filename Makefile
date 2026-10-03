@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit scrape-enrich-offices db-types check
+.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit scrape-typecheck scrape-enrich-offices db-types check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -73,6 +73,9 @@ scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set AR
 scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
 	@cd services/scraper && uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
 
+scrape-enrich-ai: ## Enrich company size, sector, and Ireland offices with agy LLM; set ARGS="--apply" to persist.
+	@cd services/scraper && uv run --locked python tools/enrich_companies_ai.py $(ARGS)
+
 scrape-lint: ## Run ruff lint & format check on scraper code.
 	@cd services/scraper && uv run --locked ruff check .
 	@cd services/scraper && uv run --locked ruff format --check .
@@ -84,6 +87,9 @@ scrape-format: ## Auto-format and fix lint issues in scraper code.
 scrape-unit: ## Run scraper unit tests with pytest.
 	@cd services/scraper && uv run --locked pytest
 
+scrape-typecheck: ## Check scraper types with Pyright.
+	@cd services/scraper && uv run --locked pyright
+
 db-types: ## Generate TypeScript and Python types atomically from local Supabase schema.
 	npm run db:types
 
@@ -91,4 +97,5 @@ db-types: ## Generate TypeScript and Python types atomically from local Supabase
 check: ## Run the full quality gate (frontend and scraper).
 	npm run check
 	@$(MAKE) scrape-lint
+	@$(MAKE) scrape-typecheck
 	@$(MAKE) scrape-unit
