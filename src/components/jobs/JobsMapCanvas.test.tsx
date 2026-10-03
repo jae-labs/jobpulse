@@ -23,7 +23,7 @@ vi.mock('maplibre-gl', () => ({
 }));
 vi.mock('./jobMapStyle', async (original) => ({ ...await original<Record<string, unknown>>(), jobMapPalette: () => ({ point: 'blue', ring: 'white' }) }));
 const pin: JobMapPin = { latitude: 53, longitude: -6, count: 2, job_ids: [1], title: 'Synthetic role', company: 'Synthetic employer', domain: 'Engineering', precision: 'city' };
-const props = { scope: 'first', selectedPin: null, onSelectPin: vi.fn(), onViewport: vi.fn() };
+const props = { scope: 'first', selectedPin: null, onSelectPin: vi.fn() };
 beforeEach(() => { engine.setData.mockClear(); engine.events.clear(); engine.addSource.mockClear(); });
 it('retains dots while the next camera response is pending, but clears errors and identity/filter changes', () => {
   const { rerender } = render(<JobsMapCanvas {...props} pins={[pin]} />);
@@ -42,5 +42,5 @@ it('restores job layers and current points when a basemap style is reloaded', ()
   act(() => engine.events.get('style.load')?.());
   act(() => engine.events.get('style.load')?.());
   expect(engine.addSource).toHaveBeenCalledTimes(2);
-  expect(engine.addSource).toHaveBeenLastCalledWith('jobpulse-jobs', expect.objectContaining({ data: expect.objectContaining({ features: [expect.objectContaining({ properties: { key: '-6:53', count: 2 } })] }) }));
+  expect(engine.addSource).toHaveBeenLastCalledWith('jobpulse-jobs', expect.objectContaining({ data: expect.objectContaining({ features: [expect.objectContaining({ properties: { key: '-6:53', count: 2 }, geometry: { type: 'Point', coordinates: [-6, 53] } })] }) }));
 });

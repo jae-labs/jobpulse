@@ -3,6 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { JobCard } from './JobCard';
 import type { Job } from '../../types/job';
 
+vi.mock('../../hooks/useQueries', () => ({ useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }) }));
+
 const mockJob: Job = {
   id: 101,
   title: 'Principal Software Engineer',

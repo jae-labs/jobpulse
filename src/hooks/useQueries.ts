@@ -215,7 +215,7 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
       const [jobResult, statusResult, evaluationResult, profileResult] = await Promise.all([
         supabase.from('jobs').select('*, employers(sector, metadata_source)').eq('id', jobId).maybeSingle(),
         userId
-          ? supabase.from('user_job_statuses').select('status').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
+          ? supabase.from('user_job_statuses').select('status,is_saved').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         userId
           ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
@@ -236,7 +236,8 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
         longitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.longitude : null,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),
         ...candidateEvaluationFields(evaluation, resolveScoringRules(profileResult.data?.scoring_rules as unknown as ScoringRules)),
-        status: (statusResult.data?.status ?? 'new') as JobStatus,
+        status: (statusResult.data?.status === 'interested' ? 'new' : statusResult.data?.status ?? 'new') as JobStatus,
+        is_saved: statusResult.data?.is_saved === true || statusResult.data?.status === 'interested',
       };
     }),
     staleTime: 1000 * 60 * 10,
@@ -648,7 +649,7 @@ export function useJobMapQuery(userId: string | null | undefined, params: import
       return validateJobMapResult(data);
     }),
     staleTime: 30000,
-    refetchInterval: 60000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -666,5 +667,24 @@ export function useJobMapPreviewQuery(userId: string | null | undefined, ids: nu
       return ids.flatMap((id) => labels.has(id) ? [labels.get(id)!] : []);
     }),
     staleTime: 120_000,
+  });
+}
+
+/** Bookmark changes never overwrite application progress. */
+export function useUpdateJobSavedMutation(activeUserId?: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ job, saved }: { job: Job; saved: boolean }) => withActiveUser(activeUserId, async () => {
+      if (!supabase) throw new Error('Supabase client is not configured');
+      const { error } = await supabase.rpc('set_job_saved', { p_job_id: job.id, p_saved: saved });
+      if (error) throw new Error('Bookmark update failed');
+    }),
+    onSettled: (_data, _error, { job }) => Promise.all([
+      client.invalidateQueries({ queryKey: queryKeys.jobById(job.id, activeUserId) }),
+      client.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) }),
+      client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) }),
+      client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) }),
+      client.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) }),
+    ]),
   });
 }

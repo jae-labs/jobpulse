@@ -118,8 +118,16 @@ export default defineConfig(({ mode }) => {
       // Scope network and image access to the one configured Supabase project.
       {
         name: "supabase-csp-origins",
-        transformIndexHtml(html) {
-          return addSupabaseCspOrigins(html, supabaseUrl);
+        transformIndexHtml: {
+          order: "post",
+          handler(html) {
+            // Vite regenerates the entry tag during build, so the source HTML
+            // opt-out must also be applied after its module script is emitted.
+            return addSupabaseCspOrigins(html, supabaseUrl).replace(
+              /<script\b(?=[^>]*\btype="module")/g,
+              '<script data-cfasync="false"',
+            );
+          },
         },
         async closeBundle() {
           const headersPath = fileURLToPath(

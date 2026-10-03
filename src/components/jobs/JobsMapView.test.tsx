@@ -4,10 +4,10 @@ import JobsMapView from './JobsMapView';
 
 vi.mock('./JobsMapCanvas', () => ({ default: () => <div />, pinKey: (pin: { longitude: number; latitude: number }) => `${pin.longitude}:${pin.latitude}` }));
 
-const state = vi.hoisted(() => ({ error: false, previewError: false, multiplePlaces: false, pageError: false, page: vi.fn() }));
+const state = vi.hoisted(() => ({ fetching: false, error: false, previewError: false, multiplePlaces: false, pageError: false, page: vi.fn() }));
 const example = { id: 42, title: 'Example Role', company: 'Example Company', location: 'Dublin, Ireland' };
 vi.mock('../../hooks/useQueries', () => ({
-  useJobMapQuery: () => ({ isPending: false, isFetching: false, isError: state.error, refetch: vi.fn(),
+  useJobMapQuery: () => ({ isPending: false, isFetching: state.fetching, isError: state.error, refetch: vi.fn(),
     data: { total: 100, mapped: 90, in_view: 90, truncated: false, pins: [{ latitude: 53.35, longitude: -6.26,
       count: 10, job_ids: [42], title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'city' }] },
   }),
@@ -18,6 +18,7 @@ vi.mock('../../hooks/useQueries', () => ({
   },
 }));
 beforeEach(() => {
+  state.fetching = false;
   state.error = false;
   state.previewError = false;
   state.multiplePlaces = false;
@@ -26,14 +27,21 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
 });
 
-function openGroup() { fireEvent.change(screen.getByRole('combobox'), { target: { value: '-6.26:53.35' } }); }
+function openGroup() { fireEvent.click(screen.getByRole('button', { name: '10 jobs · Example Company · Example Role' })); }
 
 describe('verified job map', () => {
+  it('keeps camera requests quiet and omits the map-group dropdown', () => {
+    state.fetching = true;
+    render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} />);
+    expect(screen.queryByText('Loading verified job locations…')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
   it('shows role and company labels, precision and opens the selected job without showing database IDs', () => {
     const select = vi.fn();
     render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={select} />);
     openGroup();
     expect(screen.getByText('Location precision: city')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.queryByText('Open job 42')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Example Role at Example Company/ }));
     expect(select).toHaveBeenCalledWith(42);
@@ -59,10 +67,10 @@ describe('verified job map', () => {
     expect(selectLocation).not.toHaveBeenCalled();
   });
   it('browses every page at the named location while preserving active catalog filters', () => {
-    render(<JobsMapView userId="synthetic-user" filters={{ domain: 'Engineering', status: 'interested', search: 'Engineer' }} onSelectJob={vi.fn()} />);
+    render(<JobsMapView userId="synthetic-user" filters={{ domain: 'Engineering', status: 'saved', search: 'Engineer' }} onSelectJob={vi.fn()} />);
     openGroup();
     fireEvent.click(screen.getByRole('button', { name: 'Browse all jobs in Dublin, Ireland' }));
-    expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ domain: 'Engineering', status: 'interested', search: 'Engineer', location: 'Dublin, Ireland', limit: 20, offset: 0 }), true);
+    expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ domain: 'Engineering', status: 'saved', search: 'Engineer', location: 'Dublin, Ireland', limit: 20, offset: 0 }), true);
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ offset: 20 }), true);
     fireEvent.click(screen.getByRole('button', { name: 'Close location jobs' }));
@@ -84,7 +92,7 @@ describe('verified job map', () => {
     openGroup();
     state.error = true;
     rerender(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} />);
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '10 jobs · Example Company · Example Role' })).not.toBeInTheDocument();
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Job locations could not be loaded.');
   });

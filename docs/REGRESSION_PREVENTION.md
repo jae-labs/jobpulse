@@ -122,3 +122,10 @@ integration checks. Report separately: local checks, hosted schema versions,
 deployed frontend commit, and operational evidence. A dated remediation document
 is historical evidence, not the current deployment source of truth. Recheck alerts,
 provider retention, backup restoration and hosted capacity before claiming them.
+
+Saved is a bookmark, never a pipeline transition. Heart controls must remain sibling
+buttons on job cards, preserve card selection, support keyboard activation and expose
+`aria-pressed`. `tenant_saved_jobs.sql` verifies owner success, foreign denial, denied
+identities and Saved count/page/map consistency. `SavedJobButton.test.tsx` verifies
+save/unsave without altering Applied progress. Keep bookmark flags through catalog
+merges and retain legacy Interested compatibility until older clients are retired.

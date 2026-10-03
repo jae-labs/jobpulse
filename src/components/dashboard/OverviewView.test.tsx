@@ -11,10 +11,10 @@ const mockMetrics: OverviewMetrics = {
     new: 70,
     applied: 25,
     interviewing: 15,
-    interested: 8,
+    saved: 8,
     not_interested: 2,
   },
-  stage_averages: { new: 84, applied: 88, interviewing: 91, interested: 86, not_interested: 58 },
+  stage_averages: { new: 84, applied: 88, interviewing: 91, saved: 86, not_interested: 58 },
   categories: [
     { name: 'Cloud & Platform Engineering', value: 50, avgMatch: 88 },
     { name: 'Cybersecurity', value: 30, avgMatch: 82 },

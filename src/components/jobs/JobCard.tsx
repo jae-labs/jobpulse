@@ -2,20 +2,23 @@ import React from 'react';
 import { ChevronRight, MapPin, Banknote, Building2 } from 'lucide-react';
 import type { Job } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
+import SavedJobButton from './SavedJobButton';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 
 interface JobCardProps {
   job: Job;
+  userId?: string | null;
   onSelect: (job: Job) => void;
   isSelected?: boolean;
   tabIndex?: number;
 }
 
 const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
-  ({ job, onSelect, isSelected = false, tabIndex = isSelected ? 0 : -1 }, ref) => {
+  ({ job, userId, onSelect, isSelected = false, tabIndex = isSelected ? 0 : -1 }, ref) => {
     const { t } = useTranslation();
     return (
+      <div className="relative">
       <button
         ref={ref}
         type="button"
@@ -25,7 +28,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         onClick={() => onSelect(job)}
         aria-pressed={isSelected}
         className={cn(
-          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
+          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 pr-12 text-left transition-all duration-150 outline-none select-none scroll-mt-24',
           isSelected
             ? 'border-ds-accent bg-ds-selected shadow-xs focus-visible:border-ds-accent'
             : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-accent',
@@ -105,6 +108,8 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
           )}
         </div>
       </button>
+      <div className="absolute right-2 top-2"><SavedJobButton job={job} userId={userId} /></div>
+      </div>
     );
   },
 );

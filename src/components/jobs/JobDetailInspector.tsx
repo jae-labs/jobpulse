@@ -8,6 +8,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import type { Job, JobStatus } from '../../types/job';
+import SavedJobButton from './SavedJobButton';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import { useJobDetailQuery } from '../../hooks/useQueries';
 import { formatJobDescription } from '../../lib/formatDescription';
@@ -100,6 +101,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              <SavedJobButton job={job} userId={userId} />
               {onToggleFullScreen && (
                 <Button
                   type="button"
@@ -137,13 +139,12 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             <div
               role="group"
               aria-label={t('jobs.inspector.statusGroup', 'Job status selection')}
-              className="grid grid-cols-5 sm:flex sm:items-center rounded-ds-control border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto"
+              className="grid grid-cols-4 sm:flex sm:items-center rounded-ds-control border border-ds-border bg-ds-panel p-0.5 w-full sm:w-auto"
             >
               {[
                 { id: 'new', label: t('status.new'), shortLabel: t('status.short.new', { defaultValue: 'New' }) },
                 { id: 'applied', label: t('status.applied'), shortLabel: t('status.short.applied', { defaultValue: 'Applied' }) },
                 { id: 'interviewing', label: t('status.interviewing'), shortLabel: t('status.short.interviewing', { defaultValue: 'Interview' }) },
-                { id: 'interested', label: t('status.interested'), shortLabel: t('status.short.interested', { defaultValue: 'Interested' }) },
                 { id: 'not_interested', label: t('status.not_interested'), shortLabel: t('status.short.not_interested', { defaultValue: 'Not Int.' }) },
               ].map(({ id, label, shortLabel }) => {
                 const active = job.status === id;

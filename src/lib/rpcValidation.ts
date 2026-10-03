@@ -133,6 +133,7 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
       "status",
     ])
       string(item[field]);
+    if (item.is_saved !== undefined && typeof item.is_saved !== "boolean") throw new Error("Invalid saved state");
     count(item.relevance);
     if ((item.relevance as number) > 100) throw new Error("Invalid relevance");
     if (item.employer_id != null && !Number.isSafeInteger(item.employer_id))
@@ -183,13 +184,13 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
         !Array.isArray(item.sub_scores)
           ? (item.sub_scores as Job["sub_scores"])
           : undefined,
+      is_saved: item.is_saved === true || item.status === "interested",
       status:
         typeof item.status === "string" &&
         [
           "new",
           "applied",
           "interviewing",
-          "interested",
           "not_interested",
         ].includes(item.status)
           ? (item.status as JobStatus)

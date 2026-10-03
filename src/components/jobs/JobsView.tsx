@@ -11,7 +11,7 @@ import {
   Rows3,
   Map as MapIcon,
 } from 'lucide-react';
-import type { Job, JobStatus, OverviewMetrics } from '../../types/job';
+import type { Job, JobStatus, JobFilterStatus, OverviewMetrics } from '../../types/job';
 import { STATUS_LIST } from '../../types/job';
 import { JobCard } from './JobCard';
 import { JobDetailInspector } from './JobDetailInspector';
@@ -40,7 +40,7 @@ interface JobsViewProps {
   isSyncing?: boolean;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
-  initialStatusFilter?: 'all' | JobStatus;
+  initialStatusFilter?: 'all' | JobFilterStatus;
   initialDomainFilter?: string;
   initialMinMatch?: number;
   onFilterReset?: () => void;
@@ -111,7 +111,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     initialMinMatch,
   });
 
-  const { data: linkedJob } = useJobByIdQuery(urlJobId, userId, Boolean(urlJobId));
+  const { data: linkedJob } = useJobByIdQuery(urlJobId ?? selectedJob?.id, userId, Boolean(urlJobId || selectedJob));
 
   useEffect(() => {
     if (!isDetailFullScreen) return;
@@ -176,7 +176,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
       };
     }
     const sourceJobs = isServerPaginated ? pageItems : jobs;
-    const counts: Record<string, number> = { all: sourceJobs.length };
+    const counts: Record<string, number> = { all: sourceJobs.length, saved: sourceJobs.filter((job) => job.is_saved).length };
     for (const s of STATUS_LIST) {
       counts[s] = 0;
     }
@@ -288,6 +288,11 @@ export const JobsView: React.FC<JobsViewProps> = ({
     overscan: 6,
     getItemKey,
   });
+
+  // Detail state follows the owner-scoped query after save/unsave, even if the job leaves the active filter.
+  const inspectedJob = selectedJob
+    ? (linkedJob?.id === selectedJob.id ? linkedJob : displayedJobs.find((job) => job.id === selectedJob.id) ?? selectedJob)
+    : null;
 
   // Track whether deep link has been handled so toggling layoutMode doesn't trigger full-screen
   const initialDeepLinkHandledRef = useRef<number | null>(null);
@@ -621,7 +626,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 onClick={() => setStatusFilter('all')}
               />
 
-              {STATUS_LIST.map((status) => {
+              {[...STATUS_LIST, 'saved' as const].map((status) => {
                 const active = statusFilter === status;
                 return (
                   <Pill
@@ -741,6 +746,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                     <JobCard
                       ref={getCardRefCallback(job.id)}
                       job={job}
+                      userId={userId}
                       isSelected={isCardSelected}
                       tabIndex={isCardFocusable ? 0 : -1}
                       onSelect={handleCardClick}
@@ -754,7 +760,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           {layoutMode === 'split' && (
             <Card className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full min-h-0 shadow-xs overflow-hidden">
               <JobDetailInspector
-                job={selectedJob || null}
+                job={inspectedJob}
                 onUpdateStatus={onUpdateStatus || (async () => {})}
                 isUpdating={isUpdating}
                 onClose={() => onSelectJob(null)}
@@ -801,7 +807,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           >
           <div className="flex h-full w-full flex-col overflow-hidden bg-ds-surface">
             <JobDetailInspector
-              job={selectedJob}
+              job={inspectedJob}
               onUpdateStatus={onUpdateStatus || (async () => {})}
               isUpdating={isUpdating}
               onClose={() => {

@@ -2,11 +2,11 @@ export const STATUS_LIST = [
   'new',
   'applied',
   'interviewing',
-  'interested',
   'not_interested',
 ] as const;
 
 export type JobStatus = (typeof STATUS_LIST)[number];
+export type JobFilterStatus = JobStatus | 'saved';
 
 /** Normalized scoring factors; auth_deduction is an absolute point deduction. */
 export interface SubScores {
@@ -41,6 +41,7 @@ export interface AiAnalysis {
 }
 
 export interface Job {
+  is_saved?: boolean;
   id: number;
   title: string;
   company: string;

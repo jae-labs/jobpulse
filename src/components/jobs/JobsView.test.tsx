@@ -3,12 +3,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
+import type { Job } from '../../types/job';
+const linked = vi.hoisted(() => ({ data: null as Job | null }));
 
 vi.mock('./JobsMapView', () => ({ default: ({ onSelectLocation }: { onSelectLocation?: (location: string) => void }) => <section aria-label="Synthetic map view">{onSelectLocation ? <button onClick={() => onSelectLocation("Dublin")}>Synthetic Dublin dot</button> : null}</section> }));
 
 vi.mock('../../hooks/useQueries', () => ({
-  useJobByIdQuery: () => ({ data: null, isLoading: false }),
+  useJobByIdQuery: () => ({ data: linked.data, isLoading: false }),
   useJobDetailQuery: () => ({ data: null, isLoading: false, isError: false }),
+  useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   useUpdateJobStatusMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useJobsInfiniteQuery: () => ({
     data: {
@@ -52,6 +55,7 @@ describe('JobsView Search Input', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
+    linked.data = null;
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -71,6 +75,13 @@ describe('JobsView Search Input', () => {
       </QueryClientProvider>
     );
   };
+
+  it('refreshes the inspector heart from the owner-scoped job query instead of a stale selected snapshot', () => {
+    const snapshot: Job = { id: 1, title: 'Synthetic job', company: 'Synthetic company', status: 'applied', is_saved: false, relevance: 0, location: 'Dublin', employment_type: 'Full time', salary_text: null, matched_skills: [], url: 'https://example.invalid', source: 'Synthetic', last_seen_at: '2026-01-01' };
+    linked.data = { ...snapshot, is_saved: true };
+    renderJobsView(['/opportunities'], snapshot);
+    expect(screen.getByRole('button', { name: 'Remove from Saved' })).toHaveAttribute('aria-pressed', 'true');
+  });
 
   it('switches to map without displaying the loaded list count and restores list mode', async () => {
     renderJobsView();

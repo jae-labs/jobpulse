@@ -11,7 +11,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 
-import type { Job, Profile, JobStatus } from './types/job';
+import type { Job, Profile, JobStatus, JobFilterStatus } from './types/job';
 import { DashboardSidebar } from './components/dashboard/DashboardSidebar';
 import { useWorkspaceArrowScroll } from './components/dashboard/useWorkspaceArrowScroll';
 import { dashboardNavigation, getNavLabel, type DashboardTab } from './components/dashboard/navigation';
@@ -83,7 +83,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const [notice, setNotice] = useState('');
   const [customDbError, setCustomDbError] = useState<string | null>(null);
 
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobStatus>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobFilterStatus>('all');
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>('all');
   const [selectedMinMatch, setSelectedMinMatch] = useState<number>(0);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
@@ -236,7 +236,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   }, [deleteAccount]);
 
   const handleNavigateToJobs = useCallback(
-    (filters?: { status?: 'all' | JobStatus; domain?: string; minMatch?: number; q?: string }) => {
+    (filters?: { status?: 'all' | JobFilterStatus; domain?: string; minMatch?: number; q?: string }) => {
       const params = new URLSearchParams();
       if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
       if (filters?.domain && filters.domain !== 'all') params.set('domain', filters.domain);

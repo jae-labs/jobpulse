@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Map as GLMap, NavigationControl, setWorkerUrl, type GeoJSONSource, type LngLatBoundsLike } from 'maplibre-gl';
+import { Map as GLMap, NavigationControl, setWorkerUrl, type GeoJSONSource, type LngLatBoundsLike, type ExpressionSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Button } from '@jae-labs/ui';
@@ -10,6 +10,8 @@ import { DEFAULT_MAP_STYLE, JOB_SOURCE, JOB_POINTS, JOB_HALO, jobMapPalette, sty
 // Explicit Vite worker keeps runtime code on the site origin under production CSP.
 setWorkerUrl(workerUrl);
 const IRELAND: LngLatBoundsLike = [[-10.8, 51.3], [-5.3, 55.5]];
+// Square-root radius makes circle area reflect volume, with bounded extremes.
+const POINT_RADIUS: ExpressionSpecification = ['min', 48, ['+', 4, ['*', 0.7, ['sqrt', ['max', 1, ['get', 'count']]]]]];
 export const pinKey = (pin: JobMapPin) => `${pin.longitude}:${pin.latitude}`;
 const empty = () => ({ type: 'FeatureCollection' as const, features: [] });
 function features(pins: JobMapPin[]) {
@@ -24,20 +26,19 @@ type Props = {
   pins?: JobMapPin[];
   selectedPin: JobMapPin | null;
   onSelectPin: (pin: JobMapPin) => void;
-  onViewport: (viewport: { bounds: number[]; zoom: number }) => void;
 };
 
-/** Preserve GPU source data during camera fetches; clear it on filter/identity changes. */
-export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin, onViewport }: Props) {
+/** Camera movement stays local; refresh GPU data only when the query changes. */
+export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin }: Props) {
   const { t } = useTranslation();
   const node = useRef<HTMLDivElement>(null);
   const mapRef = useRef<GLMap | null>(null);
   const points = useRef<JobMapPin[]>([]);
   const selection = useRef<JobMapPin | null>(selectedPin);
-  const handlers = useRef({ onSelectPin, onViewport });
+  const handlers = useRef({ onSelectPin });
   const [failed, setFailed] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
-  useEffect(() => { handlers.current = { onSelectPin, onViewport }; }, [onSelectPin, onViewport]);
+  useEffect(() => { handlers.current = { onSelectPin }; }, [onSelectPin]);
 
   useEffect(() => {
     if (!node.current) return;
@@ -68,9 +69,9 @@ export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin, o
       const palette = jobMapPalette();
       map.addSource(JOB_SOURCE, { type: 'geojson', data: features(points.current) });
       map.addLayer({ id: JOB_HALO, type: 'circle', source: JOB_SOURCE, filter: ['==', ['get', 'key'], selection.current ? pinKey(selection.current) : ''],
-        paint: { 'circle-radius': 22, 'circle-color': palette.point, 'circle-opacity': 0.35, 'circle-blur': 0.65 } });
+        paint: { 'circle-radius': ['+', 8, POINT_RADIUS], 'circle-color': palette.point, 'circle-opacity': 0.35, 'circle-blur': 0.65 } });
       map.addLayer({ id: JOB_POINTS, type: 'circle', source: JOB_SOURCE, paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 5, 10, ['min', 17, ['+', 7, ['ln', ['max', 1, ['get', 'count']]]]], 16, 19],
+        'circle-radius': POINT_RADIUS,
         'circle-color': palette.point, 'circle-opacity': 0.75,
         'circle-stroke-color': palette.ring, 'circle-stroke-width': 1.5,
         'circle-opacity-transition': { duration: reduceMotion ? 0 : 180 },
@@ -84,22 +85,9 @@ export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin, o
       });
       map.on('mouseenter', JOB_POINTS, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', JOB_POINTS, () => { map.getCanvas().style.cursor = ''; });
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const update = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const bounds = map.getBounds();
-        const wrap = (value: number) => ((value + 180) % 360 + 360) % 360 - 180;
-        const width = bounds.getEast() - bounds.getWest();
-        handlers.current.onViewport({ bounds: [width >= 360 ? -180 : wrap(bounds.getWest()), Math.max(-90, bounds.getSouth()),
-          width >= 360 ? 180 : wrap(bounds.getEast()), Math.min(90, bounds.getNorth())], zoom: Math.floor(map.getZoom()) });
-      }, 250);
-    };
-    map.on('moveend', update);
-    update();
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(node.current);
-    return () => { clearTimeout(timer); observer.disconnect(); map.remove(); mapRef.current = null; };
+    return () => { observer.disconnect(); map.remove(); mapRef.current = null; };
   }, []);
 
   useEffect(() => {

@@ -59,13 +59,13 @@
     "new": "New",
     "applied": "Applied",
     "interviewing": "Interview",
-    "interested": "Interested",
+    "saved": "Saved",
     "not_interested": "Not Interested",
     "short": {
       "new": "New",
       "applied": "Applied",
       "interviewing": "Interview",
-      "interested": "Interested",
+      "saved": "Saved",
       "not_interested": "Not Int."
     }
   },
@@ -94,6 +94,9 @@
     "assessmentCoverage": "{{evaluated}} of {{total}} vacancies assessed. Match charts describe assessed vacancies only."
   },
   "jobs": {
+    "saveJob": "Save job",
+    "unsaveJob": "Remove from Saved",
+    "saveJobError": "Could not update Saved. Try again.",
     "unassessed": "Unassessed",
     "salary50k": "€50k+",
     "salary60k": "€60k+",
@@ -155,23 +158,9 @@
     "layoutMap": "Map",
     "layoutMapTitle": "World map of opportunities",
     "mapCluster": "{{count}} opportunities",
-    "mapPrecision": "Location precision: {{precision}}",
     "mapLoading": "Loading verified job locations…",
     "mapError": "Job locations could not be loaded.",
-    "mapZoomMore": "Zoom in to show smaller groups.",
     "mapTilesError": "Map tiles could not be loaded.",
-    "locationPrecision": {
-      "building": "address",
-      "amenity": "place",
-      "street": "street",
-      "postcode": "postal area",
-      "city": "city",
-      "district": "district",
-      "county": "county",
-      "state": "region",
-      "country": "country",
-      "mixed": "mixed locations"
-    },
     "mapDomain": "Domain: {{domain}}",
     "mapZoomIn": "Zoom in",
     "mapZoomOut": "Zoom out",
@@ -186,9 +175,22 @@
     "mapPrevious": "Previous",
     "mapNext": "Next",
     "mapOpenRole": "{{role}} at {{company}} · {{location}}",
-    "mapChooseGroup": "Browse a map group",
     "mapGroupLabel": "{{countLabel}} jobs · {{company}} · {{role}}",
-    "mapGraphicsUnavailable": "Map graphics are unavailable in this browser. Use the group selector above to browse jobs."
+    "mapGraphicsUnavailable": "Map graphics are unavailable in this browser. Use list view to browse jobs.",
+    "mapPrecision": "Location precision: {{precision}}",
+    "locationPrecision": {
+      "building": "address",
+      "amenity": "place",
+      "street": "street",
+      "postcode": "postal area",
+      "city": "city",
+      "district": "district",
+      "county": "county",
+      "state": "region",
+      "country": "country",
+      "mixed": "mixed locations"
+    },
+    "mapTooManyLocations": "Too many locations to show. Narrow your filters."
   },
   "sources": {
     "title": "Data Sources",

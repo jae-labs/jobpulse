@@ -13,9 +13,6 @@ describe('StatusPill', () => {
     rerender(<StatusPill status="interviewing" />);
     expect(screen.getByText('Interview')).toBeInTheDocument();
 
-    rerender(<StatusPill status="interested" />);
-    expect(screen.getByText('Interested')).toBeInTheDocument();
-
     rerender(<StatusPill status="not_interested" />);
     expect(screen.getByText('Not Interested')).toBeInTheDocument();
   });

@@ -199,3 +199,19 @@ filtered and verified-location counts. Pins require Geoapify verification matchi
 the current posting text; city, region and country centroids retain their precision.
 Remote, ambiguous and unresolved jobs remain in catalog totals without a pin.
 See [the operational map guide](JOB_MAP_AND_LOCATION_VERIFICATION.md).
+
+## Saved jobs
+
+`user_job_statuses.is_saved` is an owner-only bookmark separate from pipeline status.
+The heart calls `set_job_saved(job_id, saved)`; the RPC derives ownership from verified
+`auth.uid()` and preserves Applied/Interview progress. Account exports include the
+flag through the existing owner-table export; account deletion cascades remove it.
+No new personal field or external telemetry is collected. Bookmark retention matches
+candidate tracking retention and the existing account deletion policy.
+
+The forward migration preserves Interested jobs as `status=new, is_saved=true`.
+Legacy Interested writes and links remain supported for rolling frontend deployment.
+The canonical application uses Saved filters/counts; legacy RPC count aliases are
+kept for previously deployed clients. Saved can overlap pipeline stages, so the
+active-pipeline metric counts Applied and Interview only. Catalog merge logic ORs
+bookmark flags while retaining existing progress conflict checks.

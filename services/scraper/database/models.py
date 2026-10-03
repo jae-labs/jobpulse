@@ -396,6 +396,7 @@ class PublicUserJobEvaluationsUpdate(TypedDict):
 
 class PublicUserJobStatuses(BaseModel):
     id: int = Field(alias="id")
+    is_saved: bool = Field(alias="is_saved")
     job_id: int = Field(alias="job_id")
     status: str = Field(alias="status")
     updated_at: Optional[datetime.datetime] = Field(alias="updated_at")
@@ -404,6 +405,7 @@ class PublicUserJobStatuses(BaseModel):
 
 class PublicUserJobStatusesInsert(TypedDict):
     id: NotRequired[Annotated[int, Field(alias="id")]]
+    is_saved: NotRequired[Annotated[bool, Field(alias="is_saved")]]
     job_id: Annotated[int, Field(alias="job_id")]
     status: NotRequired[Annotated[str, Field(alias="status")]]
     updated_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="updated_at")]]
@@ -412,6 +414,7 @@ class PublicUserJobStatusesInsert(TypedDict):
 
 class PublicUserJobStatusesUpdate(TypedDict):
     id: NotRequired[Annotated[int, Field(alias="id")]]
+    is_saved: NotRequired[Annotated[bool, Field(alias="is_saved")]]
     job_id: NotRequired[Annotated[int, Field(alias="job_id")]]
     status: NotRequired[Annotated[str, Field(alias="status")]]
     updated_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="updated_at")]]

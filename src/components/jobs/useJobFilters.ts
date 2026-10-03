@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { JobStatus } from '../../types/job';
+import type { JobFilterStatus } from '../../types/job';
 
 export type SortField = 'match' | 'location' | 'category' | 'salary';
 
 interface UseJobFiltersOptions {
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
-  initialStatusFilter?: 'all' | JobStatus;
+  initialStatusFilter?: 'all' | JobFilterStatus;
   initialDomainFilter?: string;
   initialMinMatch?: number;
 }
@@ -30,8 +30,9 @@ export function useJobFilters({
   const sortField = sortConfig.field;
   const sortDir = sortConfig.dir;
 
-  const statusParam = searchParams.get('status') as JobStatus | null;
-  const statusFilter: 'all' | JobStatus = statusParam || initialStatusFilter || 'all';
+  const rawStatus = searchParams.get('status');
+  const statusParam = (rawStatus === 'interested' ? 'saved' : rawStatus) as JobFilterStatus | null;
+  const statusFilter: 'all' | JobFilterStatus = statusParam || initialStatusFilter || 'all';
 
   const domainParam = searchParams.get('domain') || searchParams.get('sector');
   const domainFilter = domainParam || initialDomainFilter || 'all';
@@ -83,7 +84,7 @@ export function useJobFilters({
   const inputDisplayValue = controlledSearch !== undefined ? controlledSearch : internalQuery;
 
   const setStatusFilter = useCallback(
-    (status: 'all' | JobStatus) => {
+    (status: 'all' | JobFilterStatus) => {
       updateUrlParam('status', status === 'all' ? null : status);
     },
     [updateUrlParam]

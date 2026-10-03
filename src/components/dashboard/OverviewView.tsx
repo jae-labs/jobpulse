@@ -18,9 +18,10 @@ import {
   Briefcase,
   Sparkles,
   Send,
+  Heart,
   RefreshCw,
 } from 'lucide-react';
-import type { Job, JobStatus, OverviewMetrics } from '../../types/job';
+import type { Job, JobFilterStatus, OverviewMetrics } from '../../types/job';
 import { SortableWidget } from './SortableWidget';
 import { StatCard } from '../ui/StatCard';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -43,6 +44,7 @@ const overviewWidgetIds = [
   'tracked-opportunities',
   'high-fit-opportunities',
   'pipeline-progress',
+  'saved-jobs',
   'category-breakdown',
   'application-pipeline',
   'relevance-distribution',
@@ -69,7 +71,7 @@ interface OverviewViewProps {
   userId?: string;
   overviewMetrics?: OverviewMetrics;
   onNavigateToJobs: (filters?: {
-    status?: 'all' | JobStatus;
+    status?: 'all' | JobFilterStatus;
     domain?: string;
     minMatch?: number;
     q?: string;
@@ -122,6 +124,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
     let highFit = 0;
     for (let i = 0; i < jobs.length; i++) {
       const j = jobs[i];
+      if (j.is_saved) map.saved = (map.saved || 0) + 1;
       map[j.status] = (map[j.status] || 0) + 1;
       if (j.relevance >= 75) highFit++;
     }
@@ -149,7 +152,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
     onNavigateToJobs({ status: 'all', domain: domain, minMatch: 0 });
   }, [onNavigateToJobs]);
 
-  const handleSelectStatus = useCallback((status: JobStatus) => {
+  const handleSelectStatus = useCallback((status: JobFilterStatus) => {
     onNavigateToJobs({ status, domain: 'all', minMatch: 0 });
   }, [onNavigateToJobs]);
 
@@ -165,7 +168,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
     switch (widgetId) {
       case 'tracked-opportunities':
         return (
-          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.trackedOpportunities') })} className="sm:col-span-1 md:col-span-4">
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.trackedOpportunities') })} className="sm:col-span-1 md:col-span-3">
             <StatCard
               title={t('overview.trackedOpportunities')}
               value={totalOpportunitiesCount}
@@ -177,7 +180,7 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
 
       case 'high-fit-opportunities':
         return (
-          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.highFitMatches') })} className="sm:col-span-1 md:col-span-4">
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.highFitMatches') })} className="sm:col-span-1 md:col-span-3">
             <StatCard
               title={t('overview.highFitMatches')}
               value={highMatchCount}
@@ -189,13 +192,20 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
 
       case 'pipeline-progress':
         return (
-          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.inActivePipeline') })} className="sm:col-span-2 md:col-span-4">
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.inActivePipeline') })} className="sm:col-span-2 md:col-span-3">
             <StatCard
               title={t('overview.inActivePipeline')}
-              value={(counts.applied || 0) + (counts.interviewing || 0) + (counts.interested || 0)}
+              value={(counts.applied || 0) + (counts.interviewing || 0)}
               icon={Send}
               onClick={handleNavigatePipeline}
             />
+          </SortableWidget>
+        );
+
+      case 'saved-jobs':
+        return (
+          <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('status.saved') })} className="sm:col-span-2 md:col-span-3">
+            <StatCard title={t('status.saved')} value={counts.saved || 0} icon={Heart} onClick={() => handleSelectStatus('saved')} />
           </SortableWidget>
         );
 

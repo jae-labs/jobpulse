@@ -205,10 +205,12 @@ INSERT INTO public.user_job_statuses (
     ('11111111-1111-1111-1111-111111111111', 102, 'new'),
     ('11111111-1111-1111-1111-111111111111', 103, 'interviewing'),
     ('11111111-1111-1111-1111-111111111111', 104, 'applied'),
-    ('11111111-1111-1111-1111-111111111111', 105, 'interested')
+    ('11111111-1111-1111-1111-111111111111', 105, 'new')
 ON CONFLICT (user_id, job_id) DO UPDATE SET
     status = EXCLUDED.status;
 
 -- Seed jobs use explicit IDs. Advance the identity sequence before scraper inserts.
 SELECT setval(pg_get_serial_sequence('public.jobs', 'id'),
               GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.jobs), 1), true);
+
+UPDATE public.user_job_statuses SET is_saved=true WHERE user_id='11111111-1111-1111-1111-111111111111' AND job_id=105;

@@ -59,13 +59,13 @@
     "new": "Novo",
     "applied": "Candidatou-se",
     "interviewing": "Entrevista",
-    "interested": "Interessado",
+    "saved": "Salvo",
     "not_interested": "Não Interessado",
     "short": {
       "new": "Novo",
       "applied": "Aplicado",
       "interviewing": "Entrevista",
-      "interested": "Interesse",
+      "saved": "Salvo",
       "not_interested": "Não Int."
     }
   },
@@ -94,6 +94,9 @@
     "assessmentCoverage": "{{evaluated}} de {{total}} vagas avaliadas. Os gráficos de correspondência incluem apenas vagas avaliadas."
   },
   "jobs": {
+    "saveJob": "Salvar vaga",
+    "unsaveJob": "Remover de Salvos",
+    "saveJobError": "Não foi possível atualizar Salvos. Tente novamente.",
     "unassessed": "Não avaliada",
     "salary50k": "€50k+",
     "salary60k": "€60k+",
@@ -155,23 +158,9 @@
     "layoutMap": "Mapa",
     "layoutMapTitle": "Mapa mundial de oportunidades",
     "mapCluster": "{{count}} oportunidades",
-    "mapPrecision": "Precisão da localização: {{precision}}",
     "mapLoading": "Carregando localizações verificadas…",
     "mapError": "Não foi possível carregar as localizações.",
-    "mapZoomMore": "Amplie para mostrar grupos menores.",
     "mapTilesError": "Não foi possível carregar o mapa.",
-    "locationPrecision": {
-      "building": "endereço",
-      "amenity": "local",
-      "street": "rua",
-      "postcode": "área postal",
-      "city": "cidade",
-      "district": "distrito",
-      "county": "condado",
-      "state": "região",
-      "country": "país",
-      "mixed": "localizações variadas"
-    },
     "mapDomain": "Domínio: {{domain}}",
     "mapZoomIn": "Ampliar",
     "mapZoomOut": "Reduzir",
@@ -186,9 +175,22 @@
     "mapPrevious": "Anterior",
     "mapNext": "Próxima",
     "mapOpenRole": "{{role}} na {{company}} · {{location}}",
-    "mapChooseGroup": "Explorar um grupo do mapa",
     "mapGroupLabel": "{{countLabel}} vagas · {{company}} · {{role}}",
-    "mapGraphicsUnavailable": "Os gráficos do mapa não estão disponíveis neste navegador. Use o seletor acima para explorar as vagas."
+    "mapGraphicsUnavailable": "Os gráficos do mapa não estão disponíveis neste navegador. Use a visualização em lista para explorar as vagas.",
+    "mapPrecision": "Precisão da localização: {{precision}}",
+    "locationPrecision": {
+      "building": "endereço",
+      "amenity": "local",
+      "street": "rua",
+      "postcode": "área postal",
+      "city": "cidade",
+      "district": "distrito",
+      "county": "condado",
+      "state": "região",
+      "country": "país",
+      "mixed": "localizações variadas"
+    },
+    "mapTooManyLocations": "Há muitas localizações para exibir. Refine os filtros."
   },
   "sources": {
     "title": "Fontes de Dados",

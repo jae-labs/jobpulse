@@ -4,6 +4,7 @@ import { JobDetailInspector } from './JobDetailInspector';
 import type { Job } from '../../types/job';
 
 vi.mock('../../hooks/useQueries', () => ({
+  useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   useJobDetailQuery: () => ({ data: null, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
 
@@ -33,7 +34,9 @@ describe('JobDetailInspector', () => {
     const statusGroup = screen.getByRole('group', { name: 'Job status selection' });
     const buttons = within(statusGroup).getAllByRole('button');
 
-    expect(buttons).toHaveLength(5);
+    expect(buttons).toHaveLength(4);
+    expect(within(statusGroup).queryByTitle('Saved')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save job' })).toBeInTheDocument();
     for (const button of buttons) {
       expect(button).toHaveClass('border');
       expect(button).not.toHaveClass('transition-colors');

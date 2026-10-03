@@ -8,7 +8,7 @@ JobPulse targets WCAG 2.1 AA across desktop and mobile.
   - `k` / `ArrowUp`: Move selection to the previous job opportunity in list or fullscreen view.
   - `Enter` / `Space`: Open and inspect the selected job opportunity.
   - `f`: Toggle fullscreen job inspection mode.
-  - `ArrowLeft` / `ArrowRight`: Advance or rewind job pipeline status (`new` ↔ `interested` ↔ `applied` ↔ `interviewing`).
+  - `ArrowLeft` / `ArrowRight`: Advance or rewind job pipeline status (`new` ↔ `applied` ↔ `interviewing` ↔ `not_interested`).
   - `Escape`: Close detail inspection sheet/drawer or dismiss modals.
   - `Cmd+K` / `Ctrl+K`: Global command palette.
 - Maintain 4.5:1 text contrast and 3:1 contrast for large text and control boundaries.

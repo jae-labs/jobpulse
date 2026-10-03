@@ -1,9 +1,10 @@
 # Job map and location verification
 
 Opportunities supports List, Split and Map. Map pins come from the entire filtered
-server catalog, independently of the loaded list page. Viewport clustering is bounded
-at 2,000 groups. The map starts framed over Ireland, with Ireland and World reset
-controls. Selecting a pin opens a role/company browser beside the map (below it on
+server catalog, independently of the loaded list page. Coordinate groups are bounded at 2,000 per filtered catalog query. The map starts
+framed over Ireland. Panning and zooming do not refetch job locations or alter groups;
+filter changes and explicit catalog invalidation refresh map data. Circle area scales
+with job count, with minimum/maximum sizes for legibility. Selecting a pin opens a role/company browser beside the map (below it on
 mobile), with up to five examples. A named-location action browses every matching
 job in pages of 20; active domain, search, salary, match and status filters remain
 applied. A coarse group can contain several locations, so each sample location has
@@ -46,10 +47,10 @@ both CSP policies (`index.html` and `public/_headers`), including `connect-src` 
 `img-src`. Do not hotlink Rezi's basemap or job tiles, or prefetch offline tiles.
 
 The camera starts over Ireland and supports fractional animated zoom. Reduced-motion
-preferences disable camera transitions. Same-filter viewport requests keep existing
+preferences disable camera transitions. Same-scope query refreshes keep existing
 GPU dots until the replacement response arrives; query errors and identity/filter
-changes clear them. Native group selection supports keyboard browsing and remains
-available if WebGL initialization fails. The location panel shows roles and companies,
+changes clear them. Keyboard-accessible group buttons appear only when focused; there is no group
+dropdown. When WebGL is unavailable, users can return to list view. The location panel shows roles and companies,
 with bounded pagination for the selected location. Pins retain their verified precision;
 city-level geocoding does not establish an employer's street address.
 
@@ -70,3 +71,9 @@ All jobs already have an employer link, which does not itself establish a verifi
 The two forward migrations were applied to hosted Supabase. Frontend changes remain
 in the repository until deployed; hosted database changes and web deployment are
 separate release steps.
+
+The live precision audit on 2026-10-03 found 6,610 city-level jobs, 1,973 country-level
+jobs, six street-level jobs and 423 without verified coordinates. Employer research
+and vacancy geocoding are separate: company headquarters do not prove a job location.
+More precise workplace pins require a posting-specific address or matching office
+evidence before replacing a city/country centroid.

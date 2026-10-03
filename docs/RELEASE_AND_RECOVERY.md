@@ -41,6 +41,14 @@ Operational checklist for deploying and recovering JobPulse.
    upgrade, check finite 384-dimensional output under production CSP and observe
    cold download, warm inference and worker responsiveness separately.
 
+Cloudflare Rocket Loader must not rewrite the application module entrypoint.
+Keep `data-cfasync="false"` on its script tag and verify the deployed HTML retains
+`type="module"`. If the custom domain shows a blank page while the Pages origin
+loads, inspect edge script transformations before changing database or CSP rules.
+Also verify module assets return JavaScript, including browser cache variants.
+An HTML SPA fallback cached at a hashed asset URL prevents startup; purge the
+affected JobPulse hostname cache and verify browser loading after recovery.
+
 ## Rollback & Recovery Runbook
 
 - **Frontend Issue**: Revert to previous static deployment artifact immediately.

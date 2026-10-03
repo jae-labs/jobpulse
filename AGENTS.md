@@ -92,7 +92,7 @@ make check         # npm run check + scrape-lint + scrape-unit
   - Generated database types: `src/types/database.types.ts` (via `npm run db:types`)
   - Supabase client: `src/lib/supabase.ts` (typed via `createClient<Database>`)
   - Server state, queries & mutations: `src/hooks/useQueries.ts`, `src/lib/queryClient.ts` (TanStack Query)
-  - Domain types: `src/types/job.ts` (Canonical statuses: `new`, `applied`, `interviewing`, `interested`, `not_interested`)
+  - Domain types: `src/types/job.ts` (Canonical pipeline statuses: `new`, `applied`, `interviewing`, `not_interested`; Saved is the independent owner-only `is_saved` bookmark)
 - Scraper & Ingestion Pipeline (`services/scraper/`):
   - Configuration: `services/scraper/config/websites.yaml`, `rules.py`, `loader.py`
   - Extraction & Crawling: `services/scraper/extractors/`, `services/scraper/scrapers/generic/`

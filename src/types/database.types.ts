@@ -489,6 +489,7 @@ export type Database = {
       user_job_statuses: {
         Row: {
           id: number
+          is_saved: boolean
           job_id: number
           status: string
           updated_at: string | null
@@ -496,6 +497,7 @@ export type Database = {
         }
         Insert: {
           id?: number
+          is_saved?: boolean
           job_id: number
           status?: string
           updated_at?: string | null
@@ -503,6 +505,7 @@ export type Database = {
         }
         Update: {
           id?: number
+          is_saved?: boolean
           job_id?: number
           status?: string
           updated_at?: string | null
@@ -706,6 +709,10 @@ export type Database = {
       score_from_subscores: { Args: { s: Json; w: Json }; Returns: number }
       score_job_for_user: {
         Args: { p_job_id: number; p_similarity: number; p_user_id: string }
+        Returns: undefined
+      }
+      set_job_saved: {
+        Args: { p_job_id: number; p_saved: boolean }
         Returns: undefined
       }
     }
