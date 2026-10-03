@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -39,7 +39,7 @@ describe('DashboardSidebar', () => {
     expect(overviewLink).toHaveAttribute('aria-keyshortcuts', '1');
   });
 
-  it('releases sidebar link focus after a pointer click', () => {
+  it('releases sidebar link focus after a pointer click', async () => {
     render(
       <MemoryRouter>
         <DashboardSidebar activeTab="overview" />
@@ -51,5 +51,8 @@ describe('DashboardSidebar', () => {
     fireEvent.click(opportunitiesLink, { detail: 1 });
 
     expect(opportunitiesLink).not.toHaveFocus();
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 0));
+    });
   });
 });

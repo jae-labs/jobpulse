@@ -207,7 +207,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([domain, count]) => ({ domain, count }));
-  }, [isServerPaginated, pageItems, jobs, overviewMetrics]);
+  }, [isServerPaginated, jobs, overviewMetrics]);
 
   const activeDomainFilter = domainFilter;
 

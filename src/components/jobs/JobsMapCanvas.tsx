@@ -11,8 +11,9 @@ import { DEFAULT_MAP_STYLE, JOB_SOURCE, JOB_POINTS, JOB_HALO, jobMapPalette, sty
 setWorkerUrl(workerUrl);
 const IRELAND: LngLatBoundsLike = [[-10.8, 51.3], [-5.3, 55.5]];
 // Square-root radius makes circle area reflect volume, with bounded extremes.
+import { pinKey } from './mapUtils';
+
 const POINT_RADIUS: ExpressionSpecification = ['min', 48, ['+', 4, ['*', 0.7, ['sqrt', ['max', 1, ['get', 'count']]]]]];
-export const pinKey = (pin: JobMapPin) => `${pin.longitude}:${pin.latitude}`;
 const empty = () => ({ type: 'FeatureCollection' as const, features: [] });
 function features(pins: JobMapPin[]) {
   return { type: 'FeatureCollection' as const, features: pins.map((pin) => ({
@@ -51,7 +52,7 @@ export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin }:
         fadeDuration: reduceMotion ? 0 : 200, dragRotate: false, pitchWithRotate: false,
       });
     } catch {
-      setUnavailable(true);
+      queueMicrotask(() => setUnavailable(true));
       return;
     }
     mapRef.current = map;

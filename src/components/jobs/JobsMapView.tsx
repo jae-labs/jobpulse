@@ -6,7 +6,8 @@ import type { JobMapPin, JobsPageParams } from '../../types/job';
 import { useJobMapQuery, useJobMapPreviewQuery } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
 import JobsMapLocationPanel from './JobsMapLocationPanel';
-import JobsMapCanvas, { pinKey } from './JobsMapCanvas';
+import JobsMapCanvas from './JobsMapCanvas';
+import { pinKey } from './mapUtils';
 
 const NO_PINS: JobMapPin[] = [];
 const WORLD_BOUNDS = [-180, -90, 180, 90];
@@ -24,7 +25,11 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
   const [selectedPin, setSelectedPin] = useState<JobMapPin | null>(null);
   const [officeLayer, setOfficeLayer] = useState(false);
   const scope = JSON.stringify([userId, filters]);
-  useEffect(() => { setSelectedPin(null); }, [scope]);
+  const [prevScope, setPrevScope] = useState(scope);
+  if (scope !== prevScope) {
+    setPrevScope(scope);
+    setSelectedPin(null);
+  }
   const pins = query.isError ? NO_PINS : officeLayer ? query.data?.office_pins ?? NO_PINS : query.data?.pins;
   const truncated = officeLayer ? query.data?.office_truncated : query.data?.truncated;
   const previews = useJobMapPreviewQuery(userId, onSelectLocation && selectedPin ? selectedPin.job_ids : []);

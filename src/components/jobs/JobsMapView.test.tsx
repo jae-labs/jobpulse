@@ -2,7 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import JobsMapView from './JobsMapView';
 
-vi.mock('./JobsMapCanvas', () => ({ default: () => <div />, pinKey: (pin: { longitude: number; latitude: number }) => `${pin.longitude}:${pin.latitude}` }));
+vi.mock('./JobsMapCanvas', () => ({ default: () => <div /> }));
+vi.mock('./mapUtils', () => ({ pinKey: (pin: { longitude: number; latitude: number }) => `${pin.longitude}:${pin.latitude}` }));
 
 const state = vi.hoisted(() => ({ fetching: false, error: false, previewError: false, multiplePlaces: false, pageError: false, page: vi.fn() }));
 const example = { id: 42, title: 'Example Role', company: 'Example Company', location: 'Dublin, Ireland' };
