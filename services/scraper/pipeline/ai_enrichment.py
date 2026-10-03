@@ -8,6 +8,7 @@ import logging
 import re
 import shutil
 import subprocess
+from pathlib import Path
 from typing import Any, NotRequired, TypedDict
 from urllib.parse import urlsplit
 
@@ -83,7 +84,7 @@ def find_agy_binary(custom_path: str | None = None) -> str:
     resolved = shutil.which("agy")
     if resolved:
         return resolved
-    fallback = "/Users/luiz1361/.local/bin/agy"
+    fallback = str(Path.home() / ".local" / "bin" / "agy")
     if shutil.which(fallback):
         return fallback
     raise FileNotFoundError("agy CLI executable not found in PATH or standard location")

@@ -9,6 +9,9 @@ if [[ -z "$backup_dir" || ! -d "$storage_dir" ]]; then
   exit 1
 fi
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
 if ! find "$storage_dir" -type f -print -quit | grep -q .; then
   echo "No Storage objects to import."
   exit 0
@@ -43,9 +46,9 @@ for bucket_dir in "$storage_dir"/*; do
     object_path="${object_file#"$bucket_dir"/}"
     encoded_object_path="$(node -p 'encodeURIComponent(process.argv[1]).replace(/%2F/g, "/")' "$object_path")"
     # Replace the dumped local object through Storage before uploading its bytes.
-    curl --fail --silent --show-error --output /dev/null --request DELETE \
+    printf 'Authorization: Bearer %s\n' "$local_service_role_key" | curl --fail --silent --show-error --output /dev/null --request DELETE \
       "$local_api_url/storage/v1/object/$bucket/$encoded_object_path" \
-      --header "Authorization: Bearer $local_service_role_key" || true
+      --header @- || true
     supabase storage cp --local --experimental "$object_file" "ss:///$bucket/$object_path"
   done < <(find "$bucket_dir" -type f -print0)
 done

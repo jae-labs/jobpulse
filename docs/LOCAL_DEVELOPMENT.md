@@ -80,6 +80,13 @@ account, and exported Storage files. Database data is imported as dumped; only
 the local development account and local Storage metadata required to upload the
 backed-up files are created or replaced locally.
 
+Before resetting, restore validates checksums, requires the Storage export,
+rejects symbolic links, and verifies a local Docker target. It binds the CLI to
+this checkout and replaces exported table data in one transaction after running
+migrations. Fresh development starts seed `local-dev-account.sql` followed by
+`seed.sql`; snapshot restore runs only the developer-account seed, preserving
+the restored catalog instead of inserting demo jobs.
+
 ## Test Account Deletion
 
 After `make dev`, run `npm run db:test:account-deletion` in another

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -11,6 +12,7 @@ from pipeline.ai_enrichment import (
     VALID_SIZES,
     enrich_companies_with_ai,
     extract_domain,
+    find_agy_binary,
     is_valid_ireland_coordinate,
     slugify_name,
 )
@@ -55,6 +57,15 @@ def test_is_valid_ireland_coordinate() -> None:
 
 def test_enrich_companies_with_ai_empty() -> None:
     assert enrich_companies_with_ai([]) == []
+
+
+def test_agy_fallback_uses_current_home() -> None:
+    with (
+        patch("pipeline.ai_enrichment.Path.home", return_value=Path("/synthetic/home")),
+        patch("pipeline.ai_enrichment.shutil.which", side_effect=[None, "/synthetic/home/.local/bin/agy"]) as which,
+    ):
+        assert find_agy_binary() == "/synthetic/home/.local/bin/agy"
+        assert which.call_args.args == ("/synthetic/home/.local/bin/agy",)
 
 
 @patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
