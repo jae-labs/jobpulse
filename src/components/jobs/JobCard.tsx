@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip } from '@jae-labs/ui';
-import { ChevronRight, MapPin, Banknote, Building2 } from 'lucide-react';
+import { MapPin, Banknote, Building2 } from 'lucide-react';
 import type { Job } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import SavedJobButton from './SavedJobButton';
@@ -32,7 +32,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         aria-pressed={isSelected}
         aria-keyshortcuts="Enter Space"
         className={cn(
-          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 pr-12 text-left ds-motion-control outline-none select-none scroll-mt-24',
+          'ds-control-focus group relative flex w-full cursor-pointer flex-col justify-between gap-2.5 rounded-ds-card border p-3.5 pr-20 text-left ds-motion-control outline-none select-none scroll-mt-24',
           isSelected
             ? 'border-ds-border-strong bg-ds-selected focus-visible:border-ds-accent'
             : 'border-ds-border bg-ds-panel hover:border-ds-border-strong hover:bg-ds-hover focus-visible:border-ds-accent',
@@ -47,16 +47,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
               </span>
               <span className="text-ds-text-muted">·</span>
               <StatusPill status={job.status} />
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
               <MatchScoreBadge score={job.relevance} isAssessed={job.fit_tier !== 'Unassessed'} />
-              <ChevronRight
-                className={cn(
-                  'size-3.5 transition-transform',
-                  isSelected ? 'text-ds-text-secondary translate-x-0.5' : 'text-ds-text-muted group-hover:text-ds-text-secondary group-hover:translate-x-0.5',
-                )}
-              />
             </div>
           </div>
 
@@ -113,7 +104,7 @@ const JobCardComponent = React.forwardRef<HTMLButtonElement, JobCardProps>(
         </div>
       </button>
       </Tooltip>
-      <div className="absolute right-2 top-2 flex flex-col gap-1"><SavedJobButton job={job} userId={userId} /><IgnoredJobButton job={job} userId={userId} /></div>
+      <div className="absolute right-2 top-2.5 flex items-center gap-1"><IgnoredJobButton job={job} userId={userId} className="size-8" /><SavedJobButton job={job} userId={userId} className="size-8" /></div>
       </div>
     );
   },

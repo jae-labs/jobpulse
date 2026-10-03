@@ -103,7 +103,22 @@ export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin }:
   useEffect(() => {
     selection.current = selectedPin;
     const map = mapRef.current;
-    if (map?.getLayer(JOB_HALO)) map.setFilter(JOB_HALO, ['==', ['get', 'key'], selectedPin ? pinKey(selectedPin) : '']);
+    if (map?.getLayer(JOB_HALO)) {
+      map.setFilter(JOB_HALO, ['==', ['get', 'key'], selectedPin ? pinKey(selectedPin) : '']);
+      if (selectedPin) {
+        const currentZoom = map.getZoom();
+        const targetZoom = Math.max(currentZoom, 12);
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        map.flyTo({
+          center: [selectedPin.longitude, selectedPin.latitude],
+          zoom: targetZoom,
+          speed: 1.2,
+          curve: 1.4,
+          essential: true,
+          animate: !reduceMotion
+        });
+      }
+    }
   }, [selectedPin]);
   useEffect(() => {
     for (const [selector, key] of [['.maplibregl-ctrl-zoom-in', 'mapZoomIn'], ['.maplibregl-ctrl-zoom-out', 'mapZoomOut']]) {

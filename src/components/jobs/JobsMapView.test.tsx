@@ -37,7 +37,6 @@ describe('verified job map', () => {
     const selectLocation = vi.fn();
     render(<JobsMapView userId="synthetic-user" filters={{}} onSelectJob={vi.fn()} onSelectLocation={selectLocation} />);
     fireEvent.click(screen.getByRole('button', { name: 'Company offices' }));
-    expect(screen.getByText('Company office addresses; workplaces for these roles are unconfirmed.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '1 jobs · Example Company · Example Role' }));
     expect(screen.getByText('Location precision: company office (workplace unconfirmed)')).toBeInTheDocument();
     expect(selectLocation).not.toHaveBeenCalled();

@@ -7,6 +7,7 @@ interface UseKeyboardNavigationOptions {
   selectedJob: Job | null | undefined;
   onSelectJob: (job: Job | null) => void;
   onUpdateStatus?: (job: Job, status: JobStatus) => Promise<void>;
+  onToggleSaved?: (job: Job) => void;
   isDetailFullScreen: boolean;
   setIsDetailFullScreen: React.Dispatch<React.SetStateAction<boolean>>;
   layoutMode: 'split' | 'list' | 'map';
@@ -23,6 +24,7 @@ export function useKeyboardNavigation({
   selectedJob,
   onSelectJob,
   onUpdateStatus,
+  onToggleSaved,
   isDetailFullScreen,
   setIsDetailFullScreen,
   layoutMode,
@@ -35,6 +37,7 @@ export function useKeyboardNavigation({
     selectedJob,
     onSelectJob,
     onUpdateStatus,
+    onToggleSaved,
     isDetailFullScreen,
     setIsDetailFullScreen,
     layoutMode,
@@ -48,6 +51,7 @@ export function useKeyboardNavigation({
       selectedJob,
       onSelectJob,
       onUpdateStatus,
+      onToggleSaved,
       isDetailFullScreen,
       setIsDetailFullScreen,
       layoutMode,
@@ -64,6 +68,7 @@ export function useKeyboardNavigation({
         selectedJob,
         onSelectJob,
         onUpdateStatus,
+        onToggleSaved,
         isDetailFullScreen,
         setIsDetailFullScreen,
         layoutMode,
@@ -72,6 +77,7 @@ export function useKeyboardNavigation({
         cardRefs,
       } = optionsRef.current;
       if (layoutMode === 'map' && !isDetailFullScreen) return;
+      if (displayedJobs.length === 0 && !isDetailFullScreen) return;
       const target = e.target instanceof Element ? e.target : null;
       const isInput = target?.closest(
         'input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]'
@@ -223,6 +229,42 @@ export function useKeyboardNavigation({
           }
           return next;
         });
+      } else if ((e.key === 's' || e.key === 'S') && selectedJob && onToggleSaved) {
+        e.preventDefault();
+        onToggleSaved(selectedJob);
+      } else if ((e.key === 'd' || e.key === 'D') && selectedJob && onUpdateStatus) {
+        e.preventDefault();
+        const nextStatus = selectedJob.status === 'not_interested' ? 'new' : 'not_interested';
+        
+        if (displayedJobs.length > 0) {
+          const currentIndex = displayedJobs.findIndex((j) => j.id === selectedJob.id);
+          if (currentIndex !== -1) {
+            let nextIndex = currentIndex < displayedJobs.length - 1 ? currentIndex + 1 : currentIndex - 1;
+            const nextJob = displayedJobs[nextIndex];
+            if (nextJob) {
+              onSelectJob(nextJob);
+              updateUrlParam('job', String(nextJob.id));
+              scrollToIndex?.(nextIndex, { align: 'auto', behavior: 'smooth' });
+              if (!isDetailFullScreen) {
+                const nextEl = cardRefs?.current?.get(nextJob.id) || document.querySelector<HTMLElement>(`[data-job-id="${nextJob.id}"]`);
+                if (nextEl) nextEl.focus({ preventScroll: true });
+              } else {
+                const dialog = document.getElementById('fullscreen-job-dialog');
+                const scrollContainer = dialog?.querySelector<HTMLElement>('[data-inspector-scroll-body]') || dialog?.querySelector<HTMLElement>('.overflow-y-auto');
+                if (scrollContainer) {
+                  scrollContainer.scrollTop = 0;
+                  scrollContainer.focus({ preventScroll: true });
+                }
+              }
+            } else {
+              onSelectJob(null);
+              updateUrlParam('job', null);
+              if (isDetailFullScreen) setIsDetailFullScreen(false);
+            }
+          }
+        }
+
+        void onUpdateStatus(selectedJob, nextStatus);
       } else if (e.key === 'Escape') {
         if (isDetailFullScreen) {
           setIsDetailFullScreen(false);

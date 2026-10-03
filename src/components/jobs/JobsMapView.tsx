@@ -49,7 +49,6 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
     <div className={`job-map-workspace ${selectedPin && !query.isError ? 'has-selection' : ''}`}>
       <JobsMapCanvas scope={`${scope}:${officeLayer}`} pins={pins} selectedPin={selectedPin} onSelectPin={(pin) => { selectionTrigger.current = section.current?.querySelector('canvas') ?? null; setSelectedPin(pin); }} />
       <div className="absolute top-2 right-2 z-10 flex items-start gap-2">
-        {officeLayer ? <span className="text-[10px] sm:text-xs text-ds-text-muted bg-ds-surface/90 backdrop-blur px-2 py-1 rounded-ds-control shadow-sm border border-ds-border pointer-events-none max-w-[200px] text-right">{t('jobs.mapOfficeEvidence')}</span> : null}
         <div className="flex bg-ds-surface/90 backdrop-blur rounded-ds-control shadow-sm border border-ds-border p-1 gap-1">
           <Tooltip label={t('jobs.mapPostingLayer')}>
             <button
@@ -62,7 +61,7 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
               <span className="sr-only">{t('jobs.mapPostingLayer')}</span>
             </button>
           </Tooltip>
-          <Tooltip label={t('jobs.mapOfficeLayer')}>
+          <Tooltip label={`${t('jobs.mapOfficeLayer')} - ${t('jobs.mapOfficeEvidence')}`}>
             <button
               type="button"
               aria-pressed={officeLayer}

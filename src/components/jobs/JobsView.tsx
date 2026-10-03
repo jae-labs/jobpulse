@@ -18,7 +18,7 @@ import { JobDetailInspector } from './JobDetailInspector';
 import { Button, Card, EmptyState, Pill, TextField } from '@jae-labs/ui';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
-import { useJobByIdQuery, useJobsInfiniteQuery } from '../../hooks/useQueries';
+import { useJobByIdQuery, useJobsInfiniteQuery, useUpdateJobSavedMutation } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
 import { statusPillTone } from '../../lib/statusTone';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -158,6 +158,11 @@ export const JobsView: React.FC<JobsViewProps> = ({
     refetch,
   } = useJobsInfiniteQuery(userId, queryParams, Boolean(userId));
 
+  const savedMutation = useUpdateJobSavedMutation(userId);
+  const handleToggleSaved = useCallback((job: Job) => {
+    savedMutation.mutate({ job, saved: !job.is_saved });
+  }, [savedMutation]);
+
   const pageItems = useMemo(() =>
     pageQueryData?.pages.flatMap(p => p.items) ?? [],
     [pageQueryData]
@@ -295,6 +300,24 @@ export const JobsView: React.FC<JobsViewProps> = ({
     ? (linkedJob?.id === selectedJob.id ? linkedJob : displayedJobs.find((job) => job.id === selectedJob.id) ?? selectedJob)
     : null;
 
+  const prevFilterSignature = useRef(JSON.stringify(queryParams));
+  useEffect(() => {
+    const currentSignature = JSON.stringify(queryParams);
+    if (prevFilterSignature.current !== currentSignature) {
+      if (!isPageLoading) {
+        if (displayedJobs.length > 0) {
+          onSelectJob(displayedJobs[0]);
+          if (listContainerRef.current && document.activeElement && document.activeElement.tagName === 'BUTTON') {
+            listContainerRef.current.focus({ preventScroll: true });
+          }
+        } else {
+          onSelectJob(null);
+        }
+        prevFilterSignature.current = currentSignature;
+      }
+    }
+  }, [queryParams, isPageLoading, displayedJobs, onSelectJob]);
+
   // Track whether deep link has been handled so toggling layoutMode doesn't trigger full-screen
   const initialDeepLinkHandledRef = useRef<number | null>(null);
 
@@ -323,9 +346,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   useKeyboardNavigation({
     displayedJobs,
-    selectedJob,
+    selectedJob: inspectedJob,
     onSelectJob,
     onUpdateStatus,
+    onToggleSaved: handleToggleSaved,
     isDetailFullScreen,
     setIsDetailFullScreen,
     layoutMode,
@@ -657,7 +681,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </span>
           <span className="hidden sm:inline-block text-ds-text-muted">·</span>
           <span className="hidden sm:inline-block text-ds-text-muted font-sans">
-            {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')}
+            {t('shortcuts.press')} <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↑</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↓</kbd> {t('shortcuts.cycle')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">f</kbd> {t('shortcuts.fullscreen')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">←</kbd> / <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd> {t('shortcuts.status')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd> {t('shortcuts.apply')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">s</kbd> {t('shortcuts.star')} · <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">d</kbd> {t('shortcuts.delete')}
           </span>
         </div>
       </div>}

@@ -101,8 +101,8 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              <SavedJobButton job={job} userId={userId} />
-              <IgnoredJobButton job={job} userId={userId} />
+              <IgnoredJobButton job={job} userId={userId} className="size-8" />
+              <SavedJobButton job={job} userId={userId} className="size-8" />
               {onToggleFullScreen && (
                 <Tooltip label={isFullScreen ? t('jobs.inspector.exit') : t('jobs.inspector.expand')} shortcut="F">
                 <Button
@@ -228,7 +228,11 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                 <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">→</kbd>
                 {' '}{t('shortcuts.status')} ·{' '}
                 <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">↵</kbd>
-                {' '}{t('shortcuts.apply')}
+                {' '}{t('shortcuts.apply')} ·{' '}
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">s</kbd>
+                {' '}{t('shortcuts.star')} ·{' '}
+                <kbd className="rounded-ds-control border border-ds-border-strong bg-ds-panel px-1.5 py-0.5 text-[10px] font-mono text-ds-text-secondary font-medium">d</kbd>
+                {' '}{t('shortcuts.delete')}
               </span>
             </div>
           )}

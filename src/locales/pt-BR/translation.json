@@ -76,6 +76,8 @@
     "cycle": "navegar",
     "fullscreen": "tela cheia",
     "apply": "candidatar",
+    "star": "favoritar",
+    "delete": "excluir",
     "status": "status",
     "press": "Pressione"
   },

@@ -76,6 +76,8 @@
     "cycle": "cycle",
     "fullscreen": "full screen",
     "apply": "apply",
+    "star": "star",
+    "delete": "delete",
     "status": "status",
     "press": "Press"
   },
