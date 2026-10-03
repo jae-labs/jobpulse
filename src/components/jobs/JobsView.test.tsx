@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
 import type { Job } from '../../types/job';
@@ -86,10 +86,12 @@ describe('JobsView Search Input', () => {
 
   it('opens a compact cold deep link after its job arrives outside the first page', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const Location = () => <output data-testid="location">{useLocation().search}</output>;
     const ColdLink = () => {
       const [selectedJob, selectJob] = useState<Job | null>(null);
       return <QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/opportunities?job=99']}>
         <JobsView userId="synthetic-owner" selectedJob={selectedJob} onSelectJob={selectJob} />
+        <Location />
       </MemoryRouter></QueryClientProvider>;
     };
     const view = render(<ColdLink />);
@@ -100,6 +102,10 @@ describe('JobsView Search Input', () => {
     view.rerender(<ColdLink />);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveTextContent('Delayed synthetic vacancy');
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Opportunity details');
+    fireEvent.click(screen.getByRole('button', { name: 'Close inspector' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location')).not.toHaveTextContent('job=');
   });
 
   it('switches to map without displaying the loaded list count and restores list mode', async () => {

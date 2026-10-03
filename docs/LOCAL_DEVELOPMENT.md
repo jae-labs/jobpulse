@@ -82,10 +82,11 @@ backed-up files are created or replaced locally.
 
 ## Test Account Deletion
 
-After `make dev`, run `node scripts/test-account-deletion-local.mjs` in another
+After `make dev`, run `npm run db:test:account-deletion` in another
 terminal. If only Supabase is running, first run
 `supabase functions serve delete-account`. The script creates and deletes a
-disposable account, checks Auth, rows, and Storage cleanup, and rejects
+two disposable accounts, checks Auth, rows, invitations, Storage cleanup,
+foreign-account denial, upload races and session revocation, and rejects
 non-local API URLs.
 
 For a database-only backup that cannot use the linked project connection, use:
@@ -93,6 +94,12 @@ For a database-only backup that cannot use the linked project connection, use:
 ```bash
 SUPABASE_DB_URL='postgresql://…' make dump
 ```
+
+Prefer loading the URL from your private environment rather than typing a
+credential into shell history. The explicit-URL path strips passwords from CLI
+arguments, uses the CLI's credential-free dump filters, and passes libpq credentials
+by environment to the checksum-pinned official PostgreSQL container. SQL output
+has private file permissions. A linked dump uses the CLI's linked credential path.
 
 Storage export requires a linked Supabase project, so `make backup` rejects
 `SUPABASE_DB_URL` rather than combine database and Storage from different

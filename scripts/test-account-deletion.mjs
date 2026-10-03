@@ -37,6 +37,8 @@ try {
     accounts.push(account);
     check(await admin.from('authorized_users').insert({ email, user_id: user.id, role: 'member', status: 'accepted' }));
     check(await client.auth.signInWithPassword({ email, password }));
+    check(await client.from('user_profiles').upsert({ user_id: user.id, name: 'Synthetic deletion fixture' }, { onConflict: 'user_id' }));
+    check(await admin.from('authorized_users').insert({ email: `pending-${randomUUID()}@example.invalid`, role: 'member', status: 'pending', invited_by: user.id }));
     check(await client.storage.from('avatars').upload(`${user.id}/avatar`, png, { contentType: 'image/png' }));
     const path = `${user.id}/cv/synthetic.pdf`;
     check(await client.from('user_cvs').insert({ user_id: user.id, file_name: 'synthetic.pdf', storage_path: path, mime_type: 'application/pdf', file_size: 14 }));
@@ -55,6 +57,10 @@ try {
   if (deletion.error) deletion = await a.client.functions.invoke('delete-account', { body: { confirmation: a.email, user_id: b.id } });
   check(deletion);
   assert((await admin.auth.admin.getUserById(a.id)).error, 'Own Auth identity must be deleted');
+  for (const table of ['user_profiles', 'user_cvs', 'authorized_users']) {
+    assert.deepEqual(check(await admin.from(table).select('id').eq('user_id', a.id)), [], 'Own rows must be removed');
+  }
+  assert.deepEqual(check(await admin.from('authorized_users').select('id').eq('invited_by', a.id)), [], 'Issued pending invitations must be removed');
   assert(check(await admin.auth.admin.getUserById(b.id)).user, 'Foreign Auth identity must survive forged request UUID');
   for (const bucket of ['avatars', 'user-documents']) {
     assert.deepEqual(check(await admin.storage.from(bucket).list(a.id)), [], 'Own Storage bytes must be removed');
@@ -70,5 +76,6 @@ try {
     await admin.storage.from('user-documents').remove([`${account.id}/cv/synthetic.pdf`]);
     await admin.auth.admin.deleteUser(account.id);
     await admin.from('authorized_users').delete().eq('user_id', account.id);
+    await admin.from('authorized_users').delete().eq('invited_by', account.id).eq('status', 'pending');
   }
 }

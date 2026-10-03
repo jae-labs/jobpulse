@@ -151,8 +151,12 @@ def _scrape(
             }
 
         log_scraper_event("ERROR", employer, "Employer not found in watchlist or database", method="Search")
-        return {"added": 0, "messages": [f"Employer '{employer}' not found in watchlist."], "scraped_employers": 0,
-                **ingestion_summary([{"outcome": "unsupported"}], 0)}
+        return {
+            "added": 0,
+            "messages": [f"Employer '{employer}' not found in watchlist."],
+            "scraped_employers": 0,
+            **ingestion_summary([{"outcome": "unsupported"}], 0),
+        }
 
     messages: list[str] = []
     outcomes: list[dict[str, Any]] = []
@@ -186,9 +190,16 @@ def _scrape(
             except Exception as error:
                 persisted = error.persisted if isinstance(error, IngestionIncompleteError) else 0
                 added += persisted
-                outcomes.append({"employer": name, "outcome": "failed", "added": persisted, "persisted": persisted,
-                                 "failed_writes": error.failed if isinstance(error, IngestionIncompleteError) else 0,
-                                 "vectors_pending": error.vectors_pending if isinstance(error, IngestionIncompleteError) else 0})
+                outcomes.append(
+                    {
+                        "employer": name,
+                        "outcome": "failed",
+                        "added": persisted,
+                        "persisted": persisted,
+                        "failed_writes": error.failed if isinstance(error, IngestionIncompleteError) else 0,
+                        "vectors_pending": error.vectors_pending if isinstance(error, IngestionIncompleteError) else 0,
+                    }
+                )
                 err_detail = format_error_message(error)
                 update_source_status(name, "Unavailable", err_detail)
                 update_employer_status(name, "Unavailable", opportunities_found=0, discovered_jobs_url=url)

@@ -3,6 +3,7 @@ import { previewWeightedScore } from './scoreCalculator';
 import { resolveScoringRules } from './scoringRules';
 import type { ScoringRules } from '../types/job';
 import type { Job } from '../types/job';
+import { parseAnalysis } from './scoringJson';
 
 type Evaluation = Partial<Pick<Database['public']['Tables']['user_job_evaluations']['Row'],
   'relevance' | 'fit_tier' | 'matched_skills' | 'ai_analysis'>>;
@@ -10,9 +11,7 @@ type Evaluation = Partial<Pick<Database['public']['Tables']['user_job_evaluation
 /** Candidate fields come only from the current user's evaluation. */
 export function candidateEvaluationFields(evaluation?: Evaluation | null, rules?: ScoringRules): Pick<Job,
   'relevance' | 'fit_tier' | 'matched_skills' | 'role_domain' | 'seniority_level' | 'ai_analysis' | 'sub_scores'> {
-  const raw = evaluation?.ai_analysis;
-  const analysis = raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? raw as unknown as Job['ai_analysis'] : undefined;
+  const analysis = parseAnalysis(evaluation?.ai_analysis, evaluation?.relevance ?? 0, evaluation?.fit_tier ?? '');
   const relevance = rules ? previewWeightedScore({ relevance: evaluation?.relevance ?? 0, ai_analysis: analysis }, resolveScoringRules(rules).weights) : evaluation?.relevance ?? 0;
   const fitTier = !evaluation ? 'Unassessed' : relevance >= 75 ? 'Strong Match' : relevance >= 55 ? 'Good Match' : relevance >= 35 ? 'Moderate Match' : relevance >= 15 ? 'Low Match' : 'Mismatch';
   return {

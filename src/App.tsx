@@ -168,6 +168,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
     : isSourcesNeeded && isSourcesLoading;
 
   const activeQueryError = isSourcesNeeded ? sourcesQueryError : isOverviewNeeded ? overviewQueryError : null;
+  useEffect(() => setIsDbErrorDismissed(false), [activeTab, activeQueryError, customDbError]);
   const dbError =
     !isDbErrorDismissed &&
     (customDbError ||

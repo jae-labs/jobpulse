@@ -4,6 +4,7 @@ import type {
   OverviewMetrics,
 } from "../types/job";
 import { isJobStatus } from '../types/job';
+import { parseSubScores } from './scoringJson';
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid RPC object");
@@ -180,12 +181,7 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
       seniority_level: item.seniority_level
         ? String(item.seniority_level)
         : undefined,
-      sub_scores:
-        item.sub_scores &&
-        typeof item.sub_scores === "object" &&
-        !Array.isArray(item.sub_scores)
-          ? (item.sub_scores as Job["sub_scores"])
-          : undefined,
+      sub_scores: parseSubScores(item.sub_scores),
       is_saved: item.is_saved === true || item.status === "interested",
       status,
       last_seen_at: String(item.last_seen_at ?? new Date().toISOString()),

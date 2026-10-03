@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { databaseTarget } from './backup-database.mjs';
+import { databaseTarget, credentialFreeDumpScript } from './backup-database.mjs';
 
 test('database password never enters command arguments or a credential-bearing URL', () => {
   const target = databaseTarget({ SUPABASE_DB_URL: 'postgresql://postgres:synthetic%40password@localhost:54322/postgres' });
@@ -15,4 +15,9 @@ test('linked backups and password-free URLs retain environment credentials', () 
 });
 test('rejects query-based credential transport', () => {
   assert.throws(() => databaseTarget({ SUPABASE_DB_URL: 'postgres://postgres@localhost/postgres?password=synthetic' }));
+});
+test('CLI-generated connection exports cannot override the private environment', () => {
+  const script = '#!/usr/bin/env bash\nset -euo pipefail\n' + ['HOST', 'PORT', 'USER', 'PASSWORD', 'DATABASE'].map(key => `export PG${key}=""\n`).join('') + 'pg_dump\n';
+  assert.equal(credentialFreeDumpScript(script), '#!/usr/bin/env bash\nset -euo pipefail\npg_dump\n');
+  assert.throws(() => credentialFreeDumpScript('pg_dump'));
 });

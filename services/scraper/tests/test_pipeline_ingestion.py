@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 from pipeline import runner
+from scrapers.generic.crawler import EmployerSyncResult, ScrapeOutcome
 
 
 def test_synchronize_runs_ingestion_once(monkeypatch) -> None:
@@ -10,6 +11,32 @@ def test_synchronize_runs_ingestion_once(monkeypatch) -> None:
     monkeypatch.setattr(runner, "_scrape", scrape)
     assert runner.synchronize(employer="Example") == {"added": 4}
     scrape.assert_called_once_with("Example", None, True, False, False)
+
+
+def test_targeted_watchlist_preserves_partial_counts_and_reports_incomplete(monkeypatch):
+    monkeypatch.setattr(runner, "get_core_scrapers", lambda: [])
+    monkeypatch.setattr(runner, "find_core_scraper_by_name", lambda name: None)
+    monkeypatch.setattr(
+        runner, "get_employers_tuples", lambda: [("Synthetic", "General", 50, "https://example.invalid")]
+    )
+    monkeypatch.setattr(
+        runner,
+        "sync_single_employer",
+        lambda *args: EmployerSyncResult(
+            added=2,
+            opportunities_found=3,
+            discovered_url="https://example.invalid",
+            message="Incomplete",
+            outcome=ScrapeOutcome.FAILED,
+            detail="Synthetic failure",
+            failed_writes=1,
+            vectors_pending=2,
+        ),
+    )
+    result = runner.synchronize(employer="Synthetic")
+    assert result["status"] == "incomplete"
+    assert result["persisted"] == 2 and result["failed_sources"] == 1
+    assert result["failed_writes"] == 1 and result["vectors_pending"] == 2
 
 
 def test_partial_source_failure_does_not_prune_catalog(monkeypatch) -> None:
