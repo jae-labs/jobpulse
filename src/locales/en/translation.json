@@ -522,6 +522,8 @@
     "genericError": "Failed to create invitation: {{message}}"
   },
   "errorBoundary": {
+    "moduleLoadFailed": "Part of the app could not be downloaded. Check your connection and reload the page to try again. Unsaved changes may be lost.",
+    "reloadPage": "Reload page",
     "unableToDisplayComponent": "Unable to display component",
     "unexpectedRenderingError": "An unexpected error occurred while rendering this section.",
     "unableToLoadOverview": "Unable to load overview dashboard",

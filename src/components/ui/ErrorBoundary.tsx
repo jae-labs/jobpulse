@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Button, Card } from '@jae-labs/ui';
 import { reportError } from '../../lib/logger';
 import i18n from '../../lib/i18n';
+import { isModuleLoadError, reloadPage } from '../../lib/moduleLoadError';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -31,12 +32,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleReset = (): void => {
+    if (isModuleLoadError(this.state.error)) {
+      reloadPage();
+      return;
+    }
     this.setState({ hasError: false, error: null });
     this.props.onReset?.();
   };
 
   render(): ReactNode {
     if (this.state.hasError) {
+      const moduleLoadFailed = isModuleLoadError(this.state.error);
       return (
         <Card className="border border-ds-negative/30 bg-ds-negative/10 p-6 text-center text-ds-negative">
           <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-ds-control bg-ds-negative/20 text-ds-negative">
@@ -46,7 +52,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {this.props.fallbackTitle || i18n.t('errorBoundary.unableToDisplayComponent')}
           </h3>
           <p className="mt-1 text-xs text-ds-negative/80 max-w-md mx-auto">
-            {this.props.fallbackMessage ||
+            {moduleLoadFailed ? i18n.t('errorBoundary.moduleLoadFailed') : this.props.fallbackMessage ||
               this.state.error?.message ||
               i18n.t('errorBoundary.unexpectedRenderingError')}
           </p>
@@ -56,7 +62,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               size="sm"
               onClick={this.handleReset}
             >
-              <span>{i18n.t('common.retry')}</span>
+            <span>{i18n.t(moduleLoadFailed ? 'errorBoundary.reloadPage' : 'common.retry')}</span>
             </Button>
           </div>
         </Card>

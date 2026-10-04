@@ -522,6 +522,8 @@
     "genericError": "Falha ao criar convite: {{message}}"
   },
   "errorBoundary": {
+    "moduleLoadFailed": "Não foi possível baixar parte do aplicativo. Verifique sua conexão e recarregue a página para tentar novamente. Alterações não salvas podem ser perdidas.",
+    "reloadPage": "Recarregar página",
     "unableToDisplayComponent": "Não foi possível exibir o componente",
     "unexpectedRenderingError": "Ocorreu um erro inesperado ao renderizar esta seção.",
     "unableToLoadOverview": "Não foi possível carregar o painel geral",
