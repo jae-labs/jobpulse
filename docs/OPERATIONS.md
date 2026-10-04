@@ -37,6 +37,15 @@ current repair interface. Review reports before applying public location changes
 
 ## Historical local capacity evidence
 
+Repeat the synthetic probe only against a disposable local project:
+
+```bash
+make db-benchmark PROJECT=jobpulse-benchmark
+```
+
+The script rejects development and hosted Docker targets, creates only synthetic data, and removes its fixtures
+after the run. Record new measurements as dated evidence; do not treat a local result as a hosted SLO.
+
 The 1 October 2026 SQL probe used PostgreSQL 17.6, 1,000 synthetic authorized profiles,
 1.5 million evaluations and 384-dimensional vectors. Each scenario ran for five seconds.
 It excluded HTTP, hosted pooling/network, cold caches, browser rendering and simultaneous

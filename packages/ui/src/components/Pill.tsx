@@ -66,10 +66,10 @@ export const Pill = React.forwardRef<HTMLButtonElement, PillProps>(
       ? cn(
           'border-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_10%,transparent)] text-[var(--pill-color)] hover:bg-[color-mix(in_srgb,var(--pill-color)_15%,transparent)] hover:border-[color-mix(in_srgb,var(--pill-color)_50%,transparent)]',
           active &&
-            'border-[color-mix(in_srgb,var(--pill-color)_60%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_25%,transparent)] shadow-xs ring-1 ring-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] font-semibold',
+            'border-[color-mix(in_srgb,var(--pill-color)_60%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_25%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] font-semibold',
         )
       : active
-        ? 'border-ds-border-strong bg-ds-hover text-ds-text-primary shadow-xs ring-1 ring-ds-border-strong font-semibold hover:border-ds-border-control hover:bg-ds-selected'
+        ? 'border-ds-border-strong bg-ds-hover text-ds-text-primary ring-1 ring-ds-border-strong font-semibold hover:border-ds-border-control hover:bg-ds-selected'
         : 'border-ds-border-strong bg-ds-surface text-ds-text-secondary hover:text-ds-text-primary hover:bg-ds-hover';
 
     const sizeClasses =

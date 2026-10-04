@@ -83,7 +83,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSignInError }) => {
             onClick={() => void handleGoogleSignIn()}
             disabled={isLoading}
             size="lg"
-            className="w-full max-w-[320px] rounded-full shadow-lg"
+            className="w-full max-w-[320px] rounded-full"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">

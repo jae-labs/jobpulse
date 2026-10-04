@@ -169,7 +169,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-[1200px]:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] min-[1200px]:items-start 2xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
           <aside
             aria-label={t('profile.scoring.previewTitle')}
-            className="min-w-0 rounded-ds-card border border-ds-accent/30 bg-ds-panel p-4 shadow-sm min-[1200px]:sticky min-[1200px]:top-4 min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:self-start"
+            className="min-w-0 rounded-ds-card border border-ds-accent/30 bg-ds-panel p-4 min-[1200px]:sticky min-[1200px]:top-4 min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:self-start"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-ds-text-primary">

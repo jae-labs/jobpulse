@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-stop db-reset db-restore db-status dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-descriptions scrape-validate scrape-lint scrape-format scrape-unit scrape-typecheck scrape-enrich-offices db-types check
+.PHONY: help dev stop db-start db-stop db-reset db-restore db-status db-benchmark dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff scrape-enrich-offices scrape-enrich-ai scrape-lint scrape-format scrape-unit scrape-typecheck db-types check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -25,6 +25,10 @@ db-restore: ## Restore a local backup; set BACKUP=.backups/jobpulse-<timestamp>.
 
 db-status: ## Show local Supabase URLs and keys.
 	npm run db:status
+
+db-benchmark: ## Run synthetic capacity probes; set PROJECT=jobpulse-benchmark.
+	@test -n "$(PROJECT)" || (echo "Set PROJECT to a disposable jobpulse-benchmark project." >&2; exit 2)
+	node scripts/benchmark-database.mjs "$(PROJECT)"
 
 dump: ## Save a full logical backup of the linked production database.
 	bash scripts/dump-production.sh

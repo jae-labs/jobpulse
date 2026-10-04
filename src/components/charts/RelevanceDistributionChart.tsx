@@ -42,7 +42,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, o
       : t('charts.relevance.positions', { count: data.count });
     return (
       <div
-        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 z-50 select-none ${
+        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-ds-overlay text-xs space-y-1.5 z-50 select-none ${
           onSelectTier ? 'cursor-pointer' : ''
         }`}
         onClick={() => onSelectTier?.(minMatch)}

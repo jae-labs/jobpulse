@@ -54,4 +54,9 @@ if rg --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' '(?:bg|text|bo
   exit 1
 fi
 
+if rg --pcre2 --line-number --glob '*.{ts,tsx}' --glob '!*.test.{ts,tsx}' '\bshadow-(?!(?:ds-overlay|none)\b)' "$design_system_dir" src; then
+  echo "Use shadow-ds-overlay only for overlays; contained surfaces use borders and tonal differences." >&2
+  exit 1
+fi
+
 node scripts/check-ui-tokens.mjs

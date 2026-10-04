@@ -71,7 +71,7 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTool
     const roleText = data.count === 1 ? t('charts.pipeline.role') : t('charts.pipeline.roles');
     return (
       <div
-        className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 cursor-pointer z-50"
+        className="bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-ds-overlay text-xs space-y-1.5 cursor-pointer z-50"
         onClick={() => onSelectStatus?.(data.status)}
       >
         <div className="font-semibold text-ds-text-primary">{data.fullName || label}</div>

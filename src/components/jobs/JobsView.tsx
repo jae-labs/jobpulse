@@ -446,7 +446,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-3">
-      <Card className="shrink-0 space-y-2.5 p-3 shadow-xs">
+      <Card className="shrink-0 space-y-2.5 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full min-w-0 sm:w-auto sm:flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-ds-text-muted" />
@@ -494,7 +494,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               }}
               className={`hidden lg:flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'split'
-                  ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
+                  ? 'bg-ds-hover text-ds-text-primary border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
               aria-pressed={layoutMode === 'split'}
@@ -511,7 +511,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               }}
               className={`hidden lg:flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 layoutMode === 'list'
-                  ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
+                  ? 'bg-ds-hover text-ds-text-primary border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
               aria-pressed={layoutMode === 'list'}
@@ -522,7 +522,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
             </button>
             <button type="button" onClick={() => { toggleMap(); setIsDetailFullScreen(false); }}
               aria-pressed={layoutMode === 'map'} title={t('jobs.layoutMapTitle')}
-              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
+              className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
               <MapIcon className="size-3.5" /><span>{t('jobs.layoutMap')}</span>
             </button>
             <button
@@ -532,7 +532,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               aria-label={t('common.filters')}
               className={`flex lg:hidden items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 isFiltersOpen || activeDetailedFilterCount > 0
-                  ? 'bg-ds-hover text-ds-text-primary shadow-xs border border-ds-border-strong'
+                  ? 'bg-ds-hover text-ds-text-primary border border-ds-border-strong'
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
             >
@@ -854,7 +854,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
           </div>
 
           {layoutMode === 'split' && (
-            <Card className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full min-h-0 shadow-xs overflow-hidden">
+            <Card className="hidden lg:flex lg:flex-col lg:col-span-7 xl:col-span-7 h-full min-h-0 overflow-hidden">
               <JobDetailInspector
                 job={inspectedJob}
                 onUpdateStatus={onUpdateStatus || (async () => {})}

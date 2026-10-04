@@ -49,13 +49,13 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
     <div className={`job-map-workspace ${selectedPin && !query.isError ? 'has-selection' : ''}`}>
       <JobsMapCanvas scope={`${scope}:${officeLayer}`} pins={pins} selectedPin={selectedPin} onSelectPin={(pin) => { selectionTrigger.current = section.current?.querySelector('canvas') ?? null; setSelectedPin(pin); }} />
       <div className="absolute top-2 right-2 z-10 flex items-start gap-2">
-        <div className="flex bg-ds-surface/90 backdrop-blur rounded-ds-control shadow-sm border border-ds-border p-1 gap-1">
+        <div className="flex bg-ds-surface/90 backdrop-blur rounded-ds-control border border-ds-border p-1 gap-1">
           <Tooltip label={t('jobs.mapPostingLayer')}>
             <button
               type="button"
               aria-pressed={!officeLayer}
               onClick={() => { setOfficeLayer(false); setSelectedPin(null); }}
-              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${!officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
+              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${!officeLayer ? 'bg-ds-selected text-ds-text-primary ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
             >
               <MapPin className="size-4" strokeWidth={!officeLayer ? 2.5 : 2} />
               <span className="sr-only">{t('jobs.mapPostingLayer')}</span>
@@ -66,7 +66,7 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
               type="button"
               aria-pressed={officeLayer}
               onClick={() => { setOfficeLayer(true); setSelectedPin(null); }}
-              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${officeLayer ? 'bg-ds-selected text-ds-text-primary shadow-sm ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
+              className={`flex size-7 items-center justify-center rounded-ds-control transition-colors ds-motion-control ${officeLayer ? 'bg-ds-selected text-ds-text-primary ring-1 ring-ds-border' : 'text-ds-text-muted hover:text-ds-text-primary hover:bg-ds-hover'}`}
             >
               <Building2 className="size-4" strokeWidth={officeLayer ? 2.5 : 2} />
               <span className="sr-only">{t('jobs.mapOfficeLayer')}</span>

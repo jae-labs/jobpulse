@@ -113,7 +113,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         closeLabel={t('common.close', 'Close')}
-        className="max-w-2xl bg-ds-surface border border-ds-border text-ds-text-primary p-6 sm:p-7 shadow-2xl overflow-y-auto max-h-[88vh]"
+        className="max-w-2xl bg-ds-surface border border-ds-border text-ds-text-primary p-6 sm:p-7 shadow-ds-overlay overflow-y-auto max-h-[88vh]"
       >
         <div className="flex items-center gap-3.5 pb-5 border-b border-ds-border">
           <div className="flex size-10 items-center justify-center rounded-ds-control bg-ds-control border border-ds-border-strong shrink-0">

@@ -57,7 +57,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, t, onSel
     const data = payload[0].payload;
     return (
       <div
-        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-2xl text-xs space-y-1.5 min-w-[200px] z-50 ${
+        className={`bg-ds-panel border border-ds-border-strong p-3.5 rounded-ds-card shadow-ds-overlay text-xs space-y-1.5 min-w-[200px] z-50 ${
           onSelectCategory ? 'cursor-pointer' : 'pointer-events-none'
         }`}
         onClick={() => onSelectCategory?.(data.name)}

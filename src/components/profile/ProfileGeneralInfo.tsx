@@ -90,7 +90,7 @@ export const ProfileGeneralInfo: React.FC<ProfileGeneralInfoProps> = ({
             <img
               src={avatarUrl}
               alt={t('profile.general.avatarAlt')}
-              className="size-16 rounded-full border-2 border-ds-accent object-cover shadow-sm"
+              className="size-16 rounded-full border-2 border-ds-accent object-cover"
             />
           ) : (
             <div className="flex size-16 items-center justify-center rounded-full border-2 border-ds-accent bg-ds-accent-subtle text-lg font-bold text-ds-text-primary">

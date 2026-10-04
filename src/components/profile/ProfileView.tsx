@@ -243,7 +243,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   return (
     <div className="space-y-6 pb-16 max-w-5xl mx-auto">
-      <Card className="p-5 shadow-sm lg:p-6">
+      <Card className="p-5 lg:p-6">
         <PageHeader
           title={t('profile.title')}
           actions={(

@@ -18,7 +18,7 @@ function ChartTooltip({ active, payload, label, series, format }: ChartTooltipPr
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   if (!row) return null;
-  return <div className="rounded-ds-card border border-ds-border-strong bg-ds-panel p-3 text-xs shadow-lg">
+  return <div className="rounded-ds-card border border-ds-border-strong bg-ds-panel p-3 text-xs shadow-ds-overlay">
     <p className="mb-2 font-medium text-ds-text-primary">{label}</p>
     {series.map((item) => <p key={item.key} className="flex justify-between gap-4 text-ds-text-secondary">
       <span>{item.label}</span><span className="tabular-nums text-ds-text-primary">{format(Number(row[`raw_${item.key}`]))}</span>

@@ -66,6 +66,9 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 
 ## Guides
 
+The [documentation index](docs/README.md) is the complete, trigger-based map for maintainers and agents.
+These are the most common entry points:
+
 | Topic | Guide |
 | --- | --- |
 | Architecture and components | [System architecture](docs/ARCHITECTURE.md) · [Component map](docs/COMPONENTS.md) |

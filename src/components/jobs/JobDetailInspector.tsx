@@ -185,7 +185,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
                     }
                     className={`flex items-center justify-center px-1 sm:px-3 py-1.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-ds-control border cursor-pointer text-center truncate ${
                       active
-                        ? 'bg-ds-hover text-ds-text-primary shadow-xs border-ds-border-strong'
+                        ? 'bg-ds-hover text-ds-text-primary border-ds-border-strong'
                         : 'border-transparent text-ds-text-secondary hover:text-ds-text-primary hover:bg-ds-hover'
                     }`}
                     title={label}
@@ -201,7 +201,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               <Button
                 asChild
                 size="sm"
-                className="w-full sm:w-auto shrink-0 whitespace-nowrap bg-ds-action-primary hover:bg-ds-action-primary/90 active:scale-[0.98] text-ds-action-primary-text hover:text-ds-action-primary-text border border-ds-border-strong text-xs font-semibold shadow-xs transition-colors"
+                className="w-full sm:w-auto shrink-0 whitespace-nowrap bg-ds-action-primary hover:bg-ds-action-primary/90 active:scale-[0.98] text-ds-action-primary-text hover:text-ds-action-primary-text border border-ds-border-strong text-xs font-semibold transition-colors"
               >
                 <a
                   href={safeApplyUrl}
@@ -217,7 +217,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               <Button
                 size="sm"
                 disabled
-                className="w-full sm:w-auto shrink-0 whitespace-nowrap border-ds-border bg-ds-control text-xs font-semibold text-ds-text-muted shadow-xs"
+                className="w-full sm:w-auto shrink-0 whitespace-nowrap border-ds-border bg-ds-control text-xs font-semibold text-ds-text-muted"
                 title={t('jobs.inspector.noApplicationUrl')}
               >
                 <span>{t('common.apply')}</span>

@@ -285,7 +285,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         activeTab={activeTab}
       />
 
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-ds-surface lg:rounded-ds-card lg:border lg:border-ds-border lg:shadow-2xl">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-ds-surface lg:rounded-ds-card lg:border lg:border-ds-border">
         <React.Suspense fallback={null}>
           <ScoringProgress userId={userId} />
         </React.Suspense>
@@ -332,7 +332,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
             }`}
           >
             {dbError && (
-              <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-ds-card border border-ds-negative/40 bg-ds-negative/10 p-3.5 text-xs text-ds-negative backdrop-blur-md shadow-lg">
+              <div role="alert" className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-ds-card border border-ds-negative/40 bg-ds-negative/10 p-3.5 text-xs text-ds-negative backdrop-blur-md">
                 <div className="flex items-start sm:items-center gap-3">
                   <div className="p-1.5 rounded-ds-control bg-ds-negative/20 text-ds-negative shrink-0">
                     <AlertTriangle className="size-4" />

@@ -12,12 +12,15 @@ export function localLinkTargets(file, text) {
 
 export function checkDocLinks(root) {
   const files = ['README.md', 'AGENTS.md'].map(file => resolve(root, file));
-  for (const directory of ['docs', 'packages/ui']) {
-    const base = resolve(root, directory);
-    for (const entry of readdirSync(base, { withFileTypes: true })) {
-      if (entry.isFile() && entry.name.endsWith('.md')) files.push(resolve(base, entry.name));
+  const collectMarkdown = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) collectMarkdown(path);
+      else if (entry.isFile() && entry.name.endsWith('.md')) files.push(path);
     }
-  }
+  };
+  for (const directory of ['docs', 'packages/ui', 'services/scraper']) collectMarkdown(resolve(root, directory));
   const failures = files.flatMap(file => localLinkTargets(file, readFileSync(file, 'utf8'))
     .filter(target => !existsSync(target)).map(target => `${file}: missing ${target}`));
   if (failures.length) throw new Error(failures.join('\n'));

@@ -84,7 +84,7 @@ const DocumentSection: React.FC<DocumentSectionProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className="flex flex-col rounded-ds-card border border-ds-border-strong bg-ds-surface p-4 sm:p-5 space-y-3.5 shadow-xs">
+    <div className="flex flex-col rounded-ds-card border border-ds-border-strong bg-ds-surface p-4 sm:p-5 space-y-3.5">
       <h3 className="text-xs font-semibold text-ds-text-primary tracking-tight">
         {title}
       </h3>

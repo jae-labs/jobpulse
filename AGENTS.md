@@ -102,6 +102,11 @@ make check         # npm run check + scrape-lint + scrape-unit
 
 ## Documentation & Progressive Discovery
 
+[`docs/README.md`](docs/README.md) is the canonical documentation index. It classifies every maintained
+guide by owner, trigger, and source-of-truth status so agents can load only the material relevant to a change.
+Use the table below as the fast routing layer; use the index when a task crosses domains or when adding,
+renaming, consolidating, or retiring documentation.
+
 Consult the relevant guides progressively based on the task domain:
 
 | Domain / Task | Document | Read When / Trigger | Key Invariants |
@@ -121,6 +126,20 @@ Consult the relevant guides progressively based on the task domain:
 | **Regression Prevention** | [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) | Changing private data flows, matching, telemetry, catalog queries, or removing old code | Preserve the failure-to-test matrix; remove redundant paths without removing safety evidence. |
 
 Progressive discovery index: [`docs/`](docs/).
+
+### Documentation maintenance
+
+- Before adding a guide, first extend the closest maintained guide when the topic has the same owner and
+  lifecycle. Create a new document only for an independently maintained subsystem, operational runbook, or
+  historical record that would otherwise make its parent guide hard to navigate.
+- Every new, renamed, consolidated, or retired guide must update [`docs/README.md`](docs/README.md), this
+  routing table when its trigger changes, and any affected README links in the same change. Give the index an
+  accurate trigger, owner/source-of-truth statement, and whether the document is current policy or historical
+  evidence.
+- Keep current policy concise and durable. Move dated remediation/release evidence into clearly labelled
+  historical records rather than duplicating it in active runbooks. Do not delete applied-migration, recovery,
+  tenant-isolation, or incident evidence solely to reduce file count.
+- Run `npm run lint` after documentation changes. Its local-link check covers every maintained Markdown guide.
 
 ## Make Changes Safely
 

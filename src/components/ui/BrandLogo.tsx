@@ -25,7 +25,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   return (
     <div
-      className={`flex items-center justify-center rounded-full bg-ds-action-primary text-ds-action-primary-text shadow-sm shrink-0 select-none ${box} ${className} ${
+      className={`flex items-center justify-center rounded-full bg-ds-action-primary text-ds-action-primary-text shrink-0 select-none ${box} ${className} ${
         animate ? 'animate-pulse' : ''
       }`}
       aria-label={ariaLabel}
