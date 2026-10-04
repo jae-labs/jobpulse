@@ -1,4 +1,3 @@
-import { ScoringProgress } from './components/dashboard/ScoringProgress';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   RefreshCw,
@@ -18,7 +17,6 @@ import { dashboardNavigation, getNavLabel, type DashboardTab } from './component
 import { ProjectSwitcher } from './components/dashboard/ProjectSwitcher';
 import { UserAccountMenu } from './components/dashboard/UserAccountMenu';
 import { Button, Card } from '@jae-labs/ui';
-import { CommandMenu } from './components/ui/CommandMenu';
 import { BrandLogo } from './components/ui/BrandLogo';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
@@ -36,6 +34,12 @@ const PrivacyView = React.lazy(() =>
 );
 const ProfileView = React.lazy(() =>
   import('./components/profile/ProfileView').then((m) => ({ default: m.ProfileView }))
+);
+const ScoringProgress = React.lazy(() =>
+  import('./components/dashboard/ScoringProgress').then((m) => ({ default: m.ScoringProgress }))
+);
+const CommandMenu = React.lazy(() =>
+  import('./components/ui/CommandMenu').then((m) => ({ default: m.CommandMenu }))
 );
 import { supabase } from './lib/supabase';
 import { DEFAULT_PROFILE } from './lib/defaultProfile';
@@ -282,7 +286,9 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
       />
 
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-ds-surface lg:rounded-ds-card lg:border lg:border-ds-border lg:shadow-2xl">
-        <ScoringProgress userId={userId} />
+        <React.Suspense fallback={null}>
+          <ScoringProgress userId={userId} />
+        </React.Suspense>
         <header
           data-search-exclude
           className="h-12 w-full shrink-0 border-b border-ds-border bg-transparent px-3 sm:px-5 flex items-center justify-between z-20 select-none"
@@ -494,16 +500,20 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
           })}
       </nav>
 
-      <CommandMenu
-        onNavigateToPrivacy={() => setActiveTab('privacy')}
-        isOpen={isCommandMenuOpen}
-        onOpenChange={setIsCommandMenuOpen}
-        userId={userId}
-        onSelectJob={(job) => {
-          handleSelectJob(job);
-          navigate(`/opportunities?job=${job.id}`);
-        }}
-      />
+      {isCommandMenuOpen && (
+        <React.Suspense fallback={null}>
+          <CommandMenu
+            onNavigateToPrivacy={() => setActiveTab('privacy')}
+            isOpen={isCommandMenuOpen}
+            onOpenChange={setIsCommandMenuOpen}
+            userId={userId}
+            onSelectJob={(job) => {
+              handleSelectJob(job);
+              navigate(`/opportunities?job=${job.id}`);
+            }}
+          />
+        </React.Suspense>
+      )}
 
       <InvitationsModal
         isOpen={isInvitationsOpen}
