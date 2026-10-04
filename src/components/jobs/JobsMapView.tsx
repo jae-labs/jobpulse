@@ -61,7 +61,7 @@ export default function JobsMapView({ userId, filters, onSelectJob, onSelectLoca
               <span className="sr-only">{t('jobs.mapPostingLayer')}</span>
             </button>
           </Tooltip>
-          <Tooltip label={`${t('jobs.mapOfficeLayer')} - ${t('jobs.mapOfficeEvidence')}`}>
+          <Tooltip label={t('jobs.mapOfficeLayer')}>
             <button
               type="button"
               aria-pressed={officeLayer}

@@ -9,6 +9,7 @@ import { ProfileTargetPreferences } from './ProfileTargetPreferences';
 import { ProfileQualifications } from './ProfileQualifications';
 import { parsePhone } from './profileConstants';
 import { ProfileMatchingTerms } from './ProfileMatchingTerms';
+import { useExportAccountMutation } from '../../hooks/useQueries';
 import { DEFAULT_PROFILE } from '../../lib/defaultProfile';
 import { withMatchingTerms } from '../../lib/profileMatchingTerms';
 import { Button, Card, Dialog, DialogContent, PageHeader, TextField } from '@jae-labs/ui';
@@ -35,6 +36,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   jobs,
 }) => {
   const { t } = useTranslation();
+  const exportAccount = useExportAccountMutation();
   const [formData, setFormData] = useState<Profile>(
     profile || DEFAULT_PROFILE
   );
@@ -319,6 +321,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {userEmail && (
         <>
+          <Card className="space-y-3 p-5 lg:p-6">
+            <h2 className="text-sm font-semibold text-ds-text-primary">{t('privacy.notice')}</h2>
+            <p className="text-xs leading-relaxed text-ds-text-secondary">{t('privacy.intro')}</p>
+            <Button type="button" variant="secondary" size="sm" disabled={exportAccount.isPending}
+              onClick={() => void exportAccount.mutateAsync().catch(() => {})}>
+              {exportAccount.isPending ? t('common.loading') : t('privacy.exportAccount')}
+            </Button>
+            {exportAccount.isError && <p role="alert" className="text-xs text-ds-negative">{t('privacy.exportFailed')}</p>}
+          </Card>
+
           <Card className="space-y-4 border-ds-negative/40 p-5 lg:p-6">
             <div>
               <h2 className="text-sm font-semibold text-ds-text-primary">{t('profile.dangerZone')}</h2>

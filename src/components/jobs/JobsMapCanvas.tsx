@@ -47,7 +47,7 @@ export default function JobsMapCanvas({ scope, pins, selectedPin, onSelectPin }:
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     try {
       map = new GLMap({ container: node.current,
-        bounds: IRELAND, fitBoundsOptions: { padding: 32, maxZoom: 7 }, minZoom: 2, maxZoom: 19,
+        bounds: IRELAND, fitBoundsOptions: { padding: 32, maxZoom: 7 }, minZoom: 2, maxZoom: 22,
         renderWorldCopies: false, attributionControl: { compact: true },
         fadeDuration: reduceMotion ? 0 : 200, dragRotate: false, pitchWithRotate: false,
       });

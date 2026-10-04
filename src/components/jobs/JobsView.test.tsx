@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobsView } from './JobsView';
 import type { Job } from '../../types/job';
 import { useState } from 'react';
-const linked = vi.hoisted(() => ({ data: null as Job | null }));
+const linked = vi.hoisted(() => ({ data: null as Job | null, jobs: null as Job[] | null }));
 
 vi.mock('./JobsMapView', () => ({ default: ({ onSelectLocation }: { onSelectLocation?: (location: string) => void }) => <section aria-label="Synthetic map view">{onSelectLocation ? <button onClick={() => onSelectLocation("Dublin")}>Synthetic Dublin dot</button> : null}</section> }));
 
@@ -18,7 +18,7 @@ vi.mock('../../hooks/useQueries', () => ({
     data: {
       pages: [
         {
-          items: [
+          items: linked.jobs ?? [
             {
               id: 1,
               title: 'DevOps Platform Engineer',
@@ -36,7 +36,7 @@ vi.mock('../../hooks/useQueries', () => ({
               matched_skills: ['Kubernetes', 'Terraform'],
             },
           ],
-          total: 1,
+          total: linked.jobs?.length ?? 1,
           hasMore: false,
         },
       ],
@@ -57,6 +57,7 @@ describe('JobsView Search Input', () => {
 
   beforeEach(() => {
     linked.data = null;
+    linked.jobs = null;
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -106,6 +107,45 @@ describe('JobsView Search Input', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close inspector' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).not.toHaveTextContent('job=');
+  });
+
+  it.each([false, true])('keeps list arrow navigation out of fullscreen (compact: %s)', (compact) => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: compact && query === '(max-width: 1023px)',
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }));
+    const first: Job = { id: 1, title: 'Synthetic first vacancy', company: 'Synthetic employer',
+      location: 'Dublin', employment_type: 'Full time', status: 'new', relevance: 0,
+      salary_text: null, matched_skills: [], url: 'https://example.invalid/1', source: 'test',
+      last_seen_at: '2026-10-03' };
+    const second: Job = { ...first, id: 2, title: 'Synthetic second vacancy', url: 'https://example.invalid/2' };
+    linked.jobs = [first, second];
+    const List = () => {
+      const [selection, select] = useState<Job | null>(first);
+      const location = useLocation();
+      return <><JobsView userId="synthetic-owner" selectedJob={selection} onSelectJob={select} />
+        <output data-testid="selection">{selection?.id}</output>
+        <output data-testid="location">{location.search}</output></>;
+    };
+    render(<QueryClientProvider client={queryClient}><MemoryRouter><List /></MemoryRouter></QueryClientProvider>);
+    if (!compact) fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(screen.getByTestId('selection')).toHaveTextContent('2');
+    expect(screen.getByTestId('location')).toHaveTextContent('job=2');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'ArrowUp' });
+    expect(screen.getByTestId('selection')).toHaveTextContent('1');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'f' });
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Synthetic first vacancy');
+    expect(dialog).not.toHaveClass('ds-content-enter');
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(dialog).toHaveTextContent('Synthetic second vacancy');
+    fireEvent.keyDown(window, { key: 'ArrowUp' });
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(dialog).toHaveTextContent('Synthetic first vacancy');
   });
 
   it('switches to map without displaying the loaded list count and restores list mode', async () => {
@@ -161,6 +201,20 @@ describe('JobsView Search Input', () => {
     expect(searchInput.value).toBe('devops');
   });
 
+  it('clears the animated hint on focus and keeps it hidden while the search has text', () => {
+    renderJobsView();
+    const input = screen.getByRole('searchbox', { name: 'Search opportunities' });
+    expect(screen.getByText('Search by')).toBeInTheDocument();
+    fireEvent.focus(input);
+    expect(screen.queryByText('Search by')).not.toBeInTheDocument();
+    expect(input).toHaveAttribute('placeholder', '');
+    fireEvent.change(input, { target: { value: 'Engineer' } });
+    fireEvent.blur(input);
+    expect(screen.queryByText('Search by')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search query' }));
+    expect(screen.getByText('Search by')).toBeInTheDocument();
+  });
+
   it('shows clear button when search has text and clears on click', async () => {
     renderJobsView();
 
@@ -189,20 +243,64 @@ describe('JobsView Search Input', () => {
     renderJobsView();
 
     // Match score slider shows current value
-    expect(screen.getByText('All Matches')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Min Match' })).toHaveAttribute('aria-valuetext', 'All Matches');
 
     // Domain dropdown options have counts
     expect(screen.getByRole('option', { name: 'All Domains (1)' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Cloud (1)' })).not.toBeInTheDocument();
 
-    // Salary slider shows current value
-    expect(screen.getByText('All Salaries')).toBeInTheDocument();
+    // Salary slider exposes its unfiltered meaning
+    expect(screen.getByRole('slider', { name: 'Salary' })).toHaveAttribute('aria-valuetext', 'All Salaries');
 
     // Location regional hubs and loaded results have counts
     expect(screen.getByRole('option', { name: 'All Locations (1)' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Dublin/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Cork' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Ireland (National / Remote)' })).toBeInTheDocument();
+  });
+
+  it('previews match changes and commits pointer and keyboard endpoints to the URL', () => {
+    const CurrentFilters = () => <output data-testid="filters">{useLocation().search}</output>;
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/opportunities']}>
+      <JobsView userId="synthetic-owner" onSelectJob={vi.fn()} />
+      <CurrentFilters />
+    </MemoryRouter></QueryClientProvider>);
+    const slider = screen.getByRole('slider', { name: 'Min Match' });
+    fireEvent.change(slider, { target: { value: '70' } });
+    expect(slider).toHaveAttribute('aria-valuetext', '70%+');
+    expect(screen.getByTestId('filters')).not.toHaveTextContent('match=70');
+    fireEvent.pointerUp(slider);
+    expect(screen.getByTestId('filters')).toHaveTextContent('match=70');
+    fireEvent.change(slider, { target: { value: '100' } });
+    fireEvent.keyUp(slider, { key: 'End' });
+    expect(screen.getByTestId('filters')).toHaveTextContent('match=100');
+    fireEvent.change(slider, { target: { value: '0' } });
+    fireEvent.keyUp(slider, { key: 'Home' });
+    expect(screen.getByTestId('filters')).toHaveTextContent('match=0');
+  });
+
+  it('supports both sliders and resets their thresholds', () => {
+    renderJobsView();
+    const match = screen.getByRole('slider', { name: 'Min Match' });
+    const salary = screen.getByRole('slider', { name: 'Salary' });
+    fireEvent.change(match, { target: { value: '75' } });
+    expect(screen.getByRole('slider', { name: 'Min Match' })).toHaveValue('75');
+    fireEvent.pointerUp(match);
+    fireEvent.change(salary, { target: { value: '1' } });
+    fireEvent.pointerUp(salary);
+    expect(salary).toHaveAttribute('aria-valuetext', 'Disclosed only');
+    fireEvent.change(salary, { target: { value: '8' } });
+    fireEvent.keyUp(salary, { key: 'ArrowRight' });
+    expect(salary).toHaveAttribute('aria-valuetext', '€70k+');
+    fireEvent.change(salary, { target: { value: '2' } });
+    fireEvent.pointerUp(salary);
+    expect(salary).toHaveAttribute('aria-valuetext', '€10k+');
+    fireEvent.change(salary, { target: { value: '31' } });
+    fireEvent.keyUp(salary, { key: 'End' });
+    expect(salary).toHaveAttribute('aria-valuetext', '€300k+');
+    fireEvent.click(screen.getByRole('button', { name: /reset all filters/i }));
+    expect(match).toHaveValue('0');
+    expect(salary).toHaveValue('0');
   });
 
   it('displays two arrows when nothing is clicked and toggles match sort direction on click', () => {

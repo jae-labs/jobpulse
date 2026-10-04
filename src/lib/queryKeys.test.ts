@@ -4,6 +4,7 @@ import { queryKeys } from './queryKeys';
 const first = 'a1111111-1111-4111-8111-111111111111';
 const second = 'b2222222-2222-4222-8222-222222222222';
 const cases = {
+  jobTrackingMutations: (uid: string) => queryKeys.jobTrackingMutations(uid),
   scoringState: (uid: string) => queryKeys.scoringState(uid),
   overviewMetrics: (uid: string) => queryKeys.overviewMetrics(uid),
   jobMapPreview: (uid: string) => queryKeys.jobMapPreview(uid, [101, 102]),

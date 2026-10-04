@@ -52,7 +52,7 @@ describe('OverviewView', () => {
   it('restores widget order for the signed-in user', async () => {
     window.localStorage.setItem(
       'jobpulse:overview-widget-order:test-user',
-      JSON.stringify(['high-fit-opportunities', 'tracked-opportunities']),
+      JSON.stringify(['high-fit-opportunities', 'ireland-enterprises', 'tracked-opportunities', 'ireland-labour-force', 'ireland-unemployment', 'ireland-minimum-wage', 'ireland-average-earnings', 'ireland-opportunities']),
     );
     render(
       <Suspense fallback={<div>Loading...</div>}>
@@ -68,6 +68,22 @@ describe('OverviewView', () => {
     const highFit = await screen.findByText('High-Match');
     const tracked = await screen.findByText('Opportunities');
     expect(highFit.compareDocumentPosition(tracked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Obsolete reference widgets are filtered from saved layouts; charts remain.
+    expect(await screen.findByRole('heading', { name: 'Ireland · workforce & opportunities' })).toBeInTheDocument();
+    expect(screen.queryByText('Enterprises · 10+ people')).not.toBeInTheDocument();
+    const order: string[] = JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-order:test-user')!);
+    expect(order).not.toContain('ireland-enterprises');
+    expect(order).toContain('ireland-pay-chart');
+  });
+
+  it('keeps historical charts without the six removed reference cards', async () => {
+    render(<OverviewView overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    expect(await screen.findByRole('heading', { name: 'Ireland · workforce & opportunities' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ireland · minimum wage & mean earnings' })).toBeInTheDocument();
+    for (const label of ['Enterprises · 10+ people', 'Labour force · estimate', 'Unemployment', 'Minimum wage', 'Mean earnings · annualised', 'JobsIreland opportunities']) {
+      expect(screen.queryByRole('heading', { name: label })).not.toBeInTheDocument();
+    }
+    expect(screen.queryByText('Fixed reference')).not.toBeInTheDocument();
   });
 
   it('uses the same shared domain for chart navigation and opportunities', async () => {

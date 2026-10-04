@@ -8,6 +8,17 @@ vi.mock('../../hooks/useQueries', () => ({
 }));
 
 describe('CommandMenu', () => {
+  it('opens the in-app privacy page from the command palette', () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const navigate = vi.fn();
+    const close = vi.fn();
+    render(<CommandMenu isOpen onOpenChange={close} onSelectJob={vi.fn()} onNavigateToPrivacy={navigate} />);
+    fireEvent.click(screen.getByText('Data and privacy'));
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledWith(false);
+    expect(screen.queryByText('No matching positions')).not.toBeInTheDocument();
+  });
+
   it('shows positions without a heading and opens a selected position', () => {
     Element.prototype.scrollIntoView = vi.fn();
     const job: Job = {

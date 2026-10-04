@@ -21,7 +21,7 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
   };
 
   // Profile is reached through account settings in the header avatar.
-  const navItems = dashboardNavigation.filter((item) => item.id !== 'profile');
+  const navItems = dashboardNavigation.filter((item) => item.id !== 'profile' && item.id !== 'privacy');
 
   return (
     <aside

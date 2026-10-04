@@ -31,6 +31,9 @@ const JobsView = React.lazy(() =>
 const SourcesView = React.lazy(() =>
   import('./components/sources/SourcesView').then((m) => ({ default: m.SourcesView }))
 );
+const PrivacyView = React.lazy(() =>
+  import('./components/privacy/PrivacyView').then((m) => ({ default: m.PrivacyView }))
+);
 const ProfileView = React.lazy(() =>
   import('./components/profile/ProfileView').then((m) => ({ default: m.ProfileView }))
 );
@@ -315,6 +318,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
               userEmail={session.user.email}
               profile={profile}
               onNavigateToProfile={() => setActiveTab('profile')}
+              onNavigateToPrivacy={() => setActiveTab('privacy')}
               onOpenInvitations={() => setIsInvitationsOpen(true)}
               onSignOut={handleSignOut}
             />
@@ -448,6 +452,12 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 </ErrorBoundary>
               )}
 
+              {activeTab === 'privacy' && (
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadPrivacy')}>
+                  <PrivacyView />
+                </ErrorBoundary>
+              )}
+
               {activeTab === 'profile' && (
                 <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadProfile')}>
                   <ProfileView
@@ -471,7 +481,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         aria-label={t('nav.mobileNavigation')}
       >
         {dashboardNavigation
-          .filter((item) => item.id !== 'profile')
+          .filter((item) => item.id !== 'profile' && item.id !== 'privacy')
           .map(({ id, icon: Icon }) => {
             const isActive = activeTab === id;
             const shortLabel = getNavLabel(t, id);
@@ -504,6 +514,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
       </nav>
 
       <CommandMenu
+        onNavigateToPrivacy={() => setActiveTab('privacy')}
         isOpen={isCommandMenuOpen}
         onOpenChange={setIsCommandMenuOpen}
         userId={userId}

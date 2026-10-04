@@ -97,7 +97,26 @@
     "pipelineBreakdown": "Pipeline de Candidaturas",
     "relevanceDistribution": "Distribuição de Compatibilidade",
     "skillsFrequency": "Competências nas vagas avaliadas",
-    "categoryBreakdown": "Domínios"
+    "categoryBreakdown": "Domínios",
+    "ireland": {
+      "charts": {
+        "ireland-labour-chart": "Irlanda · força de trabalho e oportunidades",
+        "ireland-pay-chart": "Irlanda · salário mínimo e remuneração média"
+      },
+      "peopleUnemployed": "Pessoas desempregadas",
+      "meanHourly": "Remuneração média por hora",
+      "payBasis": "Base de comparação salarial",
+      "annual": "Anualizada",
+      "hourlyBasis": "Por hora",
+      "legend": "Legenda do gráfico",
+      "labourForceSeries": "Força de trabalho",
+      "vacancySeries": "Vagas abertas · CSO",
+      "labourSource": "CSO · força de trabalho",
+      "vacancySource": "CSO · vagas",
+      "wageHistorySource": "Histórico do salário mínimo",
+      "minimumWageSeries": "Salário mínimo",
+      "meanAnnualSeries": "Remuneração média · anualizada"
+    }
   },
   "jobs": {
     "linkedJobUnavailable": "Esta oportunidade não está disponível.",
@@ -119,11 +138,19 @@
     "clearSearch": "Limpar busca",
     "openCommandMenu": "Buscar vagas (Cmd+K)",
     "searchPlaceholder": "Buscar por cargo, empresa, habilidades ou local...",
+    "searchTypingPrefix": "Buscar por",
+    "searchTypingTitle": "cargo",
+    "searchTypingCompany": "empresa",
+    "searchTypingSkills": "habilidades",
+    "searchTypingLocation": "local",
     "allSalaries": "Todas as Faixas Salariais",
     "disclosedOnly": "Apenas divulgados",
     "allDomains": "Todos os Domínios",
     "allLocations": "Todas as Localizações",
     "minMatch": "Match Mínimo",
+    "salaryThreshold": "€{{amount}}k+",
+    "salaryDisclosedShort": "Informado",
+    "any": "Todos",
     "allMatches": "Todas as Vagas",
     "fit75": "75%+ Match",
     "fit55": "55%+ Match",
@@ -137,7 +164,7 @@
     "layoutSplitTitle": "Visualização dividida mestre-detalhe",
     "layoutListTitle": "Visualização em lista completa",
     "fit": "match",
-    "match": "match",
+    "match": "Match",
     "showing": "Exibindo",
     "of": "de",
     "opportunities": "oportunidades",
@@ -209,7 +236,6 @@
     "mapTooManyLocations": "Há muitas localizações para exibir. Refine os filtros.",
     "mapPostingLayer": "Locais dos anúncios",
     "mapOfficeLayer": "Escritórios das empresas",
-    "mapOfficeEvidence": "Endereços de escritórios; os locais de trabalho destas vagas não foram confirmados.",
     "openDetails": "Abrir detalhes",
     "salary": "Salário"
   },
@@ -505,7 +531,8 @@
     "unableToLoadCategoryChart": "Não foi possível carregar o gráfico de categorias",
     "unableToLoadPipelineChart": "Não foi possível carregar o gráfico de pipeline",
     "unableToLoadRelevanceChart": "Não foi possível carregar o gráfico de distribuição de relevância",
-    "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências"
+    "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências",
+    "unableToLoadPrivacy": "Não foi possível carregar dados e privacidade"
   },
   "scoring": {
     "matchingPending": "Perfil salvo. A preparação das correspondências está pendente.",
@@ -515,6 +542,20 @@
   "privacy": {
     "exportAccount": "Exportar meus dados",
     "exportFailed": "Não foi possível exportar. Tente novamente.",
-    "notice": "Dados e privacidade"
+    "notice": "Dados e privacidade",
+    "intro": "Veja quais dados o JobPulse armazena, como são usados e protegidos e como exportá-los ou excluí-los.",
+    "dataTitle": "Seus dados",
+    "dataBody": "O JobPulse armazena o e-mail da sua conta, os dados de perfil fornecidos, preferências, status de candidaturas, resultados de compatibilidade, convites emitidos e documentos enviados. As vagas formam um catálogo compartilhado; os dados de cada candidato pertencem à sua conta.",
+    "processingTitle": "Como seus dados são usados",
+    "processingBody": "O Supabase fornece autenticação, banco de dados e armazenamento privado de arquivos. A análise de compatibilidade do perfil é executada localmente no navegador e envia um vetor numérico para o banco privado. Os resultados são sugestões automatizadas, não decisões de contratação. Você pode ajustar seus critérios.",
+    "reportingTitle": "Relatórios de erros",
+    "reportingBody": "Quando habilitados pelo operador, os relatórios de erros enviam tipos genéricos de erros e locais do código ao Sentry. O aplicativo remove identificadores de usuários, mensagens, URLs, requisições, cabeçalhos, breadcrumbs e contexto arbitrário. Gravação de sessões e rastreamento de desempenho estão desativados.",
+    "accessTitle": "Acesso, exportação e exclusão",
+    "accessBody": "Exporte seu perfil, status, avaliações, convites emitidos e metadados de documentos em JSON. Baixe os arquivos separadamente no Perfil. Você pode editar seus dados e excluir documentos lá. A exclusão da conta remove os dados ativos e arquivos privados.",
+    "retentionTitle": "Armazenamento e retenção",
+    "retentionBody": "A autenticação usa armazenamento do navegador para manter a sessão. Preferências de idioma e layout usam armazenamento local. O aplicativo não exige cookies de publicidade ou rastreamento de terceiros. Links de arquivos privados expiram; evite compartilhar exportações ou links assinados.",
+    "deletionBody": "A exclusão não apaga imediatamente os logs existentes dos provedores ou backups anteriores. Backups locais concluídos e logs operacionais têm retenção máxima de um ano; os provedores podem manter logs por períodos menores. Preferências de layout permanecem no navegador até você limpar o armazenamento do site.",
+    "contactTitle": "Perguntas e solicitações",
+    "contactBody": "Entre em contato para acesso, correção, exclusão ou dúvidas sobre processamento e retenção pelos provedores. Dados pessoais opcionais são usados apenas para os recursos de perfil e compatibilidade que você escolher. Não envie documentos que não tenha direito de compartilhar."
   }
 }

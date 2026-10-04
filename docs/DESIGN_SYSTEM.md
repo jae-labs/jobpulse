@@ -42,3 +42,5 @@ show labels and values without repeated click instructions. The
 - **Token Resolution Without Reflow**: Charts reading `--ds-color-*` or `--jp-color-status-*` variables must consume them through `getCachedCssVar` in `src/lib/chartTheme.ts` rather than `getComputedStyle(document.documentElement)`. This prevents forced synchronous layout reflows on render ticks while maintaining live theme switching via a `MutationObserver`.
 - **Animation Frame Overhead**: Set `isAnimationActive={false}` on all dashboard Recharts primitives (`<Bar>`, `<Pie>`, `<Area>`) to prevent multi-chart surfaces from running simultaneous 1500ms `requestAnimationFrame` loops during initial paint and navigation.
 - **Component Memoization**: Chart components in `src/components/charts/` are wrapped in `React.memo` to isolate chart rendering from parent state changes (such as search keystrokes or virtual list scrolling).
+
+Overview chart surfaces use `WidgetCard` from `@jae-labs/ui` for consistent padding, heading typography and content gaps. Reorder controls remain in `SortableWidget`; chart legends follow their plots.

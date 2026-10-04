@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import type { Job, JobStatus } from '../../types/job';
-import { Card, Pill } from '@jae-labs/ui';
+import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
 import { statusPillTone } from '../../lib/statusTone';
 
@@ -170,16 +170,8 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
   };
 
   return (
-    <Card className="p-6 lg:p-7 relative overflow-hidden flex flex-col justify-between space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-ds-text-primary">
-            {t('charts.pipeline.title')}
-          </h3>
-        </div>
-      </div>
-
-      <div className="h-60 w-full pt-2">
+    <WidgetCard title={t('charts.pipeline.title')}>
+      <div className="h-60 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
@@ -265,7 +257,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
           );
         })}
       </div>
-    </Card>
+    </WidgetCard>
   );
 };
 

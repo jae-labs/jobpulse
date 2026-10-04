@@ -26,6 +26,8 @@ import { SortableWidget } from './SortableWidget';
 import { StatCard } from '../ui/StatCard';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { useTranslation } from 'react-i18next';
+import { irelandMarketChartIds } from '../../lib/irelandMarket';
+const IrelandMarketChart = React.lazy(() => import('./IrelandMarketChart').then((module) => ({ default: module.IrelandMarketChart })));
 
 const PipelineChart = React.lazy(() =>
   import('../charts/PipelineChart').then((m) => ({ default: m.PipelineChart }))
@@ -49,6 +51,7 @@ const overviewWidgetIds = [
   'category-breakdown',
   'relevance-distribution',
   'skills-radar',
+  ...irelandMarketChartIds,
 ] as const;
 
 type OverviewWidgetId = typeof overviewWidgetIds[number];
@@ -166,6 +169,11 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
 
   const renderOverviewWidget = (widgetId: OverviewWidgetId) => {
     switch (widgetId) {
+      case 'ireland-labour-chart':
+      case 'ireland-pay-chart':
+        return <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t(`overview.ireland.charts.${widgetId}`) })} className="sm:col-span-2 md:col-span-12 xl:col-span-6">
+          <IrelandMarketChart id={widgetId} />
+        </SortableWidget>;
       case 'tracked-opportunities':
         return (
           <SortableWidget key={widgetId} id={widgetId} reorderLabel={t('common.reorder', { item: t('overview.trackedOpportunities') })} className="sm:col-span-1 md:col-span-3">

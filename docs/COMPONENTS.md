@@ -31,6 +31,7 @@ App (Root Shell & Providers)
   - `ProfileMatchingTerms.tsx`: Single tag list for positive alignment, competencies, and tools while preserving stored scoring rules.
   - `ProfileDocuments.tsx`: Streaming document vault for CVs and cover letters.
   - `ScoringRulesEditor.tsx`: Exclusion and disqualifier tags, followed by scoring weights with a live, five-row list of the highest scoring opportunities beside the sliders on wide screens. The list recomputes scores and ranking as weights move.
+- **`PrivacyView`** (`src/components/privacy/PrivacyView.tsx`): In-app data and privacy notice at `/privacy`, reached from the account menu or command palette. Uses the existing account export mutation; documents and account deletion remain in Profile.
 - **`SourcesView`** (`src/components/sources/SourcesView.tsx`): Source connector telemetry, health status, and opportunity counts.
 
 ## Design System vs Application UI

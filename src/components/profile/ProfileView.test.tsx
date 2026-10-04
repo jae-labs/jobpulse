@@ -6,7 +6,10 @@ import { ProfileView } from './ProfileView';
 import type { Job, Profile } from '../../types/job';
 import i18n from '../../lib/i18n';
 
+const exportAccount = vi.hoisted(() => ({ isPending: false, isError: false, mutateAsync: vi.fn().mockResolvedValue(true) }));
+
 vi.mock('../../hooks/useQueries', () => ({
+  useExportAccountMutation: () => exportAccount,
   useUserCvsQuery: () => ({ data: [], isLoading: false }),
   useUserCoverLettersQuery: () => ({ data: [], isLoading: false }),
   useSaveCvMutation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -44,6 +47,8 @@ describe('ProfileView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    exportAccount.isPending = false;
+    exportAccount.isError = false;
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -67,6 +72,23 @@ describe('ProfileView', () => {
       </QueryClientProvider>
     );
   };
+
+  it('exports account data from Profile before the Danger zone', async () => {
+    renderProfileView({ userEmail: 'candidate@example.test' });
+    const button = screen.getByRole('button', { name: 'Export my account data' });
+    const danger = screen.getByRole('heading', { name: 'Danger zone' });
+    expect(button.compareDocumentPosition(danger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await act(async () => { fireEvent.click(button); });
+    expect(exportAccount.mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables export while pending and shows a recoverable failure', () => {
+    exportAccount.isPending = true;
+    exportAccount.isError = true;
+    renderProfileView({ userEmail: 'candidate@example.test' });
+    expect(screen.getByRole('button', { name: 'Loading...' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Export failed. Please try again.');
+  });
 
   it('renders loading state when isLoading is true', () => {
     renderProfileView({ isLoading: true, profile: null });

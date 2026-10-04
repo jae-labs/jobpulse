@@ -1,5 +1,6 @@
 /** Shared TanStack Query keys used by hooks and profile synchronization. */
 export const queryKeys = {
+  jobTrackingMutations: (userId?: string | null) => ["job-tracking-mutations", userId ?? null] as const,
   scoringState: (userId?: string | null) => ["scoring-state", userId ?? null] as const,
   overviewMetrics: (userId?: string | null) => ["overview-metrics", userId ?? null] as const,
   jobMapPreview: (userId?: string | null, ids?: number[]) => ["job-map-preview", userId ?? null, ids ?? []] as const,

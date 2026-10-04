@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import type { Job } from '../../types/job';
-import { Card } from '@jae-labs/ui';
+import { WidgetCard } from '@jae-labs/ui';
 
 export interface RelevanceTier {
   range: string;
@@ -109,11 +109,7 @@ const RelevanceDistributionChartComponent: React.FC<RelevanceDistributionChartPr
   }, [jobs, distribution]);
 
   return (
-    <Card className="p-6 flex flex-col justify-between">
-      <div className="mb-4">
-        <h3 className="text-xl font-bold text-ds-text-primary">{t('charts.relevance.title')}</h3>
-      </div>
-
+    <WidgetCard title={t('charts.relevance.title')}>
       <div className={`h-64 w-full ${onSelectTier ? 'cursor-pointer' : ''}`}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
@@ -199,7 +195,7 @@ const RelevanceDistributionChartComponent: React.FC<RelevanceDistributionChartPr
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </WidgetCard>
   );
 };
 

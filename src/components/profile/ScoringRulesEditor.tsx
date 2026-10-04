@@ -22,21 +22,10 @@ interface ScoringRulesEditorProps {
   userId?: string | null;
 }
 
-type TagColorTheme = 'accent' | 'warning' | 'interviewing' | 'negative' | 'positive';
-
-const THEME_CLASSES: Record<TagColorTheme, string> = {
-  accent: 'border-ds-accent/30 bg-ds-accent/10 text-ds-accent',
-  warning: 'border-ds-warning/30 bg-ds-warning/10 text-ds-warning',
-  interviewing: 'border-status-interviewing/30 bg-status-interviewing/10 text-status-interviewing',
-  negative: 'border-ds-negative/30 bg-ds-negative/10 text-ds-negative',
-  positive: 'border-ds-positive/30 bg-ds-positive/10 text-ds-positive',
-};
-
 interface WeightConfigItem {
   key: keyof ScoringWeights;
   min: number;
   max: number;
-  color: TagColorTheme;
 }
 
 const WEIGHT_CONFIGS: WeightConfigItem[] = [
@@ -44,67 +33,56 @@ const WEIGHT_CONFIGS: WeightConfigItem[] = [
     key: 'domain',
     min: 5,
     max: 50,
-    color: 'accent',
   },
   {
     key: 'semantic',
     min: 5,
     max: 50,
-    color: 'accent',
   },
   {
     key: 'competency',
     min: 5,
     max: 40,
-    color: 'accent',
   },
   {
     key: 'seniority',
     min: 5,
     max: 30,
-    color: 'interviewing',
   },
   {
     key: 'salary',
     min: 5,
     max: 30,
-    color: 'positive',
   },
   {
     key: 'contract',
     min: 0,
     max: 25,
-    color: 'accent',
   },
   {
     key: 'target_role_bonus',
     min: 0,
     max: 15,
-    color: 'positive',
   },
   {
     key: 'location_bonus',
     min: 0,
     max: 10,
-    color: 'positive',
   },
   {
     key: 'work_mode_bonus',
     min: 0,
     max: 10,
-    color: 'positive',
   },
   {
     key: 'fixed_term_penalty',
     min: 0,
     max: 20,
-    color: 'warning',
   },
   {
     key: 'disqualification_cap',
     min: 0,
     max: 15,
-    color: 'negative',
   },
 ];
 
@@ -228,7 +206,6 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
           <div className="min-w-0 space-y-3.5 min-[1200px]:col-start-1 min-[1200px]:row-start-1">
             {WEIGHT_CONFIGS.map((cfg) => {
               const currentVal = Number(weights[cfg.key] ?? DEFAULT_SCORING_WEIGHTS[cfg.key] ?? 0);
-              const theme = THEME_CLASSES[cfg.color];
 
               return (
                 <Card
@@ -244,13 +221,6 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
                         {t(`profile.scoring.weights.${cfg.key}.description`)}
                       </p>
                     </div>
-                    <div className="shrink-0 self-start sm:self-center">
-                      <span
-                        className={`inline-flex items-center justify-center min-w-[84px] px-3 py-1.5 rounded-ds-control border font-mono text-sm font-semibold ${theme}`}
-                      >
-                        {t(cfg.key === 'disqualification_cap' ? 'profile.scoring.maximumPercent' : 'profile.scoring.pointsUnit', { count: currentVal })}
-                      </span>
-                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 sm:gap-4 pt-1">
@@ -259,6 +229,7 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
                     </span>
                     <Range
                       aria-label={t(`profile.scoring.weights.${cfg.key}.title`)}
+                      aria-valuetext={t(cfg.key === 'disqualification_cap' ? 'profile.scoring.maximumPercent' : 'profile.scoring.pointsUnit', { count: currentVal })}
                       min={cfg.min}
                       max={cfg.max}
                       step={1}

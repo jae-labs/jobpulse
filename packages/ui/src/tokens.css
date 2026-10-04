@@ -208,3 +208,56 @@
 @media (prefers-reduced-motion: reduce) {
   .ds-sheet-overlay[data-state], .ds-sheet-content[data-state] { animation: none; }
 }
+
+/* A fine visual track inside a 44px touch target; native range semantics remain intact. */
+.ds-range {
+  appearance: none;
+  height: 2.75rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--ds-radius-control);
+  --ds-range-fill: var(--ds-color-accent);
+  --ds-range-track: var(--ds-color-border-strong);
+}
+.ds-range::-webkit-slider-runnable-track {
+  height: 0.25rem;
+  border-radius: var(--ds-radius-control);
+  background: linear-gradient(to right, var(--ds-range-fill) var(--ds-range-progress), var(--ds-range-track) var(--ds-range-progress));
+}
+.ds-range::-moz-range-track {
+  height: 0.25rem;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-range-track);
+}
+.ds-range::-moz-range-progress {
+  height: 0.25rem;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-range-fill);
+}
+.ds-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.375rem;
+  border: 2px solid var(--ds-range-fill);
+  border-radius: 50%;
+  background: var(--ds-color-text-primary);
+}
+.ds-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--ds-range-fill);
+  border-radius: 50%;
+  background: var(--ds-color-text-primary);
+}
+.ds-range:disabled { cursor: not-allowed; opacity: 0.5; }
+@media (forced-colors: active) {
+  .ds-range { appearance: auto; }
+}
+
+.ds-range-compact { height: 2rem; }
+@media (pointer: coarse) {
+  .ds-range-compact { height: 2.75rem; }
+}

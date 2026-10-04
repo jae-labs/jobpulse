@@ -142,6 +142,9 @@ The Profile danger zone calls the authenticated `delete-account` Edge Function:
   salary, and score filtering with offset pagination (`{ total: number, items: Job[] }`). Count and page share one
   SQL statement so the filtered CTE stays in scope and out-of-range pages retain the correct total.
   `supabase/tests/jobs_pagination.sql` verifies pagination, empty pages, literal locations, and browser filter/sort options.
+  Salary thresholds accept `10k` through `300k` in `10k` increments and compare annual EUR amounts.
+  `all` and `disclosed` remain compatible; list/map parity and caller isolation are covered by
+  `supabase/tests/tenant_salary_range.sql`.
 - **`rescore_user(uid, top_k)`**: Enqueues caller-owned durable scoring work and returns immediately. The private worker ranks an exact shortlist of up to 1,500 jobs and scores at most 100 changed jobs per call.
 - **`save_profile_embedding(...)` / `get_profile_embedding_state()`**: Submit the caller's validated, nonzero 384-dimensional vector and read its hash, model version and durable scoring progress. Neither RPC returns a vector.
 - **`merge_duplicate_catalog_jobs(...)`**: Service-only deduplication; tenant statuses and evaluations are transferred inside PostgreSQL.

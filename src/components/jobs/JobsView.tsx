@@ -25,6 +25,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useJobFilters, type SortField } from './useJobFilters';
 import { useKeyboardNavigation } from './useKeyboardNavigation';
 import { useJobLayout } from './useJobLayout';
+import { SearchPlaceholder } from './SearchPlaceholder';
 
 export type { SortField };
 const JobsMapView = lazy(() => import('./JobsMapView'));
@@ -251,20 +252,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const [localMatch, setLocalMatch] = useState(minMatch);
   useEffect(() => setLocalMatch(minMatch), [minMatch]);
 
-  const salaryOptions = useMemo(() => ['all', 'disclosed', '50k', '60k', '70k', '80k'], []);
-  const initialSalaryIdx = salaryOptions.indexOf(salaryFilter);
-  const [localSalaryIndex, setLocalSalaryIndex] = useState(initialSalaryIdx >= 0 ? initialSalaryIdx : 0);
-  useEffect(() => {
-    const idx = salaryOptions.indexOf(salaryFilter);
-    setLocalSalaryIndex(idx >= 0 ? idx : 0);
-  }, [salaryFilter, salaryOptions]);
+  const salaryOptions = useMemo(() => ['all', 'disclosed', ...Array.from({ length: 30 }, (_, index) => `${(index + 1) * 10}k`)], []);
+  const [localSalaryIndex, setLocalSalaryIndex] = useState(Math.max(0, salaryOptions.indexOf(salaryFilter)));
+  useEffect(() => setLocalSalaryIndex(Math.max(0, salaryOptions.indexOf(salaryFilter))), [salaryFilter, salaryOptions]);
 
-  const getSalaryLabel = useCallback((idx: number) => {
-    const val = salaryOptions[idx];
-    if (val === 'all') return t('jobs.allSalaries');
-    if (val === 'disclosed') return t('jobs.disclosedOnly');
-    return t(`jobs.salary${val}`);
-  }, [salaryOptions, t]);
+  const getSalaryLabel = (index: number) => {
+    const value = salaryOptions[index];
+    if (value === 'all') return t('jobs.any');
+    if (value === 'disclosed') return t('jobs.salaryDisclosedShort');
+    return t('jobs.salaryThreshold', { amount: formatNumber(Number(value.slice(0, -1)), i18n.language) });
+  };
 
   const hasActiveFilters = Boolean(
     activeSearch.trim() ||
@@ -327,8 +324,13 @@ export const JobsView: React.FC<JobsViewProps> = ({
   });
 
   // Detail state follows the owner-scoped query after save/unsave, even if the job leaves the active filter.
-  const inspectedJob = selectedJob && (!urlJobId || selectedJob.id === urlJobId)
-    ? (linkedJob?.id === selectedJob.id ? linkedJob : displayedJobs.find((job) => job.id === selectedJob.id) ?? selectedJob)
+  // URL and parent selection can arrive in separate renders during keyboard navigation.
+  // Resolve the URL from loaded jobs immediately instead of blanking the inspector.
+  const inspectorSelection = urlJobId !== null && selectedJob?.id !== urlJobId
+    ? displayedJobs.find((job) => job.id === urlJobId) ?? (linkedJob?.id === urlJobId ? linkedJob : null)
+    : selectedJob;
+  const inspectedJob = inspectorSelection
+    ? (linkedJob?.id === inspectorSelection.id ? linkedJob : displayedJobs.find((job) => job.id === inspectorSelection.id) ?? inspectorSelection)
     : null;
 
   const prevFilterSignature = useRef(JSON.stringify(queryParams));
@@ -363,6 +365,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
   // Track whether deep link has been handled so toggling layoutMode doesn't trigger full-screen
   const initialDeepLinkHandledRef = useRef<number | null>(null);
+  const keyboardSelectionRef = useRef<number | null>(null);
   const selectionDismissedRef = useRef(false);
   const closeInspector = useCallback(() => {
     selectionDismissedRef.current = true;
@@ -380,8 +383,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
       }
       // Only open full-screen once on initial deep-link arrival, not when simply toggling layoutMode
       if (match && initialDeepLinkHandledRef.current !== urlJobId) {
+        const selectionOnly = keyboardSelectionRef.current === urlJobId;
+        keyboardSelectionRef.current = null;
         initialDeepLinkHandledRef.current = urlJobId;
-        if (layoutMode === 'list' || layoutMode === 'map' || isCompact) {
+        if (!selectionOnly && (layoutMode === 'list' || layoutMode === 'map' || isCompact)) {
           setIsDetailFullScreen(true);
         }
       }
@@ -394,10 +399,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
     }
   }, [urlJobId, layoutMode, selectedJob, displayedJobs, linkedJob, onSelectJob, isCompact]);
 
+  const handleKeyboardSelect = useCallback((job: Job | null) => {
+    // Keyboard selection updates the URL without turning it into an inspector deep link.
+    keyboardSelectionRef.current = job?.id ?? null;
+    onSelectJob(job);
+  }, [onSelectJob]);
+
   useKeyboardNavigation({
     displayedJobs,
     selectedJob: inspectedJob,
-    onSelectJob,
+    onSelectJob: handleKeyboardSelect,
     onUpdateStatus,
     onToggleSaved: handleToggleSaved,
     isDetailFullScreen,
@@ -447,9 +458,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
               onKeyDown={(e) => e.stopPropagation()}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              placeholder={isSearchFocused ? '' : t('jobs.searchPlaceholder')}
+              placeholder=""
               className="h-auto border-ds-border bg-ds-surface py-1.5 pl-9 pr-8 sm:pr-16 text-xs focus:bg-ds-surface"
             />
+            {!isSearchFocused && !inputDisplayValue && <SearchPlaceholder />}
             {inputDisplayValue && (
               <button
                 type="button"
@@ -536,9 +548,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
         </div>
 
         <div className="flex flex-col gap-2.5 pt-2 border-t border-ds-border text-xs">
-          <div className={`${isFiltersOpen ? 'grid' : 'hidden lg:grid'} grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-1.5`}>
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
-              <div className="flex items-center min-w-0 flex-1 gap-2 w-full sm:w-[160px] px-1">
+          <div className={`${isFiltersOpen ? 'grid' : 'hidden lg:grid'} grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-1.5`}>
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
+              <div className="flex items-center min-w-0 flex-1 gap-2 w-full">
                 <span className="text-[10px] text-ds-text-secondary leading-none shrink-0">{t('jobs.match')}</span>
                 <Range
                   min={0}
@@ -546,17 +558,20 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   step={5}
                   value={localMatch}
                   onChange={(e) => setLocalMatch(Number(e.target.value))}
-                  onPointerUp={() => setMinMatch(localMatch)}
-                  onKeyUp={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') setMinMatch(localMatch) }}
-                  className="w-full flex-1 min-w-0"
+                  onPointerUp={(event) => setMinMatch(Number(event.currentTarget.value))}
+                  onBlur={(event) => setMinMatch(Number(event.currentTarget.value))}
+                  onKeyUp={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) setMinMatch(Number(event.currentTarget.value)); }}
+                  density="compact"
+                  className="flex-1 min-w-8"
                   aria-label={t('jobs.minMatch')}
+                  aria-valuetext={localMatch === 0 ? t('jobs.allMatches') : `${formatNumber(localMatch, i18n.language)}%+`}
                 />
-                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 w-7 text-right tabular-nums">{localMatch === 0 ? t('jobs.allMatches') : `${localMatch}%+`}</span>
+                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 min-w-6 text-right whitespace-nowrap tabular-nums">{localMatch === 0 ? t('jobs.any') : `${formatNumber(localMatch, i18n.language)}%+`}</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleToggleSort('match')}
-                className="ml-1 p-0.5 text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
+                className="ml-1 flex size-8 pointer-coarse:size-11 items-center justify-center rounded-ds-control ds-focus-ring text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
                 title={t('jobs.sortByMatch')}
                 aria-label={t('jobs.sortByMatch')}
               >
@@ -570,13 +585,49 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
+              <div className="flex items-center min-w-0 flex-1 gap-2 w-full">
+                <span className="text-[10px] text-ds-text-secondary leading-none shrink-0">{t('jobs.salary')}</span>
+                <Range
+                  min={0}
+                  max={salaryOptions.length - 1}
+                  step={1}
+                  value={localSalaryIndex}
+                  onChange={(e) => setLocalSalaryIndex(Number(e.target.value))}
+                  onPointerUp={(event) => setSalaryFilter(salaryOptions[Number(event.currentTarget.value)])}
+                  onBlur={(event) => setSalaryFilter(salaryOptions[Number(event.currentTarget.value)])}
+                  onKeyUp={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) setSalaryFilter(salaryOptions[Number(event.currentTarget.value)]); }}
+                  density="compact"
+                  className="flex-1 min-w-8"
+                  aria-label={t('jobs.salary')}
+                  aria-valuetext={localSalaryIndex === 0 ? t('jobs.allSalaries') : localSalaryIndex === 1 ? t('jobs.disclosedOnly') : getSalaryLabel(localSalaryIndex)}
+                />
+                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 min-w-6 text-right whitespace-nowrap tabular-nums">{getSalaryLabel(localSalaryIndex)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggleSort('salary')}
+                className="ml-1 flex size-8 pointer-coarse:size-11 items-center justify-center rounded-ds-control ds-focus-ring text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
+                title={t('jobs.sortBySalary')}
+                aria-label={t('jobs.sortBySalary')}
+              >
+                {explicitSortField !== 'salary' ? (
+                  <ArrowUpDown className="size-3" />
+                ) : sortDir === 'desc' ? (
+                  <ArrowDown className="size-3 text-ds-text-secondary" />
+                ) : (
+                  <ArrowUp className="size-3 text-ds-text-secondary" />
+                )}
+              </button>
+            </div>
+
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.allDomains')}
                   value={activeDomainFilter}
                   onChange={(e) => setDomainFilter(e.target.value)}
-                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[170px]"
+                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none h-8 pointer-coarse:h-11 min-w-0"
                 >
                   <option value="all" className="bg-ds-panel text-ds-text-secondary">
                     {t('jobs.allDomains')} ({totalCatalogCount})
@@ -594,7 +645,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleSort('category')}
-                className="ml-1 p-0.5 text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
+                className="ml-1 flex size-8 pointer-coarse:size-11 items-center justify-center rounded-ds-control ds-focus-ring text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
                 title={t('jobs.sortByCategory')}
                 aria-label={t('jobs.sortByCategory')}
               >
@@ -608,47 +659,13 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
-              <div className="flex items-center min-w-0 flex-1 gap-2 w-full sm:w-[150px] px-1">
-                <span className="text-[10px] text-ds-text-secondary leading-none shrink-0">{t('jobs.salary')}</span>
-                <Range
-                  min={0}
-                  max={salaryOptions.length - 1}
-                  step={1}
-                  value={localSalaryIndex}
-                  onChange={(e) => setLocalSalaryIndex(Number(e.target.value))}
-                  onPointerUp={() => setSalaryFilter(salaryOptions[localSalaryIndex])}
-                  onKeyUp={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') setSalaryFilter(salaryOptions[localSalaryIndex]) }}
-                  className="w-full flex-1 min-w-0"
-                  aria-label={t('jobs.allSalaries')}
-                />
-                <span className="text-[10px] font-medium text-ds-text-primary leading-none shrink-0 w-[42px] text-right tabular-nums">{getSalaryLabel(localSalaryIndex)}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleToggleSort('salary')}
-                className="ml-1 p-0.5 text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
-                title={t('jobs.sortBySalary')}
-                aria-label={t('jobs.sortBySalary')}
-              >
-                {explicitSortField !== 'salary' ? (
-                  <ArrowUpDown className="size-3" />
-                ) : sortDir === 'desc' ? (
-                  <ArrowDown className="size-3 text-ds-text-secondary" />
-                ) : (
-                  <ArrowUp className="size-3 text-ds-text-secondary" />
-                )}
-              </button>
-            </div>
-
-            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-1.5 sm:w-auto sm:py-1">
+            <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
               <div className="flex items-center min-w-0 flex-1">
                 <select
                   aria-label={t('jobs.allLocations')}
                   value={activeLocationFilter}
                   onChange={(e) => setLocationFilter(e.target.value)}
-                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none sm:max-w-[150px]"
+                  className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none h-8 pointer-coarse:h-11 min-w-0"
                 >
                   <option value="all" className="bg-ds-panel text-ds-text-secondary">
                     {t('jobs.allLocations')} ({totalCatalogCount})
@@ -680,7 +697,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleSort('location')}
-                className="ml-1 p-0.5 text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
+                className="ml-1 flex size-8 pointer-coarse:size-11 items-center justify-center rounded-ds-control ds-focus-ring text-ds-text-muted hover:text-ds-text-secondary cursor-pointer shrink-0 transition-colors"
                 title={t('jobs.sortByLocation')}
                 aria-label={t('jobs.sortByLocation')}
               >
@@ -746,6 +763,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
           {isLinkedError && <Button variant="secondary" size="sm" onClick={() => void refetchLinked()}>{t('common.retry')}</Button>}
         </div>
       )}
+      {savedMutation.isError && <p role="alert" className="text-xs text-ds-negative">{t('jobs.saveJobError')}</p>}
+
       {layoutMode === 'map' ? (
         <Suspense fallback={<div role="status">{t('jobs.mapLoading')}</div>}>
           <JobsMapView userId={userId} filters={queryParams} onSelectLocation={isCompact ? selectMapLocation : undefined} onSelectJob={(id) => {
@@ -872,9 +891,9 @@ export const JobsView: React.FC<JobsViewProps> = ({
         if (!open && (isCompact || layoutMode !== 'split')) closeInspector();
         else setIsDetailFullScreen(open);
       }}>
-      {inspectedJob && isDetailFullScreen && (
+      {isDetailFullScreen && (
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="ds-content-enter fixed inset-0 z-50 bg-ds-canvas/65" />
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ds-canvas/65" />
           <DialogPrimitive.Content
             ref={dialogContentRef}
             aria-label={t('jobs.inspector.title')}
@@ -883,7 +902,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               e.preventDefault();
               dialogContentRef.current?.focus({ preventScroll: true });
             }}
-            className="fixed inset-0 z-50 flex flex-col bg-ds-surface ds-content-enter focus:outline-none focus-visible:outline-none"
+            className="fixed inset-0 z-50 flex flex-col bg-ds-surface focus:outline-none focus-visible:outline-none"
           >
           <div className="flex h-full w-full flex-col overflow-hidden bg-ds-surface">
             <JobDetailInspector

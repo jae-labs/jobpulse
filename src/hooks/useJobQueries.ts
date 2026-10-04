@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
+import { commitJobTrackingUpdate, projectJob, projectJobPage, projectJobPages, useJobTrackingUpdates, type JobTrackingUpdate } from './jobTrackingUpdates';
 import { resolveScoringRules } from '../lib/scoringRules';
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type QueryClient } from "@tanstack/react-query";
 import { supabase, getAccountClient } from "../lib/supabase";
 import type { Job, JobStatus, OverviewMetrics, JobsPageParams, JobsPageResult, Employer, EmployerSize } from "../types/job";
 import { getCurrentUserId } from "../lib/userSession";
@@ -8,6 +10,18 @@ import { queryKeys } from "../lib/queryKeys";
 import { validateJobMapResult, validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
 import { withActiveUser } from './withActiveUser';
 import { jobsRpcArgs } from '../lib/jobsRpcArgs';
+
+async function reconcileJobTracking(client: QueryClient, userId: string | null | undefined, update: JobTrackingUpdate, error: unknown) {
+  await Promise.all([
+    client.invalidateQueries({ queryKey: queryKeys.jobById(update.job.id, userId) }),
+    client.invalidateQueries({ queryKey: queryKeys.jobsPage(userId) }),
+    client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(userId) }),
+    client.invalidateQueries({ queryKey: queryKeys.jobMap(userId) }),
+    client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(userId) }),
+  ]);
+  // A failed refresh must not undo a write the server already confirmed.
+  if (!error) await withActiveUser(userId, async () => commitJobTrackingUpdate(client, userId!, update));
+}
 
 export interface JobDetailResult {
   description?: string;
@@ -41,7 +55,8 @@ export function useJobsPageQuery(
   enabled = true
 ) {
 
-  return useQuery({
+  const updates = useJobTrackingUpdates(activeUserId);
+  const query = useQuery({
     queryKey: queryKeys.jobsSearchPage(activeUserId, params),
     enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async ({ signal }): Promise<JobsPageResult> => withActiveUser(activeUserId, async () => {
@@ -56,6 +71,8 @@ export function useJobsPageQuery(
     refetchInterval: 120_000,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
+  const data = useMemo(() => query.data ? projectJobPage(query.data, params, updates) : query.data, [query.data, params, updates]);
+  return { ...query, data };
 }
 
 export function useJobsInfiniteQuery(
@@ -65,7 +82,8 @@ export function useJobsInfiniteQuery(
 ) {
   const PAGE_LIMIT = 40;
 
-  return useInfiniteQuery({
+  const updates = useJobTrackingUpdates(activeUserId);
+  const query = useInfiniteQuery({
     queryKey: queryKeys.jobsPage(activeUserId, params),
     initialPageParam: 0,
     enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
@@ -85,6 +103,8 @@ export function useJobsInfiniteQuery(
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 2,
   });
+  const data = useMemo(() => query.data ? projectJobPages(query.data, params, updates) : query.data, [query.data, params, updates]);
+  return { ...query, data };
 }
 
 export function useScoringPreviewJobsQuery(activeUserId?: string | null, enabled = true) {
@@ -194,7 +214,8 @@ export function useJobDetailQuery(jobId?: number | null, activeUserId?: string |
 }
 
 export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
-  return useQuery({
+  const updates = useJobTrackingUpdates(activeUserId);
+  const query = useQuery({
     queryKey: queryKeys.jobById(jobId, activeUserId),
     enabled: Boolean(supabase) && Boolean(activeUserId) && Boolean(jobId) && enabled,
     queryFn: async (): Promise<Job | null> => withActiveUser(activeUserId, async () => {
@@ -230,12 +251,15 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
     }),
     staleTime: 1000 * 60 * 10,
   });
+  const data = useMemo(() => query.data ? projectJob(query.data, updates) : query.data, [query.data, updates]);
+  return { ...query, data };
 }
 
 export function useUpdateJobStatusMutation(activeUserId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: queryKeys.jobTrackingMutations(activeUserId),
     scope: { id: `status-${activeUserId}` },
     mutationFn: async ({ job, status }: { job: Job; status: JobStatus }) => withActiveUser(activeUserId, async () => {
       if (!supabase) throw new Error("Supabase client is not configured");
@@ -255,13 +279,10 @@ export function useUpdateJobStatusMutation(activeUserId?: string | null) {
       if (error) throw new Error(error.message);
       return { jobId: job.id, status };
     }),
-    onSettled: (_data, _error, { job }) => Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobById(job.id, activeUserId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) }),
-    ]),
+    onSuccess: (_data, update) => withActiveUser(activeUserId, async () => {
+      commitJobTrackingUpdate(queryClient, activeUserId!, update);
+    }),
+    onSettled: (_data, error, update) => reconcileJobTracking(queryClient, activeUserId, update, error),
   });
 }
 
@@ -304,6 +325,7 @@ export function useJobMapPreviewQuery(userId: string | null | undefined, ids: nu
 export function useUpdateJobSavedMutation(activeUserId?: string | null) {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: queryKeys.jobTrackingMutations(activeUserId),
     scope: { id: `is_saved-${activeUserId}` },
     mutationFn: ({ job, saved }: { job: Job; saved: boolean }) => withActiveUser(activeUserId, async () => {
       if (!supabase) throw new Error('Supabase client is not configured');
@@ -311,12 +333,9 @@ export function useUpdateJobSavedMutation(activeUserId?: string | null) {
       const { error } = await client.rpc('set_job_saved', { p_job_id: job.id, p_saved: saved });
       if (error) throw new Error('Bookmark update failed');
     }),
-    onSettled: (_data, _error, { job }) => Promise.all([
-      client.invalidateQueries({ queryKey: queryKeys.jobById(job.id, activeUserId) }),
-      client.invalidateQueries({ queryKey: queryKeys.jobsPage(activeUserId) }),
-      client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) }),
-      client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) }),
-      client.invalidateQueries({ queryKey: queryKeys.jobMap(activeUserId) }),
-    ]),
+    onSuccess: (_data, update) => withActiveUser(activeUserId, async () => {
+      commitJobTrackingUpdate(client, activeUserId!, update);
+    }),
+    onSettled: (_data, error, update) => reconcileJobTracking(client, activeUserId, update, error),
   });
 }

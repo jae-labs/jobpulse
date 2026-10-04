@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import type { Job } from '../../types/job';
-import { Card } from '@jae-labs/ui';
+import { WidgetCard } from '@jae-labs/ui';
 
 export interface SkillFrequencyItem {
   skill: string;
@@ -104,16 +104,8 @@ const SkillsFrequencyChartComponent: React.FC<SkillsFrequencyChartProps> = ({
   }, [jobs, topSkills]);
 
   return (
-    <Card className="p-6 lg:p-7 relative overflow-hidden flex flex-col justify-between space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-ds-text-primary">
-            {t('charts.skills.title')}
-          </h3>
-        </div>
-      </div>
-
-      <div className="h-64 w-full pt-2">
+    <WidgetCard title={t('charts.skills.title')}>
+      <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"
@@ -171,7 +163,7 @@ const SkillsFrequencyChartComponent: React.FC<SkillsFrequencyChartProps> = ({
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </WidgetCard>
   );
 };
 

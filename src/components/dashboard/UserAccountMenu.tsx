@@ -1,4 +1,3 @@
-import { useExportAccountMutation } from '../../hooks/useQueries';
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +9,7 @@ interface UserAccountMenuProps {
   userEmail?: string | null;
   profile?: Profile | null;
   onNavigateToProfile: () => void;
+  onNavigateToPrivacy?: () => void;
   onOpenInvitations?: () => void;
   onSignOut: () => void;
 }
@@ -18,11 +18,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   userEmail,
   profile,
   onNavigateToProfile,
+  onNavigateToPrivacy,
   onOpenInvitations,
   onSignOut,
 }) => {
   const { t, i18n } = useTranslation();
-  const exportAccount = useExportAccountMutation();
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -155,13 +155,8 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
           </div>
 
           <div className="pt-1.5">
-            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="block rounded-ds-control px-2.5 py-1.5 hover:bg-ds-control">{t('privacy.notice')}</a>
-            <button type="button" disabled={exportAccount.isPending} onClick={() => void exportAccount.mutateAsync().catch(() => {})}
-              className="w-full rounded-ds-control px-2.5 py-1.5 text-left hover:bg-ds-control">
-              {exportAccount.isPending ? t('common.loading') : t('privacy.exportAccount')}
-            </button>
-            {exportAccount.isError && <p role="alert" className="px-2.5 text-ds-negative">{t('privacy.exportFailed')}</p>}
-
+            <button type="button" onClick={() => { setIsOpen(false); onNavigateToPrivacy?.(); }}
+              className="block w-full rounded-ds-control px-2.5 py-1.5 text-left hover:bg-ds-control">{t('privacy.notice')}</button>
             <button
               type="button"
               onClick={() => {

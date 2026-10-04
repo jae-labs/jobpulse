@@ -1,5 +1,6 @@
 export { Button, type ButtonProps } from './components/Button';
 export { Card, type CardProps } from './components/Card';
+export { WidgetCard, type WidgetCardProps } from './components/WidgetCard';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { PageHeader, type PageHeaderProps } from './components/PageHeader';
 export { Select, type SelectProps } from './components/Select';

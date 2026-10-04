@@ -165,3 +165,13 @@ hover, immediately on keyboard focus, and close on blur, activation or Escape. T
 existing control description is preserved. The small keycap uses its own tighter radius.
 Hints contain no links or controls and are supplementary to an accessible control name.
 Do not add instructions to data-chart tooltips.
+
+### Dashboard widget cards
+
+Use `WidgetCard` for chart and dashboard panels with a heading. It owns the shared
+24px padding (28px on large screens), 16px content gap, and bold 20px h3 title.
+The heading reserves space for a contextual control in the top-right corner;
+long titles wrap without overlapping it. Chart dimensions, controls, legends and
+application interactions remain consumer content. Put legends below their charts.
+Do not override its normal padding or heading typography in route components.
+Use plain `Card` for metric cards, forms and surfaces with different content hierarchy.

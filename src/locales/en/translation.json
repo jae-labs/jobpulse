@@ -97,7 +97,26 @@
     "pipelineBreakdown": "Application Pipeline",
     "relevanceDistribution": "Match Score Distribution",
     "skillsFrequency": "Skills matched in assessed vacancies",
-    "categoryBreakdown": "Domains"
+    "categoryBreakdown": "Domains",
+    "ireland": {
+      "charts": {
+        "ireland-labour-chart": "Ireland · workforce & opportunities",
+        "ireland-pay-chart": "Ireland · minimum wage & mean earnings"
+      },
+      "peopleUnemployed": "People unemployed",
+      "meanHourly": "Mean hourly earnings",
+      "payBasis": "Pay comparison basis",
+      "annual": "Annualised",
+      "hourlyBasis": "Hourly",
+      "legend": "Chart legend",
+      "labourForceSeries": "Labour force",
+      "vacancySeries": "Open jobs · CSO vacancies",
+      "labourSource": "CSO labour force",
+      "vacancySource": "CSO vacancies",
+      "wageHistorySource": "Minimum wage history",
+      "minimumWageSeries": "Minimum wage",
+      "meanAnnualSeries": "Mean earnings · annualised"
+    }
   },
   "jobs": {
     "linkedJobUnavailable": "This opportunity is unavailable.",
@@ -119,11 +138,19 @@
     "clearSearch": "Clear search query",
     "openCommandMenu": "Search positions (Cmd+K)",
     "searchPlaceholder": "Search by title, company, skills, or location...",
+    "searchTypingPrefix": "Search by",
+    "searchTypingTitle": "title",
+    "searchTypingCompany": "company",
+    "searchTypingSkills": "skills",
+    "searchTypingLocation": "location",
     "allSalaries": "All Salaries",
     "disclosedOnly": "Disclosed only",
     "allDomains": "All Domains",
     "allLocations": "All Locations",
     "minMatch": "Min Match",
+    "salaryThreshold": "€{{amount}}k+",
+    "salaryDisclosedShort": "Disclosed",
+    "any": "Any",
     "allMatches": "All Matches",
     "fit75": "75%+ Match",
     "fit55": "55%+ Match",
@@ -137,7 +164,7 @@
     "layoutSplitTitle": "Two-pane Master-Detail split layout",
     "layoutListTitle": "Full width list layout",
     "fit": "match",
-    "match": "match",
+    "match": "Match",
     "showing": "Showing",
     "of": "of",
     "opportunities": "opportunities",
@@ -209,7 +236,6 @@
     "mapTooManyLocations": "Too many locations to show. Narrow your filters.",
     "mapPostingLayer": "Posting locations",
     "mapOfficeLayer": "Company offices",
-    "mapOfficeEvidence": "Company office addresses; workplaces for these roles are unconfirmed.",
     "openDetails": "Open details",
     "salary": "Salary"
   },
@@ -505,7 +531,8 @@
     "unableToLoadCategoryChart": "Unable to load category breakdown chart",
     "unableToLoadPipelineChart": "Unable to load pipeline chart",
     "unableToLoadRelevanceChart": "Unable to load relevance distribution chart",
-    "unableToLoadSkillsChart": "Unable to load skills chart"
+    "unableToLoadSkillsChart": "Unable to load skills chart",
+    "unableToLoadPrivacy": "Unable to load data and privacy"
   },
   "scoring": {
     "matchingPending": "Profile saved. Matching setup is pending.",
@@ -515,6 +542,20 @@
   "privacy": {
     "exportAccount": "Export my account data",
     "exportFailed": "Export failed. Please try again.",
-    "notice": "Data and privacy"
+    "notice": "Data and privacy",
+    "intro": "See what data JobPulse stores, how it is used and protected, and how to export or delete it.",
+    "dataTitle": "Your data",
+    "dataBody": "JobPulse stores your account email, profile details you provide, preferences, application statuses, matching results, invitations you issue, and documents you upload. Vacancies are a shared catalog; candidate information belongs to each account.",
+    "processingTitle": "How your data is used",
+    "processingBody": "Supabase provides account authentication, database and private file storage. Profile matching runs locally in your browser and submits a numeric profile vector to the private database. Matching results are automated suggestions, not hiring decisions. You can adjust your criteria.",
+    "reportingTitle": "Error reporting",
+    "reportingBody": "Operational error reporting, when enabled by the site operator, sends generic error types and bundled code locations to Sentry. The application strips user identifiers, messages, URLs, requests, headers, breadcrumbs and arbitrary context. Session replay and performance tracing are disabled.",
+    "accessTitle": "Access, export and deletion",
+    "accessBody": "Export your profile, statuses, evaluations, issued invitations and document metadata as JSON. Download document files separately from Profile. You can edit your information and delete documents there. Account deletion removes your live account data and private files.",
+    "retentionTitle": "Storage and retention",
+    "retentionBody": "Authentication uses browser storage to maintain your session. Language and layout preferences use local storage. No advertising or third-party tracking cookies are required by the application. Private file links expire; avoid sharing exports or signed download links.",
+    "deletionBody": "Deletion does not immediately erase existing provider logs or previously created backups. Completed local backups and operational logs have a maximum retention of one year; providers may retain logs for shorter periods. Local layout preferences remain in your browser until you clear site storage.",
+    "contactTitle": "Questions and requests",
+    "contactBody": "Contact us for access, correction, erasure or questions about processing and provider retention. Optional personal information is used only for the profile and matching features you choose to use. Do not upload documents you are not entitled to share."
   }
 }

@@ -12,6 +12,7 @@ interface CommandMenuProps {
   onOpenChange: (open: boolean) => void;
   jobs?: Job[];
   onSelectJob: (job: Job) => void;
+  onNavigateToPrivacy?: () => void;
   userId?: string | null;
 }
 
@@ -20,6 +21,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   onOpenChange,
   jobs = [],
   onSelectJob,
+  onNavigateToPrivacy,
   userId,
 }) => {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
     isOpen && Boolean(userId),
   );
   const commandJobs = userId ? (searchResults?.items ?? []) : jobs;
+  const showPrivacy = Boolean(onNavigateToPrivacy) && t('privacy.notice').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
   const searching = Boolean(userId) && (isPending || searchQuery !== debouncedSearchQuery || isFetching);
 
   // Global shortcut: ⌘K or Ctrl+K
@@ -75,9 +78,13 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
       </div>
 
       <Command.List>
+        {showPrivacy && <Command.Item value="data-and-privacy" onSelect={() => {
+          onNavigateToPrivacy?.();
+          onOpenChange(false);
+        }}>{t('privacy.notice')}</Command.Item>}
         {isError ? <div role="alert" className="p-4 space-y-2"><p className="text-xs text-ds-negative">{t('common.loadError')}</p><Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button></div>
           : searching ? <div role="status" className="p-4">{t('common.loading')}</div>
-          : commandJobs.length === 0 ? <div role="status" className="p-4">{t('command.noResults')}</div> : null}
+          : commandJobs.length === 0 && !showPrivacy ? <div role="status" className="p-4">{t('command.noResults')}</div> : null}
 
         {(!isError && !searching ? commandJobs : []).map((job) => (
           <Command.Item

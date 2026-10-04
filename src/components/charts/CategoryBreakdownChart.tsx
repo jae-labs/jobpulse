@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import type { Job, OverviewCategory } from '../../types/job';
-import { Card, Pill } from '@jae-labs/ui';
+import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
 
 interface CategoryBreakdownChartProps {
@@ -162,15 +162,7 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
   const activeCategory = activeIdx !== null ? chartData[activeIdx] : topCategory;
 
   return (
-    <Card className="p-6 lg:p-7 flex flex-col justify-between space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-bold text-ds-text-primary">
-            {title ?? t('charts.categoryBreakdown.title')}
-          </h3>
-        </div>
-      </div>
-
+    <WidgetCard title={title ?? t('charts.categoryBreakdown.title')}>
       <div className="h-[260px] w-full relative flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -254,7 +246,7 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
           );
         })}
       </div>
-    </Card>
+    </WidgetCard>
   );
 };
 
