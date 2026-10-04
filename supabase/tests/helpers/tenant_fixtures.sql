@@ -25,8 +25,8 @@ INSERT INTO public.user_job_statuses(user_id,job_id,status) VALUES
  ('a1111111-1111-4111-8111-111111111111',-910001,'applied'),
  ('b2222222-2222-4222-8222-222222222222',-910001,'interviewing');
 INSERT INTO public.user_job_evaluations(user_id,job_id,relevance,matched_skills,ai_analysis) VALUES
- ('a1111111-1111-4111-8111-111111111111',-910001,11,'["private-marker-a"]','{"role_domain":"private-marker-a"}'),
- ('b2222222-2222-4222-8222-222222222222',-910001,97,'["private-marker-b"]','{"role_domain":"private-marker-b"}');
+ ('a1111111-1111-4111-8111-111111111111',-910001,11,'["private-marker-a"]','{"role_sector":"private-marker-a"}'),
+ ('b2222222-2222-4222-8222-222222222222',-910001,97,'["private-marker-b"]','{"role_sector":"private-marker-b"}');
 INSERT INTO public.user_cvs(user_id,file_name,storage_path) VALUES
  ('a1111111-1111-4111-8111-111111111111','fixture.pdf','a1111111-1111-4111-8111-111111111111/cv/fixture.pdf'),
  ('b2222222-2222-4222-8222-222222222222','fixture.pdf','b2222222-2222-4222-8222-222222222222/cv/fixture.pdf');

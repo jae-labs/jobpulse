@@ -3,7 +3,7 @@
     "overview": "Overview",
     "opportunities": "Opportunities",
     "watchlist": "Employer Watchlist",
-    "sources": "Data Sources",
+    "taxCalculator": "Tax Calculator",
     "profile": "Profile",
     "accountSettings": "Account settings",
     "signOut": "Sign Out",
@@ -89,6 +89,26 @@
     "noResults": "No matching positions.",
     "publicSector": "Public sector"
   },
+  "tax": {
+    "eyebrow": "Irish PAYE · Budget 2026", "title": "Tax calculator", "subtitle": "Explore an annual take-home-pay estimate as you change your income, pension and family setup.", "reset": "Reset example",
+    "disclaimer": "Planning estimate only — not tax, payroll or financial advice. Your payslip and Revenue calculation are the source of truth. This model uses headline 2026 rules and does not include every relief, PRSI class or individual circumstance.", "yourDetails": "Your details",
+    "employmentIncome": "Employment income", "employmentIncomeHelp": "Your expected annual gross salary before deductions.", "bonus": "Bonus / commission", "bonusHelp": "Expected taxable bonus or commission paid this year.", "taxableBenefits": "Taxable benefits (BIK)", "taxableBenefitsHelp": "Benefit in kind, such as employer-paid health insurance or a company car. This estimate treats it as taxable income but not cash pay.", "otherIncome": "Other taxable income", "otherIncomeHelp": "For example dividends or side income, treated here as ordinary income. Capital gains and share-option tax need a separate calculation.", "rentalIncome": "Rental income", "rentalIncomeHelp": "Enter estimated taxable rental profit, not gross rent.",
+    "filingStatus": "Assessment", "filingStatusHelp": "Joint assessment can share part of the standard rate band and credits between spouses or civil partners.", "single": "Single / assessed separately", "marriedJoint": "Married or civil partners — joint assessment", "marriedSeparate": "Married or civil partners — separate assessment", "partnerIncome": "Partner employment income", "partnerIncomeHelp": "Annual gross employment income for your spouse or civil partner. It is included only for joint assessment.", "partnerAge": "Partner age at the end of 2026", "partnerAgeHelp": "The partner’s age sets their separate pension contribution limit eligible for income-tax relief.", "partnerPensionContribution": "Partner monthly pension / AVC contribution", "partnerPensionHelp": "The partner’s monthly pension and AVC payment. The calculator annualises it and caps relief using their age, their employment income and the €115,000 earnings limit.", "partnerPaye": "Partner is a PAYE employee",
+    "age": "Age at the end of 2026", "ageHelp": "Age sets the pension contribution limit eligible for income-tax relief in this estimator.", "numberOfChildren": "Number of children", "numberOfChildrenHelp": "Shown to make family context explicit. A child does not automatically create an income-tax credit; qualifying carer and other credits depend on circumstances not collected here.", "pensionContribution": "Monthly pension / AVC contribution", "pensionHelp": "Your monthly pension and AVC payment. The calculator annualises it, then caps income-tax relief using Revenue's age-related percentage and the €115,000 earnings limit.", "pensionReliefEligible": "Pension eligible for income-tax relief", "selfEmployed": "Self-employed / not claiming the Employee Tax Credit", "selfEmployedHelp": "This switches off the Employee Tax Credit. PRSI is shown using a simplified headline rate; self-assessment and preliminary tax are not modelled.",
+    "estimatedTakeHome": "Take-home pay", "fromGross": "From {{amount}} cash income before deductions", "monthlyNet": "Monthly net", "effectiveRate": "Effective deduction rate", "netPay": "Net pay", "incomeTax": "Income tax", "prsi": "PRSI", "usc": "USC", "chartAmount": "Amount", "chartShare": "Share", "fullBreakdown": "Full breakdown", "fullBreakdownHint": "Annual figures are divided into monthly planning amounts.", "lineItem": "Line item", "annual": "Annual", "monthly": "Monthly", "fortnightly": "Fortnightly", "weekly": "Weekly", "cashIncome": "Cash income", "pension": "Pension / AVC", "takeHome": "Take-home pay",
+    "periodSelector": "Choose calculation period", "understand": "How this estimate works", "incomeTaxExplain": "20% is applied up to your estimated standard-rate band of {{band}}, then 40% above it. Tax credits reduce the result.", "prsiUscExplain": "PRSI is Pay Related Social Insurance. USC is the Universal Social Charge, calculated in bands. This view uses an annual Class A PRSI blend for a typical employee.", "stocksAndChildren": "Shares, children and extra reliefs", "stocksAndChildrenExplain": "Capital gains, share options, medical expenses, childcare and many credits need facts this quick estimator does not collect. Check Revenue or a tax adviser before relying on a result.", "cheatSheet": "2026 calculation cheat sheet", "cheatSheetIntro": "The formulas and rate assumptions used by this estimator. All figures are annual unless a control says monthly.", "incomeTaxMath": "Income Tax", "taxableIncomeFormula": "Taxable income = employment income + bonus + BIK + other and rental income + partner income, less eligible pension / AVC contributions.", "singleBand": "Single: first €44,000 at 20%; balance at 40%.", "jointBand": "Joint assessment: €53,000 at 20%, plus the lower earner’s income up to €35,000 (maximum €88,000); balance at 40%.", "taxCreditsMath": "Credits used: €2,000 personal (€4,000 joint) and €2,000 per PAYE employee.", "uscMath": "Universal Social Charge (USC)", "uscBandOne": "First €12,012: 0.5%.", "uscBandTwo": "Next €16,688: 2%.", "uscBandThree": "Next €41,344: 3%.", "uscBandFour": "Balance: 8%.", "uscModelNote": "The estimator applies USC separately to each partner’s income and does not model medical-card or age-based reduced rates.", "prsiMath": "Pay Related Social Insurance (PRSI)", "prsiModelNote": "The model uses a 4.2375% annual blend: 4.20% to 30 September 2026 and 4.35% from 1 October.", "prsiScope": "It is a standard-rate approximation and does not model weekly thresholds, subclasses or exemptions.", "pensionMath": "Pension / AVC", "pensionMathFormula": "Eligible relief = the lower of annual contributions and age percentage × the lower of relevant earnings and €115,000. Relief reduces Income Tax only, not USC or PRSI.", "pensionAgeLimits": "Age limits: under 30 15%; 30–39 20%; 40–49 25%; 50–54 30%; 55–59 35%; 60+ 40%.", "stocksCgt": "Shares and CGT (not calculated)", "cgtFormula": "For most share disposals: CGT = 33% × net chargeable gains above the €1,270 annual personal exemption.", "cgtScope": "Share options can be subject to different employment-tax rules, including RTSO; this calculator does not include share tax.", "modelScope": "Model scope", "modelScopeDescription": "The result is an annual planning estimate for the selected inputs. It does not model every credit, relief, PRSI class, USC exception, payroll timing or share scheme.", "sources": "Research and sources", "sourcesHint": "Official material informs the rate assumptions. The external calculators are useful comparison references, not data sources for this tool.", "revenueBudget": "Revenue Budget 2026 summary", "revenueBands": "Revenue tax rate bands"
+    ,"references": "References", "formulas": "Formulas", "contractComparison": "Contract day-rate equivalent", "contractComparisonHint": "Adjust billable days and costs to compare a permanent role with umbrella payroll and a limited company.", "dailyRate": "Daily rate", "dailyRateHelp": "Contract fee charged for each billable working day.", "billableDays": "Billable days per year", "billableDaysHelp": "Days you expect to invoice after annual leave, public holidays, sick leave, bench time and other non-billable gaps.", "umbrellaFee": "Monthly umbrella fee", "umbrellaFeeHelp": "Umbrella administration fee before payroll tax.", "accountancy": "Annual accountancy", "accountancyHelp": "Typical company bookkeeping, annual accounts and tax-return cost.", "insurance": "Annual insurance", "insuranceHelp": "Professional indemnity, public liability and similar cover.", "health": "Annual health cover", "healthHelp": "Private health or benefit cost paid from contractor income.", "contractPension": "Annual contractor pension", "contractPensionHelp": "Pension savings paid from contractor income; it is included as a cash cost in this comparison.", "permanent": "Permanent PAYE", "permanentTakeHome": "Current PAYE estimate", "umbrella": "Umbrella payroll", "umbrellaTakeHome": "From {{revenue}} invoiced revenue, after umbrella fee, health and pension.", "limitedCompany": "Limited company", "limitedCompanyNote": "{{revenue}} revenue less {{costs}} costs, then 12.5% Corporation Tax. This is company cash after tax, before director salary or dividends."
+    ,"limitedCompanyPayNote": "Personal PAYE take-home from {{salary}} director salary. Employer PRSI of {{employerPrsi}} is paid by the company before salary."
+    ,"umbrellaPayNote": "Personal PAYE take-home from {{salary}} umbrella salary. Employer PRSI of {{employerPrsi}} is funded from the assignment revenue."
+    ,"annualIncome": "Annual income", "contractAmount": "Contract amount", "deductionRate": "Deduction Rate", "summaryDeductionRate": "Deduction rate"
+    ,"stockGains": "Net share gains (CGT)", "stockGainsHelp": "Annual net gains from selling shares after allowable costs and losses. This uses CGT, not PAYE; RSUs and share options are employment income and are not modelled here.", "cgt": "Capital Gains Tax (CGT)"
+    ,"stocksCgtCalculated": "Shares and CGT", "cgtFormula": "CGT = 33% × net share gains above the €1,270 annual personal exemption."
+    ,"taxableBenefitsMonthly": "Monthly taxable benefits (BIK)"
+    ,"householdTakeHome": "Take-home", "partnerPayeIncome": "Partner PAYE"
+    ,"payeFormulas": "PAYE Formulas"
+    ,"contractFormulas": "Contract Formulas", "contractRevenueFormulaTitle": "Contract amount", "contractRevenueFormula": "Contract amount = daily rate × billable days. Billable days should already exclude annual leave, public holidays, sick days and bench time.", "umbrellaFormulaTitle": "Umbrella payroll", "umbrellaFormula": "Payroll budget = contract amount − 12 × umbrella fee − health cover − contractor pension. Gross umbrella salary = payroll budget ÷ 1.1125.", "payrollFormula": "Employer PRSI = gross salary × 11.25%. The PAYE formulas above then calculate Income Tax, USC and employee PRSI on gross salary.", "limitedFormulaTitle": "Limited company", "limitedFormula": "Payroll budget = contract amount − accountancy − insurance − health cover − contractor pension. Director salary = payroll budget ÷ 1.1125, then PAYE is applied.", "limitedCtFormula": "This model withdraws the available amount as salary, leaving no trading profit for Corporation Tax. Retained trading profit is generally taxed at 12.5% before personal extraction."
+    ,"matchPermanentPackage": "Match permanent package", "matchPermanentPackageHelp": "Links contractor health cover and pension funding to your selected PAYE BIK and pension inputs. Turn it off to test a different contractor package.", "selectedPermanentPackage": "Selected permanent package", "salaryAndBonus": "Salary and bonus", "benefitValue": "BIK / benefit value", "employerPrsiEstimate": "Employer PRSI estimate", "pensionFunding": "Pension funding", "selectedPackageValue": "Selected package value", "matchedRates": "Like-for-like rate guide", "matchedRatesHelp": "Rates that deliver the same household total value after tax, pension and health cover using the selected billable days and route costs.", "umbrellaMatchedRate": "Umbrella matched daily rate", "limitedMatchedRate": "Limited company matched daily rate", "cashToAccount": "Cash to your account", "totalPersonalValue": "Total personal value", "valueDifference": "Difference from permanent", "abovePermanent": "Above permanent", "belowPermanent": "Below permanent"
+  },
   "overview": {
     "title": "Overview",
     "trackedOpportunities": "Opportunities",
@@ -97,7 +117,7 @@
     "pipelineBreakdown": "Application Pipeline",
     "relevanceDistribution": "Match Score Distribution",
     "skillsFrequency": "Skills matched in assessed vacancies",
-    "categoryBreakdown": "Domains",
+    "categoryBreakdown": "Sectors",
     "ireland": {
       "charts": {
         "ireland-labour-chart": "Ireland · workforce & opportunities",
@@ -145,7 +165,7 @@
     "searchTypingLocation": "location",
     "allSalaries": "All Salaries",
     "disclosedOnly": "Disclosed only",
-    "allDomains": "All Domains",
+    "allSectors": "All Sectors",
     "allLocations": "All Locations",
     "minMatch": "Min Match",
     "salaryThreshold": "€{{amount}}k+",
@@ -203,7 +223,7 @@
     "mapLoading": "Loading verified job locations…",
     "mapError": "Job locations could not be loaded.",
     "mapTilesError": "Map tiles could not be loaded.",
-    "mapDomain": "Domain: {{domain}}",
+    "mapSector": "Sector: {{sector}}",
     "mapZoomIn": "Zoom in",
     "mapZoomOut": "Zoom out",
     "mapBrowseTitle": "Jobs at this location",
@@ -238,28 +258,6 @@
     "mapOfficeLayer": "Company offices",
     "openDetails": "Open details",
     "salary": "Salary"
-  },
-  "sources": {
-    "title": "Data Sources",
-    "subtitle": "Connected opportunity ingestion feeds, board sync status, and telemetry.",
-    "portalTitle": "Data Sources & Career Portals",
-    "portalSubtitle": "Live status and telemetry across connected opportunity feeds and employer boards.",
-    "stats": "{{sources}} sources · {{opportunities}} opportunities reported",
-    "sourcesCount": "sources",
-    "opportunitiesReported": "opportunities reported",
-    "reportedCountNote": "Reported source totals may include duplicate, stale, or not-yet-ingested opportunities, so they do not equal the catalog total.",
-    "sortByOpportunities": "Sort by Opportunities",
-    "sortByName": "Sort by Name",
-    "sortBySynced": "Sort by Last Synced",
-    "sortByLabel": "Sort sources by",
-    "toggleSortDirection": "Toggle sort direction",
-    "opportunitiesFound_one": "1 opportunity found",
-    "opportunitiesFound_other": "{{count}} opportunities found",
-    "noOpportunities": "0 opportunities found",
-    "lastSynced": "Synced: {{date}}",
-    "statusActive": "Active",
-    "statusSyncing": "Syncing",
-    "statusError": "Error"
   },
   "watchlist": {
     "title": "Target Employer Watchlist",
@@ -431,9 +429,9 @@
       "seniorityRulesTitle": "Seniority Rules",
       "addTitleKeyword": "e.g. Senior, Lead, Principal",
       "weights": {
-        "domain": {
-          "title": "Domain Match & Core Specialization",
-          "description": "Measures alignment with your preferred domains."
+        "sector": {
+          "title": "Sector Match & Core Specialization",
+          "description": "Measures alignment with your preferred sectors."
         },
         "semantic": {
           "title": "Semantic Similarity",
@@ -528,13 +526,13 @@
     "unexpectedRenderingError": "An unexpected error occurred while rendering this section.",
     "unableToLoadOverview": "Unable to load overview dashboard",
     "unableToLoadOpportunities": "Unable to load opportunities pipeline",
-    "unableToLoadSources": "Unable to load data sources",
     "unableToLoadProfile": "Unable to load profile settings",
     "unableToLoadCategoryChart": "Unable to load category breakdown chart",
     "unableToLoadPipelineChart": "Unable to load pipeline chart",
     "unableToLoadRelevanceChart": "Unable to load relevance distribution chart",
     "unableToLoadSkillsChart": "Unable to load skills chart",
-    "unableToLoadPrivacy": "Unable to load data and privacy"
+    "unableToLoadPrivacy": "Unable to load data and privacy",
+    "unableToLoadTaxCalculator": "Unable to load tax calculator"
   },
   "scoring": {
     "matchingPending": "Profile saved. Matching setup is pending.",

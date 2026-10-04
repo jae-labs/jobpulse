@@ -40,8 +40,8 @@ export function resolveScoringRules(value?: unknown): ScoringRules & {
     }
   }
   return {
-    positive_domains: list(row.positive_domains, defaults.positive_domains, rule => ({ name: text(rule.name), keywords: strings(rule.keywords), note: text(rule.note ?? '') })),
-    negative_domains: list(row.negative_domains, defaults.negative_domains, rule => ({ name: text(rule.name), keywords: strings(rule.keywords), reason: text(rule.reason ?? '') })),
+    positive_sectors: list(row.positive_sectors, defaults.positive_sectors, rule => ({ name: text(rule.name), keywords: strings(rule.keywords), note: text(rule.note ?? '') })),
+    negative_sectors: list(row.negative_sectors, defaults.negative_sectors, rule => ({ name: text(rule.name), keywords: strings(rule.keywords), reason: text(rule.reason ?? '') })),
     seniority_tiers: list(row.seniority_tiers, defaults.seniority_tiers, rule => ({ name: text(rule.name), keywords: strings(rule.keywords), score_weight: weight(rule.score_weight), note: text(rule.note ?? '') })),
     disqualifiers: row.disqualifiers == null ? defaults.disqualifiers : strings(row.disqualifiers),
     weights,

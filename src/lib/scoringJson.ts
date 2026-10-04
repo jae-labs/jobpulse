@@ -22,8 +22,8 @@ export function parseSubScores(value: unknown): SubScores | undefined {
   if (value == null) return undefined;
   const row = record(value);
   const result = {} as SubScores;
-  for (const key of ['domain', 'semantic', 'competency', 'seniority', 'salary', 'contract', 'target_role', 'location', 'work_mode', 'fixed_term'] as const) result[key] = finite(row[key]);
-  for (const key of ['onsite_penalty', 'auth_deduction', 'negative_domain', 'disqualified'] as const) if (row[key] != null) result[key] = finite(row[key]);
+  for (const key of ['sector', 'semantic', 'competency', 'seniority', 'salary', 'contract', 'target_role', 'location', 'work_mode', 'fixed_term'] as const) result[key] = finite(row[key]);
+  for (const key of ['onsite_penalty', 'auth_deduction', 'negative_sector', 'disqualified'] as const) if (row[key] != null) result[key] = finite(row[key]);
   return result;
 }
 export function parseAnalysis(value: unknown, score = 0, tier = ''): AiAnalysis | undefined {
@@ -31,7 +31,7 @@ export function parseAnalysis(value: unknown, score = 0, tier = ''): AiAnalysis 
   const row = record(value);
   return {
     fit_score: row.fit_score == null ? score : finite(row.fit_score), fit_tier: text(row.fit_tier, tier),
-    role_domain: text(row.role_domain, 'Uncategorized'), seniority_level: text(row.seniority_level),
+    role_sector: text(row.role_sector, 'Uncategorized'), seniority_level: text(row.seniority_level),
     salary_fit: text(row.salary_fit), reasoning: text(row.reasoning),
     alignments: strings(row.alignments), mismatch_flags: strings(row.mismatch_flags), matched_skills: strings(row.matched_skills),
     semantic_similarity: row.semantic_similarity == null ? 0 : finite(row.semantic_similarity), sub_scores: parseSubScores(row.sub_scores),

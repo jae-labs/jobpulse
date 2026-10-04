@@ -17,7 +17,7 @@ describe('employer RPC boundary', () => {
   });
   it('preserves employer identity, shared sector and zero coordinates', () => {
     expect(validateJobsPageResult({ total: 1, items: [job] }).items[0]).toMatchObject({
-      employer_id: 12, domain: 'Synthetic Sector', latitude: 0, longitude: 0,
+      employer_id: 12, sector: 'Synthetic Sector', latitude: 0, longitude: 0,
     });
   });
   it.each([
@@ -26,7 +26,7 @@ describe('employer RPC boundary', () => {
   ])('rejects malformed employer fields: %j', (invalid) => {
     expect(() => validateJobsPageResult({ total: 1, items: [{ ...job, ...invalid }] })).toThrow();
   });
-  it('accepts unknown coordinates and separate sector/domain aggregates', () => {
+  it('accepts unknown coordinates and separate sector/sector aggregates', () => {
     expect(validateJobsPageResult({ total: 1, items: [{ ...job, latitude: null, longitude: null }] }).items[0].latitude).toBeNull();
     const metrics = { total: 1, evaluated: 0, high_fit: 0, counts: { new: 1 }, locations: [],
       categories: [{ name: 'Uncategorized', value: 1, avgMatch: 0 }],
@@ -39,7 +39,7 @@ describe('employer RPC boundary', () => {
 
 describe('office map boundary', () => {
   const pin = { latitude: 0, longitude: 0, count: 1, job_ids: [1], title: 'Synthetic',
-    company: 'Example', domain: 'Uncategorized', precision: 'company_office' };
+    company: 'Example', sector: 'Uncategorized', precision: 'company_office' };
   const result = { total: 1, mapped: 1, in_view: 1, truncated: false, pins: [], office_pins: [pin], office_truncated: false };
   it('validates office coordinates and accepts rolling deployments without the new layer', () => {
     expect(validateJobMapResult(result).office_pins).toEqual([pin]);

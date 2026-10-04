@@ -34,6 +34,7 @@ ENRICHMENT_SCHEMA: dict[str, Any] = {
                     "website": {"type": "string"},
                     "offices": {
                         "type": "array",
+                        "maxItems": 3,
                         "items": {
                             "type": "object",
                             "properties": {
@@ -140,8 +141,9 @@ def enrich_companies_with_ai(
         f"['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'].\n"
         f"3. description: A concise 1-2 sentence description of their core business and offerings.\n"
         f"4. website: Official company website URL (e.g. 'https://stripe.com').\n"
-        f"5. offices: List all known physical corporate offices, campus buildings, R&D labs, or manufacturing facilities "
-        f"in the Republic of Ireland or Northern Ireland. Provide:\n"
+        f"5. offices: Return at most three high-confidence, distinct physical offices, campuses, R&D labs, or manufacturing "
+        f"facilities in the Republic of Ireland or Northern Ireland. Prefer the main Irish office and locations relevant to "
+        f"current hiring. Do not attempt an exhaustive list; return [] rather than guessing. Provide:\n"
         f"   - address: Full street address including building/park name if applicable.\n"
         f"   - city: City, town, or county (e.g. 'Dublin', 'Cork', 'Galway', 'Limerick', 'Waterford', 'Athlone', 'Belfast').\n"
         f"   - eircode: Official Irish Eircode if known (e.g. 'D02 FX04').\n"
@@ -211,9 +213,11 @@ def enrich_companies_with_ai(
 
             lat = float(off.get("latitude", 0.0))
             lon = float(off.get("longitude", 0.0))
-            # Ireland coordinate validation: fallback to Dublin centre if out of range
+            # Never invent a location. An invalid coordinate is not evidence that
+            # the company has an office in Dublin (or anywhere else).
             if not is_valid_ireland_coordinate(lat, lon):
-                lat, lon = 53.3498, -6.2603
+                logger.warning("Skipping %s office with invalid Ireland coordinates: %s", name, addr)
+                continue
 
             addr_hash = hashlib.sha256(addr.encode("utf-8")).hexdigest()[:8]
             place_id = f"ie-office-{slugify_name(name)}-{addr_hash}"

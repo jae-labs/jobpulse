@@ -75,7 +75,7 @@ interface OverviewViewProps {
   overviewMetrics?: OverviewMetrics;
   onNavigateToJobs: (filters?: {
     status?: 'all' | JobFilterStatus;
-    domain?: string;
+    sector?: string;
     minMatch?: number;
     q?: string;
   }) => void;
@@ -140,31 +140,31 @@ const OverviewViewComponent: React.FC<OverviewViewProps> = ({
   const totalOpportunitiesCount = overviewMetrics?.total ?? jobs.length;
 
   const handleNavigateTracked = useCallback(() => {
-    onNavigateToJobs({ status: 'all', domain: 'all', minMatch: 0 });
+    onNavigateToJobs({ status: 'all', sector: 'all', minMatch: 0 });
   }, [onNavigateToJobs]);
 
   const handleNavigateHighFit = useCallback(() => {
-    onNavigateToJobs({ status: 'all', domain: 'all', minMatch: 75 });
+    onNavigateToJobs({ status: 'all', sector: 'all', minMatch: 75 });
   }, [onNavigateToJobs]);
 
   const handleNavigatePipeline = useCallback(() => {
-    onNavigateToJobs({ status: 'applied', domain: 'all', minMatch: 0 });
+    onNavigateToJobs({ status: 'applied', sector: 'all', minMatch: 0 });
   }, [onNavigateToJobs]);
 
-  const handleSelectCategory = useCallback((domain: string) => {
-    onNavigateToJobs({ status: 'all', domain: domain, minMatch: 0 });
+  const handleSelectCategory = useCallback((sector: string) => {
+    onNavigateToJobs({ status: 'all', sector: sector, minMatch: 0 });
   }, [onNavigateToJobs]);
 
   const handleSelectStatus = useCallback((status: JobFilterStatus) => {
-    onNavigateToJobs({ status, domain: 'all', minMatch: 0 });
+    onNavigateToJobs({ status, sector: 'all', minMatch: 0 });
   }, [onNavigateToJobs]);
 
   const handleSelectTier = useCallback((minMatch: number) => {
-    onNavigateToJobs({ status: 'all', domain: 'all', minMatch });
+    onNavigateToJobs({ status: 'all', sector: 'all', minMatch });
   }, [onNavigateToJobs]);
 
   const handleSelectSkill = useCallback((skill: string) => {
-    onNavigateToJobs({ status: 'all', domain: 'all', minMatch: 0, q: skill });
+    onNavigateToJobs({ status: 'all', sector: 'all', minMatch: 0, q: skill });
   }, [onNavigateToJobs]);
 
   const renderOverviewWidget = (widgetId: OverviewWidgetId) => {

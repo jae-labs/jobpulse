@@ -8,9 +8,9 @@ export function previewWeightedScore(
   const subScores = job.sub_scores ?? job.ai_analysis?.sub_scores;
   if (!subScores) return job.relevance;
 
-  const score = subScores.negative_domain
-    ? Math.min(15, subScores.semantic * 20 + subScores.domain * 10)
-    : subScores.domain * weights.domain
+  const score = subScores.negative_sector
+    ? Math.min(15, subScores.semantic * 20 + subScores.sector * 10)
+    : subScores.sector * weights.sector
       + subScores.semantic * weights.semantic
       + subScores.competency * weights.competency
       + subScores.seniority * weights.seniority

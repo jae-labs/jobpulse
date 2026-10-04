@@ -14,7 +14,7 @@ export function isJobStatus(value: unknown): value is JobStatus {
 
 /** Normalized scoring factors; auth_deduction is an absolute point deduction. */
 export interface SubScores {
-  domain: number;
+  sector: number;
   semantic: number;
   competency: number;
   seniority: number;
@@ -26,7 +26,7 @@ export interface SubScores {
   onsite_penalty?: number;
   fixed_term: number;
   auth_deduction?: number;
-  negative_domain?: number;
+  negative_sector?: number;
   disqualified?: number;
 }
 
@@ -34,7 +34,7 @@ export interface AiAnalysis {
   fit_score: number;
   fit_tier: string;
   reasoning?: string;
-  role_domain: string;
+  role_sector: string;
   seniority_level: string;
   salary_fit: string;
   alignments: string[];
@@ -60,30 +60,19 @@ export interface Job {
   url: string;
   source: string;
   employer_id?: number | null;
-  domain?: string;
+  sector?: string;
   latitude?: number | null;
   longitude?: number | null;
   relevance: number;
   matched_skills: string[];
   fit_tier?: string;
-  role_domain?: string;
+  role_sector?: string;
   seniority_level?: string;
   ai_analysis?: AiAnalysis;
   // Preview scores; full analysis loads with useJobDetailQuery.
   sub_scores?: SubScores;
   status: JobStatus;
   last_seen_at: string;
-}
-
-export interface Source {
-  id: number;
-  name: string;
-  url: string;
-  mode: string;
-  last_status: string;
-  last_synced_at: string | null;
-  detail: string | null;
-  opportunities_found?: number | null;
 }
 
 export type EmployerSize = '1-10' | '11-50' | '51-200' | '201-500' | '501-1000' | '1001-5000' | '5000+';
@@ -115,7 +104,7 @@ export interface Employer {
 }
 
 export interface ScoringWeights {
-  domain: number;
+  sector: number;
   semantic: number;
   competency: number;
   seniority: number;
@@ -128,13 +117,13 @@ export interface ScoringWeights {
   disqualification_cap: number;
 }
 
-export interface ScoringDomainRule {
+export interface ScoringSectorRule {
   name: string;
   keywords: string[];
   note: string;
 }
 
-export interface NegativeDomainRule {
+export interface NegativeSectorRule {
   name: string;
   keywords: string[];
   reason: string;
@@ -148,8 +137,8 @@ export interface SeniorityTierRule {
 }
 
 export interface ScoringRules {
-  positive_domains: ScoringDomainRule[];
-  negative_domains: NegativeDomainRule[];
+  positive_sectors: ScoringSectorRule[];
+  negative_sectors: NegativeSectorRule[];
   seniority_tiers: SeniorityTierRule[];
   disqualifiers?: string[];
   weights?: ScoringWeights;
@@ -211,7 +200,7 @@ export interface OverviewMetrics {
 
 export interface JobsPageParams {
   status?: string;
-  domain?: string;
+  sector?: string;
   minMatch?: number;
   location?: string;
   salary?: string;
@@ -234,7 +223,7 @@ export interface JobMapPin {
   job_ids: number[];
   title: string;
   company: string;
-  domain: string;
+  sector: string;
   precision: string;
 }
 export interface JobMapResult {

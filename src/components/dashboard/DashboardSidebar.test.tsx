@@ -13,7 +13,8 @@ describe('DashboardSidebar', () => {
 
     expect(screen.getByText('Overview')).toBeInTheDocument();
     expect(screen.getByText('Opportunities')).toBeInTheDocument();
-    expect(screen.getByText('Data Sources')).toBeInTheDocument();
+    expect(screen.getByText('Tax Calculator')).toBeInTheDocument();
+    expect(screen.queryByText('Data Sources')).not.toBeInTheDocument();
 
     expect(screen.queryAllByText(/^[1-3]$/)).toHaveLength(0);
     const opportunitiesLink = screen.getByRole('link', { name: 'Opportunities' });

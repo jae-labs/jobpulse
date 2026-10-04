@@ -43,10 +43,6 @@ describe('useQueries queryKeys', () => {
     ]);
   });
 
-  it('generates a static sources key', () => {
-    expect(queryKeys.sources()).toEqual(['sources']);
-  });
-
   it('uses user ID in invitations query key', () => {
     expect(queryKeys.invitations('alice-uuid')).toEqual(['invitations', 'alice-uuid']);
     expect(queryKeys.invitations(null)).toEqual(['invitations', null]);
@@ -74,7 +70,7 @@ describe('RPC boundary validation', () => {
   });
 
   it('rejects an overview response missing chart data', () => {
-    expect(() => validateOverviewMetrics({ total: 12, applied: 4, by_domain: {} }))
+    expect(() => validateOverviewMetrics({ total: 12, applied: 4, by_sector: {} }))
       .toThrow('Invalid overview metrics response: missing chart data');
   });
 

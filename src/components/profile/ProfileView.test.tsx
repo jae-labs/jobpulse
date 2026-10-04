@@ -123,7 +123,7 @@ describe('ProfileView', () => {
       last_seen_at: '2026-09-25T10:00:00Z',
       matched_skills: [],
       sub_scores: {
-        domain: 1.0,
+        sector: 1.0,
         semantic: 0,
         competency: 0,
         seniority: 0,
@@ -140,12 +140,12 @@ describe('ProfileView', () => {
       id: index + 2,
       title: `Role ${index + 2}`,
       relevance: 23 - index * 2,
-      sub_scores: { ...previewJob.sub_scores!, domain: 0, semantic: 0.9 - index * 0.1 },
+      sub_scores: { ...previewJob.sub_scores!, sector: 0, semantic: 0.9 - index * 0.1 },
     }));
     renderProfileView({ jobs: [previewJob, ...otherJobs] });
 
     const preview = screen.getByRole('complementary', { name: 'Estimated Match Score Preview' });
-    const slider = screen.getByRole('slider', { name: 'Domain Match & Core Specialization' });
+    const slider = screen.getByRole('slider', { name: 'Sector Match & Core Specialization' });
     expect(preview).toHaveClass('min-[1200px]:sticky');
     expect(preview.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(preview).getByRole('list').children).toHaveLength(5);
@@ -178,12 +178,12 @@ describe('ProfileView', () => {
       profile: {
         ...mockProfile,
         scoring_rules: {
-          positive_domains: [{
+          positive_sectors: [{
             name: 'Cloud & Platform Engineering',
             keywords: ['Kubernetes', 'Terraform'],
             note: 'Core platform alignment',
           }],
-          negative_domains: [{
+          negative_sectors: [{
             name: 'UI focus',
             keywords: ['React', 'frontend'],
             reason: 'Client-side emphasis',
@@ -214,7 +214,7 @@ describe('ProfileView', () => {
 
     const savedProfile = onSaveProfile.mock.lastCall?.[0];
     const savedRules = savedProfile.scoring_rules;
-    expect(savedRules.positive_domains).toEqual(expect.arrayContaining([
+    expect(savedRules.positive_sectors).toEqual(expect.arrayContaining([
       expect.objectContaining({
         name: 'Cloud & Platform Engineering',
         keywords: ['Kubernetes'],
@@ -222,11 +222,11 @@ describe('ProfileView', () => {
       }),
       { name: 'Python', keywords: ['Python'], note: '' },
     ]));
-    expect(savedRules.positive_domains.some((rule: { name: string }) => rule.name === 'Terraform')).toBe(false);
+    expect(savedRules.positive_sectors.some((rule: { name: string }) => rule.name === 'Terraform')).toBe(false);
     expect(savedProfile.keywords).toEqual(expect.arrayContaining(['Python', 'Go', 'distributed systems']));
     expect(savedProfile.keywords).not.toContain('Terraform');
     expect(savedProfile.tools_software).not.toContain('Terraform');
-    expect(savedRules.negative_domains).toEqual([{
+    expect(savedRules.negative_sectors).toEqual([{
       name: 'UI focus',
       keywords: ['frontend'],
       reason: 'Client-side emphasis',

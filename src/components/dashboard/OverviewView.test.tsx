@@ -86,13 +86,13 @@ describe('OverviewView', () => {
     expect(screen.queryByText('Fixed reference')).not.toBeInTheDocument();
   });
 
-  it('uses the same shared domain for chart navigation and opportunities', async () => {
+  it('uses the same shared sector for chart navigation and opportunities', async () => {
     const navigate = vi.fn();
     render(<Suspense fallback={<div>Loading...</div>}>
       <OverviewView overviewMetrics={{ ...mockMetrics, categories: [{ name: 'Synthetic Sector', value: 120, avgMatch: 88 }] }} onNavigateToJobs={navigate} />
     </Suspense>);
     fireEvent.click(await screen.findByTitle('Synthetic Sector'));
-    expect(navigate).toHaveBeenCalledWith({ status: 'all', domain: 'Synthetic Sector', minMatch: 0 });
+    expect(navigate).toHaveBeenCalledWith({ status: 'all', sector: 'Synthetic Sector', minMatch: 0 });
   });
 
   it('renders summary stat cards with correct metrics', async () => {
@@ -138,7 +138,7 @@ describe('OverviewView', () => {
     expect(totalOpportunitiesCard).not.toBeNull();
     fireEvent.click(totalOpportunitiesCard!);
 
-    expect(handleNavigate).toHaveBeenCalledWith({ status: 'all', domain: 'all', minMatch: 0 });
+    expect(handleNavigate).toHaveBeenCalledWith({ status: 'all', sector: 'all', minMatch: 0 });
   });
 
   it('navigates to high-fit filter when high-fit card is clicked', async () => {
@@ -157,6 +157,6 @@ describe('OverviewView', () => {
     expect(highFitCard).not.toBeNull();
     fireEvent.click(highFitCard!);
 
-    expect(handleNavigate).toHaveBeenCalledWith({ status: 'all', domain: 'all', minMatch: 75 });
+    expect(handleNavigate).toHaveBeenCalledWith({ status: 'all', sector: 'all', minMatch: 75 });
   });
 });

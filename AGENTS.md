@@ -62,9 +62,7 @@ make check         # npm run check + scrape-lint + scrape-unit
   - Pipeline stage breakdown: `src/components/charts/PipelineChart.tsx`
   - Relevance distribution: `src/components/charts/RelevanceDistributionChart.tsx`
   - Skills demand & frequency: `src/components/charts/SkillsFrequencyChart.tsx`
-  - Domain category breakdown: `src/components/charts/CategoryBreakdownChart.tsx`
-- Sourcing & Telemetry:
-  - Sourcing telemetry: `src/components/sources/SourcesView.tsx`
+  - Sector category breakdown: `src/components/charts/CategoryBreakdownChart.tsx`
 - Candidate Profile & Scoring:
   - Profile preferences & target criteria: `src/components/profile/ProfileView.tsx`
   - Sub-views: `ProfileGeneralInfo.tsx`, `ProfileTargetPreferences.tsx`, `ProfileQualifications.tsx`,
@@ -92,7 +90,7 @@ make check         # npm run check + scrape-lint + scrape-unit
   - Generated database types: `src/types/database.types.ts` (via `npm run db:types`)
   - Supabase client: `src/lib/supabase.ts` (typed via `createClient<Database>`)
   - Server state, queries & mutations: `src/hooks/useQueries.ts`, `src/lib/queryClient.ts` (TanStack Query)
-  - Domain types: `src/types/job.ts` (Canonical pipeline statuses: `new`, `applied`, `interviewing`, `not_interested`; Saved is the independent owner-only `is_saved` bookmark)
+  - Sector types: `src/types/job.ts` (Canonical pipeline statuses: `new`, `applied`, `interviewing`, `not_interested`; Saved is the independent owner-only `is_saved` bookmark)
 - Scraper & Ingestion Pipeline (`services/scraper/`):
   - Configuration: `services/scraper/config/websites.yaml`, `rules.py`, `loader.py`
   - Extraction & Crawling: `services/scraper/extractors/`, `services/scraper/scrapers/generic/`

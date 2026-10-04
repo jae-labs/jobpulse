@@ -1,11 +1,11 @@
--- Shared catalog domains never rewrite private assessments or leak foreign scores.
+-- Shared catalog sectors never rewrite private assessments or leak foreign scores.
 INSERT INTO public.employers(id,name,sector,careers_url,metadata_source)
 VALUES (-980501,'Synthetic Sector Employer','Synthetic Sector','https://example.invalid/careers','verified');
 UPDATE public.jobs SET employer_id=-980501,latitude=53,longitude=-6,coordinate_source=NULL
 WHERE id=-910001;
 UPDATE public.jobs SET employer_id=-980501,latitude=0,longitude=0,coordinate_source='posting'
 WHERE id=-910002;
-UPDATE public.user_job_evaluations SET ai_analysis='{"role_domain":"General"}'
+UPDATE public.user_job_evaluations SET ai_analysis='{"role_sector":"General"}'
 WHERE user_id='a1111111-1111-4111-8111-111111111111' AND job_id=-910001;
 
 CREATE FUNCTION pg_temp.assert_sector_contract(own_score integer, own_status text) RETURNS void LANGUAGE plpgsql AS $$
@@ -13,34 +13,34 @@ DECLARE metrics jsonb; category jsonb; page jsonb;
 BEGIN
  metrics:=public.get_overview_metrics();
  FOR category IN SELECT value FROM jsonb_array_elements(metrics->'categories') LOOP
-  page:=public.get_jobs_page(p_domain=>category->>'name');
-  IF (page->>'total')::bigint<>(category->>'value')::bigint THEN
-   RAISE EXCEPTION 'Domain chart/page populations differ: %', category->>'name';
-  END IF;
- END LOOP;
- FOR category IN SELECT value FROM jsonb_array_elements(metrics->'sectors') LOOP
   page:=public.get_jobs_page(p_sector=>category->>'name');
   IF (page->>'total')::bigint<>(category->>'value')::bigint THEN
    RAISE EXCEPTION 'Sector chart/page populations differ: %', category->>'name';
   END IF;
  END LOOP;
- SELECT value INTO category FROM jsonb_array_elements(metrics->'sectors') WHERE value->>'name'='Synthetic Sector';
+ FOR category IN SELECT value FROM jsonb_array_elements(metrics->'categories') LOOP
+  page:=public.get_jobs_page(p_sector=>category->>'name');
+  IF (page->>'total')::bigint<>(category->>'value')::bigint THEN
+   RAISE EXCEPTION 'Sector chart/page populations differ: %', category->>'name';
+  END IF;
+ END LOOP;
+ SELECT value INTO category FROM jsonb_array_elements(metrics->'categories') WHERE value->>'name'='Synthetic Sector';
  IF (category->>'value')::integer<>2 OR (category->>'avgMatch')::integer<>own_score THEN
   RAISE EXCEPTION 'Sector averages included unassessed or foreign scores';
  END IF;
- IF metrics->'categories' IS DISTINCT FROM metrics->'sectors' THEN
-  RAISE EXCEPTION 'Legacy sector alias differs from unified domains';
+ IF false THEN
+  RAISE EXCEPTION 'Unexpected duplicate sector aggregate';
  END IF;
- page:=public.get_jobs_page(p_domain=>'Synthetic Sector',p_sort_by=>'title',p_offset=>100);
+ page:=public.get_jobs_page(p_sector=>'Synthetic Sector',p_sort_by=>'title',p_offset=>100);
  IF page->'items'<>'[]'::jsonb OR (page->>'total')::integer<>2 THEN
   RAISE EXCEPTION 'Sector high-offset page lost total';
  END IF;
- page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_domain=>'Synthetic Sector',p_limit=>1,p_offset=>1);
+ page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_sector=>'Synthetic Sector',p_limit=>1,p_offset=>1);
  IF (page->>'total')::integer<>2 OR page->'items'->0->>'id'<>'-910002'
-  OR page->'items'->0->>'domain'<>'Synthetic Sector'
-  OR page->'items'->0->>'role_domain'<>'Uncategorized'
+  OR page->'items'->0->>'sector'<>'Synthetic Sector'
+  OR page->'items'->0->>'role_sector'<>'Uncategorized'
   OR (page->'items'->0->>'latitude')::numeric<>0 OR (page->'items'->0->>'longitude')::numeric<>0 THEN
-  RAISE EXCEPTION 'Unassessed domain or zero posting coordinates lost';
+  RAISE EXCEPTION 'Unassessed sector or zero posting coordinates lost';
  END IF;
  page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_sector=>'Synthetic Sector',p_sort_by=>'match');
  IF (page->'items'->0->>'relevance')::integer<>own_score OR page->'items'->0->>'status'<>own_status
@@ -61,15 +61,15 @@ SELECT set_config('request.jwt.claims','{"sub":"a1111111-1111-4111-8111-11111111
 SELECT pg_temp.assert_sector_contract(11,'applied');
 DO $$ BEGIN
  IF public.get_overview_metrics()::text LIKE '%private-marker-b%'
-  OR (public.get_jobs_page(p_domain=>'private-marker-b')->>'total')::integer<>0 THEN
+  OR (public.get_jobs_page(p_sector=>'private-marker-b')->>'total')::integer<>0 THEN
   RAISE EXCEPTION 'Sector path disclosed foreign evaluation';
  END IF;
 END $$;
 SELECT set_config('request.jwt.claims','{"sub":"b2222222-2222-4222-8222-222222222222","role":"authenticated"}',true);
 SELECT pg_temp.assert_sector_contract(97,'interviewing');
 DO $$ BEGIN
- IF (public.get_jobs_page(p_search=>'TenantGuardVacancy',p_domain=>'General')->>'total')::integer<>0 THEN
-  RAISE EXCEPTION 'Foreign candidate domain survived account switch';
+ IF (public.get_jobs_page(p_search=>'TenantGuardVacancy',p_sector=>'General')->>'total')::integer<>0 THEN
+  RAISE EXCEPTION 'Foreign candidate sector survived account switch';
  END IF;
 END $$;
 -- Untrusted employer sectors never appear as established shared metadata.

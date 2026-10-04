@@ -42,7 +42,7 @@ interface JobsViewProps {
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
   initialStatusFilter?: 'all' | JobFilterStatus;
-  initialDomainFilter?: string;
+  initialSectorFilter?: string;
   initialMinMatch?: number;
   onFilterReset?: () => void;
   onOpenCommandMenu?: () => void;
@@ -71,7 +71,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
   searchQuery: controlledSearch,
   onSearchChange: setControlledSearch,
   initialStatusFilter = 'new',
-  initialDomainFilter = 'all',
+  initialSectorFilter = 'all',
   initialMinMatch = 0,
   onFilterReset,
   onOpenCommandMenu,
@@ -88,8 +88,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const {
     statusFilter,
     setStatusFilter,
-    domainFilter,
-    setDomainFilter,
+    sectorFilter,
+    setSectorFilter,
     minMatch,
     setMinMatch,
     locationFilter,
@@ -110,19 +110,19 @@ export const JobsView: React.FC<JobsViewProps> = ({
     searchQuery: controlledSearch,
     onSearchChange: setControlledSearch,
     initialStatusFilter,
-    initialDomainFilter,
+    initialSectorFilter,
     initialMinMatch,
   });
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const activeDetailedFilterCount = useMemo(() => {
     let count = 0;
-    if (domainFilter !== 'all') count++;
+    if (sectorFilter !== 'all') count++;
     if (minMatch > 0) count++;
     if (locationFilter !== 'all') count++;
     if (salaryFilter !== 'all') count++;
     return count;
-  }, [domainFilter, minMatch, locationFilter, salaryFilter]);
+  }, [sectorFilter, minMatch, locationFilter, salaryFilter]);
 
   const { data: linkedJob, isLoading: isLinkedLoading, isError: isLinkedError, refetch: refetchLinked } = useJobByIdQuery(urlJobId ?? selectedJob?.id, userId, Boolean(urlJobId || selectedJob));
 
@@ -208,10 +208,10 @@ export const JobsView: React.FC<JobsViewProps> = ({
     return counts;
   }, [jobs, overviewMetrics, pageItems, isServerPaginated]);
 
-  const availableDomains = useMemo(() => {
+  const availableSectors = useMemo(() => {
     if (overviewMetrics?.categories && overviewMetrics.categories.length > 0) {
       return overviewMetrics.categories.map((c) => ({
-        domain: c.name,
+        sector: c.name,
         count: c.value,
       }));
     }
@@ -219,15 +219,15 @@ export const JobsView: React.FC<JobsViewProps> = ({
     const counts = new Map<string, number>();
     const sourceJobs = jobs;
     for (const j of sourceJobs) {
-      const domain = (j.domain || 'Uncategorized').trim();
-      counts.set(domain, (counts.get(domain) || 0) + 1);
+      const sector = (j.sector || 'Uncategorized').trim();
+      counts.set(sector, (counts.get(sector) || 0) + 1);
     }
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([domain, count]) => ({ domain, count }));
+      .map(([sector, count]) => ({ sector, count }));
   }, [isServerPaginated, jobs, overviewMetrics]);
 
-  const activeDomainFilter = domainFilter;
+  const activeSectorFilter = sectorFilter;
 
   const availableLocations = useMemo(() => {
     if (overviewMetrics) return overviewMetrics.locations;
@@ -268,7 +268,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
     statusFilter !== 'all' ||
     minMatch > 0 ||
     activeLocationFilter !== 'all' ||
-    activeDomainFilter !== 'all' ||
+    activeSectorFilter !== 'all' ||
     salaryFilter !== 'all' ||
     sortField !== 'match' ||
     sortDir !== 'desc' ||
@@ -624,20 +624,20 @@ export const JobsView: React.FC<JobsViewProps> = ({
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
               <div className="flex items-center min-w-0 flex-1">
                 <select
-                  aria-label={t('jobs.allDomains')}
-                  value={activeDomainFilter}
-                  onChange={(e) => setDomainFilter(e.target.value)}
+                  aria-label={t('jobs.allSectors')}
+                  value={activeSectorFilter}
+                  onChange={(e) => setSectorFilter(e.target.value)}
                   className="ds-control-focus w-full cursor-pointer truncate bg-transparent text-xs text-ds-text-secondary outline-none h-8 pointer-coarse:h-11 min-w-0"
                 >
                   <option value="all" className="bg-ds-panel text-ds-text-secondary">
-                    {t('jobs.allDomains')} ({totalCatalogCount})
+                    {t('jobs.allSectors')} ({totalCatalogCount})
                   </option>
-                  {activeDomainFilter !== 'all' && !availableDomains.some(({ domain }) => domain === activeDomainFilter) && (
-                    <option value={activeDomainFilter}>{activeDomainFilter}</option>
+                  {activeSectorFilter !== 'all' && !availableSectors.some(({ sector }) => sector === activeSectorFilter) && (
+                    <option value={activeSectorFilter}>{activeSectorFilter}</option>
                   )}
-                  {availableDomains.map(({ domain, count }) => (
-                    <option key={domain} value={domain} className="bg-ds-panel text-ds-text-secondary">
-                      {domain} ({count})
+                  {availableSectors.map(({ sector, count }) => (
+                    <option key={sector} value={sector} className="bg-ds-panel text-ds-text-secondary">
+                      {sector} ({count})
                     </option>
                   ))}
                 </select>

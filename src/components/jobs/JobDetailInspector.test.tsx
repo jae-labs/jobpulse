@@ -33,7 +33,7 @@ const job: Job = {
   company: 'Acme',
   location: 'Dublin',
   employment_type: 'Full-time',
-  role_domain: 'Engineering',
+  role_sector: 'Engineering',
   url: 'https://example.com/job',
   source: 'test',
   status: 'new',

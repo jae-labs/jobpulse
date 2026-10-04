@@ -6,13 +6,13 @@ import type { Job } from '../types/job';
 describe('previewWeightedScore', () => {
   it('gives 90 points for 90 percent across default base factors and caps bonuses', () => {
     const sub_scores = {
-      domain: 0.9, semantic: 0.9, competency: 0.9, seniority: 0.9,
+      sector: 0.9, semantic: 0.9, competency: 0.9, seniority: 0.9,
       salary: 0.9, contract: 0.9, target_role: 0, location: 0,
       work_mode: 0, fixed_term: 0,
     };
     expect(previewWeightedScore({ sub_scores, relevance: 0 }, DEFAULT_WEIGHTS)).toBe(90);
     expect(previewWeightedScore({ sub_scores, relevance: 0 }, {
-      ...DEFAULT_WEIGHTS, domain: 25, salary: 15,
+      ...DEFAULT_WEIGHTS, sector: 25, salary: 15,
     })).toBe(99);
     expect(previewWeightedScore({
       sub_scores: { ...sub_scores, target_role: 1, location: 1, work_mode: 1 }, relevance: 0,
@@ -34,7 +34,7 @@ describe('previewWeightedScore', () => {
       matched_skills: [],
       relevance: 96,
       sub_scores: {
-        domain: 1,
+        sector: 1,
         semantic: 0.6,
         competency: 0.5,
         seniority: 0.4,
@@ -50,14 +50,14 @@ describe('previewWeightedScore', () => {
     };
 
     expect(previewWeightedScore(job, DEFAULT_WEIGHTS)).toBe(36);
-    expect(previewWeightedScore(job, { ...DEFAULT_WEIGHTS, domain: 15 })).toBe(31);
+    expect(previewWeightedScore(job, { ...DEFAULT_WEIGHTS, sector: 15 })).toBe(31);
     expect(previewWeightedScore({ ...job, sub_scores: { ...job.sub_scores!, disqualified: 1 } }, DEFAULT_WEIGHTS)).toBe(10);
-    expect(previewWeightedScore({ ...job, sub_scores: { ...job.sub_scores!, negative_domain: 1 } }, DEFAULT_WEIGHTS)).toBe(15);
+    expect(previewWeightedScore({ ...job, sub_scores: { ...job.sub_scores!, negative_sector: 1 } }, DEFAULT_WEIGHTS)).toBe(15);
   });
 
   it('changes the top-five membership and order when weights move', () => {
     const subs = {
-      domain: 0, semantic: 0, competency: 0, seniority: 0, salary: 0,
+      sector: 0, semantic: 0, competency: 0, seniority: 0, salary: 0,
       contract: 0, target_role: 0, location: 0, work_mode: 0, fixed_term: 0,
     };
     const jobs = Array.from({ length: 6 }, (_, index): Job => ({
@@ -74,11 +74,11 @@ describe('previewWeightedScore', () => {
       matched_skills: [],
       relevance: 90 - index,
       sub_scores: index === 5
-        ? { ...subs, domain: 1 }
+        ? { ...subs, sector: 1 }
         : { ...subs, semantic: (0.9 - index * 0.1) },
     }));
 
     expect(topPreviewJobs(jobs, DEFAULT_WEIGHTS).map((job) => job.id)).toEqual([1, 6, 2, 3, 4]);
-    expect(topPreviewJobs(jobs, { ...DEFAULT_WEIGHTS, domain: 5 }).map((job) => job.id)).toEqual([1, 2, 3, 4, 5]);
+    expect(topPreviewJobs(jobs, { ...DEFAULT_WEIGHTS, sector: 5 }).map((job) => job.id)).toEqual([1, 2, 3, 4, 5]);
   });
 });

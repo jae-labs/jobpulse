@@ -1,5 +1,5 @@
 -- @tenant-fixtures
--- Shared employer domains and candidate assessments are separate contracts.
+-- Shared employer sectors and candidate assessments are separate contracts.
 \set ON_ERROR_STOP on
 BEGIN;
 INSERT INTO public.employers(id,name,sector,careers_url,metadata_source)
@@ -12,22 +12,22 @@ BEGIN
  FOREACH caller IN ARRAY ARRAY['a1111111-1111-4111-8111-111111111111'::uuid,'b2222222-2222-4222-8222-222222222222'::uuid] LOOP
   expected_score:=CASE WHEN caller::text LIKE 'a%' THEN 11 ELSE 97 END;
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',caller,'role','authenticated')::text,true);
-  page:=public.get_jobs_page(p_domain=>'Canonical Shared Sector');
+  page:=public.get_jobs_page(p_sector=>'Canonical Shared Sector');
   SELECT value INTO item FROM jsonb_array_elements(page->'items') WHERE value->>'id'='-910001';
   IF (page->>'total')::integer<>2 OR (item->>'relevance')::integer<>expected_score
-    OR item->>'domain'<>'Canonical Shared Sector' THEN
-   RAISE EXCEPTION 'Shared domain filter lost caller assessment: %',page;
+    OR item->>'sector'<>'Canonical Shared Sector' THEN
+   RAISE EXCEPTION 'Shared sector filter lost caller assessment: %',page;
   END IF;
   IF page::text LIKE '%' || (CASE WHEN caller::text LIKE 'a%' THEN 'private-marker-b' ELSE 'private-marker-a' END) || '%' THEN
    RAISE EXCEPTION 'Foreign assessment leaked through catalog';
   END IF;
   SELECT value INTO item FROM jsonb_array_elements(page->'items') WHERE value->>'id'='-910002';
   IF item IS NULL OR item->>'relevance'<>'0' OR item->>'fit_tier'<>'Unassessed'
-    OR item->'matched_skills'<>'[]'::jsonb OR item->>'role_domain'<>'Uncategorized' THEN
+    OR item->'matched_skills'<>'[]'::jsonb OR item->>'role_sector'<>'Uncategorized' THEN
    RAISE EXCEPTION 'Missing evaluation was not unassessed: %',item;
   END IF;
-  IF (public.get_jobs_page(p_domain=>'private-marker-a')->>'total')::integer<>0 THEN
-   RAISE EXCEPTION 'Candidate-private classification became a shared domain';
+  IF (public.get_jobs_page(p_sector=>'private-marker-a')->>'total')::integer<>0 THEN
+   RAISE EXCEPTION 'Candidate-private classification became a shared sector';
   END IF;
   metrics:=public.get_overview_metrics();
   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(metrics->'categories') c

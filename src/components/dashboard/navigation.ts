@@ -1,7 +1,7 @@
 import {
   Briefcase,
   LayoutDashboard,
-  Radio,
+  Calculator,
   UserCheck,
   Shield,
 } from 'lucide-react';
@@ -9,14 +9,14 @@ import {
 export const dashboardNavigation = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '/overview' },
   { id: 'jobs', label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
-  { id: 'sources', label: 'Data Sources', icon: Radio, path: '/sources' },
+  { id: 'tax', label: 'Tax Calculator', icon: Calculator, path: '/tax-calculator' },
   { id: 'privacy', label: 'Data and privacy', icon: Shield, path: '/privacy' },
   { id: 'profile', label: 'Profile', icon: UserCheck, path: '/profile' },
 ] as const;
 
 export type DashboardTab = typeof dashboardNavigation[number]['id'];
 
-type NavLabelKey = 'nav.overview' | 'nav.opportunities' | 'nav.sources' | 'nav.profile' | 'privacy.notice';
+type NavLabelKey = 'nav.overview' | 'nav.opportunities' | 'nav.taxCalculator' | 'nav.profile' | 'privacy.notice';
 
 export function getNavLabel(t: (key: NavLabelKey) => string, id: DashboardTab, fallback = ''): string {
   switch (id) {
@@ -24,8 +24,8 @@ export function getNavLabel(t: (key: NavLabelKey) => string, id: DashboardTab, f
       return t('nav.overview');
     case 'jobs':
       return t('nav.opportunities');
-    case 'sources':
-      return t('nav.sources');
+    case 'tax':
+      return t('nav.taxCalculator');
     case 'privacy':
       return t('privacy.notice');
     case 'profile':

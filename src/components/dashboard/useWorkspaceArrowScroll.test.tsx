@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { useWorkspaceArrowScroll } from './useWorkspaceArrowScroll';
 
 describe('useWorkspaceArrowScroll', () => {
-  it.each(['overview', 'sources', 'profile'] as const)('scrolls the %s workspace after navigation', (tab) => {
+  it.each(['overview', 'tax', 'profile'] as const)('scrolls the %s workspace after navigation', (tab) => {
     const workspace = document.createElement('main');
     const scrollBy = vi.fn();
     workspace.scrollBy = scrollBy;

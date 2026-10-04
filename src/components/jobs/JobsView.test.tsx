@@ -25,7 +25,7 @@ vi.mock('../../hooks/useQueries', () => ({
               company: 'Cloud Corp',
               location: 'Dublin',
               employment_type: 'Permanent',
-              role_domain: 'Cloud',
+              role_sector: 'Cloud',
               salary_text: '€90,000',
               description: 'DevOps engineering role',
               url: 'https://example.com/jobs/1',
@@ -164,24 +164,23 @@ describe('JobsView Search Input', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
     const scroll = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll });
-    renderJobsView(['/opportunities?domain=Cloud&salary=specified&q=Engineer']);
+    renderJobsView(['/opportunities?sector=Cloud&salary=specified&q=Engineer']);
     fireEvent.click(screen.getByRole('button', { name: /Map/i }));
     fireEvent.click(await screen.findByRole('button', { name: 'Synthetic Dublin dot' }));
     expect(screen.queryByRole('region', { name: 'Synthetic map view' })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'All Locations' })).toHaveValue('Dublin');
-    expect(screen.getByRole('combobox', { name: 'All Domains' })).toHaveValue('Cloud');
+    expect(screen.getByRole('combobox', { name: 'All Sectors' })).toHaveValue('Cloud');
     expect(screen.getByRole('searchbox')).toHaveValue('Engineer');
     expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
     expect(document.activeElement).toHaveAttribute('tabindex', '-1');
   });
 
-  it('unifies legacy sector links into the single domain filter and clears them', () => {
-    renderJobsView(['/opportunities?sector=Synthetic%20Domain']);
-    const domains = screen.getByRole('combobox', { name: 'All Domains' });
-    expect(domains).toHaveValue('Synthetic Domain');
-    expect(screen.queryByRole('combobox', { name: 'All Sectors' })).not.toBeInTheDocument();
-    fireEvent.change(domains, { target: { value: 'all' } });
-    expect(domains).toHaveValue('all');
+  it('uses the sector URL filter and clears it', () => {
+    renderJobsView(['/opportunities?sector=Synthetic%20Sector']);
+    const sectors = screen.getByRole('combobox', { name: 'All Sectors' });
+    expect(sectors).toHaveValue('Synthetic Sector');
+    fireEvent.change(sectors, { target: { value: 'all' } });
+    expect(sectors).toHaveValue('all');
   });
 
   it('allows user to type without losing focus or cursor jumping', async () => {
@@ -245,8 +244,8 @@ describe('JobsView Search Input', () => {
     // Match score slider shows current value
     expect(screen.getByRole('slider', { name: 'Min Match' })).toHaveAttribute('aria-valuetext', 'All Matches');
 
-    // Domain dropdown options have counts
-    expect(screen.getByRole('option', { name: 'All Domains (1)' })).toBeInTheDocument();
+    // Sector dropdown options have counts
+    expect(screen.getByRole('option', { name: 'All Sectors (1)' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Cloud (1)' })).not.toBeInTheDocument();
 
     // Salary slider exposes its unfiltered meaning
@@ -374,7 +373,7 @@ describe('JobsView Search Input', () => {
       company: 'Cloud Corp',
       location: 'Dublin',
       employment_type: 'Permanent',
-      role_domain: 'Cloud',
+      role_sector: 'Cloud',
       salary_text: '€90,000',
       description: 'DevOps engineering role',
       url: 'https://example.com/jobs/1',

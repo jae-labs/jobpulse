@@ -5,7 +5,7 @@ import { useErrorDismissal } from './useErrorDismissal';
 describe('view-scoped error dismissal', () => {
   it('preserves dismissal through unrelated renders and reveals a new failure', () => {
     const error = new Error('Synthetic failure');
-    const { result, rerender } = renderHook(({ failure }) => useErrorDismissal('sources', failure, null), {
+    const { result, rerender } = renderHook(({ failure }) => useErrorDismissal('jobs', failure, null), {
       initialProps: { failure: error },
     });
     act(() => result.current.dismiss());
@@ -18,11 +18,11 @@ describe('view-scoped error dismissal', () => {
   it('reveals the same failure after leaving and returning to its view', () => {
     const error = new Error('Synthetic failure');
     const { result, rerender } = renderHook(({ scope }) => useErrorDismissal(scope, error, null), {
-      initialProps: { scope: 'sources' },
+      initialProps: { scope: 'jobs' },
     });
     act(() => result.current.dismiss());
     rerender({ scope: 'overview' });
-    rerender({ scope: 'sources' });
+    rerender({ scope: 'jobs' });
     expect(result.current.isDismissed).toBe(false);
   });
 

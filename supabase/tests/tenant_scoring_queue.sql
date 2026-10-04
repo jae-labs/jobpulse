@@ -12,7 +12,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}',true);
 DO $$ DECLARE bad jsonb; result jsonb; BEGIN
  IF public.get_profile_embedding_state()->>'scoring_state'<>'awaiting_embedding' THEN RAISE EXCEPTION 'Setup state is not visible to owner'; END IF;
- FOREACH bad IN ARRAY ARRAY['{"weights":{"semantic":"not numeric"}}'::jsonb,'{"weights":{"semantic":101}}','{"positive_domains":{}}','{"seniority_tiers":[{"name":"bad","keywords":[],"score_weight":"invalid"}]}','{"disqualifiers":[{}]}'] LOOP
+ FOREACH bad IN ARRAY ARRAY['{"weights":{"semantic":"not numeric"}}'::jsonb,'{"weights":{"semantic":101}}','{"positive_sectors":{}}','{"seniority_tiers":[{"name":"bad","keywords":[],"score_weight":"invalid"}]}','{"disqualifiers":[{}]}'] LOOP
   BEGIN
    UPDATE public.user_profiles SET scoring_rules=bad WHERE user_id=auth.uid();
    RAISE EXCEPTION 'Malformed scoring inputs accepted';

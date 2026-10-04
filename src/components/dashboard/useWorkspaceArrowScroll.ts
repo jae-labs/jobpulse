@@ -7,7 +7,7 @@ export function useWorkspaceArrowScroll(
   isCommandMenuOpen: boolean
 ) {
   useEffect(() => {
-    if (activeTab !== 'overview' && activeTab !== 'sources' && activeTab !== 'profile') return;
+    if (activeTab !== 'overview' && activeTab !== 'tax' && activeTab !== 'profile') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (

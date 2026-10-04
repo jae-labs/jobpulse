@@ -239,7 +239,7 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
       const evaluation = evaluationResult.data;
       return {
         ...jobResult.data,
-        domain: jobResult.data.employers && ['curated', 'verified', 'watchlist'].includes(jobResult.data.employers.metadata_source)
+        sector: jobResult.data.employers && ['curated', 'verified', 'watchlist'].includes(jobResult.data.employers.metadata_source)
           ? jobResult.data.employers.sector || 'Uncategorized' : 'Uncategorized',
         latitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.latitude : null,
         longitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.longitude : null,
@@ -294,7 +294,7 @@ export function useJobMapQuery(userId: string | null | undefined, params: import
     queryFn: ({ signal }) => withActiveUser(userId, async () => {
       if (!supabase) throw new Error('Supabase is not initialized');
       const { data, error } = await supabase.rpc('get_job_map', {
-        p_status: params.status || 'all', p_domain: params.domain || 'all', p_min_match: params.minMatch || 0,
+        p_status: params.status || 'all', p_sector: params.sector || 'all', p_min_match: params.minMatch || 0,
         p_location: params.location || 'all', p_salary: params.salary || 'all', p_search: params.search || undefined,
         p_bounds: bounds, p_zoom: zoom,
       }).abortSignal(signal);

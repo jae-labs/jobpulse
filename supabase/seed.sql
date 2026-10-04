@@ -83,23 +83,23 @@ INSERT INTO public.user_job_evaluations (
 ) VALUES
     ('11111111-1111-1111-1111-111111111111', 101, 96, 'Exceptional Match',
      '["Kubernetes", "Terraform", "AWS", "Go", "Docker"]'::jsonb,
-     '{"role_domain":"Cloud & Platform Engineering","seniority_level":"Staff / Principal","semantic_similarity":0.95,"sub_scores":{"domain":1.0,"semantic":0.96,"competency":1.0,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
+     '{"role_sector":"Cloud & Platform Engineering","seniority_level":"Staff / Principal","semantic_similarity":0.95,"sub_scores":{"sector":1.0,"semantic":0.96,"competency":1.0,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
 
     ('11111111-1111-1111-1111-111111111111', 102, 93, 'Strong Match',
      '["Terraform", "AWS", "Kubernetes", "CI/CD", "Prometheus"]'::jsonb,
-     '{"role_domain":"Cloud & Platform Engineering","seniority_level":"Staff / Principal","semantic_similarity":0.92,"sub_scores":{"domain":1.0,"semantic":0.92,"competency":0.95,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
+     '{"role_sector":"Cloud & Platform Engineering","seniority_level":"Staff / Principal","semantic_similarity":0.92,"sub_scores":{"sector":1.0,"semantic":0.92,"competency":0.95,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
 
     ('11111111-1111-1111-1111-111111111111', 103, 91, 'Strong Match',
      '["Kubernetes", "Go", "Observability", "Terraform"]'::jsonb,
-     '{"role_domain":"Cloud & Platform Engineering","seniority_level":"Senior","semantic_similarity":0.89,"sub_scores":{"domain":1.0,"semantic":0.88,"competency":0.9,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
+     '{"role_sector":"Cloud & Platform Engineering","seniority_level":"Senior","semantic_similarity":0.89,"sub_scores":{"sector":1.0,"semantic":0.88,"competency":0.9,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
 
     ('11111111-1111-1111-1111-111111111111', 104, 89, 'Strong Match',
      '["Kubernetes", "Docker", "AWS", "Security", "Linux"]'::jsonb,
-     '{"role_domain":"Cloud & Platform Engineering","seniority_level":"Lead / Management","semantic_similarity":0.88,"sub_scores":{"domain":1.0,"semantic":0.84,"competency":0.85,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
+     '{"role_sector":"Cloud & Platform Engineering","seniority_level":"Lead / Management","semantic_similarity":0.88,"sub_scores":{"sector":1.0,"semantic":0.84,"competency":0.85,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb),
 
     ('11111111-1111-1111-1111-111111111111', 105, 88, 'Strong Match',
      '["AWS", "TypeScript", "Terraform", "Docker"]'::jsonb,
-     '{"role_domain":"Cloud & Platform Engineering","seniority_level":"Senior","semantic_similarity":0.87,"sub_scores":{"domain":1.0,"semantic":0.84,"competency":0.8,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb)
+     '{"role_sector":"Cloud & Platform Engineering","seniority_level":"Senior","semantic_similarity":0.87,"sub_scores":{"sector":1.0,"semantic":0.84,"competency":0.8,"seniority":1.0,"salary":1.0,"contract":1.0,"target_role":1.0,"location":1.0,"work_mode":1.0,"fixed_term":0,"disqualified":0}}'::jsonb)
 ON CONFLICT (user_id, job_id) DO UPDATE SET
     relevance = EXCLUDED.relevance,
     fit_tier = EXCLUDED.fit_tier,

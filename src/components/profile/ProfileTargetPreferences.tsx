@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Card, Select, TextField } from '@jae-labs/ui';
 import type { Profile } from '../../types/job';
@@ -20,6 +20,8 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
   onToggleWorkMode,
 }) => {
   const { t } = useTranslation();
+  const [editingSalary, setEditingSalary] = useState(false);
+  const wholeEuro = new Intl.NumberFormat('en-IE', { maximumFractionDigits: 0 });
 
   return (
     <>
@@ -129,23 +131,18 @@ export const ProfileTargetPreferences: React.FC<ProfileTargetPreferencesProps> =
             <label htmlFor="profile-minimum-salary" className="text-xs font-medium text-ds-text-secondary">
               {t('profile.target.minimumSalary')}
             </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-semibold text-ds-positive">
-                €
-              </span>
-              <TextField
-                id="profile-minimum-salary"
-                density="compact"
-                type="number"
-                step="1000"
-                value={formData.salary_min ?? 0}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  onChange('salary_min', val);
-                }}
-                className="h-9 pl-8"
-              />
-            </div>
+            <TextField
+              id="profile-minimum-salary"
+              density="compact"
+              inputMode="numeric"
+              startAdornment={<span className="font-mono font-semibold text-ds-positive">€</span>}
+              value={editingSalary ? (formData.salary_min || '') : wholeEuro.format(formData.salary_min ?? 0)}
+              onFocus={() => setEditingSalary(true)}
+              onBlur={() => setEditingSalary(false)}
+              onChange={(e) => onChange('salary_min', Number(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+              placeholder="0"
+              className="h-9"
+            />
           </div>
         </div>
       </Card>

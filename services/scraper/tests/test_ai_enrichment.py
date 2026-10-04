@@ -59,6 +59,18 @@ def test_enrich_companies_with_ai_empty() -> None:
     assert enrich_companies_with_ai([]) == []
 
 
+@patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
+@patch("pipeline.ai_enrichment.subprocess.run")
+def test_enrichment_discards_invalid_office_coordinates(mock_run: MagicMock, mock_which: MagicMock) -> None:
+    mock_run.return_value = SimpleNamespace(stdout=json.dumps({"structured_output": {"companies": [{
+        "name": "Example", "sector": "Software & SaaS", "size": "11-50", "offices": [{
+            "address": "Example Street", "city": "Dublin", "latitude": 40.7128, "longitude": -74.006,
+        }],
+    }]}}), stderr="", returncode=0)
+
+    assert enrich_companies_with_ai(["Example"], agy_path="/fake/agy")[0]["offices"] == []
+
+
 def test_agy_fallback_uses_current_home() -> None:
     with (
         patch("pipeline.ai_enrichment.Path.home", return_value=Path("/synthetic/home")),
@@ -171,7 +183,7 @@ def test_apply_company_enrichment_dry_run() -> None:
     assert result["id"] == 101
     assert result["sector"] == "Fintech & Payments"
     assert result["size"] == "5000+"
-    assert result["offices_count"] == 1
+    assert result["office_leads_count"] == 1
     assert result["applied"] is False
 
     # Dry run must not perform writes

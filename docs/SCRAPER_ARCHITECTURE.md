@@ -78,9 +78,8 @@ provenance and are hidden in paginated results and deep-link details.
 
 `employers.metadata_source` distinguishes `curated`, `watchlist`, `verified`, and
 `unverified` metadata. Trusted `employers.sector` values define the single public
-catalog domain; unknown and historical inferred values contribute `Uncategorized`.
-Overview `categories` and page `p_domain` share this definition. `sectors` and
-`p_sector` remain database compatibility aliases. Candidate role-domain assessments
+catalog sector; unknown and historical inferred values contribute `Uncategorized`.
+Overview `categories` and page `p_sector` share this definition. Candidate role-sector assessments
 remain private scoring inputs; this display classification does not rewrite them.
 Match averages include assessed jobs only.
 

@@ -11,8 +11,8 @@ vi.mock('../../hooks/useQueries', () => ({
   useJobMapQuery: () => ({ isPending: false, isFetching: state.fetching, isError: state.error, refetch: vi.fn(),
     data: { total: 100, mapped: 90, in_view: 90, truncated: false, office_truncated: false,
       office_pins: [{ latitude: 53.34, longitude: -6.25, count: 1, job_ids: [42],
-        title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'company_office' }], pins: [{ latitude: 53.35, longitude: -6.26,
-      count: 10, job_ids: [42], title: 'Example Role', company: 'Example Company', domain: 'Example Domain', precision: 'city' }] },
+        title: 'Example Role', company: 'Example Company', sector: 'Example Sector', precision: 'company_office' }], pins: [{ latitude: 53.35, longitude: -6.26,
+      count: 10, job_ids: [42], title: 'Example Role', company: 'Example Company', sector: 'Example Sector', precision: 'city' }] },
   }),
   useJobMapPreviewQuery: () => ({ isPending: false, isFetching: false, isError: state.previewError, refetch: vi.fn(), data: state.multiplePlaces ? [example, { ...example, id: 43, location: 'Galway, Ireland' }] : [example] }),
   useJobsPageQuery: (...args: unknown[]) => {
@@ -80,10 +80,10 @@ describe('verified job map', () => {
     expect(selectLocation).not.toHaveBeenCalled();
   });
   it('browses every page at the named location while preserving active catalog filters', () => {
-    render(<JobsMapView userId="synthetic-user" filters={{ domain: 'Engineering', status: 'saved', search: 'Engineer' }} onSelectJob={vi.fn()} />);
+    render(<JobsMapView userId="synthetic-user" filters={{ sector: 'Engineering', status: 'saved', search: 'Engineer' }} onSelectJob={vi.fn()} />);
     openGroup();
     fireEvent.click(screen.getByRole('button', { name: 'Browse all jobs in Dublin, Ireland' }));
-    expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ domain: 'Engineering', status: 'saved', search: 'Engineer', location: 'Dublin, Ireland', limit: 20, offset: 0 }), true);
+    expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ sector: 'Engineering', status: 'saved', search: 'Engineer', location: 'Dublin, Ireland', limit: 20, offset: 0 }), true);
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(state.page).toHaveBeenLastCalledWith('synthetic-user', expect.objectContaining({ offset: 20 }), true);
     fireEvent.click(screen.getByRole('button', { name: 'Close location jobs' }));

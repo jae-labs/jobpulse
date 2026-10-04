@@ -2,7 +2,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 DO $$
-DECLARE r record; subs jsonb := '{"domain":0.9,"semantic":0.9,"competency":0.9,"seniority":0.9,"salary":0.9,"contract":0.9}';
+DECLARE r record; subs jsonb := '{"sector":0.9,"semantic":0.9,"competency":0.9,"seniority":0.9,"salary":0.9,"contract":0.9}';
 BEGIN
  FOR r IN SELECT * FROM (VALUES
   ('Google','Go',false),('maintain','AI',false),('build','UI',false),
@@ -21,7 +21,7 @@ BEGIN
   END IF;
  END LOOP;
  IF public.score_from_subscores(subs,'{}')<>90 THEN RAISE EXCEPTION 'Default base weights do not total 100'; END IF;
- IF public.score_from_subscores(subs,'{"domain":25,"salary":15}')<>99 THEN RAISE EXCEPTION 'Custom weights were silently normalized'; END IF;
+ IF public.score_from_subscores(subs,'{"sector":25,"salary":15}')<>99 THEN RAISE EXCEPTION 'Custom weights were silently normalized'; END IF;
  IF public.score_from_subscores(subs || '{"target_role":1,"location":1,"work_mode":1}','{}')<>100 THEN RAISE EXCEPTION 'Bonuses exceeded score cap'; END IF;
  IF public.score_from_subscores(subs || '{"disqualified":1}','{}')<>10 THEN RAISE EXCEPTION 'Dealbreaker cap changed'; END IF;
 END $$;

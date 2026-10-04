@@ -14,7 +14,7 @@ GRANT SELECT ON tenant_contract TO authenticated, anon;
 CREATE TEMP TABLE browser_rpc_contract (signature text PRIMARY KEY);
 INSERT INTO browser_rpc_contract VALUES
   ('public.create_invitation(text)'), ('public.delete_invitation(bigint)'),
-  ('public.get_jobs_page(text,text,integer,text,text,text,text,text,integer,integer,text)'),
+  ('public.get_jobs_page(text,text,integer,text,text,text,text,text,integer,integer)'),
   ('public.get_job_map(text,text,integer,text,text,text,double precision[],integer)'),
   ('public.get_overview_metrics()'), ('public.set_job_saved(bigint,boolean)'), ('public.is_authorized_user()'),
   ('public.jobpulse_literal_search_pattern(text)'), ('public.owns_document_object(text)'),

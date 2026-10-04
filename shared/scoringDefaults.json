@@ -1,10 +1,10 @@
 {
-  "negative_domains": [],
-  "positive_domains": [],
+  "negative_sectors": [],
+  "positive_sectors": [],
   "seniority_tiers": [],
   "disqualifiers": [],
   "weights": {
-    "domain": 20,
+    "sector": 20,
     "semantic": 25,
     "competency": 20,
     "seniority": 15,

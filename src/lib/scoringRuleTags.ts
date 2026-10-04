@@ -1,10 +1,10 @@
 import type {
-  NegativeDomainRule,
-  ScoringDomainRule,
+  NegativeSectorRule,
+  ScoringSectorRule,
   SeniorityTierRule,
 } from '../types/job';
 
-type KeywordRule = ScoringDomainRule | NegativeDomainRule | SeniorityTierRule;
+type KeywordRule = ScoringSectorRule | NegativeSectorRule | SeniorityTierRule;
 
 function getRuleTerms(rule: KeywordRule): string[] {
   const keywords = Array.isArray(rule.keywords) ? rule.keywords : [];

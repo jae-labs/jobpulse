@@ -3,7 +3,6 @@ export { queryKeys } from '../lib/queryKeys';
 export { validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
 export { useOverviewMetricsQuery, useJobsPageQuery, useJobsInfiniteQuery, useScoringPreviewJobsQuery, useJobDetailQuery, useJobByIdQuery, useUpdateJobStatusMutation, useJobMapQuery, useJobMapPreviewQuery, useUpdateJobSavedMutation } from './useJobQueries';
 export { useProfileQuery, useSaveProfileMutation, useUserCvsQuery, useUserCoverLettersQuery, useSaveCvMutation, useDeleteCvMutation, useSaveCoverLetterMutation, useDeleteCoverLetterMutation, useSaveAvatarMutation } from './useProfileQueries';
-export { useSourcesQuery } from './useSourceQueries';
 export { type InvitationItem, useInvitationsQuery, useCreateInvitationMutation, useDeleteInvitationMutation } from './useInvitationQueries';
 export { useScoringStateQuery } from './useScoringQueries';
 export { useDeleteAccountMutation, useExportAccountMutation } from './useAccountMutations';

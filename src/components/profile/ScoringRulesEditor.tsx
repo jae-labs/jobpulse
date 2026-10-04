@@ -1,7 +1,7 @@
 import React from 'react';
 import type {
   ScoringRules,
-  NegativeDomainRule,
+  NegativeSectorRule,
   ScoringWeights,
   Job,
 } from '../../types/job';
@@ -30,7 +30,7 @@ interface WeightConfigItem {
 
 const WEIGHT_CONFIGS: WeightConfigItem[] = [
   {
-    key: 'domain',
+    key: 'sector',
     min: 5,
     max: 50,
   },
@@ -105,8 +105,8 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
 
   const previewMatches = React.useMemo(() => topPreviewJobs(jobs, weights), [jobs, weights]);
 
-  const updateNegative = (next: NegativeDomainRule[]) =>
-    onChange({ ...rules, negative_domains: next });
+  const updateNegative = (next: NegativeSectorRule[]) =>
+    onChange({ ...rules, negative_sectors: next });
 
   const updateDisqualifiers = (next: string[]) =>
     onChange({ ...rules, disqualifiers: next });
@@ -134,8 +134,8 @@ export const ScoringRulesEditor: React.FC<ScoringRulesEditorProps> = ({
           </h2>
         </div>
         <TagChipInput
-          items={getRuleTags(rules.negative_domains)}
-          onChange={(next) => updateNegative(updateRuleTags(rules.negative_domains, next, (tag) => ({
+          items={getRuleTags(rules.negative_sectors)}
+          onChange={(next) => updateNegative(updateRuleTags(rules.negative_sectors, next, (tag) => ({
             name: tag,
             keywords: [tag],
             reason: '',

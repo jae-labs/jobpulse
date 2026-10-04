@@ -80,7 +80,7 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
           )
         : {},
     categories: (obj.sectors === undefined ? obj.categories : (() => {
-      if (!Array.isArray(obj.sectors)) throw new Error("Invalid overview domains");
+      if (!Array.isArray(obj.sectors)) throw new Error("Invalid overview sectors");
       return obj.sectors;
     })()).map((c) => ({
       name: string(record(c).name),
@@ -146,9 +146,9 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
     if ((latitude === null) !== (longitude === null)) throw new Error("Incomplete RPC coordinates");
     return {
       employer_id: item.employer_id == null ? null : Number(item.employer_id),
-      domain: item.domain === undefined
+      sector: item.sector === undefined
         ? (item.employer_sector === undefined ? 'Uncategorized' : string(item.employer_sector))
-        : string(item.domain),
+        : string(item.sector),
       latitude,
       longitude,
       id: Number(item.id),
@@ -177,7 +177,7 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
         ? (item.matched_skills as string[])
         : [],
       fit_tier: item.fit_tier ? String(item.fit_tier) : undefined,
-      role_domain: item.role_domain ? String(item.role_domain) : undefined,
+      role_sector: item.role_sector ? String(item.role_sector) : undefined,
       seniority_level: item.seniority_level
         ? String(item.seniority_level)
         : undefined,
@@ -208,7 +208,7 @@ export function validateJobMapResult(data: unknown): import('../types/job').JobM
       if (latitude === null || longitude === null || !Array.isArray(pin.job_ids) || pin.job_ids.length > 5 ||
           pin.job_ids.some((id) => !Number.isSafeInteger(id))) throw new Error('Invalid map pin');
       return { latitude, longitude, count: count(pin.count), job_ids: pin.job_ids as number[],
-        title: string(pin.title), company: string(pin.company), domain: string(pin.domain), precision: string(pin.precision) };
+        title: string(pin.title), company: string(pin.company), sector: string(pin.sector), precision: string(pin.precision) };
     }),
   };
 }

@@ -11,7 +11,6 @@ export const queryKeys = {
   jobById: (id?: number | null, userId?: string | null) => ["job-by-id", id, userId ?? null] as const,
   jobDetail: (id?: number | null, userId?: string | null) => ["job-detail", id, userId ?? null] as const,
   avatarUrl: (path?: string | null) => ["avatar-url", path ?? null] as const,
-  sources: () => ["sources"] as const,
   profile: (userId?: string | null) => ["profile", userId ?? null] as const,
   userCvs: (userId?: string | null) => ["user-cvs", userId ?? null] as const,
   userCoverLetters: (userId?: string | null) => ["user-cover-letters", userId ?? null] as const,

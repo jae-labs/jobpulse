@@ -14,6 +14,7 @@ import json
 import logging
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -96,9 +97,12 @@ def apply_company_enrichment(
     if not employer.get("description") and enriched.get("description"):
         employer_update["description"] = enriched["description"]
 
-    offices_to_insert = []
+    # LLM output is useful as a lead, but it is not location evidence. The
+    # Geoapify office worker verifies offices against the employer and vacancy
+    # location before it stores a map-eligible place.
+    office_leads = []
     for off in enriched.get("offices", []):
-        offices_to_insert.append(
+        office_leads.append(
             {
                 "employer_id": eid,
                 "place_id": off["place_id"],
@@ -120,21 +124,14 @@ def apply_company_enrichment(
         # 1. Update employer
         retry_supabase(lambda: client.table("employers").update(employer_update).eq("id", eid).execute())
 
-        # 2. Upsert offices
-        for office_record in offices_to_insert:
-            retry_supabase(
-                lambda rec=office_record: (
-                    client.table("employer_offices").upsert(rec, on_conflict="employer_id,place_id").execute()
-                )
-            )
 
     return {
         "id": eid,
         "name": name,
         "sector": employer_update.get("sector", employer.get("sector")),
         "size": enriched["size"],
-        "offices_count": len(offices_to_insert),
-        "offices": offices_to_insert,
+        "office_leads_count": len(office_leads),
+        "office_leads": office_leads,
         "applied": not dry_run,
     }
 
@@ -142,7 +139,9 @@ def apply_company_enrichment(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=20, help="Max employers to process")
-    parser.add_argument("--batch-size", type=int, default=5, help="Number of companies per prompt batch")
+    parser.add_argument("--batch-size", type=int, default=25, help="Number of companies per prompt batch")
+    parser.add_argument("--workers", type=int, default=4, help="Concurrent AI prompt batches (1-4)")
+    parser.add_argument("--timeout-seconds", type=int, default=300, help="Per-batch AI timeout (60-600)")
     parser.add_argument("--company", type=str, help="Specific company name to enrich")
     parser.add_argument("--all-employers", action="store_true", help="Include already verified employers")
     parser.add_argument("--apply", action="store_true", help="Commit changes to Supabase (default: dry-run)")
@@ -150,6 +149,12 @@ def main() -> None:
     parser.add_argument("--report", type=Path, help="Save report to JSON file")
     parser.add_argument("--model", type=str, default="gemini-3.8-flash-low", help="Gemini model name")
     args = parser.parse_args()
+    if not 1 <= args.batch_size <= 25:
+        parser.error("--batch-size must be between 1 and 25")
+    if not 1 <= args.workers <= 4:
+        parser.error("--workers must be between 1 and 4")
+    if not 60 <= args.timeout_seconds <= 600:
+        parser.error("--timeout-seconds must be between 60 and 600")
 
     client = get_local_supabase() if args.local else get_supabase()
 
@@ -167,45 +172,53 @@ def main() -> None:
     print(f"\nFound {len(employers)} employer(s) for AI enrichment (Dry run: {not args.apply})...")
 
     results: list[dict[str, Any]] = []
-    # Process in batches
-    for i in range(0, len(employers), args.batch_size):
-        batch = employers[i : i + args.batch_size]
-        names = [emp["name"] for emp in batch]
-        print(f"\nProcessing batch {i // args.batch_size + 1}: {', '.join(names)}")
-
-        try:
-            enriched_list = enrich_companies_with_ai(names, model=args.model)
-        except Exception as exc:
-            logger.error("Failed to enrich batch %s: %s", names, exc)
-            print(f"Error enriching batch: {exc}")
-            continue
-
-        # Map back by name
-        enriched_by_name = {e["name"].casefold(): e for e in enriched_list}
-
-        for emp in batch:
-            name_key = emp["name"].casefold()
-            match = enriched_by_name.get(name_key)
-            if not match:
-                # Fuzzy fallback matching
-                for k, v in enriched_by_name.items():
-                    if k in name_key or name_key in k:
-                        match = v
-                        break
-
-            if not match:
-                print(f"  [MISS] Could not map result for '{emp['name']}'")
+    batches = [employers[i : i + args.batch_size] for i in range(0, len(employers), args.batch_size)]
+    # Each invocation is an independent CLI process. Bound concurrency to keep
+    # subscription limits and local process pressure predictable.
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {
+            pool.submit(
+                enrich_companies_with_ai,
+                [emp["name"] for emp in batch],
+                model=args.model,
+                timeout_seconds=args.timeout_seconds,
+            ): (index, batch)
+            for index, batch in enumerate(batches, start=1)
+        }
+        for future in as_completed(futures):
+            index, batch = futures[future]
+            names = [emp["name"] for emp in batch]
+            try:
+                enriched_list = future.result()
+            except Exception as exc:
+                logger.error("Failed to enrich batch %s: %s", names, exc)
+                print(f"Error enriching batch {index}: {exc}")
                 continue
 
-            res = apply_company_enrichment(client, emp, match, dry_run=not args.apply)
-            results.append(res)
-            print(
-                f"  {'[APPLIED]' if args.apply else '[PROPOSED]'} {res['name']}: "
-                f"Sector='{res['sector']}', Size='{res['size']}', "
-                f"Offices in Ireland={res['offices_count']}"
-            )
-            for off in res["offices"]:
-                print(f"    - {off['name']}: {off['address']}, {off['city']} ({off['latitude']}, {off['longitude']})")
+            # Persist each batch as soon as its model call completes. This makes
+            # long-running batches and later timeouts independent of saved work.
+            print(f"\nProcessing batch {index}: {', '.join(names)}")
+            enriched_by_name = {e["name"].casefold(): e for e in enriched_list}
+            for emp in batch:
+                name_key = emp["name"].casefold()
+                match = enriched_by_name.get(name_key)
+                if not match:
+                    for key, candidate in enriched_by_name.items():
+                        if key in name_key or name_key in key:
+                            match = candidate
+                            break
+                if not match:
+                    print(f"  [MISS] Could not map result for '{emp['name']}'")
+                    continue
+                res = apply_company_enrichment(client, emp, match, dry_run=not args.apply)
+                results.append(res)
+                print(
+                    f"  {'[APPLIED]' if args.apply else '[PROPOSED]'} {res['name']}: "
+                    f"Sector='{res['sector']}', Size='{res['size']}', "
+                    f"Office leads in Ireland={res['office_leads_count']}"
+                )
+                for off in res["office_leads"]:
+                    print(f"    - {off['name']}: {off['address']}, {off['city']} ({off['latitude']}, {off['longitude']})")
 
     summary = {
         "timestamp": datetime.now(timezone.utc).isoformat(),

@@ -57,7 +57,7 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 
 | Path | Role |
 | --- | --- |
-| `src/` | React app, queries, localization, and domain types |
+| `src/` | React app, queries, localization, and sector types |
 | `packages/ui/` | Shared UI components and design tokens |
 | `shared/` | Browser scoring defaults |
 | `services/scraper/` | Python discovery, extraction, ingestion, and job embeddings |

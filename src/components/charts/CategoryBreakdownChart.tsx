@@ -126,7 +126,7 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
     const categoryMap = new Map<string, { count: number; totalScore: number }>();
 
     for (const job of jobs) {
-      const cat = (job.role_domain || 'Uncategorized').trim();
+      const cat = (job.role_sector || 'Uncategorized').trim();
       if (!cat || cat === 'Uncategorized') continue;
       const existing = categoryMap.get(cat) || { count: 0, totalScore: 0 };
       categoryMap.set(cat, {

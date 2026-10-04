@@ -35,7 +35,7 @@ BEGIN
 
   UPDATE public.user_profiles SET scoring_rules = jsonb_set(
     coalesce(scoring_rules,'{}'::jsonb), '{weights}',
-    '{"domain":0,"semantic":10,"competency":0,"seniority":0,"salary":0,"contract":0,"target_role_bonus":0,"location_bonus":0,"work_mode_bonus":0,"fixed_term_penalty":0,"disqualification_cap":10}'::jsonb,
+    '{"sector":0,"semantic":10,"competency":0,"seniority":0,"salary":0,"contract":0,"target_role_bonus":0,"location_bonus":0,"work_mode_bonus":0,"fixed_term_penalty":0,"disqualification_cap":10}'::jsonb,
     true) WHERE user_id=v_user_id;
 END;
 $$;

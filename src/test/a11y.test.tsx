@@ -29,7 +29,7 @@ describe('Accessibility (axe-core WCAG AA)', () => {
     expect(results.violations).toEqual([]);
   });
 
-  it('passes accessibility audits for domain widgets and status badges', async () => {
+  it('passes accessibility audits for sector widgets and status badges', async () => {
     const { container } = render(
       <main>
         <BrandLogo size="md" />

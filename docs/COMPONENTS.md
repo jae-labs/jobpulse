@@ -11,7 +11,6 @@ App (Root Shell & Providers)
 ├── Main Workspace (Route container)
 │   ├── Overview (Bento grid: StatCards + lazy Recharts)
 │   ├── JobsView (Master-detail pipeline: Filters, list, inspector)
-│   ├── SourcesView (Connected feeds, sync status, telemetry)
 │   └── ProfileView (Candidate preferences, scoring rules, document vault)
 ├── InvitationsModal (Team member invitations, link sharing, and revocation)
 ├── Mobile Bottom Nav (Compact navigation bar on small screens)
@@ -32,7 +31,6 @@ App (Root Shell & Providers)
   - `ProfileDocuments.tsx`: Streaming document vault for CVs and cover letters.
   - `ScoringRulesEditor.tsx`: Exclusion and disqualifier tags, followed by scoring weights with a live, five-row list of the highest scoring opportunities beside the sliders on wide screens. The list recomputes scores and ranking as weights move.
 - **`PrivacyView`** (`src/components/privacy/PrivacyView.tsx`): In-app data and privacy notice at `/privacy`, reached from the account menu or command palette. Uses the existing account export mutation; documents and account deletion remain in Profile.
-- **`SourcesView`** (`src/components/sources/SourcesView.tsx`): Source connector telemetry, health status, and opportunity counts.
 
 ## Design System vs Application UI
 
@@ -43,7 +41,7 @@ App (Root Shell & Providers)
 
 To prevent rendering cascades across heavy views:
 - **Leaf Components**: `JobCard`, `JobDetailInspector`, `StatusPill`, `MatchScoreBadge`, and `StatCard` are wrapped in `React.memo`. This guarantees that list scrolling, focus changes, or typing in the search bar do not re-render unaffected cards or the inspector.
-- **Container Views & Shell**: `OverviewView`, `SortableWidget`, `DashboardSidebar`, and `SourcesView` are wrapped in `React.memo`.
+- **Container Views & Shell**: `OverviewView`, `SortableWidget`, and `DashboardSidebar` are wrapped in `React.memo`.
 - **Callback Invariants**: Shell-level handlers in `App.tsx` (`handleSelectJob`, `updateStatus`, `handleNavigateToJobs`, `handleFilterReset`, `handleOpenCommandMenu`) and drill-downs in `OverviewView.tsx` are wrapped in `useCallback`.
 - **Virtual List Ref Stability**: Cards in `JobsView` receive a memoized ref callback via `getCardRefCallback(job.id)` to avoid commit-phase callback churn across mounted items.
 

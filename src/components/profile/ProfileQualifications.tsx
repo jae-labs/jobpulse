@@ -27,8 +27,8 @@ export const ProfileQualifications: React.FC<ProfileQualificationsProps> = ({
 
   const updateSeniority = (tags: string[]) => {
     onScoringRulesChange({
-      positive_domains: scoringRules?.positive_domains ?? DEFAULT_SCORING_RULES.positive_domains,
-      negative_domains: scoringRules?.negative_domains ?? DEFAULT_SCORING_RULES.negative_domains,
+      positive_sectors: scoringRules?.positive_sectors ?? DEFAULT_SCORING_RULES.positive_sectors,
+      negative_sectors: scoringRules?.negative_sectors ?? DEFAULT_SCORING_RULES.negative_sectors,
       ...scoringRules,
       seniority_tiers: updateRuleTags(seniorityRules, tags, (tag) => ({
         name: tag,

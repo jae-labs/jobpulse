@@ -22,7 +22,7 @@ vi.mock('maplibre-gl', () => ({
   },
 }));
 vi.mock('./jobMapStyle', async (original) => ({ ...await original<Record<string, unknown>>(), jobMapPalette: () => ({ point: 'blue', ring: 'white' }) }));
-const pin: JobMapPin = { latitude: 53, longitude: -6, count: 2, job_ids: [1], title: 'Synthetic role', company: 'Synthetic employer', domain: 'Engineering', precision: 'city' };
+const pin: JobMapPin = { latitude: 53, longitude: -6, count: 2, job_ids: [1], title: 'Synthetic role', company: 'Synthetic employer', sector: 'Engineering', precision: 'city' };
 const props = { scope: 'first', selectedPin: null, onSelectPin: vi.fn() };
 beforeEach(() => { engine.setData.mockClear(); engine.events.clear(); engine.addSource.mockClear(); });
 it('retains dots while the next camera response is pending, but clears errors and identity/filter changes', () => {

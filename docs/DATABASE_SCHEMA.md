@@ -101,7 +101,7 @@ Candidate tables strictly enforce `user_id = auth.uid()`. Legacy `user_email` co
 ## Canonical Candidate Scoring
 
 `user_job_evaluations`, keyed by `(user_id, job_id)`, is the sole source of
-relevance, fit tier, matched skills, and explanations. Profile-dependent domain
+relevance, fit tier, matched skills, and explanations. Profile-dependent sector
 and seniority classifications live in its `ai_analysis` JSON. The shared `jobs`
 table contains only vacancy facts and lifecycle metadata. Candidate tracking lives
 only in `user_job_statuses`; a missing candidate status is `new`. There is no
@@ -111,7 +111,7 @@ shared job status or `is_admin()` authorization alias.
 only the current user's evaluation. An absent evaluation returns relevance `0`,
 fit tier `Unassessed`, empty matched skills, and no explanation. It never falls
 back to another candidate's score. Unassessed private role classification defaults to `Uncategorized`; the shared
-catalog domain remains independently available from trusted employer metadata.
+catalog sector remains independently available from trusted employer metadata.
 
 Profile matching uses `salary_min` for the annual EUR target. There is no
 `minimum_salary` alias in application code. Job salary amounts, currency, and
@@ -137,8 +137,8 @@ The Profile danger zone calls the authenticated `delete-account` Edge Function:
 
 ## Stored Procedures (RPCs)
 
-- **`get_overview_metrics()`**: Computes funnel stage counts, average match scores, score distributions, domain categories, and top skills in a single query.
-- **`get_jobs_page(...)`**: Single source of truth for the opportunities catalog. Applies server-side search, domain,
+- **`get_overview_metrics()`**: Computes funnel stage counts, average match scores, score distributions, sector categories, and top skills in a single query.
+- **`get_jobs_page(...)`**: Single source of truth for the opportunities catalog. Applies server-side search, sector,
   salary, and score filtering with offset pagination (`{ total: number, items: Job[] }`). Count and page share one
   SQL statement so the filtered CTE stays in scope and out-of-range pages retain the correct total.
   `supabase/tests/jobs_pagination.sql` verifies pagination, empty pages, literal locations, and browser filter/sort options.
@@ -177,13 +177,13 @@ version are exposed through `get_profile_embedding_state` without exposing the v
 Existing evaluations for jobs without vectors remain until those jobs receive a
 vector; this avoids losing match data during a staged migration.
 
-### Catalog domains and verified job locations
+### Catalog sectors and verified job locations
 
-The product exposes one shared catalog **domain**, derived from trusted employer
+The product exposes one shared catalog **sector**, derived from trusted employer
 metadata (`metadata_source` is curated, watchlist or verified). The physical
 `employers.sector` column remains for compatibility. Unknown employers contribute
 `Uncategorized`. Candidate role classifications stay private matching inputs and do
-not replace the catalog domain or mutate shared employer facts.
+not replace the catalog sector or mutate shared employer facts.
 
 `get_overview_metrics.categories` and `by_domain`, and `get_jobs_page.p_domain`, use
 this same shared classification. The overview `sectors` key and page `p_sector`

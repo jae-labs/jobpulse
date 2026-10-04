@@ -736,11 +736,11 @@ export type Database = {
       get_job_map: {
         Args: {
           p_bounds?: number[]
-          p_domain?: string
           p_location?: string
           p_min_match?: number
           p_salary?: string
           p_search?: string
+          p_sector?: string
           p_status?: string
           p_zoom?: number
         }
@@ -748,7 +748,6 @@ export type Database = {
       }
       get_jobs_page: {
         Args: {
-          p_domain?: string
           p_limit?: number
           p_location?: string
           p_min_match?: number

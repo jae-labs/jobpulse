@@ -28,8 +28,8 @@ const OverviewView = React.lazy(() =>
 const JobsView = React.lazy(() =>
   import('./components/jobs/JobsView').then((m) => ({ default: m.JobsView }))
 );
-const SourcesView = React.lazy(() =>
-  import('./components/sources/SourcesView').then((m) => ({ default: m.SourcesView }))
+const TaxCalculatorView = React.lazy(() =>
+  import('./components/tax/TaxCalculatorView').then((m) => ({ default: m.TaxCalculatorView }))
 );
 const PrivacyView = React.lazy(() =>
   import('./components/privacy/PrivacyView').then((m) => ({ default: m.PrivacyView }))
@@ -47,7 +47,6 @@ import { useAuthSession } from './hooks/useAuthSession';
 import { useErrorDismissal } from './hooks/useErrorDismissal';
 import {
   useOverviewMetricsQuery,
-  useSourcesQuery,
   useProfileQuery,
   useUpdateJobStatusMutation,
   useSaveProfileMutation,
@@ -88,13 +87,13 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const [customDbError, setCustomDbError] = useState<string | null>(null);
 
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobFilterStatus>('new');
-  const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>('all');
+  const [selectedSectorFilter, setSelectedSectorFilter] = useState<string>('all');
   const [selectedMinMatch, setSelectedMinMatch] = useState<number>(0);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const workspaceRef = useRef<HTMLElement>(null);
   useWorkspaceArrowScroll(activeTab, workspaceRef, isCommandMenuOpen);
 
-  // Global numeric keyboard navigation: 1 -> Overview, 2 -> Opportunities, 3 -> Data Sources, 4 -> Profile
+  // Global numeric keyboard navigation: 1 -> Overview, 2 -> Opportunities, 3 -> Tax Calculator
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -120,10 +119,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         setActiveTab('jobs');
       } else if (e.key === '3') {
         e.preventDefault();
-        setActiveTab('sources');
-      } else if (e.key === '4') {
-        e.preventDefault();
-        setActiveTab('profile');
+        setActiveTab('tax');
       }
     };
 
@@ -142,15 +138,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
     refetch: refetchOverview,
   } = useOverviewMetricsQuery(userId, isAuthorized && isOverviewNeeded);
 
-  const isSourcesNeeded = activeTab === 'sources';
-
-  const {
-    data: sources = [],
-    isLoading: isSourcesLoading,
-    error: sourcesQueryError,
-    refetch: refetchSources,
-  } = useSourcesQuery(isAuthorized && isSourcesNeeded);
-
   const {
     data: loadedProfile,
     isLoading: isProfileLoading,
@@ -166,11 +153,9 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const selectedJob = selectedJobState;
 
   const isUpdatingStatus = updateJobStatusMutation.isPending;
-  const isLoading = isOverviewNeeded
-    ? isOverviewLoading && !overviewMetrics
-    : isSourcesNeeded && isSourcesLoading;
+  const isLoading = isOverviewNeeded ? isOverviewLoading && !overviewMetrics : false;
 
-  const activeQueryError = isSourcesNeeded ? sourcesQueryError : isOverviewNeeded ? overviewQueryError : null;
+  const activeQueryError = isOverviewNeeded ? overviewQueryError : null;
   const { isDismissed: isDbErrorDismissed, dismiss: dismissDbError, reset: resetDbErrorDismissal } =
     useErrorDismissal(activeTab, activeQueryError, customDbError);
   const dbError =
@@ -240,16 +225,16 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   }, [deleteAccount]);
 
   const handleNavigateToJobs = useCallback(
-    (filters?: { status?: 'all' | JobFilterStatus; domain?: string; minMatch?: number; q?: string }) => {
+    (filters?: { status?: 'all' | JobFilterStatus; sector?: string; minMatch?: number; q?: string }) => {
       const params = new URLSearchParams();
       if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
-      if (filters?.domain && filters.domain !== 'all') params.set('domain', filters.domain);
+      if (filters?.sector && filters.sector !== 'all') params.set('sector', filters.sector);
       if (filters?.minMatch !== undefined && filters.minMatch > 0) params.set('match', String(filters.minMatch));
       if (filters?.q) params.set('q', filters.q);
       const queryString = params.toString();
       navigate(`/opportunities${queryString ? `?${queryString}` : ''}`);
       if (filters?.status) setSelectedStatusFilter(filters.status);
-      if (filters?.domain) setSelectedDomainFilter(filters.domain);
+      if (filters?.sector) setSelectedSectorFilter(filters.sector);
       if (filters?.minMatch !== undefined) setSelectedMinMatch(filters.minMatch);
     },
     [navigate]
@@ -257,7 +242,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
   const handleFilterReset = useCallback(() => {
     setSelectedStatusFilter('all');
-    setSelectedDomainFilter('all');
+    setSelectedSectorFilter('all');
     setSelectedMinMatch(0);
   }, []);
 
@@ -358,8 +343,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     onClick={() => {
                       resetDbErrorDismissal();
                       setCustomDbError(null);
-                      if (isSourcesNeeded) void refetchSources();
-                      else void refetchOverview();
+                      void refetchOverview();
                     }}
                   >
                     <span>{t('common.retry')}</span>
@@ -434,7 +418,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     onUpdateStatus={updateStatus}
                     isUpdating={isUpdatingStatus}
                     initialStatusFilter={selectedStatusFilter}
-                    initialDomainFilter={selectedDomainFilter}
+                    initialSectorFilter={selectedSectorFilter}
                     initialMinMatch={selectedMinMatch}
                     onFilterReset={handleFilterReset}
                     onOpenCommandMenu={handleOpenCommandMenu}
@@ -443,12 +427,9 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 </ErrorBoundary>
               )}
 
-              {activeTab === 'sources' && (
-                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadSources')}>
-                  <SourcesView
-                    sources={sources}
-                    notice={notice}
-                  />
+              {activeTab === 'tax' && (
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadTaxCalculator')}>
+                  <TaxCalculatorView />
                 </ErrorBoundary>
               )}
 

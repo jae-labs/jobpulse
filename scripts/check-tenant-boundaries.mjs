@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-const identityArgument = { jobById: 1, jobDetail: 1, sources: null, avatarUrl: 0 };
+const identityArgument = { jobById: 1, jobDetail: 1, avatarUrl: 0 };
 export function auditTenantSource(source, filename) {
   const tree = ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const issues = [];

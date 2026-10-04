@@ -3,7 +3,7 @@
     "overview": "Visão Geral",
     "opportunities": "Oportunidades",
     "watchlist": "Empresas Monitoradas",
-    "sources": "Fontes de Dados",
+    "taxCalculator": "Calculadora de Impostos",
     "profile": "Perfil",
     "accountSettings": "Configurações da conta",
     "signOut": "Sair",
@@ -89,6 +89,26 @@
     "noResults": "Nenhuma vaga correspondente.",
     "publicSector": "Setor público"
   },
+  "tax": {
+    "eyebrow": "PAYE irlandês · Orçamento 2026", "title": "Calculadora de impostos", "subtitle": "Explore uma estimativa de salário líquido anual ao alterar renda, pensão e situação familiar.", "reset": "Restaurar exemplo",
+    "disclaimer": "Estimativa para planejamento — não é aconselhamento fiscal, de folha de pagamento ou financeiro. Seu contracheque e o cálculo da Revenue são a fonte de verdade. Este modelo usa regras gerais de 2026 e não inclui todos os abatimentos, classes de PRSI ou circunstâncias individuais.", "yourDetails": "Seus dados",
+    "employmentIncome": "Renda de emprego", "employmentIncomeHelp": "Seu salário bruto anual esperado antes dos descontos.", "bonus": "Bônus / comissão", "bonusHelp": "Bônus ou comissão tributável esperada neste ano.", "taxableBenefits": "Benefícios tributáveis (BIK)", "taxableBenefitsHelp": "Benefício em espécie, como seguro-saúde pago pelo empregador ou carro da empresa. Esta estimativa o trata como renda tributável, mas não como pagamento em dinheiro.", "otherIncome": "Outra renda tributável", "otherIncomeHelp": "Por exemplo dividendos ou renda extra, tratados aqui como renda comum. Ganhos de capital e opções de ações exigem cálculo separado.", "rentalIncome": "Renda de aluguel", "rentalIncomeHelp": "Informe o lucro tributável estimado do aluguel, não o aluguel bruto.",
+    "filingStatus": "Regime de apuração", "filingStatusHelp": "A apuração conjunta pode compartilhar parte da faixa padrão e créditos entre cônjuges ou parceiros civis.", "single": "Solteiro / apuração separada", "marriedJoint": "Casado ou parceiro civil — apuração conjunta", "marriedSeparate": "Casado ou parceiro civil — apuração separada", "partnerIncome": "Renda de emprego do parceiro", "partnerIncomeHelp": "Renda bruta anual de emprego do cônjuge ou parceiro civil. Incluída somente na apuração conjunta.", "partnerAge": "Idade do parceiro no fim de 2026", "partnerAgeHelp": "A idade do parceiro define o limite próprio de contribuição previdenciária elegível para abatimento de imposto de renda.", "partnerPensionContribution": "Contribuição mensal de pensão / AVC do parceiro", "partnerPensionHelp": "O pagamento mensal de pensão e AVC do parceiro. A calculadora o anualiza e limita o abatimento pela idade, renda de emprego e limite de ganhos de €115.000.", "partnerPaye": "Parceiro é empregado PAYE",
+    "age": "Idade no fim de 2026", "ageHelp": "A idade define o limite de contribuição previdenciária elegível para abatimento neste estimador.", "numberOfChildren": "Número de filhos", "numberOfChildrenHelp": "Exibido para deixar o contexto familiar explícito. Um filho não gera automaticamente crédito de imposto de renda; créditos de cuidador e outros dependem de circunstâncias não informadas aqui.", "pensionContribution": "Contribuição mensal de pensão / AVC", "pensionHelp": "Seu pagamento mensal de pensão e AVC. A calculadora o anualiza e limita o abatimento pela porcentagem ligada à idade da Revenue e pelo limite de ganhos de €115.000.", "pensionReliefEligible": "Pensão elegível para abatimento de imposto de renda", "selfEmployed": "Autônomo / sem crédito de empregado", "selfEmployedHelp": "Isso desativa o crédito de empregado. O PRSI é mostrado com uma taxa simplificada; autoapuração e imposto preliminar não são modelados.",
+    "estimatedTakeHome": "Pagamento líquido", "fromGross": "De {{amount}} de renda em dinheiro antes de descontos", "monthlyNet": "Líquido mensal", "effectiveRate": "Taxa efetiva de descontos", "netPay": "Salário líquido", "incomeTax": "Imposto de renda", "prsi": "PRSI", "usc": "USC", "chartAmount": "Valor", "chartShare": "Participação", "fullBreakdown": "Detalhamento completo", "fullBreakdownHint": "Os valores anuais são divididos em valores mensais para planejamento.", "lineItem": "Item", "annual": "Anual", "monthly": "Mensal", "fortnightly": "Quinzenal", "weekly": "Semanal", "cashIncome": "Renda em dinheiro", "pension": "Pensão / AVC", "takeHome": "Salário líquido",
+    "periodSelector": "Escolha o período de cálculo", "understand": "Como funciona esta estimativa", "incomeTaxExplain": "20% é aplicado até sua faixa estimada de taxa padrão de {{band}}, depois 40% acima dela. Créditos fiscais reduzem o resultado.", "prsiUscExplain": "PRSI é o seguro social relacionado ao pagamento. USC é a cobrança social universal, calculada por faixas. Esta tela usa uma média anual de PRSI Classe A para empregado típico.", "stocksAndChildren": "Ações, filhos e outros abatimentos", "stocksAndChildrenExplain": "Ganhos de capital, opções de ações, despesas médicas, creche e muitos créditos exigem fatos que este estimador rápido não coleta. Consulte a Revenue ou um assessor antes de se basear no resultado.", "cheatSheet": "Guia de cálculo de 2026", "cheatSheetIntro": "As fórmulas e premissas de taxa usadas neste estimador. Todos os valores são anuais, exceto quando o controle indicar mensal.", "incomeTaxMath": "Imposto de renda", "taxableIncomeFormula": "Renda tributável = renda de emprego + bônus + BIK + outras rendas e aluguel + renda do parceiro, menos contribuições elegíveis de pensão / AVC.", "singleBand": "Solteiro: primeiros €44.000 a 20%; saldo a 40%.", "jointBand": "Apuração conjunta: €53.000 a 20%, mais a renda do menor ganhador até €35.000 (máximo €88.000); saldo a 40%.", "taxCreditsMath": "Créditos usados: €2.000 pessoal (€4.000 conjunto) e €2.000 por empregado PAYE.", "uscMath": "Cobrança Social Universal (USC)", "uscBandOne": "Primeiros €12.012: 0,5%.", "uscBandTwo": "Próximos €16.688: 2%.", "uscBandThree": "Próximos €41.344: 3%.", "uscBandFour": "Saldo: 8%.", "uscModelNote": "O estimador aplica USC separadamente à renda de cada parceiro e não modela taxas reduzidas por idade ou cartão médico.", "prsiMath": "Seguro social relacionado ao pagamento (PRSI)", "prsiModelNote": "O modelo usa média anual de 4,2375%: 4,20% até 30 de setembro de 2026 e 4,35% a partir de 1 de outubro.", "prsiScope": "É uma aproximação de taxa padrão e não modela limites semanais, subclasses ou isenções.", "pensionMath": "Pensão / AVC", "pensionMathFormula": "Abatimento elegível = o menor entre contribuições anuais e percentual da idade × o menor entre ganhos relevantes e €115.000. O abatimento reduz somente o imposto de renda, não USC ou PRSI.", "pensionAgeLimits": "Limites por idade: até 29 anos 15%; 30–39 20%; 40–49 25%; 50–54 30%; 55–59 35%; 60+ 40%.", "stocksCgt": "Ações e CGT (não calculado)", "cgtFormula": "Para a maioria das vendas de ações: CGT = 33% × ganhos líquidos tributáveis acima da isenção pessoal anual de €1.270.", "cgtScope": "Opções de ações podem ter regras diferentes de tributação do emprego, incluindo RTSO; esta calculadora não inclui imposto sobre ações.", "modelScope": "Escopo do modelo", "modelScopeDescription": "O resultado é uma estimativa anual de planejamento para os dados selecionados. Não modela todos os créditos, abatimentos, classes de PRSI, exceções de USC, período de folha ou planos de ações.", "sources": "Pesquisa e fontes", "sourcesHint": "O material oficial informa as premissas das taxas. As calculadoras externas são referências de comparação, não fontes de dados desta ferramenta.", "revenueBudget": "Resumo da Revenue do Orçamento 2026", "revenueBands": "Faixas de imposto da Revenue"
+    ,"references": "Referências", "formulas": "Fórmulas", "contractComparison": "Equivalente de diária contratual", "contractComparisonHint": "Ajuste os dias faturáveis e os custos para comparar uma vaga permanente com folha umbrella e empresa limitada.", "dailyRate": "Diária", "dailyRateHelp": "Valor cobrado para cada dia útil faturável.", "billableDays": "Dias faturáveis por ano", "billableDaysHelp": "Dias que você espera faturar após férias, feriados, licença médica, tempo sem projeto e outras pausas não faturáveis.", "umbrellaFee": "Taxa mensal de umbrella", "umbrellaFeeHelp": "Taxa administrativa da umbrella antes dos impostos da folha.", "accountancy": "Contabilidade anual", "accountancyHelp": "Custo típico de escrituração, contas anuais e declaração fiscal da empresa.", "insurance": "Seguro anual", "insuranceHelp": "Indenização profissional, responsabilidade civil e coberturas semelhantes.", "health": "Plano de saúde anual", "healthHelp": "Custo de saúde privada ou benefício pago pela renda do contratado.", "contractPension": "Pensão anual do contratado", "contractPensionHelp": "Poupança previdenciária paga pela renda do contratado; incluída como custo de caixa nesta comparação.", "permanent": "PAYE permanente", "permanentTakeHome": "Estimativa PAYE atual", "umbrella": "Folha umbrella", "umbrellaTakeHome": "De {{revenue}} de receita faturada, após taxa umbrella, saúde e pensão.", "limitedCompany": "Empresa limitada", "limitedCompanyNote": "{{revenue}} de receita menos {{costs}} de custos, depois 12,5% de imposto corporativo. É caixa da empresa após imposto, antes de salário ou dividendos do diretor."
+    ,"limitedCompanyPayNote": "Salário líquido pessoal PAYE sobre {{salary}} de remuneração do diretor. PRSI patronal de {{employerPrsi}} é pago pela empresa antes do salário."
+    ,"umbrellaPayNote": "Salário líquido pessoal PAYE sobre {{salary}} de salário umbrella. PRSI patronal de {{employerPrsi}} é financiado pela receita do contrato."
+    ,"annualIncome": "Renda anual", "contractAmount": "Valor do contrato", "deductionRate": "Taxa de dedução", "summaryDeductionRate": "Taxa de dedução"
+    ,"stockGains": "Ganhos líquidos com ações (CGT)", "stockGainsHelp": "Ganhos líquidos anuais na venda de ações após custos e perdas permitidos. Usa CGT, não PAYE; RSUs e opções de ações são renda de emprego e não são modeladas aqui.", "cgt": "Imposto sobre Ganhos de Capital (CGT)"
+    ,"stocksCgtCalculated": "Ações e CGT", "cgtFormula": "CGT = 33% × ganhos líquidos com ações acima da isenção pessoal anual de €1.270."
+    ,"taxableBenefitsMonthly": "Benefícios tributáveis mensais (BIK)"
+    ,"householdTakeHome": "Líquido", "partnerPayeIncome": "PAYE do parceiro"
+    ,"payeFormulas": "Fórmulas PAYE"
+    ,"contractFormulas": "Fórmulas do contrato", "contractRevenueFormulaTitle": "Valor do contrato", "contractRevenueFormula": "Valor do contrato = diária × dias faturáveis. Os dias faturáveis já devem excluir férias, feriados, licença médica e períodos sem projeto.", "umbrellaFormulaTitle": "Folha umbrella", "umbrellaFormula": "Orçamento da folha = valor do contrato − 12 × taxa umbrella − plano de saúde − pensão do contratado. Salário bruto umbrella = orçamento da folha ÷ 1,1125.", "payrollFormula": "PRSI patronal = salário bruto × 11,25%. As fórmulas PAYE acima calculam Imposto de renda, USC e PRSI do empregado sobre o salário bruto.", "limitedFormulaTitle": "Empresa limitada", "limitedFormula": "Orçamento da folha = valor do contrato − contabilidade − seguro − plano de saúde − pensão do contratado. Salário do diretor = orçamento da folha ÷ 1,1125, então PAYE é aplicado.", "limitedCtFormula": "Este modelo retira o valor disponível como salário, sem lucro tributável para imposto corporativo. Lucro comercial retido normalmente é tributado a 12,5% antes da retirada pessoal."
+    ,"matchPermanentPackage": "Igualar pacote permanente", "matchPermanentPackageHelp": "Vincula o plano de saúde e a contribuição previdenciária do contratado aos seus valores de BIK e pensão PAYE. Desative para testar outro pacote.", "selectedPermanentPackage": "Pacote permanente selecionado", "salaryAndBonus": "Salário e bônus", "benefitValue": "Valor de BIK / benefício", "employerPrsiEstimate": "Estimativa de PRSI patronal", "pensionFunding": "Financiamento de pensão", "selectedPackageValue": "Valor do pacote selecionado", "matchedRates": "Guia de diária equivalente", "matchedRatesHelp": "Diárias que entregam o mesmo valor total do domicílio após impostos, pensão e plano de saúde, usando os dias faturáveis e custos selecionados.", "umbrellaMatchedRate": "Diária equivalente via umbrella", "limitedMatchedRate": "Diária equivalente via empresa limitada", "cashToAccount": "Dinheiro na sua conta", "totalPersonalValue": "Valor pessoal total", "valueDifference": "Diferença para permanente", "abovePermanent": "Acima do permanente", "belowPermanent": "Abaixo do permanente"
+  },
   "overview": {
     "title": "Visão Geral",
     "trackedOpportunities": "Oportunidades",
@@ -145,7 +165,7 @@
     "searchTypingLocation": "local",
     "allSalaries": "Todas as Faixas Salariais",
     "disclosedOnly": "Apenas divulgados",
-    "allDomains": "Todos os Domínios",
+    "allSectors": "Todos os Domínios",
     "allLocations": "Todas as Localizações",
     "minMatch": "Match Mínimo",
     "salaryThreshold": "€{{amount}}k+",
@@ -203,7 +223,7 @@
     "mapLoading": "Carregando localizações verificadas…",
     "mapError": "Não foi possível carregar as localizações.",
     "mapTilesError": "Não foi possível carregar o mapa.",
-    "mapDomain": "Domínio: {{domain}}",
+    "mapSector": "Domínio: {{sector}}",
     "mapZoomIn": "Ampliar",
     "mapZoomOut": "Reduzir",
     "mapBrowseTitle": "Vagas neste local",
@@ -238,28 +258,6 @@
     "mapOfficeLayer": "Escritórios das empresas",
     "openDetails": "Abrir detalhes",
     "salary": "Salário"
-  },
-  "sources": {
-    "title": "Fontes de Dados",
-    "subtitle": "Feeds conectados de oportunidades, status de sincronização e telemetria.",
-    "portalTitle": "Fontes de Dados & Portais de Carreiras",
-    "portalSubtitle": "Status em tempo real e telemetria de feeds de vagas e páginas de empregadores.",
-    "stats": "{{sources}} fontes · {{opportunities}} oportunidades informadas",
-    "sourcesCount": "fontes",
-    "opportunitiesReported": "oportunidades relatadas",
-    "reportedCountNote": "Os totais informados pelas fontes podem incluir oportunidades duplicadas, desatualizadas ou ainda não ingeridas; por isso, não correspondem ao total do catálogo.",
-    "sortByOpportunities": "Ordenar por oportunidades",
-    "sortByName": "Ordenar por Nome",
-    "sortBySynced": "Ordenar por Última Sincronização",
-    "sortByLabel": "Ordenar fontes por",
-    "toggleSortDirection": "Alternar direção da ordenação",
-    "opportunitiesFound_one": "1 oportunidade encontrada",
-    "opportunitiesFound_other": "{{count}} oportunidades encontradas",
-    "noOpportunities": "0 oportunidades encontradas",
-    "lastSynced": "Sincronizado: {{date}}",
-    "statusActive": "Ativo",
-    "statusSyncing": "Sincronizando",
-    "statusError": "Erro"
   },
   "watchlist": {
     "title": "Empresas Monitoradas",
@@ -431,7 +429,7 @@
       "seniorityRulesTitle": "Regras de senioridade",
       "addTitleKeyword": "ex.: sênior, líder, principal",
       "weights": {
-        "domain": {
+        "sector": {
           "title": "Compatibilidade de domínio e especialização",
           "description": "Mede o alinhamento com seus domínios preferidos."
         },
@@ -528,13 +526,13 @@
     "unexpectedRenderingError": "Ocorreu um erro inesperado ao renderizar esta seção.",
     "unableToLoadOverview": "Não foi possível carregar o painel geral",
     "unableToLoadOpportunities": "Não foi possível carregar o pipeline de oportunidades",
-    "unableToLoadSources": "Não foi possível carregar as fontes de dados",
     "unableToLoadProfile": "Não foi possível carregar as configurações de perfil",
     "unableToLoadCategoryChart": "Não foi possível carregar o gráfico de categorias",
     "unableToLoadPipelineChart": "Não foi possível carregar o gráfico de pipeline",
     "unableToLoadRelevanceChart": "Não foi possível carregar o gráfico de distribuição de relevância",
     "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências",
-    "unableToLoadPrivacy": "Não foi possível carregar dados e privacidade"
+    "unableToLoadPrivacy": "Não foi possível carregar dados e privacidade",
+    "unableToLoadTaxCalculator": "Não foi possível carregar a calculadora de impostos"
   },
   "scoring": {
     "matchingPending": "Perfil salvo. A preparação das correspondências está pendente.",

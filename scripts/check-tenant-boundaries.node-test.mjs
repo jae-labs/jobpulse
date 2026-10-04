@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import { auditTenantSource } from './check-tenant-boundaries.mjs';
 
 const imports = "import { useQuery as query } from '@tanstack/react-query'; import { queryKeys as keys } from '../lib/queryKeys';";
-test('accepts a session-scoped factory and explicitly shared source key',() => {
-  assert.deepEqual(auditTenantSource(`${imports} query({queryKey:keys.profile(userId)}); query({queryKey:keys.sources()});`,'src/hooks/example.ts'),[]);
+test('accepts a session-scoped factory',() => {
+  assert.deepEqual(auditTenantSource(`${imports} query({queryKey:keys.profile(userId)});`,'src/hooks/example.ts'),[]);
 });
 test('rejects raw and missing-identity query keys, including import aliases',() => {
   for (const expression of ["['profile']",'keys.profile()','keys.profile(undefined)','keys.jobDetail(jobId)']) {
@@ -23,9 +23,8 @@ test('rejects new Supabase clients, privileged keys and Auth admin APIs in brows
   assert.deepEqual(auditTenantSource("import {createClient} from '@supabase/supabase-js';",'src/lib/supabase.ts'),[]);
 });
 
-test('rejects tenant placeholder retention while allowing shared source placeholders', () => {
+test('rejects tenant placeholder retention', () => {
   assert.ok(auditTenantSource(`${imports} query({queryKey:keys.profile(userId),placeholderData:previous=>previous});`,'src/hooks/example.ts').length);
-  assert.deepEqual(auditTenantSource(`${imports} query({queryKey:keys.sources(),placeholderData:previous=>previous});`,'src/hooks/example.ts'),[]);
 });
 
 test('rejects telemetry SDK imports outside the privacy boundary', () => {

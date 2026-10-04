@@ -8,7 +8,7 @@ const cases = {
   scoringState: (uid: string) => queryKeys.scoringState(uid),
   overviewMetrics: (uid: string) => queryKeys.overviewMetrics(uid),
   jobMapPreview: (uid: string) => queryKeys.jobMapPreview(uid, [101, 102]),
-  jobMap: (uid: string) => queryKeys.jobMap(uid, { domain: "same domain" }),
+  jobMap: (uid: string) => queryKeys.jobMap(uid, { sector: "same sector" }),
   jobsPage: (uid: string) => queryKeys.jobsPage(uid, { search: 'same query' }),
   jobsSearchPage: (uid: string) => queryKeys.jobsSearchPage(uid, { search: 'same query' }),
   scoringPreviewJobs: (uid: string) => queryKeys.scoringPreviewJobs(uid),
@@ -22,7 +22,7 @@ const cases = {
 };
 describe('tenant cache contract', () => {
   it('requires an explicit isolation test for every new key factory', () => {
-    expect(Object.keys(queryKeys).sort()).toEqual([...Object.keys(cases), 'sources'].sort());
+    expect(Object.keys(queryKeys).sort()).toEqual(Object.keys(cases).sort());
   });
   for (const [name, key] of Object.entries(cases)) {
     it(`${name} cannot share a cache entry between identities`, () => {

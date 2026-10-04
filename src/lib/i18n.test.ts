@@ -20,7 +20,7 @@ describe('i18n Internationalization', () => {
     expect(i18n.t('nav.opportunities')).toBe('Opportunities');
     expect(i18n.t('common.apply')).toBe('Apply');
     expect(i18n.t('status.new')).toBe('New');
-    expect(i18n.t('sources.portalTitle')).toBe('Data Sources & Career Portals');
+    expect(i18n.t('nav.taxCalculator')).toBe('Tax Calculator');
     expect(i18n.t('jobs.layoutSplit')).toBe('Split');
     expect(i18n.t('jobs.layoutList')).toBe('List');
     expect(i18n.t('charts.categoryBreakdown.title')).toBe('Job Distribution');
@@ -32,7 +32,7 @@ describe('i18n Internationalization', () => {
     expect(i18n.t('common.apply')).toBe('Candidatar-se');
     expect(i18n.t('status.new')).toBe('Novo');
     expect(i18n.t('status.applied')).toBe('Candidatou-se');
-    expect(i18n.t('sources.portalTitle')).toBe('Fontes de Dados & Portais de Carreiras');
+    expect(i18n.t('nav.taxCalculator')).toBe('Calculadora de Impostos');
     expect(i18n.t('jobs.layoutSplit')).toBe('Dividido');
     expect(i18n.t('jobs.layoutList')).toBe('Lista');
     expect(i18n.t('charts.categoryBreakdown.title')).toBe('Distribuição de Vagas');
