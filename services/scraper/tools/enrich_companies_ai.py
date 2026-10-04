@@ -124,7 +124,6 @@ def apply_company_enrichment(
         # 1. Update employer
         retry_supabase(lambda: client.table("employers").update(employer_update).eq("id", eid).execute())
 
-
     return {
         "id": eid,
         "name": name,
@@ -218,7 +217,9 @@ def main() -> None:
                     f"Office leads in Ireland={res['office_leads_count']}"
                 )
                 for off in res["office_leads"]:
-                    print(f"    - {off['name']}: {off['address']}, {off['city']} ({off['latitude']}, {off['longitude']})")
+                    print(
+                        f"    - {off['name']}: {off['address']}, {off['city']} ({off['latitude']}, {off['longitude']})"
+                    )
 
     summary = {
         "timestamp": datetime.now(timezone.utc).isoformat(),

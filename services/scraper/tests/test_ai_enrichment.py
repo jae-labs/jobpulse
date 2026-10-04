@@ -62,11 +62,31 @@ def test_enrich_companies_with_ai_empty() -> None:
 @patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
 @patch("pipeline.ai_enrichment.subprocess.run")
 def test_enrichment_discards_invalid_office_coordinates(mock_run: MagicMock, mock_which: MagicMock) -> None:
-    mock_run.return_value = SimpleNamespace(stdout=json.dumps({"structured_output": {"companies": [{
-        "name": "Example", "sector": "Software & SaaS", "size": "11-50", "offices": [{
-            "address": "Example Street", "city": "Dublin", "latitude": 40.7128, "longitude": -74.006,
-        }],
-    }]}}), stderr="", returncode=0)
+    mock_run.return_value = SimpleNamespace(
+        stdout=json.dumps(
+            {
+                "structured_output": {
+                    "companies": [
+                        {
+                            "name": "Example",
+                            "sector": "Software & SaaS",
+                            "size": "11-50",
+                            "offices": [
+                                {
+                                    "address": "Example Street",
+                                    "city": "Dublin",
+                                    "latitude": 40.7128,
+                                    "longitude": -74.006,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
+        ),
+        stderr="",
+        returncode=0,
+    )
 
     assert enrich_companies_with_ai(["Example"], agy_path="/fake/agy")[0]["offices"] == []
 
