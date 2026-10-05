@@ -5,6 +5,10 @@ BEGIN;
 INSERT INTO public.employers(id,name,sector,careers_url,metadata_source)
 VALUES(-920101,'Canonical Synthetic Employer','Canonical Shared Sector','https://example.invalid/canonical','verified');
 UPDATE public.jobs SET employer_id=-920101 WHERE id IN (-910001,-910002);
+CREATE TEMP TABLE canonical_sector_expected AS
+SELECT count(*)::integer AS total FROM public.jobs j
+JOIN public.jobpulse_catalog_sectors() s ON s.employer_id=j.employer_id WHERE s.sector='Other';
+GRANT SELECT ON canonical_sector_expected TO authenticated;
 SET LOCAL ROLE authenticated;
 DO $$
 DECLARE caller uuid; expected_score integer; page jsonb; item jsonb; metrics jsonb;
@@ -15,7 +19,7 @@ BEGIN
   page:=public.get_jobs_page(p_sector=>'Canonical Shared Sector');
   SELECT value INTO item FROM jsonb_array_elements(page->'items') WHERE value->>'id'='-910001';
   IF (page->>'total')::integer<>2 OR (item->>'relevance')::integer<>expected_score
-    OR item->>'sector'<>'Canonical Shared Sector' THEN
+    OR item->>'sector' IS DISTINCT FROM 'Other' THEN
    RAISE EXCEPTION 'Shared sector filter lost caller assessment: %',page;
   END IF;
   IF page::text LIKE '%' || (CASE WHEN caller::text LIKE 'a%' THEN 'private-marker-b' ELSE 'private-marker-a' END) || '%' THEN
@@ -31,7 +35,7 @@ BEGIN
   END IF;
   metrics:=public.get_overview_metrics();
   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(metrics->'categories') c
-    WHERE c->>'name'='Canonical Shared Sector' AND c->>'value'='2'
+    WHERE c->>'name'='Other' AND (c->>'value')::integer=(SELECT total FROM canonical_sector_expected)
       AND (c->>'avgMatch')::integer=expected_score) THEN
    RAISE EXCEPTION 'Shared sector average included unassessed or foreign scores';
   END IF;

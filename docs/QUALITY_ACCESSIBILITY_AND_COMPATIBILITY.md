@@ -11,6 +11,7 @@ JobPulse targets WCAG 2.1 AA across desktop and mobile.
   - `ArrowLeft` / `ArrowRight`: Advance or rewind job pipeline status (`new` ↔ `applied` ↔ `interviewing` ↔ `rejected`). Archive and Saved remain separate controls.
   - `Escape`: Close detail inspection sheet/drawer or dismiss modals.
   - `Cmd+K` / `Ctrl+K`: Global command palette.
+  - Overview resize handles: arrow keys adjust width/height, Home restores the default size, and Escape cancels a pointer resize. Drag handles retain sortable keyboard navigation.
 - Maintain 4.5:1 text contrast and 3:1 contrast for large text and control boundaries.
 - Respect `prefers-reduced-motion`; give interactive chart targets names, focus states, and keyboard activation.
 - Test layouts down to 320px and current and prior Chrome, Edge, Firefox, and Safari releases, including mobile browsers.

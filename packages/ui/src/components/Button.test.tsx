@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Button } from '@jae-labs/ui';
+import { Button } from './Button';
 
 describe('Button', () => {
   it('renders with default variant and size', () => {

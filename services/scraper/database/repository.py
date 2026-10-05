@@ -21,7 +21,7 @@ from config.loader import (
 from database.client import get_supabase, retry_supabase, utc_now
 from database.embeddings import prepare_embeddings
 from database.records import response_count, response_records
-from engine.description_quality import has_description_body, needs_description_repair
+from engine.description_quality import has_closed_notice, has_description_body, needs_description_repair
 from engine.salary import extract_salary_from_context
 from engine.text_cleaner import clean_description_text, normalize_location
 from engine.validators import is_valid_job_title, is_valid_location
@@ -173,20 +173,7 @@ def _is_ingestable_job(job: dict[str, Any]) -> bool:
     if not is_valid_location(job.get("location", ""), job.get("title", ""), job.get("url", "")):
         return False
 
-    desc_l = (job.get("description") or "").lower()
-    if any(
-        p in desc_l
-        for p in [
-            "position has been filled",
-            "job is no longer available",
-            "position has expired",
-            "job is closed",
-            "no longer accepting applications",
-        ]
-    ):
-        return False
-
-    return True
+    return not has_closed_notice(job.get("description") or "")
 
 
 def _enrich_job(job: dict[str, Any]) -> dict[str, Any]:

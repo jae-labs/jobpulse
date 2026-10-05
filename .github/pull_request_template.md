@@ -4,7 +4,8 @@ Describe the user-visible problem and resulting behavior.
 
 ## Validation
 
-- [ ] `npm run check` passes.
+- [ ] `make check` passes (frontend and scraper).
+- [ ] UI package changes pass `npm run build-storybook`.
 - [ ] `npm run db:test:tenancy` passes against the current local migrations.
 - [ ] New public relations/browser RPCs are classified in the tenant contract.
 - [ ] Changes to private data paths have owner-success and foreign-denial tests with two authorized members

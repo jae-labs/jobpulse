@@ -295,7 +295,7 @@ export function getUserCVSignedUrl(
 }
 
 export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-export const MAX_DOCUMENTS_PER_TYPE = 10;
+const MAX_DOCUMENTS_PER_TYPE = 10;
 
 type DocumentSaveResult = { success: boolean; error?: string };
 export type DocumentUpload = { file: File; description?: string };

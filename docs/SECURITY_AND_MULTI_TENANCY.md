@@ -116,14 +116,17 @@ stale local database fails the push gate. Do not bypass it to ship a feature.
 
 The **Tenant Isolation Guardrails** job runs on every PR to `main`, including
 frontend-only changes, against a clean database with every migration applied. The
-migration job auto-discovers all top-level `supabase/tests/*.sql`, so adding a suite
+same job auto-discovers all top-level `supabase/tests/*.sql`, so adding a suite
 does not require editing a hardcoded CI file list.
 
 In GitHub's ruleset/branch protection for `main`, require **Tenant Isolation
-Guardrails**, **Supabase Migration Lint**, **Code Quality & Build Check**, and
+Guardrails**, **Code Quality & Build Check**, and
 **Scraper Quality & Tests** before merging. Require an independent review, dismiss
 stale approvals after new commits, and restrict bypass permissions. The checked-in
-workflow does not configure these repository settings; hooks can be skipped locally
+workflow does not configure these repository settings. When adopting the consolidated
+job, remove the retired **Supabase Migration Lint** required status only after the
+replacement Tenant Isolation Guardrails run passes; otherwise merges wait forever.
+Migration lint and generated-type parity now execute inside that job. Hooks can be skipped locally
 and a CI failure only blocks merging when the status is required by the ruleset.
 
 Existing failures are release blockers. Do not grandfather a known leak into the

@@ -28,7 +28,7 @@ ENRICHMENT_SCHEMA: dict[str, Any] = {
                     "sector": {"type": "string"},
                     "size": {
                         "type": "string",
-                        "enum": list(VALID_SIZES),
+                        "enum": ["", *VALID_SIZES],
                     },
                     "description": {"type": "string"},
                     "website": {"type": "string"},
@@ -133,12 +133,12 @@ def enrich_companies_with_ai(
     prompt = (
         f"You are an expert Irish labor market and corporate registry research system.\n"
         f"For the following employers operating or hiring in Ireland: {companies_str}\n\n"
-        f"Extract strictly verified factual details for each employer:\n"
+        f"Return unverified research leads, not evidence or authoritative catalog facts. Never guess missing data.\n"
         f"1. sector: Map to an accurate industry/domain (e.g. 'Fintech & Payments', 'Cloud & Platform Engineering', "
         f"'Data & AI', 'Cybersecurity', 'Biopharma & Life Sciences', 'Software & SaaS', 'Public Sector & Higher Ed', "
         f"'Telecommunications', 'E-commerce & Retail', etc.).\n"
         f"2. size: Global employee headcount bracket strictly chosen from: "
-        f"['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'].\n"
+        f"['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+']; use '' if unknown.\n"
         f"3. description: A concise 1-2 sentence description of their core business and offerings.\n"
         f"4. website: Official company website URL (e.g. 'https://stripe.com').\n"
         f"5. offices: Return at most three high-confidence, distinct physical offices, campuses, R&D labs, or manufacturing "
@@ -198,7 +198,7 @@ def enrich_companies_with_ai(
         sector = item.get("sector") or "General"
         size = item.get("size")
         if size not in VALID_SIZES:
-            size = "51-200"
+            size = ""
 
         desc = (item.get("description") or "").strip()
         website = (item.get("website") or "").strip()

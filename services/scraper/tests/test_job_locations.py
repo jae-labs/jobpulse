@@ -1,7 +1,6 @@
 import pytest
 
 from pipeline.job_locations import verify_location
-from tools.map_programme_domains import programme_sponsor
 
 
 class Provider:
@@ -43,19 +42,3 @@ def test_bad_geocodes_remain_unresolved(row):
 
 def test_equally_likely_distant_places_are_ambiguous():
     assert verify_location(Provider([result(), result(lat=30)]), "Dublin", "synthetic")["status"] == "ambiguous"
-
-
-def test_programme_domain_requires_every_vacancy_to_name_the_same_sponsor():
-    job = {
-        "company": "Example Community Ltd",
-        "source": "JobsIreland.ie",
-        "title": "Gardener - CE Scheme - Example Community Ltd",
-    }
-    assert programme_sponsor("Example Community Ltd", [job])
-    assert not programme_sponsor("Example Community Ltd", [job, {**job, "title": "Gardener"}])
-    assert not programme_sponsor("Example Community Ltd", [{**job, "company": "Another Company"}])
-    assert not programme_sponsor("Example Community Ltd", [{**job, "source": "WhatJobs Ireland"}])
-    assert not programme_sponsor(
-        "JobsIreland Employer",
-        [{**job, "company": "JobsIreland Employer", "title": "CE Scheme - JobsIreland Employer"}],
-    )

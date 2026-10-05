@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { InvitationsModal } from './InvitationsModal';
+import { MemberManagementModal } from './MemberManagementModal';
 import type { InvitationItem } from '../../hooks/useQueries';
 
 const mockMutateAsync = vi.fn();
@@ -44,7 +44,7 @@ vi.mock('../../hooks/useQueries', () => ({
   }),
 }));
 
-describe('InvitationsModal', () => {
+describe('MemberManagementModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.assign(navigator, {
@@ -56,15 +56,15 @@ describe('InvitationsModal', () => {
 
   it('renders modal when open with invite form and list', () => {
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"
       />
     );
 
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/Invite/i);
-    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent(/^Invitations$/i);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Invite and manage members');
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Invitations and members');
     expect(screen.getByText('teammate@example.com')).toBeInTheDocument();
     expect(screen.getByText('peer@example.com')).toBeInTheDocument();
   });
@@ -79,7 +79,7 @@ describe('InvitationsModal', () => {
     });
 
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"
@@ -114,7 +114,7 @@ describe('InvitationsModal', () => {
     });
 
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"
@@ -149,7 +149,7 @@ describe('InvitationsModal', () => {
     });
 
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"
@@ -178,7 +178,7 @@ describe('InvitationsModal', () => {
     });
 
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"
@@ -207,7 +207,7 @@ describe('InvitationsModal', () => {
     mockRevokeMutateAsync.mockResolvedValueOnce({ success: true });
 
     render(
-      <InvitationsModal
+      <MemberManagementModal
         isOpen={true}
         onClose={vi.fn()}
         currentUserId="admin@example.com"

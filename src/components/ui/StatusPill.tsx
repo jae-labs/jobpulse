@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { JobStatus } from '../../types/job';
 import { Pill } from '@jae-labs/ui';
-import { cn } from '../../lib/utils';
+import { cn } from '@jae-labs/ui';
 import { statusPillTone } from '../../lib/statusTone';
 
 interface StatusPillProps {

@@ -6,10 +6,7 @@ import { ProfileView } from './ProfileView';
 import type { Job, Profile } from '../../types/job';
 import i18n from '../../lib/i18n';
 
-const exportAccount = vi.hoisted(() => ({ isPending: false, isError: false, mutateAsync: vi.fn().mockResolvedValue(true) }));
-
 vi.mock('../../hooks/useQueries', () => ({
-  useExportAccountMutation: () => exportAccount,
   useUserCvsQuery: () => ({ data: [], isLoading: false }),
   useUserCoverLettersQuery: () => ({ data: [], isLoading: false }),
   useSaveCvMutation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -47,8 +44,6 @@ describe('ProfileView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    exportAccount.isPending = false;
-    exportAccount.isError = false;
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -66,28 +61,17 @@ describe('ProfileView', () => {
         <ProfileView
           profile={mockProfile}
           onSaveProfile={vi.fn().mockResolvedValue({ success: true })}
-          onDeleteAccount={vi.fn().mockResolvedValue(undefined)}
           {...props}
         />
       </QueryClientProvider>
     );
   };
 
-  it('exports account data from Profile before the Danger zone', async () => {
-    renderProfileView({ userEmail: 'candidate@example.test' });
-    const button = screen.getByRole('button', { name: 'Export my account data' });
-    const danger = screen.getByRole('heading', { name: 'Danger zone' });
-    expect(button.compareDocumentPosition(danger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    await act(async () => { fireEvent.click(button); });
-    expect(exportAccount.mutateAsync).toHaveBeenCalledTimes(1);
-  });
-
-  it('disables export while pending and shows a recoverable failure', () => {
-    exportAccount.isPending = true;
-    exportAccount.isError = true;
-    renderProfileView({ userEmail: 'candidate@example.test' });
-    expect(screen.getByRole('button', { name: 'Loading...' })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Export failed. Please try again.');
+  it('keeps account export and deletion on the Data and privacy page', () => {
+    renderProfileView();
+    expect(screen.queryByRole('button', { name: 'Export my account data' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Danger zone' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete account' })).not.toBeInTheDocument();
   });
 
   it('renders loading state when isLoading is true', () => {
@@ -239,23 +223,6 @@ describe('ProfileView', () => {
     }]);
   });
 
-  it('requires the account email before deleting the signed-in account', async () => {
-    const onDeleteAccount = vi.fn().mockResolvedValue(undefined);
-    renderProfileView({ userEmail: 'alex@example.com', onDeleteAccount });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    const confirmButton = screen.getAllByRole('button', { name: 'Delete account' }).at(-1)!;
-    expect(confirmButton).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText('Enter alex@example.com to confirm'), {
-      target: { value: 'alex@example.com' },
-    });
-    expect(confirmButton).toBeEnabled();
-    fireEvent.click(confirmButton);
-
-    expect(onDeleteAccount).toHaveBeenCalledWith('alex@example.com');
-  });
-
   it('triggers onSaveProfile when input value is edited after debounce', async () => {
     vi.useFakeTimers();
     const handleSave = vi.fn().mockResolvedValue({ success: true });
@@ -356,15 +323,14 @@ describe('ProfileView', () => {
     expect(screen.getByRole('heading', { name: 'Scoring Weights & Point Distribution' })).toBeInTheDocument();
   });
 
-  it('places scoring weights directly before the danger zone', () => {
-    renderProfileView({ userEmail: 'alex@example.com' });
+  it('keeps scoring weights at the end of Profile', () => {
+    renderProfileView();
     const exclusion = screen.getByRole('heading', { name: 'Mismatch / Exclusion Rules' });
     const disqualifiers = screen.getByRole('heading', { name: 'Disqualifiers & Dealbreakers' });
     const weights = screen.getByRole('heading', { name: 'Scoring Weights & Point Distribution' });
-    const danger = screen.getByRole('heading', { name: 'Danger zone' });
 
     expect(exclusion.compareDocumentPosition(disqualifiers) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(disqualifiers.compareDocumentPosition(weights) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(weights.compareDocumentPosition(danger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('heading', { level: 2 }).at(-1)).toBe(weights);
   });
 });

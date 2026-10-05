@@ -764,6 +764,13 @@ export type Database = {
       get_overview_metrics: { Args: never; Returns: Json }
       get_profile_embedding_state: { Args: never; Returns: Json }
       is_authorized_user: { Args: never; Returns: boolean }
+      jobpulse_catalog_sectors: {
+        Args: never
+        Returns: {
+          employer_id: number
+          sector: string
+        }[]
+      }
       jobpulse_has_literal_skill: {
         Args: { p_skill: string; p_text: string }
         Returns: boolean
@@ -772,6 +779,7 @@ export type Database = {
         Args: { input: string }
         Returns: string
       }
+      jobpulse_sector_group: { Args: { p_sector: string }; Returns: string }
       merge_duplicate_catalog_jobs: {
         Args: {
           p_dedupe_key: string

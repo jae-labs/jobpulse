@@ -30,10 +30,20 @@ Set `enabled: false` to pause it. Run `make scrape-validate` from the repository
 
 For local development, start the Supabase stack with `make dev`. If running the scraper separately, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `services/scraper/.env`. Keep the service role key out of the frontend and Git.
 
+For a fresh scraper environment (Python 3.11+; CI baseline 3.12):
+
+```bash
+cd services/scraper
+uv sync --locked --python 3.12
+uv run --locked playwright install chromium
+```
+
+Chromium is required by browser-backed sources; install its OS dependencies too on Linux if prompted.
+
 Python dependencies are managed by `pyproject.toml` and `uv.lock`; commands use `uv run --locked`.
 Candidate scoring runs in PostgreSQL; the scraper does not load profile or scoring rules.
 Vacancies are retained when a source is old, empty or unavailable. The former
 `--prune-only` command has been removed; retirement needs source-specific closure evidence.
-Existing jobs need a one-time embedding backfill when migrating from the former scraper scoring path.
+Use backfill only for missing vectors or an intentional model migration; it is not a routine startup step.
 
 After schema changes, run `make db-types` from the repository root to regenerate both language models.

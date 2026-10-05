@@ -14,7 +14,7 @@ DECLARE
   pipeline_jobs integer;
   relevance_jobs integer;
 BEGIN
-  IF NOT (metrics ?& ARRAY['total', 'high_fit', 'counts', 'stage_averages', 'categories', 'relevance_distribution', 'top_skills']) THEN
+  IF NOT (metrics ?& ARRAY['total', 'companies', 'high_fit', 'counts', 'stage_averages', 'categories', 'relevance_distribution', 'top_skills']) THEN
     RAISE EXCEPTION 'Overview metrics response is missing chart fields';
   END IF;
 

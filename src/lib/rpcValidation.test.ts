@@ -26,7 +26,7 @@ describe('employer RPC boundary', () => {
   ])('rejects malformed employer fields: %j', (invalid) => {
     expect(() => validateJobsPageResult({ total: 1, items: [{ ...job, ...invalid }] })).toThrow();
   });
-  it('accepts unknown coordinates and separate sector/sector aggregates', () => {
+  it('accepts unknown coordinates and prefers shared sector aggregates', () => {
     expect(validateJobsPageResult({ total: 1, items: [{ ...job, latitude: null, longitude: null }] }).items[0].latitude).toBeNull();
     const metrics = { total: 1, evaluated: 0, high_fit: 0, counts: { new: 1 }, locations: [],
       categories: [{ name: 'Uncategorized', value: 1, avgMatch: 0 }],
@@ -47,4 +47,73 @@ describe('office map boundary', () => {
     expect(() => validateJobMapResult({ ...result, office_pins: [{ ...pin, latitude: 91 }] })).toThrow();
     expect(() => validateJobMapResult({ ...result, office_truncated: 'false' })).toThrow();
   });
+});
+describe('RPC boundary validation', () => {
+  it('validates the overview chart metrics contract', () => {
+    const raw = {
+      total: 42, evaluated: 12, locations: [],
+      high_fit: 10,
+      counts: { new: 30, applied: 12 },
+      stage_averages: { new: 78, applied: 91 },
+      categories: [{ name: 'Engineering', value: 25, avgMatch: 88 }],
+      relevance_distribution: [{ range: '80-89%', min: 80, max: 89, count: 12 }],
+      top_skills: [],
+    };
+    const validated = validateOverviewMetrics(raw);
+    expect(validated.total).toBe(42);
+    expect(validated.high_fit).toBe(10);
+    expect(validated.counts.new).toBe(30);
+    expect(validated.stage_averages.applied).toBe(91);
+    expect(validated.categories[0].name).toBe('Engineering');
+    expect(validated.relevance_distribution[0].count).toBe(12);
+    expect(validated.companies).toBeUndefined();
+    expect(validateOverviewMetrics({ ...raw, companies: 2599 }).companies).toBe(2599);
+    expect(validateOverviewMetrics({ ...raw, companies: 0 }).companies).toBe(0);
+    for (const companies of [-1, 1.5, '2599', null, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => validateOverviewMetrics({ ...raw, companies })).toThrow('Invalid overview company count');
+    }
+  });
+
+  it('rejects an overview response missing chart data', () => {
+    expect(() => validateOverviewMetrics({ total: 12, applied: 4, by_sector: {} }))
+      .toThrow('Invalid overview metrics response: missing chart data');
+  });
+
+  it('throws error when overview metrics payload is not an object', () => {
+    expect(() => validateOverviewMetrics(null)).toThrow('Invalid overview metrics response');
+    expect(() => validateOverviewMetrics('invalid')).toThrow('Invalid overview metrics response');
+  });
+
+  it('validates and sanitizes jobs page items', () => {
+    const raw = {
+      total: 1,
+      items: [
+        {
+          id: 123,
+          title: 'Staff Architect', location: '', url: 'https://example.test', source: 'test', last_seen_at: '2026-10-01T00:00:00Z',
+          company: 'Tech Co',
+          status: 'interviewing',
+          relevance: 85,
+          matched_skills: ['AWS', 'TypeScript'],
+        },
+      ],
+    };
+    const result = validateJobsPageResult(raw);
+    expect(result.total).toBe(1);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe(123);
+    expect(result.items[0].title).toBe('Staff Architect');
+    expect(result.items[0].status).toBe('interviewing');
+    expect(result.items[0].relevance).toBe(85);
+    expect(result.items[0].matched_skills).toEqual(['AWS', 'TypeScript']);
+  });
+
+  it('rejects malformed item shape, nonfinite numbers and missing arrays', () => {
+    for (const items of [[null], [{ id: '1', title: 'Job' }], [{ id: 1, matched_skills: ['valid',42] }]]) {
+      expect(() => validateJobsPageResult({ total: 1, items })).toThrow();
+    }
+    expect(() => validateJobsPageResult({ total: NaN, items: [] })).toThrow();
+    expect(() => validateOverviewMetrics({ total: 1, evaluated: 1, high_fit: 0, counts: { new: 1 }, locations: [], categories: [null], relevance_distribution: [], top_skills: [] })).toThrow();
+  });
+
 });

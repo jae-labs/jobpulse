@@ -8,10 +8,8 @@ from typing import Any
 try:
     from playwright.sync_api import sync_playwright
 
-    HAS_PLAYWRIGHT = True
 except ImportError:
     sync_playwright = None
-    HAS_PLAYWRIGHT = False
 
 
 COOKIE_BANNER_SELECTORS = [

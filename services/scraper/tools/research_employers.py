@@ -10,7 +10,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -86,7 +86,7 @@ def main() -> None:
         [] if args.source == "all" else (list(SOURCES.values()) if args.source == "both" else [SOURCES[args.source]]),
     )
     evidence = load_evidence_registry(args.registry)
-    report: dict[str, Any] = {"checked_on": datetime.now(timezone.utc).isoformat(), "companies": [], "writes": 0}
+    report: dict[str, Any] = {"checked_on": datetime.now(UTC).isoformat(), "companies": [], "writes": 0}
     failures = 0
     args.report.parent.mkdir(parents=True, exist_ok=True)
     with httpx.Client(

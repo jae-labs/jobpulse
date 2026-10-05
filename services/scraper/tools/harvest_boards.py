@@ -40,7 +40,6 @@ def load_candidate_seeds(seed_path: Path) -> list[dict[str, Any]]:
 def harvest_boards(
     seeds: list[dict[str, Any]],
     max_workers: int = 10,
-    timeout: int = 15,
 ) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
     """Test candidate boards concurrently for active Irish opportunities."""
     active_results: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []

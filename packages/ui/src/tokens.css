@@ -202,6 +202,8 @@
 .ds-sheet-overlay[data-state=closed] { animation: ds-content-enter var(--ds-motion-fast) var(--ds-motion-ease) reverse both; }
 .ds-sheet-content { --ds-sheet-offset: 0.5rem; }
 .ds-sheet-content[data-side=left] { --ds-sheet-offset: -0.5rem; }
+.ds-sheet-content[data-motion=slide] { --ds-sheet-offset: 100%; }
+.ds-sheet-content[data-motion=slide][data-side=left] { --ds-sheet-offset: -100%; }
 .ds-sheet-content[data-state=open] { animation: ds-sheet-enter var(--ds-motion-enter) var(--ds-motion-ease) both; }
 .ds-sheet-content[data-state=closed] { animation: ds-sheet-enter var(--ds-motion-fast) var(--ds-motion-ease) reverse both; }
 @keyframes ds-sheet-enter { from { opacity: 0; transform: translateX(var(--ds-sheet-offset)); } to { opacity: 1; transform: translateX(0); } }

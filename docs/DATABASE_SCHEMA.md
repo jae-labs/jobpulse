@@ -129,7 +129,7 @@ Access is strictly invite-only:
 
 ## Account Deletion
 
-The Profile danger zone calls the authenticated `delete-account` Edge Function:
+The Data and privacy danger zone calls the authenticated `delete-account` Edge Function:
 1. Verifies caller identity from the JWT; cannot delete arbitrary UUIDs.
 2. Removes all files in `user-documents` and `avatars` owned by the user.
 3. Hard-deletes the `auth.users` row; foreign keys cascade candidate records (`user_profiles`, `user_job_statuses`, `user_job_evaluations`, `user_cvs`, `user_cover_letters`).
@@ -137,7 +137,7 @@ The Profile danger zone calls the authenticated `delete-account` Edge Function:
 
 ## Stored Procedures (RPCs)
 
-- **`get_overview_metrics()`**: Computes funnel stage counts, average match scores, score distributions, sector categories, and top skills in a single query.
+- **`get_overview_metrics()`**: Counts all registered employers (including employers without vacancies), and computes funnel stage counts, average match scores, score distributions, sector categories, and top skills in a single query.
 - **`get_jobs_page(...)`**: Single source of truth for the opportunities catalog. Applies server-side search, sector,
   salary, and score filtering with offset pagination (`{ total: number, items: Job[] }`). Count and page share one
   SQL statement so the filtered CTE stays in scope and out-of-range pages retain the correct total.
@@ -166,7 +166,7 @@ and regenerate both language types with `make db-types`. CI checks parity.
 ## Durable native scoring
 
 `profile_scoring_embeddings` remains private. Authenticated users submit only their own
-384-dimensional MiniLM vector through `save_profile_embedding`; its hash and model
+384-dimensional MiniLM vector through `save_profile_embedding_guarded`; its hash and model
 version are exposed through `get_profile_embedding_state` without exposing the vector.
 `rescore_user` enqueues durable work in backend-only `candidate_scoring_work`. Profile and embedding writes enqueue atomically; missing embeddings and changed matching text retain an `awaiting_embedding` setup state until a new vector is saved. Old evaluations remain available while local inference is unfinished. Fingerprints exclude personal fields and composition weights. The worker computes an exact, stable top-1,500 shortlist, reuses unchanged evaluation factors, scores slices of at most 100 and trims native evaluations only after completion. Failures roll back that tenant's slice and retain a retry with exponential backoff and a generic SQLSTATE.
 
@@ -185,10 +185,18 @@ metadata (`metadata_source` is curated, watchlist or verified). The physical
 `Uncategorized`. Candidate role classifications stay private matching inputs and do
 not replace the catalog sector or mutate shared employer facts.
 
-`get_overview_metrics.categories` and `by_domain`, and `get_jobs_page.p_domain`, use
-this same shared classification. The overview `sectors` key and page `p_sector`
-argument are compatibility aliases; the application exposes no separate sector filter.
+`get_overview_metrics.categories` and `sectors`, and `get_jobs_page.p_sector`, use
+this same shared classification. Sector is canonical; retired domain keys and
+arguments are not the current browser RPC contract.
 Overview match statistics still use assessed jobs only.
+
+Browsing groups normalize synonymous enriched labels without changing `employers.sector`.
+The internal, browser-inaccessible `jobpulse_sector_group` and `jobpulse_catalog_sectors`
+functions retain the 20 largest named groups by full-catalog job count (stable name
+tie break); remaining groups become `Other`. `Uncategorized` stays separate.
+Overview, list pagination and maps use the same mapping before applying candidate
+filters, so `Other` has consistent counts and membership across views and pages.
+Existing links with exact trusted employer labels remain supported.
 
 `jobs.location_verification` records the original posting location, provider,
 verification timestamp, status, confidence and precision. The service-only

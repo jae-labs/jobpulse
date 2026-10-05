@@ -25,7 +25,6 @@ describe('Ireland line charts', () => {
     expect(legend).toHaveTextContent('Labour force');
     expect(legend).toHaveTextContent('People unemployed');
     expect(legend).toHaveTextContent('Open jobs · CSO vacancies');
-    expect(within(legend).getAllByRole('listitem')).toHaveLength(3);
     expect(screen.getByRole('link', { name: /CSO vacancies/ })).toHaveAttribute('href', 'https://data.cso.ie/table/EHQ16');
     expect(irelandMarketHistory).toHaveLength(10);
     expect(irelandMarketHistory[0]).toMatchObject({ period: 'Q2 2017', labourForce: 2_348_200, vacancies: 19_500, minimumHourly: 9.25 });

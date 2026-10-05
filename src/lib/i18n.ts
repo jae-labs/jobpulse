@@ -4,7 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from '../locales/en/translation.json';
 import ptBR from '../locales/pt-BR/translation.json';
 
-export const defaultNS = 'translation' as const;
+const defaultNS = 'translation' as const;
 
 export const supportedLanguages = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -13,7 +13,7 @@ export const supportedLanguages = [
 
 export type SupportedLanguageCode = typeof supportedLanguages[number]['code'];
 
-export function toDocumentLanguage(language: string | undefined): SupportedLanguageCode {
+function toDocumentLanguage(language: string | undefined): SupportedLanguageCode {
   return language?.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en';
 }
 

@@ -91,7 +91,7 @@ the restored catalog instead of inserting demo jobs.
 
 After `make dev`, run `npm run db:test:account-deletion` in another
 terminal. If only Supabase is running, first run
-`supabase functions serve delete-account`. The script creates and deletes a
+`supabase functions serve delete-account`. The script creates and deletes
 two disposable accounts, checks Auth, rows, invitations, Storage cleanup,
 foreign-account denial, upload races and session revocation, and rejects
 non-local API URLs.
@@ -114,7 +114,7 @@ projects.
 
 ## Running the Scraper Pipeline Locally
 
-The Python scraper service lives in `services/scraper/` and is designed to run locally on your machine.
+The Python scraper service lives in `services/scraper/`. Follow its [environment bootstrap](../services/scraper/README.md#run) to install locked dependencies and Chromium before crawling.
 
 ### Environment Setup
 
@@ -147,7 +147,7 @@ make scrape-core
 # Run the full scraping, deduplication and job embedding pipeline
 make scrape
 
-# Backfill embeddings for jobs saved before native SQL scoring was deployed
+# Repair missing embeddings or backfill after an intentional model migration
 make scrape-backfill
 
 # Run code quality checks on scraper Python code

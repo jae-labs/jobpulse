@@ -187,6 +187,8 @@ export interface OverviewCategory {
 }
 
 export interface OverviewMetrics {
+  /** Total registered employers; absent until the database migration is available. */
+  companies?: number;
   evaluated: number;
   locations: Array<{ loc: string; count: number }>;
   total: number;

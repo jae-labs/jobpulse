@@ -3,15 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { CommandMenu } from './CommandMenu';
 import type { Job } from '../../types/job';
 
-vi.mock('../../hooks/useQueries', () => ({
-  useJobsPageQuery: () => ({ data: undefined }),
-}));
+const query = vi.hoisted(() => vi.fn());
+vi.mock('../../hooks/useQueries', () => ({ useJobsPageQuery: query }));
 
 describe('CommandMenu', () => {
   it('opens the in-app privacy page from the command palette', () => {
     Element.prototype.scrollIntoView = vi.fn();
     const navigate = vi.fn();
     const close = vi.fn();
+    query.mockReturnValue({ data: undefined });
     render(<CommandMenu isOpen onOpenChange={close} onSelectJob={vi.fn()} onNavigateToPrivacy={navigate} />);
     fireEvent.click(screen.getByText('Data and privacy'));
     expect(navigate).toHaveBeenCalledTimes(1);
@@ -38,12 +38,13 @@ describe('CommandMenu', () => {
     };
     const onSelectJob = vi.fn();
     const onOpenChange = vi.fn();
+    query.mockReturnValue({ data: { items: [job] } });
     render(
       <CommandMenu
         isOpen
         onOpenChange={onOpenChange}
         onSelectJob={onSelectJob}
-        jobs={[job]}
+        userId="synthetic-owner"
       />
     );
 

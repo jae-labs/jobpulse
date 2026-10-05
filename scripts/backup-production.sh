@@ -9,7 +9,7 @@ fi
 
 backup_dir="${BACKUP_DIR:-.backups/jobpulse-$(date -u +%Y%m%dT%H%M%SZ)}"
 
-BACKUP_DIR="$backup_dir" bash scripts/dump-production.sh
+BACKUP_DIR="$backup_dir" node scripts/backup-database.mjs
 BACKUP_DIR="$backup_dir" bash scripts/export-storage.sh
 (cd "$backup_dir" && find . -type f ! -name SHA256SUMS ! -name SHA256SUMS.tmp ! -name .complete -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS.tmp)
 mv "$backup_dir/SHA256SUMS.tmp" "$backup_dir/SHA256SUMS"

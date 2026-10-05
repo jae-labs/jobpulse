@@ -16,7 +16,7 @@ Operational checklist for deploying and recovering JobPulse.
   CI runs this alongside the tenant gate. Repeat a controlled equivalent on an
   explicitly approved hosted test environment before release.
 - **Pre-Release Snapshot**: Run `make backup` before applying schema migrations.
-- **Automated Gate**: Confirm `npm run check` and `npm run db:test:tenancy` pass with zero errors.
+- **Automated Gate**: Confirm `make check`, `npm run build-storybook` and `npm run db:test:tenancy` pass with zero errors.
   Require the **Tenant Isolation Guardrails** CI status in the `main` ruleset; a red tenant suite blocks release.
 - **Regression Contract**: Identify affected findings in [Regression Prevention](REGRESSION_PREVENTION.md),
   run their behavioral tests, and verify the integration checks that mocks/SQL cannot cover.
@@ -74,7 +74,7 @@ affected JobPulse hostname cache and verify browser loading after recovery.
 
 Check queue age, failures and cron activity after deployment. Alert on oldest pending work over five minutes, repeated failures, a cron worker failure, or missing model/vector coverage. A five-minute freshness target is an operational target, not a certified capacity claim for 1,000 simultaneous profile edits. Do not raise worker concurrency until catalog requests retain their latency budget. Use a service worker pool with `SKIP LOCKED` for additional throughput; never put privileged credentials in the frontend.
 
-The release policy requires `main` protection with Tenant Isolation Guardrails, Supabase Migration Lint, Code Quality & Build Check and Scraper Quality & Tests, administrator enforcement, pull requests, resolved discussions, an up-to-date branch, and prevention of branch deletion/force pushes. The confirmed solo-maintainer workflow requires zero independent approvals; introduce one approval and code-owner review when a second maintainer joins. Verify the live protection settings before release. All production fixes still need the reviewed commit deployed to the frontend; applying SQL migrations alone does not deploy browser changes. The concrete settings proposal is in [Production Release Actions](PRODUCTION_RELEASE_ACTIONS.md).
+The release policy requires `main` protection with Tenant Isolation Guardrails (including migration lint and type parity), Code Quality & Build Check and Scraper Quality & Tests, administrator enforcement, pull requests, resolved discussions, an up-to-date branch, and prevention of branch deletion/force pushes. The confirmed solo-maintainer workflow requires zero independent approvals; introduce one approval and code-owner review when a second maintainer joins. Verify the live protection settings before release; after a successful consolidated database CI run, remove the retired Supabase Migration Lint required status. Historical protection proposals may still show the old job. All production fixes still need the reviewed commit deployed to the frontend; applying SQL migrations alone does not deploy browser changes. The concrete settings proposal is in [Production Release Actions](PRODUCTION_RELEASE_ACTIONS.md).
 
 ## Operational evidence before wider rollout
 

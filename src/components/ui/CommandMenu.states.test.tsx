@@ -36,6 +36,13 @@ describe("command search states", () => {
     fireEvent.click(screen.getByText("common.retry"));
     expect(refetch).toHaveBeenCalledOnce();
   });
+
+  it("does not render query results without an authenticated account", () => {
+    query.mockReturnValue({ data: { items: [{ id: 1, title: "Previous account result" }] } });
+    render(<CommandMenu {...props} userId={null} />);
+    expect(screen.queryByText("Previous account result")).toBeNull();
+    expect(query).toHaveBeenCalledWith(null, { search: "", limit: 25 }, false);
+  });
   it("retains authoritative server matches and bounds the search input", async () => {
     query.mockReturnValue({
       data: {

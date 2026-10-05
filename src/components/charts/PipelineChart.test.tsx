@@ -60,4 +60,10 @@ describe('PipelineChart', () => {
       expect(handleSelectStatus).toHaveBeenCalledWith('interviewing');
     }
   });
+
+  it('does not turn unassessed stages into zero-percent match averages', () => {
+    render(<PipelineChart counts={mockCounts} stageAverages={{}} />);
+    expect(screen.getAllByText('8').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/avg match/)).not.toBeInTheDocument();
+  });
 });

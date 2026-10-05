@@ -50,6 +50,7 @@ function sql(input) {
 const uid = (i) => `md5('${prefix}-user-'||${i})::uuid`;
 const vector = `('[1,'||repeat('0,',382)||'0]')::extensions.vector`;
 const results = [];
+const cronState = JSON.parse(sql("SELECT coalesce(json_agg(json_build_object('id',jobid,'active',active)),'[]') FROM cron.job WHERE jobname='jobpulse-candidate-scoring';"));
 try {
   sql(`SELECT cron.alter_job(jobid,active:=false) FROM cron.job WHERE jobname='jobpulse-candidate-scoring';
  INSERT INTO auth.users(id,aud,role,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
@@ -65,7 +66,7 @@ try {
   ${
     jobs === 9000
       ? `INSERT INTO public.user_job_evaluations(user_id,job_id,relevance,fit_tier,matched_skills,ai_analysis)
-  SELECT ${uid("u")},-10000000-j,75,'high','["analysis"]','{"role_domain":"Data","sub_scores":{"semantic":75,"domain":75,"seniority":75,"location":75,"title":75,"salary":75}}' FROM generate_series(1,1000)u CROSS JOIN generate_series(1,1500)j;`
+  SELECT ${uid("u")},-10000000-j,75,'high','["analysis"]','{"role_sector":"Data","sub_scores":{"semantic":0.75,"sector":0.75,"competency":0.75,"seniority":0.75,"salary":0.75,"contract":0.75}}' FROM generate_series(1,1000)u CROSS JOIN generate_series(1,1500)j;`
       : ""
   }
   ANALYZE public.jobs; ANALYZE public.user_job_evaluations; ANALYZE public.job_scoring_embeddings; ANALYZE public.candidate_scoring_work;`);
@@ -151,7 +152,7 @@ try {
   }
 } finally {
   sql(
-    `DELETE FROM auth.users WHERE email LIKE '${prefix}-%@capacity.example.invalid'; DELETE FROM public.jobs WHERE dedupe_key LIKE '${prefix}-job-%'; SELECT cron.alter_job(jobid,active:=true) FROM cron.job WHERE jobname='jobpulse-candidate-scoring';`,
+    `DELETE FROM auth.users WHERE email LIKE '${prefix}-%@capacity.example.invalid'; DELETE FROM public.jobs WHERE dedupe_key LIKE '${prefix}-job-%'; ${cronState.map(job => `SELECT cron.alter_job(${job.id},active:=${job.active});`).join(' ')}`,
   );
 }
 console.log(

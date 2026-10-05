@@ -47,6 +47,8 @@ flowchart TD
 
 - `/overview`: Reorderable bento grid with key metrics and lazy-loaded Recharts widgets. Layout order persists in local storage per UID.
 - `/opportunities`: Two-pane master-detail pipeline triage with keyboard shortcuts (`↑`/`↓`, `Enter`, `←`/`→`, `f`).
+- `/tax-calculator`: Client-side Irish pay and contractor planning estimator; not a payroll authority.
+- `/privacy`: In-app privacy notice and owner-scoped account export.
 - `/profile`: Candidate preferences, document vault (CVs & cover letters), and scoring weights editor.
 
 ## Key Subsystems
@@ -69,8 +71,9 @@ duplicate matching comparisons. See [Regression Prevention](REGRESSION_PREVENTIO
 ## Opportunity map and catalog sectors
 
 List, Split and Map share catalog filters. The map is lazy-loaded and queries bounded
-server viewport clusters through a UID-scoped TanStack Query key, independently of
-list pagination. Shared trusted employer sectors drive catalog facets; candidate
+server map results for worldwide bounds through a UID-scoped TanStack Query key,
+independently of list pagination. Camera movement and clustering are local GPU work;
+requests refresh when the account or filter scope changes, not on every pan. Shared trusted employer sectors drive catalog facets; candidate
 role-sector assessments remain private matching data. Backend Geoapify verification
 checks posting locations after persistence and records precision. Employer
 headquarters never become vacancy pins. See

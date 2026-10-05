@@ -134,6 +134,25 @@ def test_invalid_reviewed_file_fails_before_any_writes(tmp_path):
         evidence.load_reviewed_evidence(path)
 
 
+def test_programme_titles_alone_cannot_verify_shared_employer_metadata(monkeypatch):
+    client = Client(
+        [{"id": 7, "name": "Example Community Ltd", "metadata_source": "unverified"}],
+        [
+            {
+                "id": 9,
+                "employer_id": 7,
+                "company": "Example Community Ltd",
+                "source": "JobsIreland.ie",
+                "title": "Gardener - CE Scheme - Example Community Ltd",
+            }
+        ],
+    )
+    monkeypatch.setattr(enrichment, "get_supabase", lambda: client)
+    outcome = enrichment.run_enrichment(database_only=True, dry_run=False)
+    assert outcome["updated"] == 0 and outcome["unresolved"] == 1
+    assert not client.writes
+
+
 def test_database_only_preview_and_apply_never_use_external_registry_or_change_jobs(monkeypatch):
     client = Client(
         [

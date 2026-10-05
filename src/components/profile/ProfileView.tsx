@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AlertCircle, RefreshCw, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Profile, ScoringRules, Job } from '../../types/job';
@@ -9,19 +9,16 @@ import { ProfileTargetPreferences } from './ProfileTargetPreferences';
 import { ProfileQualifications } from './ProfileQualifications';
 import { parsePhone } from './profileConstants';
 import { ProfileMatchingTerms } from './ProfileMatchingTerms';
-import { useExportAccountMutation } from '../../hooks/useQueries';
 import { DEFAULT_PROFILE } from '../../lib/defaultProfile';
 import { withMatchingTerms } from '../../lib/profileMatchingTerms';
-import { Button, Card, Dialog, DialogContent, PageHeader, TextField } from '@jae-labs/ui';
+import { Card, PageHeader } from '@jae-labs/ui';
 
 interface ProfileViewProps {
   profile: Profile | null;
   isLoading?: boolean;
   loadError?: string | null;
-  userEmail?: string | null;
   userId?: string | null;
   onSaveProfile: (profile: Profile) => Promise<{ success: boolean; error?: string }>;
-  onDeleteAccount: (confirmation: string) => Promise<void>;
   jobs?: Job[];
 }
 
@@ -29,14 +26,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   profile,
   isLoading = false,
   loadError = null,
-  userEmail,
   userId,
   onSaveProfile,
-  onDeleteAccount,
   jobs,
 }) => {
   const { t } = useTranslation();
-  const exportAccount = useExportAccountMutation();
   const [formData, setFormData] = useState<Profile>(
     profile || DEFAULT_PROFILE
   );
@@ -49,20 +43,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   // Auto-save state
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const deleteTitleId = useId();
-  const deleteDescriptionId = useId();
-  const deleteInputId = useId();
-
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestDataRef = useRef<Profile>(formData);
   const saveSequenceRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSaveCountRef = useRef(0);
   const queueSaveRef = useRef<(snapshot: Profile) => Promise<void>>(async () => undefined);
-  const isDeletingAccountRef = useRef(false);
 
   // Synchronize incoming profile changes from other devices or backend
   useEffect(() => {
@@ -146,7 +131,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
-        if (!isDeletingAccountRef.current) void queueSaveRef.current(latestDataRef.current);
+        void queueSaveRef.current(latestDataRef.current);
       }
     };
   }, []);
@@ -206,24 +191,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       scheduleAutoSave(next, 800);
       return next;
     });
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!userEmail || deleteConfirmation.trim().toLowerCase() !== userEmail.toLowerCase()) return;
-    setDeleteError(null);
-    setIsDeletingAccount(true);
-    isDeletingAccountRef.current = true;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-    try {
-      await onDeleteAccount(deleteConfirmation.trim());
-    } catch {
-      isDeletingAccountRef.current = false;
-      setIsDeletingAccount(false);
-      setDeleteError(t('profile.deleteAccountFailed'));
-    }
   };
 
   if (isLoading || loadError || !profile) {
@@ -319,81 +286,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         />
       </form>
 
-      {userEmail && (
-        <>
-          <Card className="space-y-3 p-5 lg:p-6">
-            <h2 className="text-sm font-semibold text-ds-text-primary">{t('privacy.notice')}</h2>
-            <p className="text-xs leading-relaxed text-ds-text-secondary">{t('privacy.intro')}</p>
-            <Button type="button" variant="secondary" size="sm" disabled={exportAccount.isPending}
-              onClick={() => void exportAccount.mutateAsync().catch(() => {})}>
-              {exportAccount.isPending ? t('common.loading') : t('privacy.exportAccount')}
-            </Button>
-            {exportAccount.isError && <p role="alert" className="text-xs text-ds-negative">{t('privacy.exportFailed')}</p>}
-          </Card>
 
-          <Card className="space-y-4 border-ds-negative/40 p-5 lg:p-6">
-            <div>
-              <h2 className="text-sm font-semibold text-ds-text-primary">{t('profile.dangerZone')}</h2>
-              <p className="mt-1 text-xs text-ds-text-secondary">{t('profile.deleteAccountDescription')}</p>
-            </div>
-            <Button type="button" variant="danger" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
-              {t('profile.deleteAccount')}
-            </Button>
-          </Card>
-
-          <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-            if (isDeletingAccount) return;
-            setIsDeleteDialogOpen(open);
-            if (!open) {
-              setDeleteConfirmation('');
-              setDeleteError(null);
-            }
-          }}>
-            <DialogContent
-              closeLabel={t('common.close')}
-              aria-labelledby={deleteTitleId}
-              aria-describedby={deleteDescriptionId}
-              className="max-w-md"
-            >
-              <h2 id={deleteTitleId} className="text-lg font-semibold text-ds-text-primary">
-                {t('profile.deleteAccountConfirmTitle')}
-              </h2>
-              <p id={deleteDescriptionId} className="mt-2 text-sm text-ds-text-secondary">
-                {t('profile.deleteAccountConfirmDescription')}
-              </p>
-              <div className="mt-5 space-y-2">
-                <label htmlFor={deleteInputId} className="text-xs font-medium text-ds-text-secondary">
-                  {t('profile.deleteAccountEmailLabel', { email: userEmail })}
-                </label>
-                <TextField
-                  id={deleteInputId}
-                  type="email"
-                  autoComplete="off"
-                  value={deleteConfirmation}
-                  onChange={(event) => setDeleteConfirmation(event.target.value)}
-                  disabled={isDeletingAccount}
-                />
-              </div>
-              {deleteError && <p role="alert" className="mt-3 text-xs text-ds-negative">{deleteError}</p>}
-              <div className="mt-6 flex justify-end gap-2">
-                <Button type="button" variant="secondary" size="sm" disabled={isDeletingAccount} onClick={() => setIsDeleteDialogOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  disabled={isDeletingAccount || deleteConfirmation.trim().toLowerCase() !== userEmail.toLowerCase()}
-                  aria-busy={isDeletingAccount}
-                  onClick={() => void handleDeleteAccount()}
-                >
-                  {isDeletingAccount ? t('profile.deletingAccount') : t('profile.deleteAccount')}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </>
-      )}
     </div>
   );
 };

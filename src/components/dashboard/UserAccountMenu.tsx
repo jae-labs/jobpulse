@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportedLanguages } from '../../lib/i18n';
 import type { Profile } from '../../types/job';
@@ -10,7 +10,7 @@ interface UserAccountMenuProps {
   profile?: Profile | null;
   onNavigateToProfile: () => void;
   onNavigateToPrivacy?: () => void;
-  onOpenInvitations?: () => void;
+  onOpenMemberManagement?: () => void;
   onSignOut: () => void;
 }
 
@@ -19,7 +19,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   profile,
   onNavigateToProfile,
   onNavigateToPrivacy,
-  onOpenInvitations,
+  onOpenMemberManagement,
   onSignOut,
 }) => {
   const { t, i18n } = useTranslation();
@@ -108,16 +108,16 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             >
               <span>{t('nav.profile')}</span>
             </button>
-            {onOpenInvitations && (
+            {onOpenMemberManagement && (
               <button
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
-                  onOpenInvitations();
+                  onOpenMemberManagement();
                 }}
                 className="flex w-full items-center rounded-ds-control px-2.5 py-1.5 text-ds-text-secondary hover:bg-ds-control hover:text-ds-text-primary transition-colors cursor-pointer text-left"
               >
-                <span>{t('invitations.title', 'Invite a friend')}</span>
+                <span>{t('memberManagement.title')}</span>
               </button>
             )}
           </div>
@@ -154,9 +154,16 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             </div>
           </div>
 
-          <div className="pt-1.5">
+          <div role="group" aria-label={t('nav.security')} className="py-1.5 space-y-0.5">
+            <div className="px-2.5 py-1 text-[10px] font-semibold text-ds-text-muted uppercase tracking-wider flex items-center gap-1.5">
+              <Shield aria-hidden="true" className="size-3 text-ds-text-muted" />
+              <span>{t('nav.security')}</span>
+            </div>
             <button type="button" onClick={() => { setIsOpen(false); onNavigateToPrivacy?.(); }}
               className="block w-full rounded-ds-control px-2.5 py-1.5 text-left hover:bg-ds-control">{t('privacy.notice')}</button>
+          </div>
+
+          <div className="pt-1.5">
             <button
               type="button"
               onClick={() => {

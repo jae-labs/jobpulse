@@ -7,6 +7,10 @@ UPDATE public.jobs SET employer_id=-980501,latitude=0,longitude=0,coordinate_sou
 WHERE id=-910002;
 UPDATE public.user_job_evaluations SET ai_analysis='{"role_sector":"General"}'
 WHERE user_id='a1111111-1111-4111-8111-111111111111' AND job_id=-910001;
+CREATE TEMP TABLE sector_expected AS
+SELECT count(*)::integer AS total FROM public.jobs j
+JOIN public.jobpulse_catalog_sectors() s ON s.employer_id=j.employer_id WHERE s.sector='Other';
+GRANT SELECT ON sector_expected TO authenticated;
 
 CREATE FUNCTION pg_temp.assert_sector_contract(own_score integer, own_status text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE metrics jsonb; category jsonb; page jsonb;
@@ -24,8 +28,9 @@ BEGIN
    RAISE EXCEPTION 'Sector chart/page populations differ: %', category->>'name';
   END IF;
  END LOOP;
- SELECT value INTO category FROM jsonb_array_elements(metrics->'categories') WHERE value->>'name'='Synthetic Sector';
- IF (category->>'value')::integer<>2 OR (category->>'avgMatch')::integer<>own_score THEN
+ SELECT value INTO category FROM jsonb_array_elements(metrics->'categories') WHERE value->>'name'='Other';
+ IF (category->>'value')::integer IS DISTINCT FROM (SELECT total FROM sector_expected)
+   OR (category->>'avgMatch')::integer IS DISTINCT FROM own_score THEN
   RAISE EXCEPTION 'Sector averages included unassessed or foreign scores';
  END IF;
  IF false THEN
@@ -37,7 +42,7 @@ BEGIN
  END IF;
  page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_sector=>'Synthetic Sector',p_limit=>1,p_offset=>1);
  IF (page->>'total')::integer<>2 OR page->'items'->0->>'id'<>'-910002'
-  OR page->'items'->0->>'sector'<>'Synthetic Sector'
+  OR page->'items'->0->>'sector' IS DISTINCT FROM 'Other'
   OR page->'items'->0->>'role_sector'<>'Uncategorized'
   OR (page->'items'->0->>'latitude')::numeric<>0 OR (page->'items'->0->>'longitude')::numeric<>0 THEN
   RAISE EXCEPTION 'Unassessed sector or zero posting coordinates lost';

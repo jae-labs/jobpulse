@@ -27,7 +27,7 @@ The scraper hashes scoring job facts separately from the embedding document. A s
 - `make scrape-test NAME="Employer Name"` limits the crawl to one employer.
 - `make scrape-core` runs core sources only.
 - `make scrape-validate` checks source configuration.
-- The local API exposes catalog and sync endpoints. It does not expose profiles or candidate evaluations.
+- The optional local API supports operator/external integrations. The current dashboard reads Supabase directly, not this API. It exposes catalog and sync endpoints, never profiles or candidate evaluations. Preserve its compatibility surface until deployed consumers are inventoried.
 
 The API permits token-free requests only from loopback clients with no `Origin`
 header (local CLI tools), or the exact local dashboard origins
@@ -95,57 +95,13 @@ It caches external results, records each job's original location and precision, 
 never substitutes employer headquarters. Provider failures do not roll back ingestion.
 See [job location verification](OPERATIONS.md#vacancy-location-verification).
 
-`make scrape-backfill-employers` is read-only by default. Set `ARGS="--apply --limit 100"`
-to link a bounded scan. It uses ID keyset pagination, counts unresolved rows toward the
-limit, and guards writes against concurrent company/link changes. It never substitutes
-headquarters or increments scoring generations.
-
-Employer linking and metadata enrichment are separate operations. Run
-`cd services/scraper && uv run --locked python tools/enrich_employers.py --report /tmp/employers.csv`
-to preview all unverified employer records, including those already referenced by jobs.
-Use `--apply` to persist the reviewed registry; `--limit N` bounds scanned records.
-Updates preserve the existing employer ID and compare its ID, name and metadata source
-before writing. A concurrent upgrade or rename is reported as a conflict. Unknown
-identities and placeholder employers remain unresolved in the report. No jobs, candidate
-data, coordinates from postings, vectors or scoring generations are changed.
-
-`config/employer_evidence.json` records explicit full aliases, first-party evidence URLs
-and review dates for additions to the curated registry. Only documented employer addresses
-are supplied; conflicting addresses and coordinates without evidence stay null. Employer
-coordinates are separate from posting coordinates. Do not assign a hiring platform's
-industry to vacancies belonging to its clients. Automatic employer research remains outside ingestion; extending company coverage
-requires reviewed identity and field evidence. Vacancy geocoding runs separately
-after persistence when the backend key is configured.
-
-To reconcile using the live database only, add `--database-only`. This mode does not
-use the external-source registry or fetch any websites. It matches trusted employer
-records using punctuation and legal suffix differences, retaining geography and
-business-unit names, and rejects conflicting trusted sectors. Optional
-`--stored-evidence PATH` accepts reviewed employer self-descriptions from stored jobs:
-each JSON record supplies `employer_name`, `sector`, `job_id`, `description_sha256`,
-`excerpt` and `reviewed_on`. The job must still belong to that employer, its company
-name must match, and its complete body hash and excerpt must remain unchanged.
-These records are explicit evidence reviews, not automatic role-keyword classifications.
-Keep operational witnesses with the ignored recovery snapshot and retain the outcome report.
-
-Reviewed witnesses can also supply an optional `description`, which must be an exact
-substring of the validated business excerpt. Unsupported description claims are rejected.
-Explicitly named Community Employment programmes can be individually reviewed as
-programme sponsors, with a stored placement witness; this does not classify their
-client organisations or introduce an automatic name-based classification rule.
-Database-only repairs clear unsupported legacy employer location, coordinates and
-website fields before marking that employer metadata verified. They retain only the
-reviewed business description, when supplied, rather than promoting legacy guesses.
-Vacancy records and coordinates remain untouched. Platform/account labels that contain
-postings for multiple hiring companies require separate job identity repairs; never
-apply one posting's industry to every vacancy in such an account.
-
-For proven historical headquarters substitutions, `tools/repair_employer_locations.py`
-reads only the public catalog section of the approved pre-enrichment snapshot. Supply
-`--snapshot PATH --report PATH` to review proposed restorations, then `--apply` to perform
-identity/location compare-and-set writes. It refreshes scoring documents/hashes through
-`prepare_embeddings`; a retry refreshes already restored matching facts too. No private
-snapshot data is imported or used as fixtures.
+Employer linking and metadata enrichment are separate from ingestion. Shared metadata
+writes require reviewed exact identity and field evidence, with compare-and-set guards;
+vacancy titles or model output alone are not verification. Programme sponsorship does
+not establish a client's industry. Research produces proposals; only the reviewed
+registry/stored-witness workflow promotes metadata. See
+[reviewed employer operations](OPERATIONS.md#reviewed-employer-metadata) for commands,
+evidence formats and historical location repair.
 
 ## External company research
 

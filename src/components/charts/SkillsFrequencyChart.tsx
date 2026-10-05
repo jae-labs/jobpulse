@@ -10,7 +10,6 @@ import {
   Cell,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
-import type { Job } from '../../types/job';
 import { WidgetCard } from '@jae-labs/ui';
 
 export interface SkillFrequencyItem {
@@ -20,8 +19,7 @@ export interface SkillFrequencyItem {
 }
 
 interface SkillsFrequencyChartProps {
-  jobs?: Job[];
-  topSkills?: SkillFrequencyItem[];
+  topSkills: SkillFrequencyItem[];
   onSelectSkill?: (skill: string) => void;
 }
 
@@ -64,7 +62,6 @@ const CustomTooltip = ({ active, payload, label, onSelectSkill, t }: CustomToolt
 import { getCachedCssVar } from '../../lib/chartTheme';
 
 const SkillsFrequencyChartComponent: React.FC<SkillsFrequencyChartProps> = ({
-  jobs = [],
   topSkills,
   onSelectSkill,
 }) => {
@@ -80,28 +77,7 @@ const SkillsFrequencyChartComponent: React.FC<SkillsFrequencyChartProps> = ({
     hover: getCachedCssVar('--ds-color-hover')
   }), []);
 
-  const data = React.useMemo(() => {
-    if (topSkills && topSkills.length > 0) {
-      return topSkills;
-    }
-    const frequencyMap: Record<string, number> = {};
-    for (const job of jobs) {
-      for (const skill of job.matched_skills || []) {
-        const normalized = skill.toLowerCase().trim();
-        frequencyMap[normalized] = (frequencyMap[normalized] || 0) + 1;
-      }
-    }
-
-    const total = jobs.length || 1;
-    return Object.entries(frequencyMap)
-      .map(([skill, count]) => ({
-        skill,
-        count,
-        percentage: Math.round((count / total) * 100),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-  }, [jobs, topSkills]);
+  const data = topSkills;
 
   return (
     <WidgetCard title={t('charts.skills.title')}>

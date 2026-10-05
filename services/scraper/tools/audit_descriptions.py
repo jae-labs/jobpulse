@@ -30,6 +30,8 @@ def audit_descriptions(*, report: Path, summary: Path, repair_reports: list[Path
     sources = defaultdict(Counter)
     last_id = 0
     fields = ["id", "source", "title", "description_chars", "body_check", "detail_status", "vector_status", "url"]
+    report.parent.mkdir(parents=True, exist_ok=True)
+    summary.parent.mkdir(parents=True, exist_ok=True)
     with report.open("w", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()

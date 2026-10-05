@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
-import type { Job } from '../../types/job';
 import { WidgetCard } from '@jae-labs/ui';
 
 export interface RelevanceTier {
@@ -20,8 +19,7 @@ export interface RelevanceTier {
 }
 
 interface RelevanceDistributionChartProps {
-  jobs?: Job[];
-  distribution?: RelevanceTier[];
+  distribution: RelevanceTier[];
   onSelectTier?: (minMatch: number) => void;
 }
 
@@ -60,21 +58,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, o
 
 import { getCachedCssVar } from '../../lib/chartTheme';
 
-const DEFAULT_BUCKETS = [
-  { range: '90-100%', min: 90, max: 100 },
-  { range: '80-89%', min: 80, max: 89 },
-  { range: '70-79%', min: 70, max: 79 },
-  { range: '60-69%', min: 60, max: 69 },
-  { range: '50-59%', min: 50, max: 59 },
-  { range: '40-49%', min: 40, max: 49 },
-  { range: '30-39%', min: 30, max: 39 },
-  { range: '20-29%', min: 20, max: 29 },
-  { range: '10-19%', min: 10, max: 19 },
-  { range: '0-9%', min: 0, max: 9 },
-] as const;
-
 const RelevanceDistributionChartComponent: React.FC<RelevanceDistributionChartProps> = ({
-  jobs = [],
   distribution,
   onSelectTier,
 }) => {
@@ -89,24 +73,7 @@ const RelevanceDistributionChartComponent: React.FC<RelevanceDistributionChartPr
     border: getCachedCssVar('--ds-color-border-strong')
   }), []);
 
-  const data = React.useMemo(() => {
-    if (distribution && distribution.length > 0) {
-      return distribution;
-    }
-    const bucketCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    for (let i = 0; i < jobs.length; i++) {
-      const rel = jobs[i].relevance ?? 0;
-      const bucketIdx = Math.min(9, Math.max(0, 9 - Math.floor(rel / 10)));
-      bucketCounts[bucketIdx]++;
-    }
-
-    return DEFAULT_BUCKETS.map((b, i) => ({
-      range: b.range,
-      min: b.min,
-      max: b.max,
-      count: bucketCounts[i],
-    }));
-  }, [jobs, distribution]);
+  const data = distribution;
 
   return (
     <WidgetCard title={t('charts.relevance.title')}>

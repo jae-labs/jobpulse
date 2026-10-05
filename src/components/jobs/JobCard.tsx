@@ -5,7 +5,7 @@ import type { Job } from '../../types/job';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
 import SavedJobButton from './SavedJobButton';
 import IgnoredJobButton from './IgnoredJobButton';
-import { cn } from '../../lib/utils';
+import { cn } from '@jae-labs/ui';
 import { useTranslation } from 'react-i18next';
 
 interface JobCardProps {

@@ -5,7 +5,7 @@ import { useErrorDismissal } from './useErrorDismissal';
 describe('view-scoped error dismissal', () => {
   it('preserves dismissal through unrelated renders and reveals a new failure', () => {
     const error = new Error('Synthetic failure');
-    const { result, rerender } = renderHook(({ failure }) => useErrorDismissal('jobs', failure, null), {
+    const { result, rerender } = renderHook(({ failure }) => useErrorDismissal('jobs', failure), {
       initialProps: { failure: error },
     });
     act(() => result.current.dismiss());
@@ -17,7 +17,7 @@ describe('view-scoped error dismissal', () => {
 
   it('reveals the same failure after leaving and returning to its view', () => {
     const error = new Error('Synthetic failure');
-    const { result, rerender } = renderHook(({ scope }) => useErrorDismissal(scope, error, null), {
+    const { result, rerender } = renderHook(({ scope }) => useErrorDismissal(scope, error), {
       initialProps: { scope: 'jobs' },
     });
     act(() => result.current.dismiss());
@@ -26,16 +26,16 @@ describe('view-scoped error dismissal', () => {
     expect(result.current.isDismissed).toBe(false);
   });
 
-  it('reveals a repeated custom failure after it clears, and supports explicit retry', () => {
-    const { result, rerender } = renderHook(({ custom }) => useErrorDismissal('profile', null, custom), {
-      initialProps: { custom: 'Synthetic failure' as string | null },
+  it('reveals a repeated failure after it clears, and supports explicit retry', () => {
+    const { result, rerender } = renderHook(({ failure }) => useErrorDismissal('profile', failure), {
+      initialProps: { failure: 'Synthetic failure' as string | null },
     });
     act(() => result.current.dismiss());
     act(() => result.current.reset());
     expect(result.current.isDismissed).toBe(false);
     act(() => result.current.dismiss());
-    rerender({ custom: null });
-    rerender({ custom: 'Synthetic failure' });
+    rerender({ failure: null });
+    rerender({ failure: 'Synthetic failure' });
     expect(result.current.isDismissed).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import threading
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import urlparse
@@ -18,7 +18,7 @@ from scrapers.generic.discovery import discover_employer_careers, is_auth_wall
 from scrapers.generic.listing import extract_jobs_from_listing
 
 
-class ScrapeOutcome(str, Enum):
+class ScrapeOutcome(StrEnum):
     """Terminal state of a source scrape, suitable for UI and retry decisions."""
 
     SYNCED = "synced"

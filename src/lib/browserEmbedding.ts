@@ -2,7 +2,7 @@ import type { Profile } from "../types/job";
 import { PROFILE_PREPROCESSING_VERSION } from './embeddingWindows';
 
 export const PROFILE_EMBEDDING_MODEL_VERSION = "all-MiniLM-L6-v2:384:v1";
-export function profileDocument(profile: Profile): string {
+function profileDocument(profile: Profile): string {
   const parts = [
     profile.headline,
     profile.current_role,

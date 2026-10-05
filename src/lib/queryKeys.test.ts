@@ -21,6 +21,27 @@ const cases = {
   avatarUrl: (uid: string) => queryKeys.avatarUrl(`${uid}/avatar`),
 };
 describe('tenant cache contract', () => {
+  it.each([
+    [queryKeys.overviewMetrics(first), ['overview-metrics', first]],
+    [queryKeys.overviewMetrics(null), ['overview-metrics', null]],
+    [queryKeys.jobsPage(first, { status: 'new', limit: 40 }), ['jobs-page', first, { status: 'new', limit: 40 }]],
+    [queryKeys.jobById(123, first), ['job-by-id', 123, first]],
+    [queryKeys.userCvs(first), ['user-cvs', first]],
+    [queryKeys.userCoverLetters(first), ['user-cover-letters', first]],
+    [queryKeys.invitations(first), ['invitations', first]],
+    [queryKeys.invitations(null), ['invitations', null]],
+    [queryKeys.jobsSearchPage(first, { search: 'designer' }), ['jobs-search-page', first, { search: 'designer' }]],
+  ])('preserves the key layout %j', (key, expected) => {
+    expect(key).toEqual(expected);
+  });
+
+  it('keeps finite search and infinite page caches distinct, including invalidation prefixes', () => {
+    expect(queryKeys.jobsPage(first)).toEqual(['jobs-page', first]);
+    expect(queryKeys.jobsSearchPage(first)).toEqual(['jobs-search-page', first]);
+    expect(queryKeys.jobsPage(first, { search: 'same' }))
+      .not.toEqual(queryKeys.jobsSearchPage(first, { search: 'same' }));
+  });
+
   it('requires an explicit isolation test for every new key factory', () => {
     expect(Object.keys(queryKeys).sort()).toEqual(Object.keys(cases).sort());
   });

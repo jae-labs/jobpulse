@@ -30,5 +30,8 @@ function visit(key) {
   for (const dependency of item.imports ?? []) visit(dependency);
 }
 for (const [key, item] of Object.entries(manifest)) if (item.isEntry) visit(key);
+if ([...initialFiles].some(file => /\/sentry[-.]/.test(file))) {
+  throw new Error('Optional Sentry SDK must remain outside the initial JavaScript graph');
+}
 check('Initial JavaScript graph', (await Promise.all([...initialFiles].map(size))).reduce((sum, n) => sum + n, 0), 275);
 if (failed) process.exitCode = 1;

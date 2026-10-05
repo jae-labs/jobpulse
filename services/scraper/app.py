@@ -36,14 +36,22 @@ def validate_config_cli() -> None:
     print("=" * 80)
     print("Validating JobPulse Configuration...")
     print("=" * 80)
-    websites = load_websites_config()
-    issues = validate_websites_config(websites)
+    try:
+        websites = load_websites_config()
+        issues = validate_websites_config(websites)
+    except ValueError as exc:
+        print(str(exc))
+        raise SystemExit(1) from exc
     if not issues:
         enabled_count = sum(1 for w in websites if w.get("enabled", True))
         print(f"OK: config/websites.yaml is valid! ({len(websites)} websites loaded, {enabled_count} enabled)")
     else:
-        print(f"WARNING: Found {len(issues)} issue(s) in config/websites.yaml:")
+        print(f"ERROR: Found {len(issues)} issue(s) in config/websites.yaml:")
+        for issue in issues:
+            print(f"- {issue}")
     print("=" * 80)
+    if issues:
+        raise SystemExit(1)
 
 
 def main() -> None:

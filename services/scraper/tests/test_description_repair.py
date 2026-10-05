@@ -9,12 +9,39 @@ from unittest.mock import MagicMock
 import pytest
 
 from database import repository
-from engine.description_quality import has_description_body, needs_description_repair
+from engine.description_quality import has_closed_notice, has_description_body, needs_description_repair
 from extractors import general, jobsireland, smartrecruiters, universal
 from scrapers.providers import extract_greenhouse_opportunities, extract_lever_opportunities
 from tools import repair_descriptions as repair
 
 BODY = "Design distributed systems and operate production services. " * 20 + "TAIL: Kubernetes and PostgreSQL required."
+
+
+@pytest.mark.parametrize(
+    "notice",
+    [
+        "position has been filled",
+        "job is no longer available",
+        "position has expired",
+        "job is closed",
+        "no longer accepting applications",
+    ],
+)
+def test_closure_notices_are_rejected_by_body_and_ingestion_gates(notice, monkeypatch):
+    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
+    description = f"{BODY}\n{notice.upper()}"
+    assert has_closed_notice(description)
+    assert not has_description_body(description)
+    assert not repository._is_ingestable_job({"description": description})
+
+
+@pytest.mark.parametrize("description", ["", BODY])
+def test_missing_or_open_content_is_not_a_closure_notice(description, monkeypatch):
+    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
+    assert not has_closed_notice(description)
+    assert repository._is_ingestable_job({"description": description})
 
 
 class Response:

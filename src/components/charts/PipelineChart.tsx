@@ -10,15 +10,14 @@ import {
   Cell,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
-import type { Job, JobStatus } from '../../types/job';
+import type { JobStatus } from '../../types/job';
 import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
 import { statusPillTone } from '../../lib/statusTone';
 
 interface PipelineChartProps {
-  jobs?: Job[];
-  counts?: Record<string, number>;
-  stageAverages?: Record<string, number>;
+  counts: Record<string, number>;
+  stageAverages: Record<string, number>;
   onSelectStatus?: (status: JobStatus) => void;
 }
 
@@ -96,41 +95,20 @@ const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTool
 
 import { getCachedCssVar } from '../../lib/chartTheme';
 
-const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], counts, stageAverages, onSelectStatus }) => {
+const PipelineChartComponent: React.FC<PipelineChartProps> = ({ counts, stageAverages, onSelectStatus }) => {
   const { t, i18n } = useTranslation();
   const data = React.useMemo(() => {
     const keys: JobStatus[] = ['new', 'applied', 'interviewing', 'rejected'];
 
-    const stats: Record<JobStatus, { count: number; totalScore: number }> = {
-      new: { count: 0, totalScore: 0 },
-      applied: { count: 0, totalScore: 0 },
-      interviewing: { count: 0, totalScore: 0 },
-      rejected: { count: 0, totalScore: 0 },
-      not_interested: { count: 0, totalScore: 0 },
-    };
-
-    if (!counts || !stageAverages) {
-      for (let i = 0; i < jobs.length; i++) {
-        const j = jobs[i];
-        const s = stats[j.status];
-        if (s) {
-          s.count++;
-          s.totalScore += j.relevance || 0;
-        }
-      }
-    }
-
     return keys.map((status) => {
       const config = STAGE_CONFIG[status];
-      const count = counts ? (counts[status] || 0) : stats[status].count;
+      const count = counts[status] || 0;
       const suppliedAverage = stageAverages?.[status];
       const avgMatch = count === 0
         ? null
         : typeof suppliedAverage === 'number' && Number.isFinite(suppliedAverage)
           ? Math.round(suppliedAverage)
-          : stats[status].count > 0
-            ? Math.round(stats[status].totalScore / stats[status].count)
-            : null;
+          : null;
 
       const colorValue = getCachedCssVar(config.token, config.fallback);
 
@@ -143,7 +121,7 @@ const PipelineChartComponent: React.FC<PipelineChartProps> = ({ jobs = [], count
         fill: colorValue,
       };
     });
-  }, [jobs, counts, stageAverages, t]);
+  }, [counts, stageAverages, t]);
 
   const renderCustomTick = (tickProps: { x?: number | string; y?: number | string; payload?: { value?: string } }) => {
     const { x = 0, y = 0, payload } = tickProps;

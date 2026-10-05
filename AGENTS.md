@@ -20,85 +20,34 @@
 - Use `npm run dev:hosted` only when intentionally developing against hosted
   Supabase credentials configured in `.env`.
 - Optional pre-commit hook run: `lefthook run pre-commit`
-- Full local completion gate: `npm run check`
+- Full local completion gate: `make check` (`npm run check` is frontend-only)
 - UI component catalog: `npm run storybook`; verify changes with `npm run build-storybook`
 
 ## Required Verification
 
-Run the verification sequence before completing any task:
+Run `make check` before completion. It runs frontend lint, TypeScript, Vitest/Node tests
+and production build (`npm run check`), plus scraper Ruff, Pyright and pytest.
 
-```bash
-npm run lint       # oxlint fast linting
-npm run typecheck  # tsc -b --noEmit
-npm run test       # vitest run
-npm run build      # tsc -b && vite build
-npm run build-storybook # standalone UI component catalog
-```
-
-Or run the combined monorepo gate:
-
-```bash
-make check         # npm run check + scrape-lint + scrape-unit
-```
-
-`make check` (or `npm run check`) is the minimum completion gate before opening a PR or marking work as complete. Also run
-`npm run build-storybook` for UI package changes; CI runs it on every change.
+Additional gates:
+- UI package changes: `npm run build-storybook` (CI runs it on every change).
+- Every completed change: `npm run db:test:tenancy`; never reset a developer database to pass it.
+- Database or matching changes: all SQL suites via `npm run db:test`, plus the relevant integration checks in [Release & Recovery](docs/RELEASE_AND_RECOVERY.md).
 
 ## Repo Shape & Routing
 
-- Entrypoint & Shell: `index.html`, `src/main.tsx`, `src/App.tsx`
-- Dashboard Orchestration: `src/components/dashboard/`
-  - Navigation tabs: `src/components/dashboard/navigation.ts`
-  - Sidebar: `src/components/dashboard/DashboardSidebar.tsx`
-  - Overview page: `src/components/dashboard/OverviewView.tsx`
-  - Draggable dashboard widgets: `src/components/dashboard/SortableWidget.tsx`
-  - Invitations modal: `src/components/dashboard/InvitationsModal.tsx`
-  - Account menu: `src/components/dashboard/UserAccountMenu.tsx`
-- Job Pipeline & Tracking: `src/components/jobs/`
-  - Master-detail and list views: `src/components/jobs/JobsView.tsx`
-  - Job card presentation: `src/components/jobs/JobCard.tsx`
-  - Inspection drawers & modals: `src/components/jobs/JobDetailInspector.tsx`
-- Analytics & Charts: `src/components/charts/` (lazy-loaded Recharts)
-  - Pipeline stage breakdown: `src/components/charts/PipelineChart.tsx`
-  - Relevance distribution: `src/components/charts/RelevanceDistributionChart.tsx`
-  - Skills demand & frequency: `src/components/charts/SkillsFrequencyChart.tsx`
-  - Sector category breakdown: `src/components/charts/CategoryBreakdownChart.tsx`
-- Candidate Profile & Scoring:
-  - Profile preferences & target criteria: `src/components/profile/ProfileView.tsx`
-  - Sub-views: `ProfileGeneralInfo.tsx`, `ProfileTargetPreferences.tsx`, `ProfileQualifications.tsx`,
-    `ProfileMatchingTerms.tsx`, `ProfileDocuments.tsx`, `ScoringRulesEditor.tsx`
-  - Profile storage & defaults: `src/lib/userProfile.ts`, `src/lib/defaultProfile.ts`
-- Authentication & Fault Tolerance: `src/components/auth/`, `src/components/ui/`
-  - Login view: `src/components/auth/LoginView.tsx`
-  - Access control: `src/components/auth/AccessDeniedView.tsx`, `src/components/auth/authConfig.ts`
-  - Fault tolerance: `src/components/ui/ErrorBoundary.tsx`
-- Design System: `packages/ui/` (`@jae-labs/ui`)
-  - Product-neutral tokens: `packages/ui/src/tokens.css`
-  - Public component API: `packages/ui/src/index.ts`
-  - Design decisions and component rules: `packages/ui/DESIGN.md`
-  - Package-specific agent instructions: `packages/ui/AGENTS.md`
-  - JobPulse integration: `docs/DESIGN_SYSTEM.md`
-- JobPulse UI: `src/components/ui/`
-  - Command palette: `src/components/ui/CommandMenu.tsx`
-  - Metric stat card: `src/components/ui/StatCard.tsx`
-  - Status badge: `src/components/ui/StatusPill.tsx`
-- Internationalization & Localization (i18n / l10n):
-  - Config & helpers: `src/lib/i18n.ts` (`formatDate`, `formatNumber`, language detection, persistence via `jobpulse_lng`)
-  - Translation bundles: `src/locales/en/translation.json`, `src/locales/pt-BR/translation.json`
-- Data & Types:
-  - Supabase CLI migrations & config: `supabase/migrations/`, `supabase/config.toml`
-  - Generated database types: `src/types/database.types.ts` (via `npm run db:types`)
-  - Supabase client: `src/lib/supabase.ts` (typed via `createClient<Database>`)
-  - Server state, queries & mutations: `src/hooks/useQueries.ts`, `src/lib/queryClient.ts` (TanStack Query)
-  - Sector types: `src/types/job.ts` (Canonical pipeline statuses: `new`, `applied`, `interviewing`, `not_interested`; Saved is the independent owner-only `is_saved` bookmark)
-- Scraper & Ingestion Pipeline (`services/scraper/`):
-  - Configuration: `services/scraper/config/websites.yaml`, `rules.py`, `loader.py`
-  - Extraction & Crawling: `services/scraper/extractors/`, `services/scraper/scrapers/generic/`
-    (dispatcher `listing.py`, `crawler.py`), `services/scraper/scrapers/core/`
-  - Provider Adapters: `services/scraper/scrapers/providers/` (18+ modular ATS and board adapters)
-  - Scoring & Validation Engine: `services/scraper/engine/` (SentenceTransformers Apple Metal GPU acceleration)
-  - Supabase Service Role Integration: `services/scraper/database/` (thread-safe client, candidate-safe deduplication)
-  - Local API & Daemon: `services/scraper/server/` (`api.py`), `app.py`
+| Boundary | Entry points |
+| --- | --- |
+| App shell and navigation | `src/main.tsx`, `src/App.tsx`, `src/components/dashboard/navigation.ts` |
+| Views and charts | `src/components/`; detailed topology in [Components](docs/COMPONENTS.md) |
+| Shared design system | `packages/ui/src/index.ts`, `tokens.css`; read [package agent rules](packages/ui/AGENTS.md) and [design guide](packages/ui/DESIGN.md) before edits |
+| Server state | `src/hooks/useQueries.ts`, domain query hooks, `src/lib/queryKeys.ts` |
+| Profiles and scoring | `src/lib/userProfile.ts`, `defaultProfile.ts`, `src/components/profile/` |
+| Localization | `src/lib/i18n.ts`, `src/locales/{en,pt-BR}/translation.json` |
+| Database | `supabase/migrations/`, `config.toml`; generated models in `src/types/database.types.ts` and `services/scraper/database/models.py` |
+| Scraper | `services/scraper/app.py`, `config/`, `scrapers/`, `pipeline/`, `engine/`, `database/`, `server/` |
+
+Pipeline statuses are `new`, `applied`, `interviewing`, `rejected`, `not_interested`.
+Saved is the independent owner-only `is_saved` bookmark, not a stage.
 
 ## Documentation & Progressive Discovery
 
@@ -139,7 +88,7 @@ Progressive discovery index: [`docs/`](docs/).
 - Keep current policy concise and durable. Move dated remediation/release evidence into clearly labelled
   historical records rather than duplicating it in active runbooks. Do not delete applied-migration, recovery,
   tenant-isolation, or incident evidence solely to reduce file count.
-- Run `npm run lint` after documentation changes. Its local-link check covers every maintained Markdown guide.
+- Run `npm run lint` after documentation changes. Its documentation check verifies local links, heading anchors, and complete index metadata for every maintained Markdown guide.
 
 ## Make Changes Safely
 

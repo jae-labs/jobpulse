@@ -20,6 +20,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { useJobByIdQuery, useJobsInfiniteQuery, useUpdateJobSavedMutation } from '../../hooks/useQueries';
 import { formatNumber } from '../../lib/i18n';
+import { getSectorLabel } from '../../lib/sectors';
 import { statusPillTone } from '../../lib/statusTone';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useJobFilters, type SortField } from './useJobFilters';
@@ -37,8 +38,6 @@ interface JobsViewProps {
   onSelectJob: (job: Job | null) => void;
   onUpdateStatus?: (job: Job, status: JobStatus) => Promise<void>;
   isUpdating?: boolean;
-  onSync?: () => void;
-  isSyncing?: boolean;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
   initialStatusFilter?: 'all' | JobFilterStatus;
@@ -498,7 +497,6 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
               aria-pressed={layoutMode === 'split'}
-              title={t('jobs.layoutSplitTitle')}
             >
               <Columns2 className="size-3.5" />
               <span>{t('jobs.layoutSplit')}</span>
@@ -515,13 +513,12 @@ export const JobsView: React.FC<JobsViewProps> = ({
                   : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'
               }`}
               aria-pressed={layoutMode === 'list'}
-              title={t('jobs.layoutListTitle')}
             >
               <Rows3 className="size-3.5" />
               <span>{t('jobs.layoutList')}</span>
             </button>
             <button type="button" onClick={() => { toggleMap(); setIsDetailFullScreen(false); }}
-              aria-pressed={layoutMode === 'map'} title={t('jobs.layoutMapTitle')}
+              aria-pressed={layoutMode === 'map'}
               className={`flex items-center gap-1.5 rounded-ds-control px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${layoutMode === 'map' ? 'bg-ds-hover text-ds-text-primary border border-ds-border-strong' : 'text-ds-text-muted hover:text-ds-text-secondary hover:bg-ds-hover'}`}>
               <MapIcon className="size-3.5" /><span>{t('jobs.layoutMap')}</span>
             </button>
@@ -633,11 +630,11 @@ export const JobsView: React.FC<JobsViewProps> = ({
                     {t('jobs.allSectors')} ({totalCatalogCount})
                   </option>
                   {activeSectorFilter !== 'all' && !availableSectors.some(({ sector }) => sector === activeSectorFilter) && (
-                    <option value={activeSectorFilter}>{activeSectorFilter}</option>
+                    <option value={activeSectorFilter}>{getSectorLabel(activeSectorFilter, t)}</option>
                   )}
                   {availableSectors.map(({ sector, count }) => (
                     <option key={sector} value={sector} className="bg-ds-panel text-ds-text-secondary">
-                      {sector} ({count})
+                      {getSectorLabel(sector, t)} ({formatNumber(count, i18n.language)})
                     </option>
                   ))}
                 </select>

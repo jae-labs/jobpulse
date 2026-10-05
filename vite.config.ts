@@ -76,11 +76,6 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
     },
-    resolve: {
-      alias: {
-        "@": fileURLToPath(new URL("./src", import.meta.url)),
-      },
-    },
     build: {
       manifest: true,
       chunkSizeWarningLimit: 600,
@@ -89,6 +84,11 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id: string) {
             if (id.includes("node_modules")) {
+              // Scoped @sentry/react paths also contain /react/. Classify the SDK
+              // first so the eager React vendor chunk cannot pull telemetry in.
+              if (id.includes("@sentry")) {
+                return "sentry";
+              }
               if (
                 id.includes("/react/") ||
                 id.includes("/react-dom/") ||
@@ -105,9 +105,6 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes("@dnd-kit")) {
                 return "dnd";
-              }
-              if (id.includes("@sentry")) {
-                return "sentry";
               }
             }
           },

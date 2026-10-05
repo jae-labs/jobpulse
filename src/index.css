@@ -109,6 +109,38 @@
   }
 }
 
+/* Widget widths are independent of drag targets and clamp to the mobile grid. */
+.bento-grid.overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.overview-widget-chart { grid-column: span 2; }
+.overview-widget-stat .widget-content > * > .space-y-1 > div:first-child { padding-right: 2.5rem; }
+.overview-widget-stat .widget-content > * > .space-y-1 > div:first-child > div:first-child { min-width: 0; }
+.overview-widget-stat .widget-content > * > .space-y-1 > div:first-child span { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .bento-grid.overview-grid { grid-auto-rows: 28px; gap: 12px; }
+  .overview-widget { align-self: stretch; }
+  .overview-widget-stat { grid-column: span var(--widget-mobile-columns, 1); grid-row: span var(--widget-rows, 4); }
+  .overview-widget-chart { grid-column: span var(--widget-mobile-columns, 2); grid-row: span var(--widget-rows, 13); }
+  .overview-widget-stat .widget-content > * > .space-y-1 > div:first-child { padding-right: 2rem; }
+  .overview-widget-stat .widget-content > * { overflow: auto; }
+  .overview-widget-chart .widget-content { overflow: auto; border-radius: var(--ds-radius-card); }
+}
+.overview-widget .widget-content > div,
+.overview-widget .widget-content > button { height: 100%; flex: 1; }
+.overview-widget[data-resized] .widget-content { overflow: auto; border-radius: var(--ds-radius-card); }
+.overview-widget[data-resized] .widget-content > div > div:has(> .recharts-responsive-container) {
+  flex: 1;
+  min-height: 200px;
+  height: auto;
+}
+@media (min-width: 768px) {
+  .bento-grid.overview-grid { grid-template-columns: repeat(20, minmax(0, 1fr)); }
+  .overview-widget-stat { grid-column: span var(--widget-columns, 4); }
+  .overview-widget-chart { grid-column: span var(--widget-columns, 20); }
+}
+@media (min-width: 1280px) {
+  .overview-widget-chart { grid-column: span var(--widget-columns, 10); }
+}
+
 /* Text selection has its own contrast, independent of persistent row selection. */
 ::selection {
   background: var(--ds-color-text-selection);
@@ -242,3 +274,12 @@
     padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Small corner follows the card edge; the hit area remains comfortable. */
+.widget-resize-corner {
+  position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  border-bottom-right-radius: var(--ds-radius-card); opacity: 0.45;
+}
+.widget-resize-handle:hover .widget-resize-corner,
+.widget-resize-handle:focus-visible .widget-resize-corner { opacity: 1; color: var(--ds-color-text-secondary); }

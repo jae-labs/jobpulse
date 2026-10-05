@@ -6,22 +6,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-try:
-    import yaml
+import yaml
 
-    HAS_YAML = True
-except ImportError:
-    yaml = None
-    HAS_YAML = False
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = Path(__file__).resolve().parent
 
 # Core URLs
 KILDARE_CAREERS_URL = "https://kildarecoco.ie/AllServices/CareerOpportunities/"
 PUBLICJOBS_URL = "https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/"
 MAYNOOTH_SEARCH_URL = "https://my.corehr.com/pls/nuimrecruit/erq_search_version_4.start_search_with_params"
-UCD_SEARCH_URL = "https://my.corehr.com/pls/ucdrecruit/erq_search_version_4.start_search_with_params"
 INTEL_JOBS_URL = "https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/jobs"
 INTEL_CAREERS_URL = "https://intel.wd1.myworkdayjobs.com/External"
 JOBSIRELAND_URL = "https://jobsireland.ie/en-US/browse-jobs"
@@ -31,50 +23,38 @@ WHATJOBS_API_URL = "https://api.whatjobs.com/api/v1/jobs.json"
 
 
 def load_websites_config(path: Path | str | None = None) -> list[dict[str, Any]]:
-    """Load websites and employer metadata from YAML or JSON."""
+    """Load explicit YAML/JSON configuration; never hide malformed or missing sources."""
     target_path = Path(path) if path else (CONFIG_DIR / "websites.yaml")
-    if not target_path.exists():
-        json_alt = CONFIG_DIR / "websites.json"
-        if json_alt.exists():
-            target_path = json_alt
-
-    if target_path.exists():
-        try:
-            with open(target_path, encoding="utf-8") as f:
-                content = f.read()
-                if yaml is not None and (target_path.suffix in (".yaml", ".yml")):
-                    parsed = yaml.safe_load(content)
-                else:
-                    parsed = json.loads(content)
-
-                if isinstance(parsed, dict) and "websites" in parsed:
-                    items = parsed["websites"]
-                elif isinstance(parsed, list):
-                    items = parsed
-                else:
-                    items = []
-
-                cleaned_items: list[dict[str, Any]] = []
-                for entry in items:
-                    if isinstance(entry, dict) and entry.get("name") and entry.get("careers_url"):
-                        cleaned_items.append(
-                            {
-                                "name": str(entry["name"]).strip(),
-                                "sector": str(entry.get("sector", "General")).strip(),
-                                "priority": int(entry.get("priority", 50)),
-                                "careers_url": str(entry["careers_url"]).strip(),
-                                "enabled": bool(entry.get("enabled", True)),
-                                "scraper": str(entry.get("scraper", "generic_crawler")).strip(),
-                                "scraper_type": str(entry.get("scraper_type", "watchlist")).strip(),
-                                "notes": str(entry.get("notes", "")).strip(),
-                            }
-                        )
-                if cleaned_items:
-                    return cleaned_items
-        except Exception as e:
-            print(f"[CONFIG] Warning: Error reading {target_path} ({e}). Falling back to defaults.")
-
-    return []
+    try:
+        content = target_path.read_text(encoding="utf-8")
+        parsed = yaml.safe_load(content) if target_path.suffix in (".yaml", ".yml") else json.loads(content)
+        items = parsed.get("websites") if isinstance(parsed, dict) else parsed
+        if not isinstance(items, list) or not items:
+            raise ValueError("Expected a non-empty websites list")
+        cleaned_items = []
+        for position, entry in enumerate(items, start=1):
+            if not isinstance(entry, dict) or not entry.get("name") or not entry.get("careers_url"):
+                raise ValueError(f"Entry #{position}: name and careers_url are required")
+            if not isinstance(entry.get("enabled", True), bool):
+                raise ValueError(f"Entry #{position}: enabled must be a boolean")
+            cleaned_items.append(
+                {
+                    "name": str(entry["name"]).strip(),
+                    "sector": str(entry.get("sector", "General")).strip(),
+                    "priority": entry.get("priority", 50),
+                    "careers_url": str(entry["careers_url"]).strip(),
+                    "enabled": entry.get("enabled", True),
+                    "scraper": str(entry.get("scraper", "generic_crawler")).strip(),
+                    "scraper_type": str(entry.get("scraper_type", "watchlist")).strip(),
+                    "notes": str(entry.get("notes", "")).strip(),
+                }
+            )
+        issues = validate_websites_config(cleaned_items)
+        if issues:
+            raise ValueError("; ".join(issues))
+        return cleaned_items
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        raise ValueError(f"Invalid source configuration {target_path}: {exc}") from exc
 
 
 def get_employers_tuples(
@@ -119,7 +99,7 @@ def validate_websites_config(websites: list[dict[str, Any]] | None = None) -> li
             issues.append(f"Entry #{pos} ('{name}'): Invalid careers_url '{url}'")
 
         priority = site.get("priority")
-        if priority is None or not isinstance(priority, int) or not (1 <= priority <= 100):
+        if isinstance(priority, bool) or not isinstance(priority, int) or not (1 <= priority <= 100):
             issues.append(f"Entry #{pos} ('{name}'): Priority must be an integer between 1 and 100 (got {priority})")
 
     return issues

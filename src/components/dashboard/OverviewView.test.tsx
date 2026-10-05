@@ -1,10 +1,11 @@
 import { Suspense } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { OverviewView } from './OverviewView';
-import type { OverviewMetrics, Job } from '../../types/job';
+import type { OverviewMetrics } from '../../types/job';
 
 const mockMetrics: OverviewMetrics = {
+  companies: 2599,
   total: 120, evaluated: 45, locations: [],
   high_fit: 45,
   counts: {
@@ -29,25 +30,59 @@ const mockMetrics: OverviewMetrics = {
   ],
 };
 
-const mockJobs: Job[] = [
-  {
-    id: 1,
-    title: 'Staff Platform Engineer',
-    company: 'Stripe',
-    location: 'Dublin',
-    employment_type: 'Permanent',
-    salary_text: '€120,000',
-    url: 'https://example.com/jobs/1',
-    source: 'direct',
-    status: 'new',
-    relevance: 95,
-    last_seen_at: '2026-09-01T10:00:00Z',
-    matched_skills: ['Kubernetes', 'Go'],
-  },
-];
-
 describe('OverviewView', () => {
-  afterEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({ matches: true, media: query,
+      onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
+  });
+  afterEach(() => { window.localStorage.clear(); vi.restoreAllMocks(); });
+
+  it('shows reset in the header only after changing the default layout', async () => {
+    const header = document.createElement('div');
+    document.body.append(header);
+    const view = render(<OverviewView headerActions={header} overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    const resize = await screen.findByRole('button', { name: 'Resize Companies' });
+    expect(screen.queryByRole('button', { name: 'Reset Layout' })).not.toBeInTheDocument();
+    fireEvent.keyDown(resize, { key: 'ArrowRight' });
+    expect(header).toContainElement(screen.getByRole('button', { name: 'Reset Layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Layout' }));
+    expect(header).toBeEmptyDOMElement();
+    view.unmount();
+    header.remove();
+  });
+
+  it('keeps mobile layout changes independent and restores each layout on viewport switches', async () => {
+    let desktop = true;
+    let notify = () => {};
+    vi.mocked(window.matchMedia).mockImplementation((query) => ({ matches: desktop, media: query,
+      onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: (_event: string, callback: EventListenerOrEventListenerObject | null) => {
+        if (query === '(min-width: 768px)') notify = () => {
+          if (typeof callback === 'function') callback(new Event('change'));
+          else callback?.handleEvent(new Event('change'));
+        };
+      },
+      removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
+    const desktopKey = 'jobpulse:overview-widget-sizes:test-user';
+    const mobileKey = `${desktopKey}:mobile`;
+    window.localStorage.setItem(desktopKey, JSON.stringify({ companies: { columns: 6, height: 200 } }));
+    const view = render(<OverviewView userId="test-user" overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    const handle = await screen.findByRole('button', { name: 'Resize Companies' });
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    expect(JSON.parse(localStorage.getItem(desktopKey)!)).toEqual({ companies: { columns: 7, height: 200 } });
+    act(() => { desktop = false; notify(); });
+    const mobileHandle = await screen.findByRole('button', { name: 'Resize Companies' });
+    expect(screen.queryByRole('button', { name: 'Reset Layout' })).not.toBeInTheDocument();
+    fireEvent.keyDown(mobileHandle, { key: 'ArrowRight' });
+    expect(JSON.parse(localStorage.getItem(mobileKey)!)).toEqual({ companies: { columns: 20 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Layout' }));
+    expect(JSON.parse(localStorage.getItem(mobileKey)!)).toEqual({});
+    expect(JSON.parse(localStorage.getItem(desktopKey)!)).toEqual({ companies: { columns: 7, height: 200 } });
+    act(() => { desktop = true; notify(); });
+    expect(await screen.findByRole('button', { name: 'Reset Layout' })).toBeInTheDocument();
+    expect(screen.getByText('Companies').closest('section')!.style.height).toBe('200px');
+    view.unmount();
+  });
 
   it('restores widget order for the signed-in user', async () => {
     window.localStorage.setItem(
@@ -59,13 +94,12 @@ describe('OverviewView', () => {
         <OverviewView
           userId="test-user"
           overviewMetrics={mockMetrics}
-          jobs={mockJobs}
           onNavigateToJobs={vi.fn()}
         />
       </Suspense>
     );
 
-    const highFit = await screen.findByText('High-Match');
+    const highFit = await screen.findByText('High-Match (≥75%)');
     const tracked = await screen.findByText('Opportunities');
     expect(highFit.compareDocumentPosition(tracked) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Obsolete reference widgets are filtered from saved layouts; charts remain.
@@ -74,6 +108,75 @@ describe('OverviewView', () => {
     const order: string[] = JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-order:test-user')!);
     expect(order).not.toContain('ireland-enterprises');
     expect(order).toContain('ireland-pay-chart');
+    expect(order[order.indexOf('tracked-opportunities') + 1]).toBe('companies');
+    expect(order.filter((id) => id === 'companies')).toHaveLength(1);
+  });
+
+  it('places Application Pipeline after the five summary widgets when updating an older layout', async () => {
+    window.localStorage.setItem('jobpulse:overview-widget-order:test-user', JSON.stringify(['category-breakdown', 'tracked-opportunities', 'saved-jobs', 'companies', 'high-fit-opportunities', 'pipeline-progress', 'application-pipeline']));
+    const { container } = render(<OverviewView userId="test-user" overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    await screen.findByText('Companies');
+    const ids = [...container.querySelectorAll('[data-widget-id]')].map((node) => node.getAttribute('data-widget-id'));
+    expect(ids.slice(0, 5)).toEqual(['tracked-opportunities', 'saved-jobs', 'companies', 'high-fit-opportunities', 'pipeline-progress']);
+    expect(ids[5]).toBe('application-pipeline');
+    expect(window.localStorage.getItem('jobpulse:overview-widget-order:test-user:revision')).toBe('2');
+  });
+
+  it('preserves later custom orders after the layout update', async () => {
+    window.localStorage.setItem('jobpulse:overview-widget-order:test-user', JSON.stringify(['category-breakdown', 'application-pipeline', 'companies']));
+    window.localStorage.setItem('jobpulse:overview-widget-order:test-user:revision', '2');
+    render(<OverviewView userId="test-user" overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    await screen.findByText('Companies');
+    expect(JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-order:test-user')!).slice(0, 3)).toEqual(['category-breakdown', 'application-pipeline', 'companies']);
+  });
+
+  it('resets and persists factory order and sizes without touching another account', async () => {
+    const orderKey = 'jobpulse:overview-widget-order:test-user';
+    const sizesKey = 'jobpulse:overview-widget-sizes:test-user';
+    window.localStorage.setItem(orderKey, JSON.stringify(['category-breakdown', 'companies']));
+    window.localStorage.setItem(`${orderKey}:revision`, '2');
+    window.localStorage.setItem(sizesKey, JSON.stringify({ companies: { columns: 10, height: 200 } }));
+    window.localStorage.setItem('jobpulse:overview-widget-sizes:other-user', '{"companies":{"columns":8}}');
+    const props = { userId: 'test-user', overviewMetrics: mockMetrics, onNavigateToJobs: vi.fn() };
+    const view = render(<OverviewView {...props} />);
+    await screen.findByText('Companies');
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Layout' }));
+    const factory = ['tracked-opportunities', 'companies', 'high-fit-opportunities', 'saved-jobs', 'pipeline-progress', 'application-pipeline', 'category-breakdown'];
+    expect(JSON.parse(window.localStorage.getItem(orderKey)!).slice(0, 7)).toEqual(factory);
+    expect(JSON.parse(window.localStorage.getItem(sizesKey)!)).toEqual({});
+    expect(screen.queryByRole('button', { name: 'Reset Layout' })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('jobpulse:overview-widget-sizes:other-user')).toBe('{"companies":{"columns":8}}');
+    view.unmount();
+    const reloaded = render(<OverviewView {...props} />);
+    await screen.findByText('Companies');
+    expect([...reloaded.container.querySelectorAll('[data-widget-id]')].slice(0, 7).map((node) => node.getAttribute('data-widget-id'))).toEqual(factory);
+    expect(screen.getByText('Companies').closest('section')!.style.height).toBe('');
+  });
+
+  it('restores account widget sizes and saves keyboard resizing', async () => {
+    window.localStorage.setItem('jobpulse:overview-widget-sizes:test-user', JSON.stringify({ companies: { columns: 6, height: 140 } }));
+    render(<OverviewView userId="test-user" overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    const handle = await screen.findByRole('button', { name: 'Resize Companies' });
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    const saved = JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-sizes:test-user')!);
+    expect(saved.companies).toEqual({ columns: 7, height: 140 });
+    fireEvent.keyDown(handle, { key: 'Home' });
+    expect(JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-sizes:test-user')!).companies).toBeUndefined();
+  });
+
+  it('keeps an existing company widget in its chosen position', async () => {
+    window.localStorage.setItem('jobpulse:overview-widget-order:test-user', JSON.stringify(['companies', 'saved-jobs', 'tracked-opportunities']));
+    render(<OverviewView userId="test-user" overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />);
+    await screen.findByText('Companies');
+    const order: string[] = JSON.parse(window.localStorage.getItem('jobpulse:overview-widget-order:test-user')!);
+    expect(order.slice(0, 3)).toEqual(['companies', 'saved-jobs', 'tracked-opportunities']);
+    expect(order.filter((id) => id === 'companies')).toHaveLength(1);
+  });
+
+  it('shows an unavailable company count without inventing a zero', async () => {
+    render(<OverviewView overviewMetrics={{ ...mockMetrics, companies: undefined }} onNavigateToJobs={vi.fn()} />);
+    const widget = (await screen.findByText('Companies')).closest('[data-widget-id]');
+    expect(widget).toHaveTextContent('—');
   });
 
   it('keeps historical charts without the six removed reference cards', async () => {
@@ -101,7 +204,6 @@ describe('OverviewView', () => {
       <Suspense fallback={<div>Loading...</div>}>
         <OverviewView
           overviewMetrics={mockMetrics}
-          jobs={mockJobs}
           onNavigateToJobs={handleNavigate}
         />
       </Suspense>
@@ -109,12 +211,15 @@ describe('OverviewView', () => {
 
     expect(await screen.findByText('120')).toBeInTheDocument();
     expect(await screen.findByText('45')).toBeInTheDocument();
+    const companyCard = (await screen.findByText('Companies')).closest('[data-widget-id]');
+    expect(companyCard).toHaveTextContent('2,599');
+    expect(screen.getByRole('button', { name: 'Reorder Companies' })).toBeInTheDocument();
   });
 
   it('shows each pipeline stage average alongside its count', async () => {
     render(
       <Suspense fallback={<div>Loading...</div>}>
-        <OverviewView overviewMetrics={mockMetrics} jobs={mockJobs} onNavigateToJobs={vi.fn()} />
+        <OverviewView overviewMetrics={mockMetrics} onNavigateToJobs={vi.fn()} />
       </Suspense>
     );
 
@@ -128,7 +233,6 @@ describe('OverviewView', () => {
       <Suspense fallback={<div>Loading...</div>}>
         <OverviewView
           overviewMetrics={mockMetrics}
-          jobs={mockJobs}
           onNavigateToJobs={handleNavigate}
         />
       </Suspense>
@@ -147,13 +251,12 @@ describe('OverviewView', () => {
       <Suspense fallback={<div>Loading...</div>}>
         <OverviewView
           overviewMetrics={mockMetrics}
-          jobs={mockJobs}
           onNavigateToJobs={handleNavigate}
         />
       </Suspense>
     );
 
-    const highFitCard = (await screen.findByText('High-Match')).closest('button');
+    const highFitCard = (await screen.findByText('High-Match (≥75%)')).closest('button');
     expect(highFitCard).not.toBeNull();
     fireEvent.click(highFitCard!);
 

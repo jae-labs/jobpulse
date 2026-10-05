@@ -16,13 +16,11 @@ _METADATA = re.compile(
 )
 
 
-def has_description_body(description: str | None, *, minimum_chars: int = 100) -> bool:
-    text = clean_html_description(description or "").strip()
-    if len(text) < minimum_chars or any(re.search(pattern, text.lower()) for pattern in ERROR_ANTI_BOT_PATTERNS):
-        return False
-    # Old adapters prepended listing metadata even to real (but truncated) bodies.
-    if any(
-        marker in text.lower()
+def has_closed_notice(text: str) -> bool:
+    """Reject explicit closure notices; never infer closure from age or missing content."""
+    lowered = text.lower()
+    return any(
+        marker in lowered
         for marker in (
             "position has been filled",
             "job is no longer available",
@@ -30,8 +28,16 @@ def has_description_body(description: str | None, *, minimum_chars: int = 100) -
             "job is closed",
             "no longer accepting applications",
         )
-    ):
+    )
+
+
+def has_description_body(description: str | None, *, minimum_chars: int = 100) -> bool:
+    text = clean_html_description(description or "").strip()
+    if len(text) < minimum_chars or any(re.search(pattern, text.lower()) for pattern in ERROR_ANTI_BOT_PATTERNS):
         return False
+    if has_closed_notice(text):
+        return False
+    # Old adapters prepended listing metadata even to real (but truncated) bodies.
     if _METADATA.search(text):
         return False
     return True

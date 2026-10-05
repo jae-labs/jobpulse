@@ -7,14 +7,14 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
-import type { Job, OverviewCategory } from '../../types/job';
+import type { OverviewCategory } from '../../types/job';
 import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
+import { getSectorLabel } from '../../lib/sectors';
 
 interface CategoryBreakdownChartProps {
   title?: string;
-  jobs?: Job[];
-  categories?: OverviewCategory[];
+  categories: OverviewCategory[];
   totalJobs?: number;
   onSelectCategory?: (category: string) => void;
 }
@@ -38,6 +38,7 @@ function getCategoryColorIndex(name: string, fallbackIndex: number): number {
 
 interface CategoryDataPoint {
   name: string;
+  label: string;
   value: number;
   percentage: number;
   avgMatch: number;
@@ -67,7 +68,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, t, onSel
             className="size-2.5 rounded-full inline-block shrink-0"
             style={{ backgroundColor: data.fill }}
           />
-          <span className="font-semibold text-ds-text-primary truncate">{data.name}</span>
+          <span className="font-semibold text-ds-text-primary truncate">{data.label}</span>
         </div>
         <div className="text-ds-text-secondary flex justify-between gap-4 pt-1.5 border-t border-ds-border">
           <span>{t('charts.categoryBreakdown.opportunitiesLabel')}</span>
@@ -85,7 +86,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, t, onSel
 
 const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = ({
   title,
-  jobs = [],
   categories,
   totalJobs: controlledTotalJobs,
   onSelectCategory,
@@ -103,60 +103,19 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
   );
 
   const { chartData, topCategory } = useMemo(() => {
-    if (categories && categories.length > 0) {
-      const totalCount = controlledTotalJobs || categories.reduce((sum, c) => sum + c.value, 0) || 1;
-      const sorted = categories.map((cat, idx) => {
-        const colorIndex = getCategoryColorIndex(cat.name, idx);
-        const percentage = ((cat.value / totalCount) * 100).toFixed(1);
-        return {
-          name: cat.name,
-          value: cat.value,
-          percentage,
-          avgMatch: cat.avgMatch,
-          fill: palette[colorIndex],
-          tone: CHART_TONES[colorIndex],
-        };
-      });
+    const totalCount = controlledTotalJobs ?? (categories.reduce((sum, category) => sum + category.value, 0) || 1);
+    const data = categories.map((category, index) => {
+      const colorIndex = getCategoryColorIndex(category.name, index);
       return {
-        chartData: sorted,
-        topCategory: sorted[0],
+        ...category,
+        label: getSectorLabel(category.name, t),
+        percentage: Number(((category.value / (totalCount || 1)) * 100).toFixed(1)),
+        fill: palette[colorIndex],
+        tone: CHART_TONES[colorIndex],
       };
-    }
-
-    const categoryMap = new Map<string, { count: number; totalScore: number }>();
-
-    for (const job of jobs) {
-      const cat = (job.role_sector || 'Uncategorized').trim();
-      if (!cat || cat === 'Uncategorized') continue;
-      const existing = categoryMap.get(cat) || { count: 0, totalScore: 0 };
-      categoryMap.set(cat, {
-        count: existing.count + 1,
-        totalScore: existing.totalScore + (job.relevance || 0),
-      });
-    }
-
-    const totalJobs = Array.from(categoryMap.values()).reduce((sum, s) => sum + s.count, 0) || 1;
-    const sorted = Array.from(categoryMap.entries())
-      .map(([name, stats], idx) => {
-        const colorIndex = getCategoryColorIndex(name, idx);
-        const percentage = ((stats.count / totalJobs) * 100).toFixed(1);
-        const avgMatch = Math.round(stats.totalScore / stats.count);
-        return {
-          name,
-          value: stats.count,
-          percentage,
-          avgMatch,
-          fill: palette[colorIndex],
-          tone: CHART_TONES[colorIndex],
-        };
-      })
-      .sort((a, b) => b.value - a.value);
-
-    return {
-      chartData: sorted,
-      topCategory: sorted[0],
-    };
-  }, [jobs, categories, controlledTotalJobs, palette]);
+    });
+    return { chartData: data, topCategory: data[0] };
+  }, [categories, controlledTotalJobs, palette, t]);
 
   const activeIdx = hoveredIdx ?? selectedIdx;
   const activeCategory = activeIdx !== null ? chartData[activeIdx] : topCategory;
@@ -206,16 +165,17 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
         {activeCategory && (
           <button
             type="button"
+            aria-label={activeCategory.label}
             onClick={() => onSelectCategory?.(activeCategory.name)}
             className={`absolute z-0 max-w-[140px] px-4 text-center rounded-ds-control transition-transform ds-focus-ring ${
               onSelectCategory ? 'cursor-pointer hover:scale-105 active:scale-95' : 'pointer-events-none'
             }`}
           >
             <div className="text-[10px] uppercase font-semibold text-ds-text-secondary truncate">
-              {activeCategory.name}
+              {activeCategory.label}
             </div>
             <div className="text-xl font-bold text-ds-text-primary">
-              {activeCategory.value}
+              {formatNumber(activeCategory.value, i18n.language)}
             </div>
             <div className="text-xs text-ds-text-secondary font-semibold font-mono">
               {activeCategory.percentage}%
@@ -225,14 +185,14 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-2 border-t border-ds-border">
-        {chartData.slice(0, 8).map((cat, idx) => {
+        {chartData.map((cat, idx) => {
           const isSelected = selectedIdx === idx;
           return (
             <Pill
               key={cat.name}
               layout="spread"
               tone={cat.tone}
-              label={cat.name}
+              label={cat.label}
               count={formatNumber(cat.value, i18n.language)}
               active={isSelected}
               onMouseEnter={() => setHoveredIdx(idx)}
@@ -241,7 +201,7 @@ const CategoryBreakdownChartComponent: React.FC<CategoryBreakdownChartProps> = (
                 setSelectedIdx((prev) => (prev === idx ? null : idx));
                 if (cat.name) onSelectCategory?.(cat.name);
               }}
-              title={cat.name}
+              title={cat.label}
             />
           );
         })}

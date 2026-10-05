@@ -17,7 +17,7 @@ and refactors as well as bug fixes.
 
 ## 2. Server State & Data Fetching
 
-- **TanStack Query Only**: Manage server data via hooks in `src/hooks/useQueries.ts`. Do not use ad-hoc
+- **TanStack Query Only**: Manage server data via domain hooks exported through `src/hooks/useQueries.ts`. Do not use ad-hoc
   `useEffect` fetch loops.
 - **Account Lifetime**: Reset view state per UID. Tenant query and mutation functions check session identity before and after asynchronous operations through `withActiveUser`. Never retain tenant placeholder data across query keys.
 - **Cache Invalidation**: Mutations must invalidate query cache keys via the `queryKeys` factory.
@@ -50,12 +50,8 @@ and refactors as well as bug fixes.
 
 ## 5. Performance & Main-Thread Invariants
 
-- **No Forced Synchronous Layouts**: Avoid `getComputedStyle(document.documentElement)` in render lifecycles. Read CSS custom properties through `getCachedCssVar` in `src/lib/chartTheme.ts`.
-- **Chart Animation Restraint**: Multi-chart dashboard views must specify `isAnimationActive={false}` on Recharts components to prevent concurrent 1500ms `requestAnimationFrame` loops during initial render and tab switching.
-- **Virtual List Ref Stability**: Never pass inline arrow ref callbacks (`ref={(el) => ...}`) to virtualized cards. Cache ref callbacks by item ID using `getCardRefCallback(id)` to prevent commit-phase churn (`ref(null)` -> `ref(el)`).
-- **Single-Pass Reductions**: Consolidate multi-filter counts (status, salary brackets, regional locations) and histogram bucket calculations into a single $O(N)$ pass. Avoid chaining multiple `.filter()` loops across large job arrays.
-- **Component Memoization & Stable Props**: Wrap virtual cards, inspectors, pill badges, and analytics charts in `React.memo`. Ensure all handler callbacks passed from parent views are wrapped in `useCallback`.
-- **Intl Formatter Caching**: Never instantiate `new Intl.DateTimeFormat` or `new Intl.NumberFormat` on render ticks or in loops. Use the module-level caches in `src/lib/i18n.ts`.
+[Performance & Scalability](PERFORMANCE_AND_SCALABILITY.md) owns rendering, virtualization,
+formatter caching and server-aggregation rules. Consult it before changing those paths.
 
 ## 6. Python & Scraper Service (`services/scraper/`)
 
@@ -71,29 +67,20 @@ and refactors as well as bug fixes.
   Never leak, import, or bundle service role logic into the frontend application.
 - **Thread Safety**: Singletons and ML models must be synchronized across threads (`threading.Lock` / `threading.RLock`). Never share un-synchronized mutable state across worker threads.
 
-## 7. Verification Gate
+## 7. Verification and Review
 
-Always verify the completion gate before submitting changes:
+Run `make check` for frontend lint, typecheck, tests and build plus scraper Ruff, Pyright and tests.
+Run the additional domain gates in [AGENTS.md](../AGENTS.md#required-verification).
 
-```bash
-make check  # npm run check + scrape-lint + scrape-unit
-```
+CI audits locked JavaScript/Python dependencies and scans repository history with a
+checksum-verified Gitleaks release. Lefthook scans staged changes; CI remains mandatory
+when hooks are skipped. TypeScript rejects unused locals and parameters; translation
+lint validates static keys in both bundles, while dynamic keys need behavioral tests.
 
-CI audits the locked JavaScript and Python dependencies and scans repository history with a checksum-verified Gitleaks release. Local Lefthook scans staged changes; CI remains mandatory when hooks are skipped.
-
-Source lint also rejects runtime Sentry imports outside `src/lib/sentry.ts` and common
-direct console diagnostics outside `src/lib/logger.ts`. Use `reportError` for sanitized
-production reporting and `warn` for development-only diagnostics. Never log profile or
-document content as a workaround, or add an exception to silence a security failure.
-
-## Verification and reviewable changes
-
-Run `make check` for frontend, scraper lint, Pyright and behavioral tests.
-TypeScript rejects unused locals and parameters. Static translation keys must
-resolve to text in both bundles; dynamic keys still need behavior coverage.
-Domain query modules sit behind the compatible `useQueries.ts` facade; persistence
-services do not own query caches. Bind initiating identity through services and
-freeze transport identity for mutations whose RPC/Function infers the owner.
+Diagnostics use `reportError` for sanitized production reporting and `warn` for
+development-only messages. Source lint rejects telemetry imports and direct console
+output outside their boundaries; never add exceptions to hide a security failure.
+See [Error Tracking](ERROR_TRACKING_AND_MONITORING.md) for the reporting contract.
 
 Use focused, descriptive commit subjects that identify the behavior changed
 (e.g. `fix: reject stale-account profile writes`). Repeating a generic subject

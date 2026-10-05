@@ -85,6 +85,7 @@ def repair_descriptions(
         "source_blocked": 0,
         "conflicts": 0,
     }
+    report.parent.mkdir(parents=True, exist_ok=True)
     with report.open("w", newline="") as output, ThreadPoolExecutor(max_workers=workers) as pool:
         writer = csv.DictWriter(output, fieldnames=["id", "source", "old_chars", "new_chars", "outcome"])
         writer.writeheader()

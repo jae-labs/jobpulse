@@ -1,20 +1,18 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-stop db-reset db-restore db-status db-benchmark dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff scrape-enrich-offices scrape-enrich-ai scrape-lint scrape-format scrape-unit scrape-typecheck db-types check
+.PHONY: help dev stop db-start db-reset db-restore db-status db-benchmark dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff scrape-enrich-offices scrape-enrich-ai scrape-lint scrape-format scrape-unit scrape-typecheck db-types check
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 dev: ## Start local Supabase stack, Edge Function, and Vite development server.
-	npm run dev:local
+	npm run dev
 
 stop: ## Stop the local Supabase stack.
 	npm run db:stop
 
 db-start: ## Start the local Supabase stack only (without Vite).
 	npm run db:start
-
-db-stop: stop
 
 db-reset: ## Reset and seed the local Supabase database.
 	npm run db:reset
@@ -31,7 +29,7 @@ db-benchmark: ## Run synthetic capacity probes; set PROJECT=jobpulse-benchmark.
 	node scripts/benchmark-database.mjs "$(PROJECT)"
 
 dump: ## Save a full logical backup of the linked production database.
-	bash scripts/dump-production.sh
+	node scripts/backup-database.mjs
 
 storage-export: ## Download every linked-project Storage bucket.
 	bash scripts/export-storage.sh
@@ -59,11 +57,11 @@ scrape-backfill: ## Generate missing vectors for existing jobs without crawling.
 scrape-backfill-employers: ## Preview employer links; set ARGS="--apply --limit 100" to persist.
 	@cd services/scraper && uv run --locked python tools/backfill_employers.py $(ARGS)
 
-scrape-descriptions: ## Audit/repair catalog bodies; set ARGS="--apply --report /tmp/descriptions.csv" to write.
-	@cd services/scraper && uv run --locked python tools/repair_descriptions.py $(ARGS)
+scrape-descriptions: ## Preview catalog body repairs; reports in .backups; set ARGS="--apply" to write.
+	@cd services/scraper && uv run --locked python tools/repair_descriptions.py --report ../../.backups/descriptions.csv $(ARGS)
 
-scrape-description-audit: ## Read-only coverage; set ARGS="--report /tmp/audit.csv --summary /tmp/audit.json".
-	@cd services/scraper && uv run --locked python tools/audit_descriptions.py $(ARGS)
+scrape-description-audit: ## Read-only body coverage; CSV and summary reports in .backups.
+	@cd services/scraper && uv run --locked python tools/audit_descriptions.py --report ../../.backups/description-audit.csv --summary ../../.backups/description-audit.json $(ARGS)
 
 scrape-validate: ## Validate websites.yaml configuration.
 	@cd services/scraper && uv run --locked python app.py --validate-config
@@ -77,8 +75,8 @@ scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set AR
 scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
 	@cd services/scraper && uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
 
-scrape-enrich-ai: ## Enrich company size, sector, and Ireland offices with agy LLM; set ARGS="--apply" to persist.
-	@cd services/scraper && uv run --locked python tools/enrich_companies_ai.py $(ARGS)
+scrape-enrich-ai: ## Propose company metadata via agy (no writes); report in .backups.
+	@cd services/scraper && uv run --locked python tools/enrich_companies_ai.py --report ../../.backups/company-proposals.json $(ARGS)
 
 scrape-lint: ## Run ruff lint & format check on scraper code.
 	@cd services/scraper && uv run --locked ruff check .

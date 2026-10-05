@@ -50,6 +50,9 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
     )
       throw new Error("Invalid overview metrics count");
   }
+  if (obj.companies !== undefined && (
+    typeof obj.companies !== "number" || !Number.isSafeInteger(obj.companies) || obj.companies < 0
+  )) throw new Error("Invalid overview company count");
   if (!Array.isArray(obj.locations))
     throw new Error("Invalid overview locations");
   if (
@@ -60,6 +63,7 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
   )
     throw new Error("Invalid overview stage count");
   return {
+    companies: obj.companies as number | undefined,
     evaluated: obj.evaluated as number,
     locations: obj.locations.map((value) => {
       const row = record(value);

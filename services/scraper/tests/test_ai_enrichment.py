@@ -7,6 +7,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from pipeline.ai_enrichment import (
     ENRICHMENT_SCHEMA,
     VALID_SIZES,
@@ -16,16 +18,18 @@ from pipeline.ai_enrichment import (
     is_valid_ireland_coordinate,
     slugify_name,
 )
-from tools.enrich_companies_ai import apply_company_enrichment
+from tools import enrich_companies_ai as proposals
 
 
-def test_schema_structure() -> None:
-    assert ENRICHMENT_SCHEMA["type"] == "object"
-    assert "companies" in ENRICHMENT_SCHEMA["properties"]
-    items = ENRICHMENT_SCHEMA["properties"]["companies"]["items"]["properties"]
-    assert "size" in items
-    assert set(items["size"]["enum"]) == set(VALID_SIZES)
-    assert "offices" in items
+@pytest.fixture
+def proposal_client(monkeypatch) -> MagicMock:
+    client = MagicMock()
+    client.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
+        {"id": 7, "name": "Example"}
+    ]
+    monkeypatch.setattr(proposals, "get_supabase", lambda: client)
+    monkeypatch.setattr(proposals, "retry_supabase", lambda fn: fn())
+    return client
 
 
 def test_slugify_name() -> None:
@@ -59,9 +63,12 @@ def test_enrich_companies_with_ai_empty() -> None:
     assert enrich_companies_with_ai([]) == []
 
 
+@pytest.mark.parametrize("size", ["11-50", None, "invented"])
 @patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
 @patch("pipeline.ai_enrichment.subprocess.run")
-def test_enrichment_discards_invalid_office_coordinates(mock_run: MagicMock, mock_which: MagicMock) -> None:
+def test_enrichment_discards_invalid_office_coordinates(
+    mock_run: MagicMock, mock_which: MagicMock, size: str | None
+) -> None:
     mock_run.return_value = SimpleNamespace(
         stdout=json.dumps(
             {
@@ -70,7 +77,7 @@ def test_enrichment_discards_invalid_office_coordinates(mock_run: MagicMock, moc
                         {
                             "name": "Example",
                             "sector": "Software & SaaS",
-                            "size": "11-50",
+                            "size": size,
                             "offices": [
                                 {
                                     "address": "Example Street",
@@ -88,7 +95,9 @@ def test_enrichment_discards_invalid_office_coordinates(mock_run: MagicMock, moc
         returncode=0,
     )
 
-    assert enrich_companies_with_ai(["Example"], agy_path="/fake/agy")[0]["offices"] == []
+    proposal = enrich_companies_with_ai(["Example"], agy_path="/fake/agy")[0]
+    assert proposal["offices"] == []
+    assert proposal["size"] == (size if size in VALID_SIZES else "")
 
 
 def test_agy_fallback_uses_current_home() -> None:
@@ -142,6 +151,8 @@ def test_enrich_companies_with_ai_mocked(mock_run: MagicMock, mock_which: MagicM
     )
 
     enriched = enrich_companies_with_ai(["Stripe", "Remote Only Co"], agy_path="/fake/agy")
+    command = mock_run.call_args.args[0]
+    assert json.loads(command[command.index("--json-schema") + 1]) == ENRICHMENT_SCHEMA
 
     assert len(enriched) == 2
     stripe = enriched[0]
@@ -167,44 +178,44 @@ def test_enrich_companies_with_ai_mocked(mock_run: MagicMock, mock_which: MagicM
     assert remote["offices"] == []
 
 
-def test_apply_company_enrichment_dry_run() -> None:
-    mock_client = MagicMock()
-    employer = {
-        "id": 101,
-        "name": "Stripe",
-        "sector": "Uncategorized",
-        "size": None,
-        "website": None,
-        "description": None,
-        "metadata_source": "unverified",
-    }
-    enriched = {
-        "name": "Stripe",
-        "sector": "Fintech & Payments",
-        "size": "5000+",
-        "description": "Payments infrastructure.",
-        "website": "https://stripe.com",
-        "website_domain": "stripe.com",
-        "offices": [
-            {
-                "place_id": "ie-office-stripe-wilton",
-                "name": "Stripe Dublin HQ",
-                "address": "One Wilton Park",
-                "city": "Dublin",
-                "country_code": "IE",
-                "latitude": 53.3338,
-                "longitude": -6.2485,
-            }
-        ],
-    }
+def test_retired_apply_flag_is_rejected_before_database_access(monkeypatch) -> None:
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--apply", "--report", "/tmp/unused.json"])
+    monkeypatch.setattr(proposals, "get_supabase", lambda: pytest.fail("Connected before rejecting unsafe flag"))
+    with pytest.raises(SystemExit) as outcome:
+        proposals.main()
+    assert outcome.value.code == 2
 
-    result = apply_company_enrichment(mock_client, employer, enriched, dry_run=True)
 
-    assert result["id"] == 101
-    assert result["sector"] == "Fintech & Payments"
-    assert result["size"] == "5000+"
-    assert result["office_leads_count"] == 1
-    assert result["applied"] is False
+def test_proposals_never_write_catalog_and_require_exact_identity(monkeypatch, tmp_path, proposal_client) -> None:
+    client = proposal_client
+    monkeypatch.setattr(
+        proposals,
+        "enrich_companies_with_ai",
+        lambda names, **kwargs: [{"name": "Example", "sector": "Unverified lead", "size": "", "offices": []}],
+    )
+    report = tmp_path / "proposals.json"
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(report)])
+    proposals.main()
+    assert json.loads(report.read_text())["status"] == "unverified_proposals"
+    client.table.return_value.update.assert_not_called()
+    client.table.return_value.upsert.assert_not_called()
+    monkeypatch.setattr(
+        proposals,
+        "enrich_companies_with_ai",
+        lambda names, **kwargs: [{"name": "Example UK", "sector": "Unverified lead", "size": "", "offices": []}],
+    )
+    with pytest.raises(SystemExit) as outcome:
+        proposals.main()
+    assert outcome.value.code == 1
+    client.table.return_value.update.assert_not_called()
 
-    # Dry run must not perform writes
-    mock_client.table.assert_not_called()
+
+def test_company_research_failure_is_not_reported_as_success(monkeypatch, tmp_path, proposal_client) -> None:
+    monkeypatch.setattr(
+        proposals, "enrich_companies_with_ai", MagicMock(side_effect=RuntimeError("Synthetic provider failure"))
+    )
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(tmp_path / "report.json")])
+    with pytest.raises(SystemExit) as outcome:
+        proposals.main()
+    assert outcome.value.code == 1
+    assert not (tmp_path / "report.json").exists()

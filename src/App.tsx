@@ -14,8 +14,9 @@ import type { Job, Profile, JobStatus, JobFilterStatus } from './types/job';
 import { DashboardSidebar } from './components/dashboard/DashboardSidebar';
 import { useWorkspaceArrowScroll } from './components/dashboard/useWorkspaceArrowScroll';
 import { dashboardNavigation, getNavLabel, type DashboardTab } from './components/dashboard/navigation';
-import { ProjectSwitcher } from './components/dashboard/ProjectSwitcher';
+import { DashboardBrand } from './components/dashboard/DashboardBrand';
 import { UserAccountMenu } from './components/dashboard/UserAccountMenu';
+import { NotificationsPanel } from './components/dashboard/NotificationsPanel';
 import { Button, Card } from '@jae-labs/ui';
 import { BrandLogo } from './components/ui/BrandLogo';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -45,7 +46,7 @@ import { supabase } from './lib/supabase';
 import { DEFAULT_PROFILE } from './lib/defaultProfile';
 import { LoginView } from './components/auth/LoginView';
 import { AccessDeniedView } from './components/auth/AccessDeniedView';
-import { InvitationsModal } from './components/dashboard/InvitationsModal';
+import { MemberManagementModal } from './components/dashboard/MemberManagementModal';
 import { clearAppCache } from './lib/queryClient';
 import { useAuthSession } from './hooks/useAuthSession';
 import { useErrorDismissal } from './hooks/useErrorDismissal';
@@ -66,7 +67,8 @@ const App: React.FC = () => {
 const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ auth }) => {
   const { t } = useTranslation();
   const { session, isAuthorized, authError, isAuthChecking } = auth;
-  const [isInvitationsOpen, setIsInvitationsOpen] = useState(false);
+  const [overviewActions, setOverviewActions] = useState<HTMLDivElement | null>(null);
+  const [isMemberManagementOpen, setIsMemberManagementOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab: DashboardTab =
@@ -88,7 +90,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   );
 
   const [notice, setNotice] = useState('');
-  const [customDbError, setCustomDbError] = useState<string | null>(null);
 
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | JobFilterStatus>('new');
   const [selectedSectorFilter, setSelectedSectorFilter] = useState<string>('all');
@@ -161,17 +162,13 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
   const activeQueryError = isOverviewNeeded ? overviewQueryError : null;
   const { isDismissed: isDbErrorDismissed, dismiss: dismissDbError, reset: resetDbErrorDismissal } =
-    useErrorDismissal(activeTab, activeQueryError, customDbError);
+    useErrorDismissal(activeTab, activeQueryError);
   const dbError =
     !isDbErrorDismissed &&
-    (customDbError ||
-      (activeQueryError
-        ? t('common.dbConnectionDetail', {
-            message: t('common.networkError'),
-          })
-        : null));
+    (activeQueryError
+      ? t('common.dbConnectionDetail', { message: t('common.networkError') })
+      : null);
 
-  // Redirect the root path to /overview
   useEffect(() => {
     const isKnownPath = dashboardNavigation.some((item) => item.path === location.pathname);
     if (!isKnownPath) {
@@ -183,7 +180,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
     setSelectedJobState(job);
   }, []);
 
-  // Enforce dark mode
   useEffect(() => {
     document.documentElement.dataset.theme = 'dark';
     document.documentElement.classList.add('dark');
@@ -295,7 +291,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="lg:hidden">
-              <ProjectSwitcher currentProject="JobPulse" />
+              <DashboardBrand />
             </div>
             <div className="hidden lg:flex items-center gap-2 text-xs">
               <h1 className="font-semibold text-ds-text-primary text-sm tracking-tight">
@@ -305,12 +301,14 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
+            <div ref={setOverviewActions} />
+            <NotificationsPanel />
             <UserAccountMenu
               userEmail={session.user.email}
               profile={profile}
               onNavigateToProfile={() => setActiveTab('profile')}
               onNavigateToPrivacy={() => setActiveTab('privacy')}
-              onOpenInvitations={() => setIsInvitationsOpen(true)}
+              onOpenMemberManagement={() => setIsMemberManagementOpen(true)}
               onSignOut={handleSignOut}
             />
           </div>
@@ -348,7 +346,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     size="sm"
                     onClick={() => {
                       resetDbErrorDismissal();
-                      setCustomDbError(null);
                       void refetchOverview();
                     }}
                   >
@@ -374,7 +371,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                 </div>
                 <div className="text-xs font-semibold text-ds-text-secondary">{t('common.connectingToDb')}</div>
                 <div className="text-[11px] text-ds-text-muted">
-                  {isOverviewNeeded ? t('common.loadingAnalytics') : t('common.loadingOpportunities')}
+                  {t('common.loadingAnalytics')}
                 </div>
               </Card>
             )}
@@ -409,6 +406,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                   <OverviewView
                     key={session.user.id}
                     userId={session.user.id}
+                    headerActions={overviewActions}
                     overviewMetrics={overviewMetrics}
                     onNavigateToJobs={handleNavigateToJobs}
                   />
@@ -441,7 +439,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
 
               {activeTab === 'privacy' && (
                 <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadPrivacy')}>
-                  <PrivacyView />
+                  <PrivacyView userEmail={session.user.email} onDeleteAccount={handleDeleteAccount} />
                 </ErrorBoundary>
               )}
 
@@ -451,10 +449,8 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                     profile={loadedProfile ?? null}
                     isLoading={isProfileLoading}
                     loadError={profileQueryError instanceof Error ? profileQueryError.message : null}
-                    userEmail={session.user.email}
                     userId={session.user.id}
                     onSaveProfile={handleSaveProfile}
-                    onDeleteAccount={handleDeleteAccount}
                   />
                 </ErrorBoundary>
               )}
@@ -515,9 +511,9 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         </React.Suspense>
       )}
 
-      <InvitationsModal
-        isOpen={isInvitationsOpen}
-        onClose={() => setIsInvitationsOpen(false)}
+      <MemberManagementModal
+        isOpen={isMemberManagementOpen}
+        onClose={() => setIsMemberManagementOpen(false)}
         currentUserId={session.user.id}
       />
     </div>

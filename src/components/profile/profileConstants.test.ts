@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { parsePhone, COUNTRY_CODES, WORK_MODE_OPTIONS } from './profileConstants';
+import { parsePhone } from './profileConstants';
 
 describe('profileConstants', () => {
-  it('exports valid country codes and work modes', () => {
-    expect(COUNTRY_CODES.length).toBeGreaterThan(5);
-    expect(WORK_MODE_OPTIONS).toContain('Hybrid');
-    expect(WORK_MODE_OPTIONS).toContain('Remote');
-    expect(WORK_MODE_OPTIONS).toContain('On-site');
-  });
-
   describe('parsePhone', () => {
     it('returns empty dial when input is empty or undefined', () => {
       expect(parsePhone('')).toEqual({ dial: '', number: '' });

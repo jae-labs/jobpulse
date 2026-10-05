@@ -33,4 +33,4 @@ change trigger, and lifecycle; add it to this table in the same change. When con
 repair inbound links and update this index, `AGENTS.md`, and the root README together. Preserve applied-migration,
 security, recovery, and incident evidence, but label it historical instead of duplicating it in current policy.
 
-`npm run lint` validates local Markdown links across every maintained guide.
+`npm run lint` validates local Markdown links and heading anchors, and requires every maintained guide to have complete trigger, owner and status metadata in this index. New guides cannot silently bypass progressive discovery.

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dashboardNavigation, getNavLabel, type DashboardTab } from './navigation';
-import { ProjectSwitcher } from './ProjectSwitcher';
+import { DashboardBrand } from './DashboardBrand';
 import { Button, Tooltip } from '@jae-labs/ui';
 
 interface DashboardSidebarProps {
@@ -30,7 +30,7 @@ const DashboardSidebarComponent: React.FC<DashboardSidebarProps> = ({
       }`}
     >
       <div className={`h-11 flex items-center shrink-0 mb-1 ${isCollapsed ? 'justify-center w-full' : 'px-1.5'}`}>
-        <ProjectSwitcher currentProject="JobPulse" isCollapsed={isCollapsed} />
+        <DashboardBrand isCollapsed={isCollapsed} />
       </div>
 
       <div className="w-full flex-1 pt-1">

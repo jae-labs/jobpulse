@@ -10,7 +10,6 @@ import { useJobsPageQuery } from '../../hooks/useQueries';
 interface CommandMenuProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  jobs?: Job[];
   onSelectJob: (job: Job) => void;
   onNavigateToPrivacy?: () => void;
   userId?: string | null;
@@ -19,7 +18,6 @@ interface CommandMenuProps {
 export const CommandMenu: React.FC<CommandMenuProps> = ({
   isOpen,
   onOpenChange,
-  jobs = [],
   onSelectJob,
   onNavigateToPrivacy,
   userId,
@@ -36,7 +34,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
     { search: debouncedSearchQuery, limit: 25 },
     isOpen && Boolean(userId),
   );
-  const commandJobs = userId ? (searchResults?.items ?? []) : jobs;
+  const commandJobs = userId ? (searchResults?.items ?? []) : [];
   const showPrivacy = Boolean(onNavigateToPrivacy) && t('privacy.notice').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
   const searching = Boolean(userId) && (isPending || searchQuery !== debouncedSearchQuery || isFetching);
 

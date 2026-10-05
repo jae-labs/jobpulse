@@ -155,7 +155,7 @@ remains the application font; use medium control/title weights and semibold metr
 Use `ds-motion-control` for transitions of color, opacity and transforms: 160 ms with
 `--ds-motion-ease`. Use `ds-content-enter` for a 220 ms opacity-only reveal when content
 arrives. Do not animate dimensions, delay data display artificially, or retain stale
-private content for a crossfade. Sheets use a short 8 px entrance with matching opacity.
+private content for a crossfade. Sheets default to a short 8 px entrance with matching opacity; `motion="slide"` uses a full-width entrance from the selected side.
 All shared motion helpers also disable animation in reduced-motion mode without relying
 on the consumer's CSS. Static loading skeletons avoid continuous shimmer/spinner motion.
 

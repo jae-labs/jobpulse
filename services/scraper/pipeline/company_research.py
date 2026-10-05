@@ -8,7 +8,7 @@ import json
 import math
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -56,7 +56,7 @@ class ResearchClient:
 
     def reserve_geocoding_request(self) -> None:
         """Shared conservative daily allowance for employer and job lookup workers."""
-        date = datetime.now(timezone.utc).date().isoformat()
+        date = datetime.now(UTC).date().isoformat()
         path = self.cache.parent / f"geoapify-budget-{date}.txt"
         with path.open("a+") as stream:
             fcntl.flock(stream.fileno(), fcntl.LOCK_EX)

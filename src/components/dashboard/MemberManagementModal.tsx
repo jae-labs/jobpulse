@@ -23,13 +23,13 @@ import {
 } from '../../hooks/useQueries';
 import { formatDate } from '../../lib/i18n';
 
-interface InvitationsModalProps {
+interface MemberManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserId?: string | null;
 }
 
-export const InvitationsModal: React.FC<InvitationsModalProps> = ({
+export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
   isOpen,
   onClose,
   currentUserId,
@@ -117,11 +117,11 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
       >
         <div className="flex items-center gap-3.5 pb-5 border-b border-ds-border">
           <div className="flex size-10 items-center justify-center rounded-ds-control bg-ds-control border border-ds-border-strong shrink-0">
-            <span aria-hidden="true" className="text-xl leading-none">🎁</span>
+            <Users aria-hidden="true" className="size-5 text-ds-text-secondary" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-semibold tracking-tight text-ds-text-primary">
-              {t('invitations.title', 'Invite a friend')}
+              {t('memberManagement.title')}
             </h2>
           </div>
         </div>
@@ -203,7 +203,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
         <div className="pt-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ds-text-muted">
-              {t('invitations.sentInvitations', 'Invitations')}
+              {t('memberManagement.directoryTitle')}
             </h3>
             <span className="text-xs text-ds-text-muted">
               {invitations.length}
