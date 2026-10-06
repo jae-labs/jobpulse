@@ -1,0 +1,704 @@
+[
+  {
+    "name": "Glanua",
+    "aliases": [
+      "Glanua",
+      "Glanua Ireland",
+      "Glanua Group Limited"
+    ],
+    "sector": "Water & Wastewater Engineering",
+    "location": "Loughrea, Co. Galway, Ireland",
+    "description": "Water and wastewater infrastructure design, construction, operation and maintenance.",
+    "website": "https://glanua.com",
+    "sources": [
+      "https://glanua.com/about-glanua/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Comfort Keepers",
+    "aliases": [
+      "Comfort Keepers",
+      "Comfort Keepers Ireland"
+    ],
+    "sector": "Healthcare & Home Care",
+    "location": null,
+    "description": "Home support and personal care services across Ireland.",
+    "website": "https://comfortkeepers.ie",
+    "sources": [
+      "https://comfortkeepers.ie/about-us",
+      "https://comfortkeepers.ie/locations"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Sodexo Ireland",
+    "aliases": [
+      "Sodexo Ireland"
+    ],
+    "sector": "Food Services & Facilities Management",
+    "location": null,
+    "description": "Food services and facilities management for client sites across Ireland.",
+    "website": "https://ie.sodexo.com",
+    "sources": [
+      "https://ie.sodexo.com/",
+      "https://ie.sodexo.com/industries/business-industry"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Crewit Resourcing",
+    "aliases": [
+      "Crewit Resourcing",
+      "Crewit Resourcing Limited",
+      "Crewit Resourcing Ltd"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "International recruitment, relocation and candidate aftercare services.",
+    "website": "https://crewitresourcing.com",
+    "sources": [
+      "https://crewitresourcing.com/",
+      "https://crewitresourcing.com/locations/ireland/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Recruitroo",
+    "aliases": [
+      "Recruitroo",
+      "RECRUITROO IRELAND LIMITED"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Recruitment, immigration and relocation services for employers and candidates.",
+    "website": "https://www.recruitroo.com",
+    "sources": [
+      "https://www.recruitroo.com/uk",
+      "https://www.recruitroo.com/jobs/sales-executive-recruitroo-ireland-limited-dublin-2"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Atlantic Aviation Group",
+    "aliases": [
+      "Atlantic Aviation Group",
+      "ATLANTIC AVIATION GROUP LIMITED"
+    ],
+    "sector": "Aviation & Aerospace",
+    "location": "Shannon Airport, Shannon, Co. Clare, Ireland",
+    "description": "Aircraft maintenance and aviation services based in Shannon.",
+    "website": "https://www.atlanticaviation.ie",
+    "sources": [
+      "https://www.atlanticaviation.ie/search/",
+      "https://www.atlanticaviation.ie/wp-content/uploads/2024/07/Atlantic-Aviation-Group-Brochure.pdf"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Vertiv",
+    "aliases": [
+      "Vertiv",
+      "Vertiv Group Corporation"
+    ],
+    "sector": "Data Center Infrastructure",
+    "location": "505 N Cleveland Ave, Westerville, OH 43082, United States",
+    "description": "Hardware, software and services supporting critical digital infrastructure.",
+    "website": "https://www.vertiv.com",
+    "sources": [
+      "https://www.vertiv.com/en-us/contacts/",
+      "https://www.vertiv.com/en-us/about/about-us/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Resilience Healthcare",
+    "aliases": [
+      "Resilience Healthcare",
+      "RESILIENCE HEALTHCARE LIMITED"
+    ],
+    "sector": "Healthcare & Home Care",
+    "location": null,
+    "description": "Irish disability, clinical and community care services.",
+    "website": "https://resilience.ie",
+    "sources": [
+      "https://resilience.ie/",
+      "https://resilience.ie/clinical-services/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Irish HomeCare",
+    "aliases": [
+      "Irish HomeCare"
+    ],
+    "sector": "Healthcare & Home Care",
+    "location": "Co. Monaghan, Ireland",
+    "description": "Home care and support services throughout Ireland.",
+    "website": "https://irishhomecare.ie",
+    "sources": [
+      "https://irishhomecare.ie/irish-homecare-open-new-offices-in-north-dublin/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Corlann",
+    "aliases": [
+      "Corlann",
+      "Corlann (Brothers of Charity Services Ireland)",
+      "Brothers of Charity Services Ireland"
+    ],
+    "sector": "Healthcare & Disability Services",
+    "location": null,
+    "description": "Irish services supporting people with intellectual disabilities; formerly Brothers of Charity Services Ireland.",
+    "website": "https://corlann.ie",
+    "sources": [
+      "https://corlann.ie/about-us/",
+      "https://corlann.ie/join-our-team/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Morgan McKinley",
+    "aliases": [
+      "Morgan McKinley"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Recruitment, executive search and talent services.",
+    "website": "https://www.morganmckinley.com",
+    "sources": [
+      "https://www.careers.morganmckinley.com/about-us"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "PE Global",
+    "aliases": [
+      "PE Global"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Specialist recruitment services for employers and candidates.",
+    "website": "https://www.peglobal.net",
+    "sources": [
+      "https://www.peglobal.net/about-us/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Sigmar Recruitment",
+    "aliases": [
+      "Sigmar Recruitment"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Specialist temporary, permanent and contract recruitment services.",
+    "website": "https://www.sigmarrecruitment.com",
+    "sources": [
+      "https://www.sigmarrecruitment.com/aboutus/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Aureol Global Connections",
+    "aliases": [
+      "Aureol Global Connections",
+      "AUREOL GLOBAL CONNECTIONS LIMITED"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "International skilled-worker recruitment services.",
+    "website": "https://aureolglobalconnections.com",
+    "sources": [
+      "https://aureolglobalconnections.com/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Avery Dennison",
+    "aliases": [
+      "Avery Dennison"
+    ],
+    "sector": "Materials Science & Identification",
+    "location": null,
+    "description": "Labeling materials, functional materials and digital identification solutions.",
+    "website": "https://www.averydennison.com",
+    "sources": [
+      "https://www.averydennison.com/en/home/company/overview.html"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Hodson Bay Group",
+    "aliases": [
+      "Hodson Bay Group"
+    ],
+    "sector": "Hotels & Hospitality",
+    "location": null,
+    "description": "Hotel ownership, management and hospitality services.",
+    "website": "https://www.hodsonbaygroup.com",
+    "sources": [
+      "https://www.hodsonbaygroup.com/about-us/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "JLL",
+    "aliases": [
+      "JLL",
+      "Jones Lang LaSalle Incorporated"
+    ],
+    "sector": "Real Estate Services",
+    "location": null,
+    "description": "Commercial real estate services and investment management.",
+    "website": "https://www.jll.com",
+    "sources": [
+      "https://www.jll.com/en-us/about-jll"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Fenergo",
+    "aliases": [
+      "Fenergo",
+      "Fenergocareers"
+    ],
+    "sector": "Financial Compliance Software",
+    "location": null,
+    "description": "Client lifecycle management, KYC and financial compliance software.",
+    "website": "https://www.fenergo.com",
+    "sources": [
+      "https://www.fenergo.com/company/discover-fenergo"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Infosys",
+    "aliases": [
+      "Infosys",
+      "Infosys Ireland"
+    ],
+    "sector": "IT Services and Consulting",
+    "location": null,
+    "description": "Technology consulting and enterprise IT services.",
+    "website": "https://www.infosys.com",
+    "sources": [
+      "https://www.infosys.com/services.html"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Sanofi",
+    "aliases": [
+      "Sanofi"
+    ],
+    "sector": "Pharmaceuticals & Biotechnology",
+    "location": null,
+    "description": "Pharmaceutical research, development and medicines.",
+    "website": "https://www.sanofi.com",
+    "sources": [
+      "https://www.sanofi.com/en/our-company"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Henry Schein",
+    "aliases": [
+      "Henry Schein",
+      "henryschein"
+    ],
+    "sector": "Healthcare Distribution & Technology",
+    "location": null,
+    "description": "Dental and medical supplies, distribution and practice technology.",
+    "website": "https://www.henryschein.com",
+    "sources": [
+      "https://news.henryschein.com/press-kit/henry-schein-overview/default.aspx"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Sisk Group",
+    "aliases": [
+      "Sisk Group",
+      "John Sisk & Son"
+    ],
+    "sector": "Construction & Engineering",
+    "location": null,
+    "description": "Construction and engineering project delivery.",
+    "website": "https://sisk.com",
+    "sources": [
+      "https://sisk.com/about"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Uniphar Medtech",
+    "aliases": [
+      "Uniphar Medtech",
+      "Unipharmedtech"
+    ],
+    "sector": "Medical Devices & Distribution",
+    "location": null,
+    "description": "Medical device distribution and services for healthcare providers.",
+    "website": "https://www.uniphar.ie",
+    "sources": [
+      "https://www.uniphar.ie/static/services/uniphar-medtech/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Broadridge",
+    "aliases": [
+      "Broadridge",
+      "Broadridge Financial Solutions",
+      "Broadridge Financial Solutions, Inc."
+    ],
+    "sector": "Financial Technology",
+    "location": "Dundrum office: 5 Dundrum Business Park, Dundrum Road, Dublin, D14 DD89, Ireland",
+    "description": "Financial technology for capital markets, wealth management, investor communications and corporate governance.",
+    "website": "https://www.broadridge.com",
+    "sources": [
+      "https://www.broadridge.com/about/",
+      "https://www.broadridge.com/contact-us",
+      "https://www.broadridge.com/_assets/pdf/broadridge-welcome-to-your-cdp-climate-change-questionnaire-2022.pdf"
+    ],
+    "checked_on": "2026-10-02",
+    "latitude": 53.30292,
+    "longitude": -6.24385,
+    "coordinate_sources": [
+      "https://www.broadridge.com/_assets/pdf/broadridge-welcome-to-your-cdp-climate-change-questionnaire-2022.pdf"
+    ],
+    "coordinate_observed_on": "2022-07-28",
+    "coordinate_note": "Published office coordinates; current contact page confirms the same Dundrum Business Park office. Employer office only, never a vacancy coordinate."
+  },
+  {
+    "name": "Protential Resources",
+    "aliases": [
+      "Bluestone Personnel Limited",
+      "Protential Resources"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "New Town Centre, 14 Killegland Street, Ashbourne, Co. Meath, Ireland",
+    "description": "International recruitment and talent sourcing for employers in Ireland and the UK.",
+    "website": "https://www.protentialresources.com",
+    "sources": [
+      "https://www.protentialresources.com/about-us",
+      "https://www.protentialresources.com/contact"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "GS International Recruitment",
+    "aliases": [
+      "GS AGRI RECRUITMENT LIMITED",
+      "GS International Recruitment Ltd"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Overseas recruitment, employment placement and immigration services for employers in Ireland and the UK.",
+    "website": "https://gsrecruit.com",
+    "sources": [
+      "https://gsrecruit.com/about-us/",
+      "https://find-and-update.company-information.service.gov.uk/company/NI662699"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Longford Women's Link",
+    "aliases": [
+      "Longford Womens Link",
+      "Longford Women's Link"
+    ],
+    "sector": "Community & Social Services",
+    "location": "Willow House, Ardnacassa Avenue, Longford, Ireland",
+    "description": "Community development and women-centred services including education, childcare, counselling and domestic violence support.",
+    "website": "https://www.lwl.ie",
+    "sources": [
+      "https://www.lwl.ie/about/",
+      "https://www.lwl.ie/contact/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Ballivor Community Childcare",
+    "aliases": [
+      "Ballivor Community Childcare"
+    ],
+    "sector": "Childcare & Early Education",
+    "location": null,
+    "description": "Community childcare, early education and childcare training programmes in County Meath.",
+    "website": "https://www.crannsupportgroup.ie",
+    "sources": [
+      "https://www.crannsupportgroup.ie/BallivorCEScheme/about-us/",
+      "https://www.crannsupportgroup.ie/giggles/about-us/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Leitrim Development Company",
+    "aliases": [
+      "Leitrim Integrated Development Company CLG",
+      "Leitrim Development Company"
+    ],
+    "sector": "Community & Social Services",
+    "location": "Church Street, Drumshanbo, Co. Leitrim, N41 RF24, Ireland",
+    "description": "Community-led local development charity supporting social inclusion, enterprise and rural regeneration.",
+    "website": "https://www.ldco.ie",
+    "sources": [
+      "https://www.ldco.ie/governance.html",
+      "https://www.localenterprise.ie/leitrim/enterprise-development/other-supports/leader-leitrim-development-company.html"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Enable Ireland Clare",
+    "aliases": [
+      "Enable Ireland Clare"
+    ],
+    "sector": "Disability & Social Services",
+    "location": null,
+    "description": "Disability services supporting children and adults in County Clare, including community activities, therapy and independent living.",
+    "website": "https://enableireland.ie",
+    "sources": [
+      "https://enableireland.ie/about-enable-ireland",
+      "https://enableireland.ie/services/clare-adult-services"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Darndale Belcamp Village Centre",
+    "aliases": [
+      "Darndale Belcamp Village Centre"
+    ],
+    "sector": "Community & Social Services",
+    "location": "The Bell Building, The Link Road, Darndale, Dublin 17, D17 E027, Ireland",
+    "description": "Community services and local facilities operated by a registered charity in Darndale.",
+    "website": "https://www.darndalebelcampvc.ie",
+    "sources": [
+      "https://www.darndalebelcampvc.ie/",
+      "https://www.darndalebelcampvc.ie/page11.html"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Nenagh Childcare Centre",
+    "aliases": [
+      "Nenagh Childcare Centre"
+    ],
+    "sector": "Childcare & Early Education",
+    "location": "Limerick Road, Nenagh, Co. Tipperary, Ireland",
+    "description": "Community early years, preschool and afterschool services with Community Employment training placements.",
+    "website": "https://www.nenaghchildcarecentre.com",
+    "sources": [
+      "https://www.nenaghchildcarecentre.com/",
+      "https://www.nenaghchildcarecentre.com/ladybird-room"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Irish Wheelchair Association",
+    "aliases": [
+      "Irish Wheelchair Association"
+    ],
+    "sector": "Disability & Social Services",
+    "location": "Áras Cúchulainn, Blackheath Drive, Clontarf, Dublin 3, D03 AW62, Ireland",
+    "description": "Disability support including assisted living, community services, accessible transport and sport.",
+    "website": "https://www.iwa.ie",
+    "sources": [
+      "https://www.iwa.ie/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Irish Wheelchair Association Mullingar",
+    "aliases": [
+      "Irish Wheelchair Association / Mullingar"
+    ],
+    "sector": "Disability & Social Services",
+    "location": "Springfield Centre, Devlin Road, Mullingar, Co. Westmeath, N91 NP30, Ireland",
+    "description": "Irish Wheelchair Association community and disability support services in Mullingar.",
+    "website": "https://www.iwa.ie",
+    "sources": [
+      "https://www.iwa.ie/",
+      "https://www.iwa.ie/find-us-modal.php"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Irish Wheelchair Association Mayo",
+    "aliases": [
+      "Irish Wheelchair Association Mayo"
+    ],
+    "sector": "Disability & Social Services",
+    "location": null,
+    "description": "Irish Wheelchair Association disability and community support services in County Mayo.",
+    "website": "https://www.iwa.ie",
+    "sources": [
+      "https://www.iwa.ie/",
+      "https://www.iwa.ie/find-us-modal.php"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Collins McNicholas",
+    "aliases": [
+      "Collins McNicholas Group",
+      "Collins McNicholas"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "Galway office: Platform94, Mervue Business Park, Galway, H91 D932, Ireland",
+    "description": "Recruitment and HR services for employers and candidates across Ireland.",
+    "website": "https://www.collinsmcnicholas.ie",
+    "sources": [
+      "https://www.collinsmcnicholas.ie/about-us",
+      "https://www.collinsmcnicholas.ie/branches"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Amicus Search & Recruitment",
+    "aliases": [
+      "Amicus Search & Recruitment"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "38–40 Fitzwilliam Square West, Dublin 2, Ireland",
+    "description": "Specialist recruitment and executive search across accountancy, legal, sales, marketing and life sciences.",
+    "website": "https://amicus.ie",
+    "sources": [
+      "https://amicus.ie/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Leinster Appointments",
+    "aliases": [
+      "Leinster Appointments Ltd",
+      "Leinster Appointments"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "Naas, Co. Kildare, Ireland",
+    "description": "Recruitment consultancy serving employers and candidates across Leinster.",
+    "website": "https://www.leinsterappointments.ie",
+    "sources": [
+      "https://www.leinsterappointments.ie/about-us/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Maria Logan Recruitment",
+    "aliases": [
+      "Maria Logan Recruitment"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Specialist recruitment for hotels, catering and hospitality employers.",
+    "website": "https://marialogan.com",
+    "sources": [
+      "https://marialogan.com/",
+      "https://marialogan.com/our-team/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Barden",
+    "aliases": [
+      "Barden | B Corp",
+      "Barden"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "Dublin office: 127 Baggot Street Lower, Dublin 2, D02 F634, Ireland",
+    "description": "Talent advisory, specialist recruitment and executive search.",
+    "website": "https://barden.ie",
+    "sources": [
+      "https://barden.ie/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Harvey Nash",
+    "aliases": [
+      "Harvey Nash"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "Ella House, 39–43 Merrion Square, Dublin 2, D02 NP96, Ireland",
+    "description": "Technology recruitment and IT talent services for employers in Ireland.",
+    "website": "https://www.harveynash.co.uk",
+    "sources": [
+      "https://www.harveynash.co.uk/contact-us/dublin"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Fruition Group Ireland",
+    "aliases": [
+      "Fruition Group Ireland"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Recruitment for technology, strategic change, transformation and finance professionals.",
+    "website": "https://www.fruitiongroup.com/ie/",
+    "sources": [
+      "https://www.fruitiongroup.com/ie/"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Mason Alexander",
+    "aliases": [
+      "Mason Alexander"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "Smyth House, 6–7 St. Stephens Green, Dublin, D02 X827, Ireland",
+    "description": "Recruitment services connecting employers and candidates in Ireland and internationally.",
+    "website": "https://www.masonalexander.ie",
+    "sources": [
+      "https://www.masonalexander.ie/i-am-looking-for-jobs-page"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "Matrix Recruitment Group",
+    "aliases": [
+      "Matrix Recruitment Group"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": null,
+    "description": "Irish recruitment consultancy with offices in Waterford, Carlow, Athlone and Dublin.",
+    "website": "https://www.matrixrecruitment.ie",
+    "sources": [
+      "https://www.matrixrecruitment.ie/about-us"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "TTM Healthcare Solutions",
+    "aliases": [
+      "TTM Healthcare Limited",
+      "TTM Healthcare Solutions"
+    ],
+    "sector": "Healthcare Recruitment",
+    "location": null,
+    "description": "Healthcare workforce solutions and agency, permanent and contract staffing.",
+    "website": "https://www.ttmhealthcare.ie",
+    "sources": [
+      "https://www.ttmhealthcare.ie/about-us"
+    ],
+    "checked_on": "2026-10-02"
+  },
+  {
+    "name": "The Recruitment Company",
+    "aliases": [
+      "The Recruitment Company"
+    ],
+    "sector": "Recruitment & Staffing",
+    "location": "62 Lower Mount Street, Dublin 2, D02 K634, Ireland",
+    "description": "IT recruitment agency specialising in technology infrastructure, cloud and cybersecurity.",
+    "website": "https://www.therecruitmentcompany.ie",
+    "sources": [
+      "https://www.therecruitmentcompany.ie/",
+      "https://www.therecruitmentcompany.com/contact/dublin/"
+    ],
+    "checked_on": "2026-10-02"
+  }
+]

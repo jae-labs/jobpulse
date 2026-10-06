@@ -1,0 +1,311 @@
+import { useEffect, useCallback, useRef } from 'react';
+import { STATUS_LIST, type Job, type JobStatus } from '../../types/job';
+import { toSafeHttpUrl } from '../../lib/utils';
+
+interface UseKeyboardNavigationOptions {
+  displayedJobs: Job[];
+  selectedJob: Job | null | undefined;
+  onSelectJob: (job: Job | null) => void;
+  onUpdateStatus?: (job: Job, status: JobStatus) => Promise<void>;
+  onToggleSaved?: (job: Job) => void;
+  isDetailFullScreen: boolean;
+  setIsDetailFullScreen: React.Dispatch<React.SetStateAction<boolean>>;
+  layoutMode: 'split' | 'list' | 'map';
+  setLayoutMode: (mode: 'split' | 'list' | 'map') => void;
+  updateUrlParam: (key: string, value: string | null) => void;
+  scrollToIndex?: (
+    index: number,
+    options?: { align?: 'auto' | 'start' | 'center' | 'end'; behavior?: 'auto' | 'smooth' }
+  ) => void;
+  cardRefs?: React.RefObject<Map<number, HTMLElement>>;
+}
+
+export function useKeyboardNavigation({
+  displayedJobs,
+  selectedJob,
+  onSelectJob,
+  onUpdateStatus,
+  onToggleSaved,
+  isDetailFullScreen,
+  setIsDetailFullScreen,
+  layoutMode,
+  setLayoutMode,
+  updateUrlParam,
+  scrollToIndex,
+  cardRefs,
+}: UseKeyboardNavigationOptions) {
+  const optionsRef = useRef({
+    displayedJobs,
+    selectedJob,
+    onSelectJob,
+    onUpdateStatus,
+    onToggleSaved,
+    isDetailFullScreen,
+    setIsDetailFullScreen,
+    layoutMode,
+    updateUrlParam,
+    scrollToIndex,
+    cardRefs,
+  });
+  useEffect(() => {
+    optionsRef.current = {
+      displayedJobs,
+      selectedJob,
+      onSelectJob,
+      onUpdateStatus,
+      onToggleSaved,
+      isDetailFullScreen,
+      setIsDetailFullScreen,
+      layoutMode,
+      updateUrlParam,
+      scrollToIndex,
+      cardRefs,
+    };
+  });
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const {
+        displayedJobs,
+        selectedJob,
+        onSelectJob,
+        onUpdateStatus,
+        onToggleSaved,
+        isDetailFullScreen,
+        setIsDetailFullScreen,
+        layoutMode,
+        updateUrlParam,
+        scrollToIndex,
+        cardRefs,
+      } = optionsRef.current;
+      if (layoutMode === 'map' && !isDetailFullScreen) {
+        if (e.key !== 'L' && e.key !== 'S' && e.key !== 'M') return;
+      }
+      if (displayedJobs.length === 0 && !isDetailFullScreen) {
+        if (e.key !== 'L' && e.key !== 'S' && e.key !== 'M') return;
+      }
+      const target = e.target instanceof Element ? e.target : null;
+      const isInput = target?.closest(
+        'input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"]'
+      );
+      const isSidebarArrowNavigation =
+        (e.key === 'ArrowUp' || e.key === 'ArrowDown') &&
+        Boolean(target?.closest('[data-dashboard-navigation] a'));
+      const isInteractiveElement =
+        !isSidebarArrowNavigation &&
+        target?.closest(
+          'button:not([data-job-card]), a, [role="button"]:not([data-job-card])'
+        );
+
+      if (
+        e.defaultPrevented ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        isInput ||
+        isInteractiveElement
+      ) {
+        return;
+      }
+
+      // In full-screen reading mode, page navigation keys scroll the active opportunity's details
+      if (isDetailFullScreen) {
+        const dialog = document.getElementById('fullscreen-job-dialog');
+        const scrollContainer =
+          dialog?.querySelector<HTMLElement>('[data-inspector-scroll-body]') ||
+          dialog?.querySelector<HTMLElement>('.overflow-y-auto');
+
+        if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) {
+          e.preventDefault();
+          scrollContainer?.scrollBy({ top: 400 });
+          return;
+        }
+        if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) {
+          e.preventDefault();
+          scrollContainer?.scrollBy({ top: -400 });
+          return;
+        }
+        if (e.key === 'Home') {
+          e.preventDefault();
+          if (scrollContainer) scrollContainer.scrollTop = 0;
+          return;
+        }
+        if (e.key === 'End') {
+          e.preventDefault();
+          if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          return;
+        }
+      }
+
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const currentIndex = displayedJobs.findIndex((j) => j.id === selectedJob?.id);
+        const nextIndex = currentIndex < displayedJobs.length - 1 ? currentIndex + 1 : 0;
+        const nextJob = displayedJobs[nextIndex];
+        if (nextJob) {
+          onSelectJob(nextJob);
+          updateUrlParam('job', String(nextJob.id));
+          scrollToIndex?.(nextIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+
+          if (!isDetailFullScreen) {
+            const nextEl = cardRefs?.current?.get(nextJob.id) ||
+              document.querySelector<HTMLElement>(`[data-job-id="${nextJob.id}"]`);
+            if (nextEl) {
+              nextEl.focus({ preventScroll: true });
+            } else if (
+              target instanceof HTMLElement &&
+              (target.dataset.jobCard === 'true' || isSidebarArrowNavigation)
+            ) {
+              target.blur();
+            }
+          } else {
+            const dialog = document.getElementById('fullscreen-job-dialog');
+            const scrollContainer =
+              dialog?.querySelector<HTMLElement>('[data-inspector-scroll-body]') ||
+              dialog?.querySelector<HTMLElement>('.overflow-y-auto');
+            if (scrollContainer) {
+              scrollContainer.scrollTop = 0;
+              scrollContainer.focus({ preventScroll: true });
+            }
+          }
+        }
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const currentIndex = displayedJobs.findIndex((j) => j.id === selectedJob?.id);
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : displayedJobs.length - 1;
+        const prevJob = displayedJobs[prevIndex];
+        if (prevJob) {
+          onSelectJob(prevJob);
+          updateUrlParam('job', String(prevJob.id));
+          scrollToIndex?.(prevIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+
+          if (!isDetailFullScreen) {
+            const prevEl = cardRefs?.current?.get(prevJob.id) ||
+              document.querySelector<HTMLElement>(`[data-job-id="${prevJob.id}"]`);
+            if (prevEl) {
+              prevEl.focus({ preventScroll: true });
+            } else if (
+              target instanceof HTMLElement &&
+              (target.dataset.jobCard === 'true' || isSidebarArrowNavigation)
+            ) {
+              target.blur();
+            }
+          } else {
+            const dialog = document.getElementById('fullscreen-job-dialog');
+            const scrollContainer =
+              dialog?.querySelector<HTMLElement>('[data-inspector-scroll-body]') ||
+              dialog?.querySelector<HTMLElement>('.overflow-y-auto');
+            if (scrollContainer) {
+              scrollContainer.scrollTop = 0;
+              scrollContainer.focus({ preventScroll: true });
+            }
+          }
+        }
+      } else if (e.key === 'Enter' && selectedJob) {
+        if (
+          target?.closest(
+            'button:not([data-job-card]), a, [role="button"]:not([data-job-card])'
+          )
+        ) {
+          return;
+        }
+        e.preventDefault();
+        const safeUrl = toSafeHttpUrl(selectedJob.url);
+        if (safeUrl) {
+          window.open(safeUrl, '_blank', 'noopener,noreferrer');
+        }
+      } else if (e.key === 'ArrowRight' && selectedJob && onUpdateStatus) {
+        e.preventDefault();
+        const currentIndex = STATUS_LIST.indexOf(selectedJob.status as typeof STATUS_LIST[number]);
+        const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % STATUS_LIST.length : 0;
+        void onUpdateStatus(selectedJob, STATUS_LIST[nextIndex]);
+      } else if (e.key === 'ArrowLeft' && selectedJob && onUpdateStatus) {
+        e.preventDefault();
+        const currentIndex = STATUS_LIST.indexOf(selectedJob.status as typeof STATUS_LIST[number]);
+        const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + STATUS_LIST.length) % STATUS_LIST.length : STATUS_LIST.length - 1;
+        void onUpdateStatus(selectedJob, STATUS_LIST[prevIndex]);
+      } else if (e.key === 'L') {
+        e.preventDefault();
+        setLayoutMode('list');
+      } else if (e.key === 'S') {
+        e.preventDefault();
+        setLayoutMode('split');
+      } else if (e.key === 'M') {
+        e.preventDefault();
+        setLayoutMode('map');
+      } else if ((e.key === 'f' || e.key === 'F') && selectedJob) {
+        e.preventDefault();
+        setIsDetailFullScreen((prev) => {
+          const next = !prev;
+          if (!next && layoutMode === 'list') {
+            onSelectJob(null);
+            updateUrlParam('job', null);
+          }
+          return next;
+        });
+      } else if (e.key === 's' && selectedJob && onToggleSaved) {
+        e.preventDefault();
+        onToggleSaved(selectedJob);
+      } else if ((e.key === 'd' || e.key === 'D') && selectedJob && onUpdateStatus) {
+        e.preventDefault();
+        const nextStatus = selectedJob.status === 'not_interested' ? 'new' : 'not_interested';
+        
+        if (displayedJobs.length > 0) {
+          const currentIndex = displayedJobs.findIndex((j) => j.id === selectedJob.id);
+          if (currentIndex !== -1) {
+            let nextIndex = currentIndex < displayedJobs.length - 1 ? currentIndex + 1 : currentIndex - 1;
+            const nextJob = displayedJobs[nextIndex];
+            if (nextJob) {
+              onSelectJob(nextJob);
+              updateUrlParam('job', String(nextJob.id));
+              scrollToIndex?.(nextIndex, { align: 'auto', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+              if (!isDetailFullScreen) {
+                const nextEl = cardRefs?.current?.get(nextJob.id) || document.querySelector<HTMLElement>(`[data-job-id="${nextJob.id}"]`);
+                if (nextEl) nextEl.focus({ preventScroll: true });
+              } else {
+                const dialog = document.getElementById('fullscreen-job-dialog');
+                const scrollContainer = dialog?.querySelector<HTMLElement>('[data-inspector-scroll-body]') || dialog?.querySelector<HTMLElement>('.overflow-y-auto');
+                if (scrollContainer) {
+                  scrollContainer.scrollTop = 0;
+                  scrollContainer.focus({ preventScroll: true });
+                }
+              }
+            } else {
+              onSelectJob(null);
+              updateUrlParam('job', null);
+              if (isDetailFullScreen) setIsDetailFullScreen(false);
+            }
+          }
+        }
+
+        void onUpdateStatus(selectedJob, nextStatus);
+      } else if (e.key === 'Escape') {
+        if (isDetailFullScreen) {
+          setIsDetailFullScreen(false);
+          if (layoutMode === 'list') {
+            onSelectJob(null);
+            updateUrlParam('job', null);
+          }
+        }
+      }
+    },
+    [
+      displayedJobs,
+      selectedJob,
+      isDetailFullScreen,
+      layoutMode,
+      onSelectJob,
+      onToggleSaved,
+      onUpdateStatus,
+      updateUrlParam,
+      scrollToIndex,
+      cardRefs,
+      setLayoutMode,
+    ]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [handleKeyDown]);
+}
