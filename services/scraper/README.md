@@ -4,7 +4,11 @@ The scraper discovers Irish employer openings, extracts job details, generates j
 
 ## Configure employers
 
-Edit [`config/websites.yaml`](config/websites.yaml) to add or pause a source:
+`public.boards` controls generic crawl targets. Pause a live board by setting its
+`enabled` field to false; rejected and retired boards are not crawled. An empty
+catalog stays empty. YAML is used only when the database catalog is unavailable.
+
+Edit [`config/websites.yaml`](config/websites.yaml) to change the bootstrap seed:
 
 ```yaml
 - name: Dublin Port Company
@@ -15,7 +19,20 @@ Edit [`config/websites.yaml`](config/websites.yaml) to add or pause a source:
   scraper: generic_crawler
 ```
 
-Set `enabled: false` to pause it. Run `make scrape-validate` from the repository root to check the configuration.
+Run `make scrape-validate` from the repository root to validate the YAML. Preview
+the import, then apply reviewed changes from the repository root:
+
+```bash
+make scrape-import-boards
+make scrape-import-boards ARGS="--apply"
+make scrape-backfill-board-employers
+make scrape-list-boards
+```
+
+Imports update matching live boards, including their enabled state. Database-only
+boards remain intact. The importer also accepts an optional local
+`config/board_seeds.yaml`; it is not required or supplied in the checkout.
+See [board operations](../../docs/OPERATIONS.md#board-catalog) for discovery and employer linking.
 
 ## Run
 
@@ -23,10 +40,16 @@ Set `enabled: false` to pause it. Run `make scrape-validate` from the repository
 | --- | --- |
 | `make scrape-test NAME="The Housing Agency"` | Scrape one employer |
 | `make scrape-core` | Run specialized scrapers |
+| `make scrape-boards ARGS="--limit 50"` | Crawl only database boards, bounded by target count |
 | `make scrape` | Scrape, deduplicate, and embed jobs |
 | `make scrape-backfill` | Generate missing vectors for existing jobs after migration |
 | `make scrape-lint` | Check Python lint and formatting |
 | `make scrape-unit` | Run Python tests |
+
+Discovery, research, enrichment and verification helpers are listed in
+[the operating workflow](../../docs/OPERATIONS.md#scraping-and-matching-workflow).
+Use `ARGS="--help"` to inspect their flags. Crawls write shared vacancies; discovery
+and enrichment helpers preview unless explicitly given `--apply`.
 
 For local development, start the Supabase stack with `make dev`. If running the scraper separately, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `services/scraper/.env`. Keep the service role key out of the frontend and Git.
 
@@ -45,5 +68,8 @@ Candidate scoring runs in PostgreSQL; the scraper does not load profile or scori
 Vacancies are retained when a source is old, empty or unavailable. The former
 `--prune-only` command has been removed; retirement needs source-specific closure evidence.
 Use backfill only for missing vectors or an intentional model migration; it is not a routine startup step.
+
+Shared HTTP requests use a certificate-error fallback; review the
+[network policy](../../docs/SCRAPER_ARCHITECTURE.md#network-policy) and its security tradeoff.
 
 After schema changes, run `make db-types` from the repository root to regenerate both language models.

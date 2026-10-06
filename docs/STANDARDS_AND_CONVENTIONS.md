@@ -86,3 +86,23 @@ Use focused, descriptive commit subjects that identify the behavior changed
 (e.g. `fix: reject stale-account profile writes`). Repeating a generic subject
 meets Conventional Commit syntax but does not help reviewers or incident triage.
 Preserve existing history; improve future commits instead of rewriting shared work.
+
+### CI gates
+
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every PR to `main`,
+pushes to `main`, and manual dispatch. Actions are pinned to commits; dependency
+installation uses the committed lockfiles. These are the current required job names:
+
+| Job | Verification |
+| --- | --- |
+| Code Quality & Build Check | History secret scan, JavaScript audit, lint, TypeScript, coverage tests, production build, Storybook |
+| Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, TypeScript/Python schema parity, real account-deletion isolation |
+| Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, pytest |
+
+CI resets its disposable stack. Local checks never reset a developer database.
+Migration lint is part of Tenant Isolation Guardrails; there is no separate
+Supabase Migration Lint job. Branch protection is configured outside the workflow;
+verify it using [Release and recovery](RELEASE_AND_RECOVERY.md#durable-matching-operations).
+
+Keep dependency audits enabled. `pnpm-workspace.yaml` pins patched transitive
+versions when an upstream dependency still resolves a vulnerable release.

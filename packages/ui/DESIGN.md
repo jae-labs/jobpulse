@@ -118,6 +118,10 @@ overriding appearance. `className` remains available in the current APIs for lay
 margin, grid placement, and responsive positioning. Avoid using it to replace component colors, typography,
 borders, radius, shadows, or internal padding. Visual changes shared by consumers belong in the package.
 
+`Button` also provides `quiet` for a bordered accent action and `dangerQuiet` for a
+muted destructive action that turns red on hover. Use `danger` when destructive
+meaning must be visible at rest; both destructive variants need clear action copy.
+
 `Pill.tone` accepts generic semantic and palette tones. Applications map domain statuses to those tones in
 their own code. Its `color` and `style` props are intentionally unavailable so visual choices go through the
 token vocabulary.

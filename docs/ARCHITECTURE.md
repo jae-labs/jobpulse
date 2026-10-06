@@ -55,9 +55,9 @@ flowchart TD
 
 - **Design System (`packages/ui/`)**: Internal `@jae-labs/ui` workspace package with product-neutral primitives (`Button`, `Card`, `TextField`, `Select`, `PageHeader`, `Pill`) styled with `--ds-*` visual tokens.
 - **Internationalization (`src/lib/i18n.ts`)**: Bilingual support (`en`, `pt-BR`) with automatic language detection and ECMAScript `Intl` formatting.
-- **Error Tracking (`src/lib/logger.ts`)**: Decoupled logger routing exceptions from React `ErrorBoundary` and global handlers to Sentry in production.
+- **Error Tracking (`src/lib/logger.ts`)**: Decoupled logger routing exceptions from React `ErrorBoundary` and global handlers to explicitly configured Sentry in production; collection is disabled without a DSN.
 - **Document Streaming (`src/lib/userProfile.ts`)**: CV and cover letter downloads use short-lived signed URLs with attachment disposition to stream files directly without memory buffering.
-- **Scraper & Ingestion Pipeline (`services/scraper/`)**: Modular Python ETL with 18+ stateless ATS provider adapters, description HTML-to-markdown cleaning, and job embeddings generated with SentenceTransformers on Apple Silicon Metal or CPU. Candidate scoring runs in a durable PostgreSQL queue; ingestion advances a catalog generation without candidate fan-out.
+- **Scraper & Ingestion Pipeline (`services/scraper/`)**: Modular Python ETL with stateless ATS adapters, specialized core feeds, description cleaning and SentenceTransformers job embeddings on Metal or CPU. Generic targets come from the backend-only board catalog, with YAML fallback only when unavailable. Candidate scoring runs in a durable PostgreSQL queue; ingestion advances a catalog generation without candidate fan-out. See [scraper architecture](SCRAPER_ARCHITECTURE.md).
 - **Invitations & Multi-Tenancy**: Invite-only onboarding via cryptographic invite codes and database triggers (`bind_verified_invitation`, `purge_deleted_account_access`).
 
 Candidate query caches are scoped by immutable Auth user IDs. Profile and document APIs derive ownership from the active session; emails remain contact and invitation fields.

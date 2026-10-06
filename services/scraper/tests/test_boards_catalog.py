@@ -6,6 +6,45 @@ import config.boards as boards
 from config import loader
 
 
+def test_cli_rejects_nonpositive_crawl_limit_before_writes(monkeypatch):
+    import pytest
+
+    import app
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Invalid crawl limits must not start database work")
+
+    monkeypatch.setattr(app, "sync_watchlist_metadata", forbidden)
+    monkeypatch.setattr(app, "synchronize", forbidden)
+    for limit in ("0", "-1"):
+        monkeypatch.setattr("sys.argv", ["app.py", "--no-core", "--limit", limit])
+        with pytest.raises(SystemExit) as failure:
+            app.main()
+        assert failure.value.code == 2
+
+
+def test_list_boards_uses_live_catalog_without_seed_fallback_or_writes(monkeypatch, capsys):
+    import app
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Listing an available catalog must not read YAML or write metadata")
+
+    monkeypatch.setattr(loader, "load_websites_config", forbidden)
+    monkeypatch.setattr(app, "sync_watchlist_metadata", forbidden)
+    monkeypatch.setattr(app, "synchronize", forbidden)
+    monkeypatch.setattr("sys.argv", ["app.py", "--list-boards"])
+    for rows in (
+        [],
+        [{"id": 7, "company": "Synthetic Board", "careers_url": "https://example.invalid/jobs", "enabled": False}],
+    ):
+        monkeypatch.setattr(boards, "_all_targets", lambda r=rows: r)
+        app.main()
+        output = capsys.readouterr().out
+        assert f"Crawl targets ({len(rows)})" in output
+        if rows:
+            assert "Synthetic Board" in output and "False" in output
+
+
 def test_detect_provider_identifies_supported_ats() -> None:
     assert boards.detect_provider("https://job-boards.greenhouse.io/acme") == ("greenhouse", "acme")
     assert boards.detect_provider("https://jobs.lever.co/acme") == ("lever", "acme")

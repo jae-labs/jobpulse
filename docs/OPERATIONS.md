@@ -1,5 +1,64 @@
 # Catalog operations and verification
 
+## Board catalog
+
+Generic crawls use enabled `pending`/`active` rows in `public.boards`. Changes reload
+on the next sync. Disable a board in the database to pause it; an available empty
+catalog does not fall back to YAML. Cooldowns apply per board, not per company.
+Core feeds remain in `scrapers/registry.py` and run independently of board health.
+
+Run these Make targets from the repository root. They preview by default; pass
+`ARGS="--apply"` only after reviewing the proposed catalog changes. Use
+`ARGS="--help"` for the underlying tool's flags.
+
+| Command | Purpose |
+| --- | --- |
+| `make scrape-import-boards` | Import `config/websites.yaml` and optional `config/board_seeds.yaml`; update matching live boards |
+| `make scrape-harvest ARGS="--seeds PATH"` | Probe candidate ATS URLs from a supplied seed file for active Irish roles |
+| `make scrape-harvest-ats ARGS="--limit 100"` | Discover ATS boards from employer websites or `--companies PATH` seeds |
+| `make scrape-discover-boards ARGS="--source commoncrawl --limit 50"` | Discover board identities; also supports `--source jobs` and `--source freehire` |
+| `make scrape-backfill-board-employers` | Link exact employer identities; `--create` permits creating missing employers |
+
+`make scrape-list-boards` lists current targets, including disabled live boards,
+without writing metadata. `app.py --list-websites` still lists the YAML seed.
+All new wrappers delegate to existing tools; there is no second discovery pipeline.
+
+These commands use service-role credentials and shared public company facts,
+never candidate records. `FREEHIRE_API_URL` only configures the optional discovery
+source; the scrape pipeline does not call it. See
+[scraper architecture](SCRAPER_ARCHITECTURE.md#board-catalog) for outcome and cooldown rules.
+
+## Scraping and matching workflow
+
+1. Import or discover boards in preview mode, review identities, then apply the
+   chosen changes. Link board employers separately if needed.
+2. Run `make scrape-boards ARGS="--limit 50"` for a bounded board-only crawl,
+   `make scrape-core` for specialized feeds, or `make scrape` for both. `--limit`
+   bounds board targets, not postings or core feeds. Nonpositive limits are rejected.
+3. Ingestion validates and saves vacancy facts, links employers, retrieves missing
+   descriptions and prepares job vectors. A full or board-only run also deduplicates
+   through the candidate-safe RPC and refreshes shared overview facets.
+4. Job-vector writes advance catalog generation. The PostgreSQL worker updates
+   candidate matching asynchronously; do not add a scraper scoring loop or browser
+   enqueue after ingestion. `make scrape-backfill` repairs missing/changed job vectors
+   without crawling; it does not generate profile vectors.
+5. When `GEOAPIFY_API_KEY` is configured, sync also runs bounded office research
+   (25 employers) and posting-location verification (100 jobs). Provider failures
+   retain ingested vacancies. Standalone helpers below preview before applying.
+
+| Command | Separate enrichment operation |
+| --- | --- |
+| `make scrape-research-employers` | Public company research proposals; no apply mode |
+| `make scrape-enrich-employers` | Preview up to 100 reviewed employer sectors/metadata; `ARGS="--apply --limit 50"` persists a bounded scan |
+| `make scrape-backfill-employers` | Link stored jobs to exact employer identities |
+| `make scrape-enrich-offices` | Company office directory; separate from vacancy workplaces |
+| `make scrape-verify-locations` | Verify posting locations and precision |
+| `make scrape-enrich-ai` | Optional operator-installed CLI proposals; no database writes |
+
+Report helpers default to `.backups/`, which stays out of Git. `ARGS` can override
+limits, source filters and report destinations. `make scrape-descriptions` and
+`make scrape-description-audit` handle body repair/coverage independently of discovery.
+
 ## Published descriptions
 
 Vacancy descriptions must contain published source text. Listing summaries, login walls,
@@ -20,7 +79,7 @@ CSP and compare reference vectors before keeping the same vector-space version.
 
 Employer metadata is shared catalog data. Sectors need curated or reviewed public evidence;
 candidate-private classifications never supply a shared sector. Research stored employers
-using `services/scraper/tools/research_employers.py`; inspect `--help` for report and provider
+using `make scrape-research-employers ARGS="--help"` for report and provider
 limits. Keep public company evidence in `services/scraper/config/employer_evidence.json`.
 Ambiguous names, job-board platforms and feed placeholders must stay unresolved.
 

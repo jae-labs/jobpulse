@@ -6,6 +6,9 @@ PostgreSQL tables, RLS policies, and procedures are managed via Supabase CLI in 
 
 ```mermaid
 erDiagram
+    AUTH_USERS {
+        uuid id PK
+    }
     AUTHORIZED_USERS {
         bigint id PK
         uuid user_id UK
@@ -33,6 +36,7 @@ erDiagram
         text location
         float latitude
         float longitude
+        timestamptz closed_at
     }
     USER_PROFILES {
         bigint id PK
@@ -49,6 +53,7 @@ erDiagram
         uuid user_id
         bigint job_id FK
         text status
+        boolean is_saved
     }
     USER_JOB_EVALUATIONS {
         bigint id PK
@@ -70,12 +75,15 @@ erDiagram
         text storage_path
     }
 
-    AUTHORIZED_USERS ||--o{ AUTHORIZED_USERS : "invites colleague"
+    AUTH_USERS ||--o{ AUTHORIZED_USERS : "authorization or issued invitation"
+    AUTH_USERS ||--o| USER_PROFILES : "profile"
+    AUTH_USERS ||--o{ USER_JOB_STATUSES : "owns tracking"
+    AUTH_USERS ||--o{ USER_JOB_EVALUATIONS : "owns evaluations"
+    AUTH_USERS ||--o{ USER_CVS : "owns resumes"
+    AUTH_USERS ||--o{ USER_COVER_LETTERS : "owns cover letters"
     EMPLOYERS ||--o{ JOBS : "publishes"
     JOBS ||--o{ USER_JOB_STATUSES : "tracks status"
     JOBS ||--o{ USER_JOB_EVALUATIONS : "candidate score"
-    USER_PROFILES ||--o{ USER_CVS : "resumes"
-    USER_PROFILES ||--o{ USER_COVER_LETTERS : "cover letters"
 ```
 
 ## Core Tables
@@ -84,12 +92,14 @@ erDiagram
 | :--- | :--- | :--- |
 | `jobs` | Shared vacancy facts; no candidate scores or explanations | Shared read for authorized users |
 | `employers` | Shared employer registry, sectors, headquarters locations, and coordinates | Shared read for authorized users |
+| `employer_offices` | Shared company addresses and public evidence; not verified vacancy workplaces | Shared read for authorized users; backend writes |
+| `employer_office_lookups` | Persistent office research outcomes and retry dates | Backend-only; RLS and no browser grants |
 | `sources` | Feed sync status and crawl telemetry | Shared read for authorized users |
 | `boards` | Scraper crawl-target catalog: provider/board/region to company, with crawl health | Backend-only; RLS and no browser grants |
 | `catalog_stats` | Shared overview facet rollup refreshed by the scraper; `is_valid` is cleared transactionally by job/employer writes | Backend-only; RLS and no browser grants |
-| `authorized_users` | Team member access list & invitations (`pending`, `accepted`, `revoked`) | Self-lookup by `user_id = auth.uid()` or invitation claim |
+| `authorized_users` | Access and invitations (`pending`, `accepted`); revocation deletes the invitation | Own authorization row and issuer-owned invitations |
 | `user_profiles` | Preferences, target skills, scoring rules | Candidate RLS (`user_id = auth.uid()`) |
-| `user_job_statuses` | Pipeline stages (`new`, `applied`, `interviewing`, etc.) | Candidate RLS (`user_id = auth.uid()`) |
+| `user_job_statuses` | Stages (`new`, `applied`, `interviewing`, `rejected`, `not_interested`) and independent `is_saved` bookmark | Candidate RLS (`user_id = auth.uid()`) |
 | `user_job_evaluations` | Candidate match scores, fit tier & analysis | Candidate RLS (`user_id = auth.uid()`) |
 | `job_scoring_embeddings` | Versioned shared job vectors | Service role only; RLS enabled |
 | `profile_scoring_embeddings` | Versioned private candidate vectors | Private table; own-vector write RPC; RLS enabled |
@@ -139,7 +149,11 @@ The Data and privacy danger zone calls the authenticated `delete-account` Edge F
 
 ## Stored Procedures (RPCs)
 
-- **`get_overview_metrics()`**: Counts all registered employers (including employers without vacancies), and computes funnel stage counts, average match scores, score distributions, sector categories, and top skills in a single query.
+- **`get_overview_metrics()`**: Counts all registered employers, including employers without vacancies.
+  Vacancy totals, facets and caller-specific metrics exclude closed jobs. Valid shared
+  facets come from `catalog_stats`; invalid facets fall back to the live catalog.
+  Match averages and distributions use assessed jobs only. New includes untracked
+  and explicitly New jobs, including saved New jobs.
 - **`get_jobs_page(...)`**: Single source of truth for the opportunities catalog. Applies server-side search, sector,
   salary, and score filtering with offset pagination (`{ total: number, items: Job[] }`). Count and page share one
   SQL statement so the filtered CTE stays in scope and out-of-range pages retain the correct total.
@@ -148,9 +162,18 @@ The Data and privacy danger zone calls the authenticated `delete-account` Edge F
   `all` and `disclosed` remain compatible; list/map parity and caller isolation are covered by
   `supabase/tests/tenant_salary_range.sql`.
 - **`rescore_user(uid, top_k)`**: Enqueues caller-owned durable scoring work and returns immediately. The private worker ranks an exact shortlist of up to 1,500 jobs and scores at most 100 changed jobs per call.
-- **`save_profile_embedding(...)` / `get_profile_embedding_state()`**: Submit the caller's validated, nonzero 384-dimensional vector and read its hash, model version and durable scoring progress. Neither RPC returns a vector.
+- **`save_profile_embedding_guarded(...)` / `get_profile_embedding_state()`**: Submit
+  the caller's validated, nonzero 384-dimensional vector only if its profile snapshot
+  still matches, and read its hash, model version and durable scoring progress.
+  Neither RPC returns a vector.
 - **`merge_duplicate_catalog_jobs(...)`**: Service-only deduplication; tenant statuses and evaluations are transferred inside PostgreSQL.
 - **`prune_stale_catalog_jobs(...)`**: Service-only compatibility RPC returning zero. Age-only pruning is disabled; the current scraper has no pruning CLI/wrapper.
+- **`close_stale_jobs(...)`**: Bounded service-only compatibility no-op. Source/board
+  timestamps do not establish vacancy closure. Explicitly closed jobs retain candidate history.
+- **`record_board_outcome(...)`**: Service-only board
+  health, failure backoff and verified-empty cooldowns.
+- **`refresh_catalog_stats()`**: Service-only facet refresh, serialized with job/employer
+  invalidation before marking `catalog_stats.is_valid` true.
 
 The catalog and overview functions use `SECURITY DEFINER` and enforce
 `is_authorized_user()` and `user_id = auth.uid()`. The profile and scoring RPCs

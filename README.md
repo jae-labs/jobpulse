@@ -50,7 +50,13 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 | `make scrape-validate` | Validate scraper configuration |
 | `make scrape-test NAME="Kildare County Council"` | Test one employer |
 | `make scrape` | Crawl, ingest, deduplicate, and generate job embeddings |
+| `make scrape-list-boards` | Inspect live crawl targets without writes |
+| `make scrape-discover-boards` | Preview board discovery; review before applying |
+| `make scrape-boards ARGS="--limit 50"` | Crawl a bounded set of boards without core feeds |
 | `make scrape-backfill` | Generate vectors for existing jobs after migrating |
+
+See [the scraping and matching workflow](docs/OPERATIONS.md#scraping-and-matching-workflow)
+for board imports, ATS harvesting, employer linking, research and enrichment.
 | `make db-types` | Regenerate TypeScript and Python database types |
 
 ## Repository
@@ -61,7 +67,7 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 | `packages/ui/` | Shared UI components and design tokens |
 | `shared/` | Browser scoring defaults |
 | `services/scraper/` | Python discovery, extraction, ingestion, and job embeddings |
-| `supabase/` | Baseline migration, seed, SQL tests, and Edge Function |
+| `supabase/` | Ordered forward migrations, local seed, SQL tests, and Edge Function |
 | `docs/` | Architecture and operating guides |
 
 ## Guides
@@ -76,14 +82,17 @@ These are the most common entry points:
 | Database and security | [Schema and migrations](docs/DATABASE_SCHEMA.md) · [Security and tenancy](docs/SECURITY_AND_MULTI_TENANCY.md) |
 | Development and release | [Local development](docs/LOCAL_DEVELOPMENT.md) · [Release and recovery](docs/RELEASE_AND_RECOVERY.md) |
 | UI and quality | [Design system](docs/DESIGN_SYSTEM.md) · [UI package design](packages/ui/DESIGN.md) · [Accessibility](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) |
-| Operations and standards | [Performance](docs/PERFORMANCE_AND_SCALABILITY.md) · [Monitoring](docs/ERROR_TRACKING_AND_MONITORING.md) · [Conventions](docs/STANDARDS_AND_CONVENTIONS.md) |
+| Operations and standards | [Board and catalog operations](docs/OPERATIONS.md) · [Performance](docs/PERFORMANCE_AND_SCALABILITY.md) · [Monitoring](docs/ERROR_TRACKING_AND_MONITORING.md) · [Conventions and CI](docs/STANDARDS_AND_CONVENTIONS.md) |
 | Preventing regressions | [Failure contracts, code smells and safe cleanup](docs/REGRESSION_PREVENTION.md) |
 
 The browser uses a publishable Supabase key; only the scraper and Edge Function use service-role credentials. Keep `.env` files and `.backups/` out of Git.
 
 ## Contributing
 
-Run `make check` and `npm run build-storybook` before submitting changes. Database changes use a new forward migration and regenerated TypeScript and Python types.
+Run `make check`, `npm run build-storybook` and `npm run db:test:tenancy` before
+submitting changes. Database changes use a new forward migration, regenerated
+TypeScript/Python types and all SQL suites (`npm run db:test`).
+See [CI gates](docs/STANDARDS_AND_CONVENTIONS.md#ci-gates) for the checks required on PRs.
 
 ## License
 

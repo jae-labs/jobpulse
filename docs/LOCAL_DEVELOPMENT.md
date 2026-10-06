@@ -132,6 +132,18 @@ The Python scraper service lives in `services/scraper/`. Follow its [environment
 
 3. Set `SUPABASE_URL` to `http://127.0.0.1:54321` and paste the `service_role` key from `make db-status`.
 
+4. Populate an empty local board catalog from the reviewed YAML seed:
+
+   ```bash
+   make scrape-import-boards
+   make scrape-import-boards ARGS="--apply"
+   make scrape-list-boards
+   ```
+
+   An available empty catalog does not trigger YAML fallback. Re-importing updates
+   matching boards, including their enabled state; use database `enabled=false`
+   to pause a live board. See [board operations](OPERATIONS.md#board-catalog).
+
 ### Development & Execution Commands
 
 ```bash
@@ -141,8 +153,11 @@ make scrape-validate
 # Test scraping for a specific employer
 make scrape-test NAME="Kildare County Council"
 
-# Run core scrapers only (universities, councils, PublicJobs)
+# Run specialized employer and aggregator feeds only
 make scrape-core
+
+# Crawl a bounded set of live boards without core feeds
+make scrape-boards ARGS="--limit 50"
 
 # Run the full scraping, deduplication and job embedding pipeline
 make scrape

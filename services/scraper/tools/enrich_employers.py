@@ -116,6 +116,7 @@ def run_enrichment(
         if len(rows) < size:
             break
     if report is not None:
+        report.parent.mkdir(parents=True, exist_ok=True)
         with report.open("w", encoding="utf-8", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=["id", "name", "sector", "sources", "outcome"])
             writer.writeheader()

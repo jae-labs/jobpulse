@@ -20,17 +20,23 @@ The statement trigger on `job_scoring_embeddings` advances one catalog generatio
 
 The scraper hashes scoring job facts separately from the embedding document. A salary or location change updates the job vector row even if the encoded text is unchanged, which invokes the SQL trigger to refresh affected evaluations.
 
-## Board catalog
+## Network policy
 
 Shared public-page and ATS requests verify TLS first, then retry certificate errors
 without certificate or hostname verification on any crawl host. Other connection
 errors still fail. Supabase connections keep their own verified transport.
+The fallback permits interception or alteration of public crawl traffic; it does
+not extend to the database client or disable verification on the first attempt.
+
+## Board catalog
 
 `public.boards` is the source of truth for what the scraper visits: one row per
 `(provider, board, region)` crawl target carrying the company, sector, priority,
 careers URL, lifecycle status (`pending`/`active`/`rejected`/`retired`) and crawl
-health. `config/websites.yaml` and `config/board_seeds.yaml` are the import seed and
-fallback when the catalog is unavailable. An empty or disabled catalog stays authoritative.
+health. `config/websites.yaml` is the bootstrap seed and runtime fallback when the
+catalog is unavailable. The importer additionally reads an optional
+`config/board_seeds.yaml`; runtime fallback does not read that file.
+An empty or disabled catalog stays authoritative.
 The catalog and lookup indexes reload once per sync, including API-triggered runs.
 `tools/import_boards.py --apply` seeds or refreshes the table, and
 `tools/harvest_boards.py --apply` inserts newly discovered boards as `pending`. Each
@@ -72,12 +78,26 @@ closed postings retain candidate history but are excluded from live overview met
 
 ## CLI and API
 
+`scrapers/registry.py` owns specialized feeds, including JobsIreland, 4dayweek.io,
+JobStash and Google alongside council, university and employer scrapers. Aggregator
+records supply each posting's employer; nested company objects are reduced to their
+name before persistence. Paginated Google, JobStash and 4dayweek requests retain
+existing vacancies on listing failures or pagination limits and report incomplete
+ingestion, including any rows already persisted.
+
 - `make scrape` crawls all configured employers and saves jobs and embeddings.
+- `make scrape-boards ARGS="--limit 50"` crawls only a bounded set of live boards.
+- `make scrape-list-boards` inspects catalog targets without writes; `--list-websites`
+  remains the YAML-seed inspection command.
 - `make scrape-backfill` prepares missing vectors for an existing catalog without crawling.
 - `make scrape-test NAME="Employer Name"` limits the crawl to one employer.
 - `make scrape-core` runs core sources only.
 - `make scrape-validate` checks source configuration.
 - The optional local API supports operator/external integrations. The current dashboard reads Supabase directly, not this API. It exposes catalog and sync endpoints, never profiles or candidate evaluations. Preserve its compatibility surface until deployed consumers are inventoried.
+
+Discovery and standalone enrichment wrappers are documented in the
+[operating workflow](OPERATIONS.md#scraping-and-matching-workflow). Matching runs
+in PostgreSQL after vector writes; there is no separate scraper scoring command.
 
 The API permits token-free requests only from loopback clients with no `Origin`
 header (local CLI tools), or the exact local dashboard origins

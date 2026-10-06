@@ -7,7 +7,7 @@ import os
 import sys
 import time
 
-from config import load_websites_config, validate_websites_config
+from config import load_board_config, load_websites_config, validate_websites_config
 from database.repository import sync_watchlist_metadata
 from pipeline.runner import synchronize
 from server import run_server
@@ -54,6 +54,18 @@ def validate_config_cli() -> None:
         raise SystemExit(1)
 
 
+def list_boards_cli() -> None:
+    targets = load_board_config()
+    print(f"Crawl targets ({len(targets)}): database catalog, or YAML if unavailable")
+    print(f"{'ID':<8} {'Enabled':<8} {'Priority':<9} {'Provider':<16} {'Company':<32} Careers URL")
+    for target in targets:
+        print(
+            f"{str(target.get('board_id') or '-'):<8} {str(target.get('enabled', True)):<8} "
+            f"{target.get('priority', 50):<9} {target.get('provider', 'generic'):<16} "
+            f"{target['name']:<32} {target['careers_url']}"
+        )
+
+
 def main() -> None:
     """Command-line interface for JobPulse scraper."""
     parser = argparse.ArgumentParser(
@@ -87,6 +99,11 @@ def main() -> None:
         help="Run local HTTP REST API server instead of running scraper and exiting",
     )
     parser.add_argument(
+        "--list-boards",
+        action="store_true",
+        help="List live database crawl targets, including disabled boards; YAML fallback only if unavailable",
+    )
+    parser.add_argument(
         "--list-websites",
         action="store_true",
         help="List all websites configured in config/websites.yaml and exit",
@@ -109,6 +126,13 @@ def main() -> None:
         help="Generate missing job vectors for an existing catalog without crawling",
     )
     args = parser.parse_args()
+
+    if args.limit is not None and args.limit <= 0:
+        parser.error("--limit must be positive")
+
+    if args.list_boards:
+        list_boards_cli()
+        return
 
     if args.list_websites:
         list_configured_websites()

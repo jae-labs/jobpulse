@@ -1,5 +1,8 @@
 # Production release actions — 3 October 2026
 
+This is the 3 October snapshot. Current CI and release requirements live in
+[Release and recovery](RELEASE_AND_RECOVERY.md); settings below are historical evidence.
+
 Read-only verification was authorized. The user subsequently approved the
 solo-maintainer GitHub protection settings below; they are applied and verified.
 Hosted Auth, database runtime and source publication/deployment remain unchanged

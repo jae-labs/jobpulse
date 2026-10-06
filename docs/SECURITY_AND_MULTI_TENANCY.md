@@ -121,8 +121,10 @@ does not require editing a hardcoded CI file list.
 
 In GitHub's ruleset/branch protection for `main`, require **Tenant Isolation
 Guardrails**, **Code Quality & Build Check**, and
-**Scraper Quality & Tests** before merging. Require an independent review, dismiss
-stale approvals after new commits, and restrict bypass permissions. The checked-in
+**Scraper Quality & Tests** before merging. The confirmed solo-maintainer policy
+requires a pull request with zero independent approvals; add independent/code-owner
+review when a second maintainer joins. Dismiss stale approvals after new commits
+and restrict bypass permissions. The checked-in
 workflow does not configure these repository settings. When adopting the consolidated
 job, remove the retired **Supabase Migration Lint** required status only after the
 replacement Tenant Isolation Guardrails run passes; otherwise merges wait forever.

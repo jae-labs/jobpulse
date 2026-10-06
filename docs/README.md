@@ -17,11 +17,11 @@ repository execution contract; this index records the maintained documentation t
 | [Regression prevention](REGRESSION_PREVENTION.md) | Removing code or changing matching, caching, telemetry, catalog, or failure behavior | Failure-to-test matrix and cleanup contract | Current policy |
 | [Scraper architecture](SCRAPER_ARCHITECTURE.md) | Changing extractors, provider adapters, pipeline behavior, or scoring ingestion | `services/scraper/` implementation | Current policy |
 | [Scraper setup](../services/scraper/README.md) | Configuring scraper credentials or running scraper commands | `services/scraper/` operations | Current policy |
-| [Standards and conventions](STANDARDS_AND_CONVENTIONS.md) | Reviewing TypeScript, queries, localization, lint, or scraper conventions | Engineering standards | Current policy |
+| [Standards and conventions](STANDARDS_AND_CONVENTIONS.md) | Reviewing TypeScript, queries, localization, lint, scraper conventions, or CI gates | Engineering standards; `.github/workflows/ci.yml` owns CI execution | Current policy |
 | [Accessibility and compatibility](QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) | Changing keyboard interaction, focus, motion, responsive behavior, or localization | Frontend quality contract | Current policy |
 | [Performance and scalability](PERFORMANCE_AND_SCALABILITY.md) | Changing virtualization, charts, caching, rendering, workers, or query scale | Performance invariants | Current policy |
 | [Error tracking and monitoring](ERROR_TRACKING_AND_MONITORING.md) | Changing diagnostics, Sentry, CSP, queue monitoring, or privacy-safe reporting | Telemetry and monitoring contract | Current policy |
-| [Operations](OPERATIONS.md) | Running catalog/location operations or interpreting historical local capacity probes | Operator runbook and bounded historical measurements | Current policy with historical evidence |
+| [Operations](OPERATIONS.md) | Running discovery, scraping/matching workflow, enrichment, catalog/location operations, or historical capacity probes | Operator runbook; Make targets wrap scraper CLIs | Current policy with historical evidence |
 | [Release and recovery](RELEASE_AND_RECOVERY.md) | Preparing a release, recovery drill, hosted verification, or deployment evidence | Current release/recovery checklist | Current policy |
 | [Production readiness — 3 October 2026](PRODUCTION_READINESS.md) | Investigating the October 2026 remediation or its evidence | Dated remediation record; not deployment certification | Historical evidence |
 | [Production release actions — 3 October 2026](PRODUCTION_RELEASE_ACTIONS.md) | Investigating actions approved during that remediation | Dated action record; not a current runbook | Historical evidence |

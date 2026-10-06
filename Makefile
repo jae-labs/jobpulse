@@ -1,9 +1,12 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-reset db-restore db-status db-benchmark dump storage-export storage-import backup scrape scrape-test scrape-core scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff scrape-enrich-offices scrape-enrich-ai scrape-lint scrape-format scrape-unit scrape-typecheck db-types check
+.PHONY: help dev stop db-start db-reset db-restore db-status db-benchmark dump storage-export storage-import backup db-types check
+.PHONY: scrape scrape-test scrape-core scrape-boards scrape-list-boards scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff
+.PHONY: scrape-import-boards scrape-discover-boards scrape-harvest-ats scrape-backfill-board-employers scrape-research-employers scrape-enrich-employers scrape-verify-locations scrape-enrich-offices scrape-enrich-ai
+.PHONY: scrape-lint scrape-format scrape-unit scrape-typecheck
 
 help: ## Show available development commands.
-	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-32s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 dev: ## Start local Supabase stack, Edge Function, and Vite development server.
 	npm run dev
@@ -42,17 +45,35 @@ backup: ## Save the linked production database and every Storage bucket.
 	bash scripts/backup-production.sh
 
 scrape: ## Run full scraper pipeline against Supabase.
-	@cd services/scraper && uv run --locked python app.py
+	@cd services/scraper && uv run --locked python app.py $(ARGS)
 
 scrape-test: ## Test scraping a specific employer; set NAME="Employer Name".
 	@test -n "$(NAME)" || (echo "Set NAME='Employer Name'." >&2; exit 2)
-	@cd services/scraper && uv run --locked python app.py --employer "$(NAME)"
+	@cd services/scraper && uv run --locked python app.py --employer "$(NAME)" $(ARGS)
 
-scrape-core: ## Run only core scrapers (universities, councils, PublicJobs).
-	@cd services/scraper && uv run --locked python app.py --core-only
+scrape-core: ## Crawl specialized employer and aggregator feeds only.
+	@cd services/scraper && uv run --locked python app.py --core-only $(ARGS)
+
+scrape-boards: ## Crawl enabled database boards only; ARGS="--limit 50" bounds targets.
+	@cd services/scraper && uv run --locked python app.py --no-core $(ARGS)
+
+scrape-list-boards: ## List live catalog targets, including disabled boards; no writes.
+	@cd services/scraper && uv run --locked python app.py --list-boards $(ARGS)
+
+scrape-import-boards: ## Preview YAML board import; ARGS="--apply" persists reviewed changes.
+	@cd services/scraper && uv run --locked python tools/import_boards.py $(ARGS)
+
+scrape-discover-boards: ## Preview board discovery; ARGS="--source jobs --apply" persists candidates.
+	@cd services/scraper && uv run --locked python tools/discover_boards.py $(ARGS)
+
+scrape-harvest-ats: ## Preview ATS discovery from company websites; ARGS="--limit 50 --apply" persists.
+	@cd services/scraper && uv run --locked python tools/harvest_ats.py $(ARGS)
+
+scrape-backfill-board-employers: ## Preview board/employer links; ARGS="--apply --create" permits new employers.
+	@cd services/scraper && uv run --locked python tools/backfill_board_employers.py $(ARGS)
 
 scrape-backfill: ## Generate missing vectors for existing jobs without crawling.
-	@cd services/scraper && uv run --locked python app.py --backfill-embeddings
+	@cd services/scraper && uv run --locked python app.py --backfill-embeddings $(ARGS)
 
 scrape-backfill-employers: ## Preview employer links; set ARGS="--apply --limit 100" to persist.
 	@cd services/scraper && uv run --locked python tools/backfill_employers.py $(ARGS)
@@ -64,13 +85,22 @@ scrape-description-audit: ## Read-only body coverage; CSV and summary reports in
 	@cd services/scraper && uv run --locked python tools/audit_descriptions.py --report ../../.backups/description-audit.csv --summary ../../.backups/description-audit.json $(ARGS)
 
 scrape-validate: ## Validate websites.yaml configuration.
-	@cd services/scraper && uv run --locked python app.py --validate-config
+	@cd services/scraper && uv run --locked python app.py --validate-config $(ARGS)
 
-scrape-harvest: ## Scan candidate ATS boards for Ireland vacancies; set ARGS="--apply" to persist.
+scrape-harvest: ## Probe candidate ATS URLs; supply ARGS="--seeds PATH"; add --apply to persist.
 	@cd services/scraper && uv run --locked python tools/harvest_boards.py $(ARGS)
 
 scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set ARGS="--apply" to persist.
 	@cd services/scraper && uv run --locked python tools/sniff_ats.py $(ARGS)
+
+scrape-research-employers: ## Research public company evidence; proposals only, report in .backups.
+	@cd services/scraper && uv run --locked python tools/research_employers.py --report ../../.backups/employer-research.json $(ARGS)
+
+scrape-enrich-employers: ## Preview up to 100 employers; ARGS="--apply --limit 50" persists, report in .backups.
+	@cd services/scraper && uv run --locked python tools/enrich_employers.py --limit 100 --report ../../.backups/employer-enrichment.csv $(ARGS)
+
+scrape-verify-locations: ## Preview vacancy geocoding; ARGS="--apply --limit 100" persists, report in .backups.
+	@cd services/scraper && uv run --locked python tools/verify_job_locations.py --report ../../.backups/job-locations.json $(ARGS)
 
 scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
 	@cd services/scraper && uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
