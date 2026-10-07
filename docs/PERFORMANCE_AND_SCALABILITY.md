@@ -9,7 +9,7 @@
 
 ## 2. Main-Thread & Rendering Performance
 
-- Read theme variables through `getCachedCssVar` in [chartTheme.ts](../src/lib/chartTheme.ts), not computed-style reads during render. The cache follows theme changes without render-time DOM reads.
+- Read theme variables through `getCachedCssVar` in [chartTheme.ts](../src/lib/chartTheme.ts), not computed-style reads during render. Cache misses read computed styles synchronously; resolved values are reused until root theme attributes change. Avoid repeated reads during rendering.
 - Disable Recharts animations (`isAnimationActive={false}`) on multi-chart dashboards so concurrent animation loops do not compete with scrolling.
 - Keep virtual-list refs stable by item ID. [JobsView.tsx](../src/components/jobs/JobsView.tsx) owns `getCardRefCallback`; do not copy its implementation into another view. Keep virtualizer option callbacks stable too.
 - Overview counts, facets and histograms come from server aggregates, never loaded-page arrays. For necessary local transformations, use single-pass reductions and extract expensive sort keys once.
@@ -20,7 +20,7 @@
 
 - `get_jobs_page` and `get_overview_metrics` filter, score, and aggregate in PostgreSQL.
 - Profile saves run a quantized MiniLM model in a dedicated browser worker; the model and WASM assets are staged at build time and served from the site origin. Measure cold download, warm inference, and main-thread responsiveness separately.
-- `rescore_user` requests durable work and returns immediately. A statement trigger advances the shared catalog generation without looping through candidates. The backend worker ranks an exact shortlist of at most 1,500 vectors, scores at most 100 changed jobs per call, keeps durable progress, and retries failed tenants with backoff. It uses exact ranking because a bounded HNSW search cannot guarantee 1,500 results. A one-second cron drains at most 50 slices per tick, stops after five seconds of work, and uses an eight-second statement timeout; additional service workers can use `SKIP LOCKED` when measured backlog warrants them. Job-fact hashes include salary and location so those changes refresh cached sub-scores even when the embedding text is unchanged.
+- `rescore_user` requests durable work and returns immediately. A statement trigger advances the shared catalog generation without looping through candidates. The backend worker ranks an exact shortlist of at most 1,500 vectors, scores at most 100 changed jobs per call, keeps durable progress, and retries failed tenants with backoff. It uses exact ranking because a bounded HNSW search cannot guarantee 1,500 results. A five-second cron drains at most 50 slices per tick, stops after five seconds of work, and uses an eight-second statement timeout; additional service workers can use `SKIP LOCKED` when measured backlog warrants them. Job-fact hashes include salary and location so those changes refresh cached sub-scores even when the embedding text is unchanged.
 - Search and location inputs are capped at 80 characters; wildcards are literal.
 - Candidate tracking uses the unique `(user_id, job_id)` index for ownership lookups and a `job_id` index for catalog maintenance.
 

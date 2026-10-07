@@ -15,7 +15,8 @@ Describe the user-visible problem and resulting behavior.
 - [ ] Affected contracts from `docs/REGRESSION_PREVENTION.md` and their behavioral tests are identified below.
 - [ ] Diagnostics use the sanitized logger; new personal fields have a purpose and export/deletion coverage.
 - [ ] Cleanup includes callers/docs/tests; applied migrations, safety regressions and compatibility contracts are preserved.
+- [ ] Relevant guides describe the current behavior and follow the maintainer preferences.
 
-Describe affected finding IDs, additional validation, release commit/schema evidence,
+Describe affected behavior contracts, additional validation, deployment/schema verification,
 or which conditional items do not apply.
 Security failures must be resolved before release; do not waive them as unrelated.

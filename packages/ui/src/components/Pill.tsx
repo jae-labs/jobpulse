@@ -64,7 +64,7 @@ export const Pill = React.forwardRef<HTMLButtonElement, PillProps>(
     const hasToneColor = tone !== 'neutral';
     const colorClasses = hasToneColor
       ? cn(
-          'border-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_10%,transparent)] text-[var(--pill-color)] hover:bg-[color-mix(in_srgb,var(--pill-color)_15%,transparent)] hover:border-[color-mix(in_srgb,var(--pill-color)_50%,transparent)]',
+          'border-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_10%,transparent)] text-[color-mix(in_srgb,var(--pill-color)_65%,var(--ds-color-text-primary))] hover:bg-[color-mix(in_srgb,var(--pill-color)_15%,transparent)] hover:border-[color-mix(in_srgb,var(--pill-color)_50%,transparent)]',
           active &&
             'border-[color-mix(in_srgb,var(--pill-color)_60%,transparent)] bg-[color-mix(in_srgb,var(--pill-color)_25%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--pill-color)_30%,transparent)] font-semibold',
         )
@@ -91,7 +91,7 @@ export const Pill = React.forwardRef<HTMLButtonElement, PillProps>(
         aria-pressed={asChild ? undefined : (props['aria-pressed'] ?? active)}
         style={toneStyle}
         className={cn(
-          'ds-focus-ring rounded-full border font-medium ds-motion-control cursor-pointer select-none text-left',
+          'ds-focus-ring rounded-full border font-medium ds-motion-control cursor-pointer select-none text-left disabled:pointer-events-none disabled:opacity-50',
           sizeClasses,
           layoutClasses,
           colorClasses,
@@ -105,7 +105,7 @@ export const Pill = React.forwardRef<HTMLButtonElement, PillProps>(
               <span className="truncate font-medium">{label}</span>
             )}
             {count !== undefined && (
-              <span className="font-mono text-xs opacity-80 shrink-0 font-semibold">
+              <span className="font-mono text-xs shrink-0 font-semibold">
                 {count}
               </span>
             )}

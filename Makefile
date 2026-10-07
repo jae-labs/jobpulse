@@ -1,15 +1,18 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev stop db-start db-reset db-restore db-status db-benchmark dump storage-export storage-import backup db-types check
+.PHONY: help dev storybook stop db-start db-reset db-restore db-status db-benchmark dump storage-export storage-import backup db-types check
 .PHONY: scrape scrape-test scrape-core scrape-boards scrape-list-boards scrape-backfill scrape-backfill-employers scrape-descriptions scrape-description-audit scrape-validate scrape-harvest scrape-sniff
 .PHONY: scrape-import-boards scrape-discover-boards scrape-harvest-ats scrape-backfill-board-employers scrape-research-employers scrape-enrich-employers scrape-verify-locations scrape-enrich-offices scrape-enrich-ai
-.PHONY: scrape-lint scrape-format scrape-unit scrape-typecheck
+.PHONY: scrape-lint scrape-format scrape-unit scrape-typecheck scrape-request-audit
 
 help: ## Show available development commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-32s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 dev: ## Start local Supabase stack, Edge Function, and Vite development server.
 	npm run dev
+
+storybook: ## Start the UI component catalog on http://localhost:6006.
+	npm run storybook
 
 stop: ## Stop the local Supabase stack.
 	npm run db:stop
@@ -87,6 +90,9 @@ scrape-description-audit: ## Read-only body coverage; CSV and summary reports in
 scrape-validate: ## Validate websites.yaml configuration.
 	@cd services/scraper && uv run --locked python app.py --validate-config $(ARGS)
 
+scrape-request-audit: ## Preview bounded source audit; ARGS="--run --apply" sends requests and saves observations.
+	@cd services/scraper && uv run --locked python tools/probe_request_limits.py $(ARGS)
+
 scrape-harvest: ## Probe candidate ATS URLs; supply ARGS="--seeds PATH"; add --apply to persist.
 	@cd services/scraper && uv run --locked python tools/harvest_boards.py $(ARGS)
 
@@ -122,7 +128,7 @@ scrape-unit: ## Run scraper unit tests with pytest.
 scrape-typecheck: ## Check scraper types with Pyright.
 	@cd services/scraper && uv run --locked pyright
 
-db-types: ## Generate TypeScript and Python types atomically from local Supabase schema.
+db-types: ## Generate TypeScript and Python types from local Supabase schema.
 	npm run db:types
 
 

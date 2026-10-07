@@ -18,8 +18,8 @@
     "build:analyze": "ANALYZE=true vite build",
     "lint": "oxlint && bash scripts/check-design-system-boundary.sh && node scripts/check-ds-utilities.mjs && node scripts/check-chart-tooltip-copy.mjs && node scripts/check-tenant-boundaries.mjs && node scripts/check-doc-links.mjs && node scripts/check-translation-keys.mjs",
     "typecheck": "tsc -b --noEmit && tsc -p packages/ui/tsconfig.json --noEmit",
-    "test": "vitest run && node --test scripts/*.node-test.mjs",
-    "test:coverage": "vitest run --coverage && node --test scripts/*.node-test.mjs",
+    "test": "vitest run --exclude 'packages/ui/**' && pnpm --filter @jae-labs/ui test:unit && node --test scripts/*.node-test.mjs",
+    "test:coverage": "vitest run --coverage --exclude 'packages/ui/**' && pnpm --filter @jae-labs/ui test:unit && node --test scripts/*.node-test.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "prepare": "lefthook install",
     "preview": "vite preview",
@@ -34,7 +34,10 @@
     "db:diff": "supabase db diff --linked --schema public",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --local > src/types/database.types.ts && supabase gen types --lang=python --local > services/scraper/database/models.py && (cd services/scraper && uv run --locked ruff format database/models.py)",
-    "db:test:account-deletion": "node scripts/test-account-deletion.mjs"
+    "db:test:account-deletion": "node scripts/test-account-deletion.mjs",
+    "test:ui": "pnpm --filter @jae-labs/ui test:browser",
+    "test:ui:visual": "node scripts/test-ui-visual.mjs",
+    "test:ui:visual:update": "node scripts/test-ui-visual.mjs --update"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -76,6 +79,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "yaml": "^2.9.1"
   }
 }

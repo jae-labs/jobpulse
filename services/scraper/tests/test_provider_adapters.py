@@ -165,15 +165,22 @@ class ProviderAdapterTests(unittest.TestCase):
         self.assertEqual(opps[0]["title"], "Security Architect")
         self.assertEqual(opps[0]["location"], "Dublin, Ireland")
 
-    def test_workable_adapter_extracts_irish_vacancies(self) -> None:
+    def test_workable_adapter_extracts_irish_vacancies_with_body(self) -> None:
+        body = "<p>" + "Build reliable services for our Dublin team. " * 5 + "</p>"
         wk_data = {
-            "results": [
+            "jobs": [
                 {
                     "title": "DevSecOps Engineer",
                     "shortcode": "ABC123D",
-                    "location": {"city": "Dublin", "country": "Ireland"},
-                    "type": "Full-time",
-                }
+                    "locations": [{"city": "Dublin", "country": "Ireland"}],
+                    "employment_type": "Full-time",
+                    "description": body,
+                },
+                {
+                    "title": "US Engineer",
+                    "shortcode": "US1",
+                    "locations": [{"city": "Austin", "country": "United States"}],
+                },
             ]
         }
         resp = DummyResponse(json.dumps(wk_data).encode())
@@ -184,6 +191,26 @@ class ProviderAdapterTests(unittest.TestCase):
         self.assertEqual(len(opps), 1)
         self.assertEqual(opps[0]["title"], "DevSecOps Engineer")
         self.assertEqual(opps[0]["url"], "https://apply.workable.com/seccorp/j/ABC123D/")
+        self.assertIn("Build reliable services", opps[0]["description"])
+        self.assertNotIn("<p>", opps[0]["description"])
+
+    def test_workable_adapter_reads_the_whole_board_not_just_a_page(self) -> None:
+        # The old v3 adapter stopped after its first ~10 postings.
+        jobs = [
+            {
+                "title": f"Engineer {index}",
+                "shortcode": f"SC{index:03d}",
+                "locations": [{"city": "Dublin", "country": "Ireland"}],
+            }
+            for index in range(12)
+        ]
+        resp = DummyResponse(json.dumps({"jobs": jobs}).encode())
+
+        with patch("scrapers.providers.workable.urlopen", return_value=resp):
+            opps = extract_workable_opportunities("SecCorp", "https://apply.workable.com/seccorp")
+
+        self.assertEqual(len(opps), 12)
+        self.assertEqual(opps[-1]["url"], "https://apply.workable.com/seccorp/j/SC011/")
 
     def test_bamboohr_adapter_extracts_listings(self) -> None:
         bb_data = {

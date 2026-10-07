@@ -22,7 +22,7 @@ from scrapers.registry import find_core_scraper_by_name, get_core_scrapers
 
 
 def ingestion_summary(outcomes: list[dict[str, Any]], persisted: int) -> dict[str, Any]:
-    """Keep machine-readable health independent of display messages and legacy counts."""
+    """Keep machine-readable health independent of display messages and outcome counts."""
     failed_sources = sum(row.get("outcome") not in ("synced", "empty") for row in outcomes)
     return {
         "persisted": persisted,
@@ -109,20 +109,48 @@ def _scrape(
                     log_scraper_event("ZERO", name, "0 opportunities found", url, method=method)
                 else:
                     log_scraper_event("SUCCESS", name, clean_msg, url, method=method)
-                return {"added": count, "messages": [message], "scraped_employers": 1, **ingestion_summary([], count)}
+                core_outcome = {
+                    "employer": name,
+                    "outcome": "synced" if found_count else "empty",
+                    "added": count,
+                    "persisted": count,
+                    "opportunities_found": found_count,
+                    "url": url,
+                }
+                return {
+                    "added": count,
+                    "messages": [message],
+                    "outcomes": [core_outcome],
+                    "scraped_employers": 1,
+                    **ingestion_summary([core_outcome], count),
+                }
             except Exception as error:
                 err_detail = format_error_message(error)
+                persisted = error.persisted if isinstance(error, IngestionIncompleteError) else 0
+                failed_writes = error.failed if isinstance(error, IngestionIncompleteError) else 0
+                vectors_pending = error.vectors_pending if isinstance(error, IngestionIncompleteError) else 0
                 update_source_status(name, "Unavailable", err_detail)
                 update_employer_status(name, "Unavailable", opportunities_found=0, discovered_jobs_url=url)
                 log_scraper_event("ERROR", name, f"Error ({err_detail})", url, method=method)
                 return {
-                    "added": error.persisted if isinstance(error, IngestionIncompleteError) else 0,
+                    "added": persisted,
                     "status": "incomplete",
                     "failed_sources": 1,
-                    "persisted": error.persisted if isinstance(error, IngestionIncompleteError) else 0,
-                    "failed_writes": error.failed if isinstance(error, IngestionIncompleteError) else 0,
-                    "vectors_pending": error.vectors_pending if isinstance(error, IngestionIncompleteError) else 0,
+                    "persisted": persisted,
+                    "failed_writes": failed_writes,
+                    "vectors_pending": vectors_pending,
                     "messages": [f"{name}: error ({err_detail})"],
+                    "outcomes": [
+                        {
+                            "employer": name,
+                            "outcome": "failed",
+                            "persisted": persisted,
+                            "failed_writes": failed_writes,
+                            "vectors_pending": vectors_pending,
+                            "url": url,
+                            "detail": err_detail,
+                        }
+                    ],
                     "scraped_employers": 1,
                 }
 
@@ -154,11 +182,13 @@ def _scrape(
             }
 
         log_scraper_event("ERROR", employer, "Employer not found in watchlist or database", method="Search")
+        not_found_outcome = {"employer": employer, "outcome": "unsupported"}
         return {
             "added": 0,
             "messages": [f"Employer '{employer}' not found in watchlist."],
+            "outcomes": [not_found_outcome],
             "scraped_employers": 0,
-            **ingestion_summary([{"outcome": "unsupported"}], 0),
+            **ingestion_summary([not_found_outcome], 0),
         }
 
     messages: list[str] = []
@@ -193,6 +223,7 @@ def _scrape(
             except Exception as error:
                 persisted = error.persisted if isinstance(error, IngestionIncompleteError) else 0
                 added += persisted
+                err_detail = format_error_message(error)
                 outcomes.append(
                     {
                         "employer": name,
@@ -201,9 +232,10 @@ def _scrape(
                         "persisted": persisted,
                         "failed_writes": error.failed if isinstance(error, IngestionIncompleteError) else 0,
                         "vectors_pending": error.vectors_pending if isinstance(error, IngestionIncompleteError) else 0,
+                        "url": url,
+                        "detail": err_detail,
                     }
                 )
-                err_detail = format_error_message(error)
                 update_source_status(name, "Unavailable", err_detail)
                 update_employer_status(name, "Unavailable", opportunities_found=0, discovered_jobs_url=url)
                 messages.append(f"{name}: unavailable ({err_detail}); existing results retained.")

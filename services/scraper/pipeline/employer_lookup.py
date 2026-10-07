@@ -584,7 +584,7 @@ class EmployerLookupService:
         canonical_name = curated["name"] if curated else clean_name
         existing = self.lookup_employer_in_db(canonical_name)
         if existing:
-            # Only an explicit registry entry can upgrade legacy guessed metadata.
+            # Only an explicit registry entry can verify unsupported metadata.
             if curated and existing.get("metadata_source") == "unverified":
                 evidence = {
                     key: curated[key]

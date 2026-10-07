@@ -309,7 +309,7 @@ describe('ProfileView', () => {
     expect(windowAlertSpy).not.toHaveBeenCalled();
     const alert = await screen.findByRole('alert');
     expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(/2MB/i);
+    expect(alert.textContent).toMatch(/2MB/i);
 
     windowAlertSpy.mockRestore();
   });

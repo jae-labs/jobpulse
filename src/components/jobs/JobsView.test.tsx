@@ -397,10 +397,10 @@ describe('JobsView Search Input', () => {
     expect(document.activeElement).toBe(dialog);
 
     // Shortcut hint is rendered inside full-screen dialog
-    expect(dialog).toHaveTextContent(/cycle/);
-    expect(dialog).toHaveTextContent(/full screen/);
-    expect(dialog).toHaveTextContent(/apply/);
-    expect(dialog).toHaveTextContent(/status/);
+    expect(dialog?.textContent).toMatch(/cycle/);
+    expect(dialog?.textContent).toMatch(/full screen/);
+    expect(dialog?.textContent).toMatch(/apply/);
+    expect(dialog?.textContent).toMatch(/status/);
 
     // Pressing 'f' a second time while in fullscreen closes the dialog
     fireEvent.keyDown(window, { key: 'f' });

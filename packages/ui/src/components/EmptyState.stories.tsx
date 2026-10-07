@@ -7,6 +7,7 @@ const meta = {
   title: 'Patterns/EmptyState',
   component: EmptyState,
   tags: ['autodocs'],
+  parameters: { docs: { description: { component: 'Explain an empty result and provide a meaningful next action when one exists. Consumers distinguish loading, failure and empty states.' } } },
   args: { title: 'Nothing here yet', description: 'Items will appear here when they are available.', className: 'w-80' },
 } satisfies Meta<typeof EmptyState>;
 

@@ -53,7 +53,7 @@ owns memoization and callback rules. Preserve rendering isolation when changing 
 MapLibre camera, GPU source and controls; `jobMapStyle` applies semantic map colors. `JobsMapLocationPanel` shows
 role/company labels and bounded location pages using the existing catalog RPC.
 Public sample labels use `useJobMapPreviewQuery` with an account-scoped key and
-before/after identity checks. No candidate scores or tracking fields are read from
+identity checks around asynchronous work. No candidate scores or tracking fields are read from
 shared job rows. The map remains independent of loaded list pages.
 
 Compact opportunity layouts default to list. A mobile map selection resolves stored

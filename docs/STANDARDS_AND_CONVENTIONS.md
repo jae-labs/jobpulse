@@ -2,7 +2,7 @@
 
 Code quality standards and development conventions for JobPulse.
 
-For the failure-to-test matrix, security review steps and safe removal rules, read
+For the behavior-to-test matrix, security review steps and safe removal rules, read
 [Regression Prevention](REGRESSION_PREVENTION.md). Its contracts apply to new features
 and refactors as well as bug fixes.
 
@@ -11,7 +11,7 @@ and refactors as well as bug fixes.
 - **No `any`**: Strictly type all interfaces, handlers, and database interactions.
 - **Single Source of Truth**: Import types from `src/types/database.types.ts` (React)
   and `database/models.py` (Python scraper).
-- **Atomic Parity**: PostgreSQL schema in `supabase/migrations/` is the sole authority.
+- **Schema Parity**: PostgreSQL schema in `supabase/migrations/` is the sole authority.
   Forward migrations must be immediately synchronized across both languages via
   `make db-types` (or `npm run db:types`). Zero drift is strictly enforced in CI.
 
@@ -69,8 +69,8 @@ formatter caching and server-aggregation rules. Consult it before changing those
 
 ## 7. Verification and Review
 
-Run `make check` for frontend lint, typecheck, tests and build plus scraper Ruff, Pyright and tests.
-Run the additional domain gates in [AGENTS.md](../AGENTS.md#required-verification).
+Follow the [required verification contract](../AGENTS.md#required-verification) for completion and
+conditional domain gates. This guide explains the checks; the root contract owns which checks are required.
 
 CI audits locked JavaScript/Python dependencies and scans repository history with a
 checksum-verified Gitleaks release. Lefthook scans staged changes; CI remains mandatory
@@ -82,27 +82,32 @@ development-only messages. Source lint rejects telemetry imports and direct cons
 output outside their boundaries; never add exceptions to hide a security failure.
 See [Error Tracking](ERROR_TRACKING_AND_MONITORING.md) for the reporting contract.
 
-Use focused, descriptive commit subjects that identify the behavior changed
-(e.g. `fix: reject stale-account profile writes`). Repeating a generic subject
-meets Conventional Commit syntax but does not help reviewers or incident triage.
-Preserve existing history; improve future commits instead of rewriting shared work.
+### Documentation and Git workflow
+
+Follow [maintainer preferences](../AGENTS.md#maintainer-preferences). Guides and comments explain current
+behavior, location, procedure and rationale. Update affected guides with code changes. Keep change history,
+personal attribution, approval anecdotes, editorial dates and past PR/commit references out of maintained prose.
+
+Direct pushes are supported and PRs are optional. Rebase, squash and rewrite branch history as needed;
+use `git push --force-with-lease` when publishing rewritten history. Inspect the remote before publishing,
+run required local checks, and verify CI for the published source. Applied database migrations remain immutable.
+Use focused commit subjects that identify the behavior changed.
 
 ### CI gates
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every PR to `main`,
 pushes to `main`, and manual dispatch. Actions are pinned to commits; dependency
-installation uses the committed lockfiles. These are the current required job names:
+installation uses the committed lockfiles. All of these CI jobs must pass for release:
 
-| Job | Verification |
-| --- | --- |
-| Code Quality & Build Check | History secret scan, JavaScript audit, lint, TypeScript, coverage tests, production build, Storybook |
-| Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, TypeScript/Python schema parity, real account-deletion isolation |
-| Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, pytest |
+| CI job | Name | Verification |
+| --- | --- | --- |
+| `check` | Code Quality & Build Check | History secret scan, JavaScript audit, lint, TypeScript, coverage tests, production build, Storybook build, browser accessibility/interaction coverage and pinned Linux visual tests |
+| `tenant-isolation` | Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, TypeScript/Python schema parity, real account-deletion isolation |
+| `scraper-check` | Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, pytest |
 
 CI resets its disposable stack. Local checks never reset a developer database.
-Migration lint is part of Tenant Isolation Guardrails; there is no separate
-Supabase Migration Lint job. Branch protection is configured outside the workflow;
-verify it using [Release and recovery](RELEASE_AND_RECOVERY.md#durable-matching-operations).
+Migration lint is part of Tenant Isolation Guardrails. GitHub settings are configured outside the workflow;
+do not assume the workflow enforces branch protection. See [Release and recovery](RELEASE_AND_RECOVERY.md).
 
 Keep dependency audits enabled. `pnpm-workspace.yaml` pins patched transitive
 versions when an upstream dependency still resolves a vulnerable release.

@@ -7,6 +7,25 @@
   and robust Supabase data synchronization.
 - Maintain strict TypeScript type safety and quick verification cycles.
 
+## Maintainer Preferences
+
+- Documentation and code comments describe the current system: what it does, where it lives,
+  how to use or change it, and why its constraints exist. Write in present tense.
+- Do not include development timelines, personal names or attribution, approval anecdotes,
+  editorial dates, past PR or commit references, before/after narratives, or historical reports.
+  Keep technical identifiers, operational commands, and domain data accurate.
+- Express regression guidance as behavior contracts linked to executable tests, without incident
+  narratives or finding IDs. Preserve negative security tests and database invariants.
+- Direct pushes are the normal Git workflow; pull requests are optional. History rewriting and
+  force pushes are supported. Use `git push --force-with-lease` when publishing rewritten branch
+  history, inspect the remote state first, and run the required checks before publishing.
+- Git history rewriting does not permit editing applied database migrations, bypassing checks,
+  exposing secrets, or resetting developer data. Hosted schema and configuration changes remain
+  separate from publishing source.
+- Apply these preferences to READMEs, guides, agent instructions, templates, and code comments.
+  If a requested behavior conflicts with an unclear preference, ask a focused question and update
+  the authoritative instructions with the answer.
+
 ## Start Here
 
 - Install local tooling: `mise install`
@@ -21,7 +40,7 @@
   Supabase credentials configured in `.env`.
 - Optional pre-commit hook run: `lefthook run pre-commit`
 - Full local completion gate: `make check` (`npm run check` is frontend-only)
-- UI component catalog: `npm run storybook`; verify changes with `npm run build-storybook`
+- UI component catalog: `make storybook` (or `npm run storybook`); verify changes with `npm run build-storybook`
 
 ## Required Verification
 
@@ -29,7 +48,9 @@ Run `make check` before completion. It runs frontend lint, TypeScript, Vitest/No
 and production build (`npm run check`), plus scraper Ruff, Pyright and pytest.
 
 Additional gates:
-- UI package changes: `npm run build-storybook` (CI runs it on every change).
+- UI package changes: `npm run build-storybook`, `npm run test:ui` and `npm run test:ui:visual`.
+  CI runs the catalog build, blocking accessibility/interaction tests and pinned Linux visual checks.
+  Update visual fixtures only for intentional changes and inspect every changed screenshot.
 - Every completed change: `npm run db:test:tenancy`; never reset a developer database to pass it.
 - Database or matching changes: all SQL suites via `npm run db:test`, plus the relevant integration checks in [Release & Recovery](docs/RELEASE_AND_RECOVERY.md).
 
@@ -71,24 +92,27 @@ Consult the relevant guides progressively based on the task domain:
 | **Standards & Conventions** | [`docs/STANDARDS_AND_CONVENTIONS.md`](docs/STANDARDS_AND_CONVENTIONS.md) | Reviewing code style, TanStack Query patterns, git hooks, or CI | Strict TypeScript; no `any`; typed query keys; automated git hooks and CI. |
 | **Accessibility & Quality** | [`docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md`](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) | Modifying keyboard navigation, focus management, or i18n | WCAG 2.1 AA baseline; keyboard shortcuts (`↑`/`↓`, `Cmd+K`); full i18n strings. |
 | **Local Workflow & Backups** | [`docs/LOCAL_DEVELOPMENT.md`](docs/LOCAL_DEVELOPMENT.md) | Working with local Supabase, Docker, seed data, or backups | Use local credentials; never commit `.backups/` or secrets. |
-| **Release & Recovery** | [`docs/RELEASE_AND_RECOVERY.md`](docs/RELEASE_AND_RECOVERY.md) | Pre-deployment verification, launch gates, or incident response | Run `npm run check`; verify backup snapshots before schema changes. |
-| **Regression Prevention** | [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) | Changing private data flows, matching, telemetry, catalog queries, or removing old code | Preserve the failure-to-test matrix; remove redundant paths without removing safety evidence. |
+| **Release & Recovery** | [`docs/RELEASE_AND_RECOVERY.md`](docs/RELEASE_AND_RECOVERY.md) | Pre-deployment verification, launch gates, or incident response | Follow Required Verification; verify backup snapshots before schema changes. |
+| **Regression Prevention** | [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) | Changing private data flows, matching, telemetry, catalog queries, or removing old code | Preserve the behavior-to-test matrix; remove redundant paths without removing safety evidence. |
 
 Progressive discovery index: [`docs/`](docs/).
 
 ### Documentation maintenance
 
 - Before adding a guide, first extend the closest maintained guide when the topic has the same owner and
-  lifecycle. Create a new document only for an independently maintained subsystem, operational runbook, or
-  historical record that would otherwise make its parent guide hard to navigate.
+  lifecycle. Create a new document only for an independently maintained subsystem or operational runbook
+  with its own change trigger.
 - Every new, renamed, consolidated, or retired guide must update [`docs/README.md`](docs/README.md), this
   routing table when its trigger changes, and any affected README links in the same change. Give the index an
-  accurate trigger, owner/source-of-truth statement, and whether the document is current policy or historical
-  evidence.
-- Keep current policy concise and durable. Move dated remediation/release evidence into clearly labelled
-  historical records rather than duplicating it in active runbooks. Do not delete applied-migration, recovery,
-  tenant-isolation, or incident evidence solely to reduce file count.
-- Run `npm run lint` after documentation changes. Its documentation check verifies local links, heading anchors, and complete index metadata for every maintained Markdown guide.
+  accurate trigger, owner/source-of-truth statement, and current policy status.
+- Keep guides concise and current. Remove obsolete narratives and consolidate overlapping guidance.
+  Preserve applied migrations, executable regression tests, and valid private recovery snapshots.
+- When behavior, commands, configuration, boundaries, or standards change, review the relevant guide
+  and update it in the same change. Verification summaries identify the guides reviewed. Keep normative completion gates in Required
+  Verification; other guides link to that section and explain how their checks work.
+- Run `npm run lint` after documentation changes. Its documentation check verifies links, anchors,
+  package scripts, source paths, CI job declarations and complete index metadata. It does not establish
+  architectural truth or runtime readiness; tie important guardrails to executable enforcement.
 
 ## Make Changes Safely
 
@@ -118,9 +142,9 @@ Progressive discovery index: [`docs/`](docs/).
 
 - If database tables, RLS, or schema change: create a forward migration
   (`npm run db:migration <name>`), test the complete chain with a reset on a disposable local stack,
-  synchronize both TypeScript and Python types atomically (`make db-types` or `npm run db:types`),
+  synchronize both TypeScript and Python types together (`make db-types` or `npm run db:types`),
   verify parity across both codebases (`git diff src/types/database.types.ts services/scraper/database/models.py`),
-  inspect parity against remote (`npm run db:diff`), and push when ready (`npm run db:push`).
+  inspect parity against remote (`npm run db:diff`), and follow the release guide for hosted application.
   Never edit an applied migration. CI enforces zero drift across both `src/types/database.types.ts`
   and `services/scraper/database/models.py`.
   On an existing developer database, apply pending versions with `supabase migration up --local`.
@@ -157,8 +181,9 @@ Progressive discovery index: [`docs/`](docs/).
 - Use `queryKeys` for every query definition and pass the active UID. Any deliberately
   shared or path-owned key requires an explicit classification and isolation test in
   `src/lib/queryKeys.test.ts`. Clear cached private data on identity changes/logout.
-- Run `npm run test:tenant-lint`, `npm run db:test:tenancy`, and `npm run check` before
-  completion. Database tests require the local migration ledger to match the checkout.
+- Complete [Required Verification](#required-verification). `make check` includes the browser tenant
+  tripwire self-tests; the separate tenant database gate verifies authorization. Database tests require the
+  local migration ledger to match the checkout.
   Never reset a developer database automatically, skip a failed guard, loosen an
   assertion, or add a security exception merely to make a new feature pass.
 - Report existing isolation failures as release blockers; do not claim readiness while
@@ -180,7 +205,7 @@ Progressive discovery index: [`docs/`](docs/).
   [Documentation & Progressive Discovery](#documentation--progressive-discovery)) before modifying domain
   subsystems.
 - Read `packages/ui/DESIGN.md` and `packages/ui/AGENTS.md` before changing the UI package.
-- Always run `npm run check` and verify zero errors before reporting completion.
+- Complete [Required Verification](#required-verification) with zero errors before reporting completion.
 - Keep generated artifacts out of git reviews.
 
 ## Production Regression Contract
@@ -209,13 +234,13 @@ the contract. Do not claim that documentation guarantees future isolation.
   data, private context, tracing or replay. Consume invitation URL parameters before initializing telemetry.
 - Defaults and fixtures must be neutral/synthetic. New personal fields require a documented purpose,
   owner-only access, export/deletion coverage and retention review. Never reuse real profiles or
-  documents as fixtures. Explicit public operator contact copy is permitted; private identity is not.
+  documents as fixtures. Keep functional public contact copy in the application; private identity is not a fixture or diagnostic.
 - Age, an empty crawl or source failure is not closure evidence. Never restore age-only vacancy
   pruning. Deduplication must preserve candidate tracking through the service-only database contract.
 - Keep dependency audits and secret scans enabled. Serve checksum-pinned model/runtime assets from
   the site origin in a bounded worker; verify inference under production CSP before an inference upgrade.
 - When removing code, verify import/call references and external contracts. Remove its obsolete copy
   and tests, retain the negative regression for the unsafe behavior, and preserve applied migrations,
-  generated schema parity, valid private backups and intentional compatibility APIs.
-- Report repository fixes, applied database migrations and deployed frontend commits separately.
+  generated schema parity, valid private backups and supported public APIs.
+- Report source changes, applied database migrations and deployed frontend behavior separately.
   A green local build is not a hosted load test or proof that alerts, retention and recovery work.

@@ -87,12 +87,12 @@ def test_new_core_sources_propagate_request_failure(monkeypatch):
     import pytest
 
     from database.repository import IngestionIncompleteError
-    from scrapers.core import fourdayweek, google, jobstash
+    from scrapers.core import fourdayweek, google, jobsireland, jobstash
 
     def unavailable(url):
         raise OSError("Listing unavailable")
 
-    for module in (fourdayweek, google, jobstash):
+    for module in (fourdayweek, google, jobsireland, jobstash):
         monkeypatch.setattr(module, "fetch_page", unavailable)
         status = Mock()
         monkeypatch.setattr(module, "update_source_status", status)

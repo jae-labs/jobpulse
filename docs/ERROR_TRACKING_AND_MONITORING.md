@@ -4,7 +4,7 @@ Application errors flow through `src/lib/logger.ts`, which connects the React er
 
 ## Configuration
 
-Set `VITE_SENTRY_DSN` explicitly for a production build. There is no default DSN. The SDK is loaded asynchronously only for explicitly configured production builds, after invitation parameters are consumed; ordinary development and unconfigured builds do not load it. Enable the integration only after reviewing provider access and retention; the privacy contact is `luiz@justanother.engineer`, and the retention ceiling is one year.
+Set `VITE_SENTRY_DSN` explicitly for a production build. There is no default DSN. The SDK is loaded asynchronously only for explicitly configured production builds, after invitation parameters are consumed; ordinary development and unconfigured builds do not load it. Enable the integration only after reviewing provider access and retention; the retention ceiling is one year.
 
 ## Payload contract
 

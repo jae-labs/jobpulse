@@ -46,18 +46,21 @@ The scraper requires its own service-role credentials in `services/scraper/.env`
 | --- | --- |
 | `make help` | Show local tasks |
 | `make check` | Run frontend and scraper quality gates |
-| `npm run build-storybook` | Verify the UI component catalog |
+| `make storybook` | Start the UI component catalog on http://localhost:6006 |
+| `npm run build-storybook` | Build the UI component catalog |
+| `npm run test:ui` | Run Storybook interaction, accessibility and coverage gates |
+| `npm run test:ui:visual` | Compare desktop/mobile UI fixtures in pinned Linux Chromium; requires Docker and catalog build |
 | `make scrape-validate` | Validate scraper configuration |
 | `make scrape-test NAME="Kildare County Council"` | Test one employer |
 | `make scrape` | Crawl, ingest, deduplicate, and generate job embeddings |
 | `make scrape-list-boards` | Inspect live crawl targets without writes |
 | `make scrape-discover-boards` | Preview board discovery; review before applying |
 | `make scrape-boards ARGS="--limit 50"` | Crawl a bounded set of boards without core feeds |
-| `make scrape-backfill` | Generate vectors for existing jobs after migrating |
+| `make scrape-backfill` | Generate missing job vectors |
+| `make db-types` | Regenerate TypeScript and Python database types |
 
 See [the scraping and matching workflow](docs/OPERATIONS.md#scraping-and-matching-workflow)
 for board imports, ATS harvesting, employer linking, research and enrichment.
-| `make db-types` | Regenerate TypeScript and Python database types |
 
 ## Repository
 
@@ -89,10 +92,11 @@ The browser uses a publishable Supabase key; only the scraper and Edge Function 
 
 ## Contributing
 
-Run `make check`, `npm run build-storybook` and `npm run db:test:tenancy` before
-submitting changes. Database changes use a new forward migration, regenerated
-TypeScript/Python types and all SQL suites (`npm run db:test`).
-See [CI gates](docs/STANDARDS_AND_CONVENTIONS.md#ci-gates) for the checks required on PRs.
+Follow the [required verification contract](AGENTS.md#required-verification) before publishing changes.
+Direct pushes are supported, PRs are optional, and rewritten branch history uses
+`git push --force-with-lease`. See [maintainer preferences](AGENTS.md#maintainer-preferences).
+Database changes use a new forward migration and regenerated TypeScript/Python types.
+See [CI gates](docs/STANDARDS_AND_CONVENTIONS.md#ci-gates) for verification of published source.
 
 ## License
 
@@ -105,4 +109,4 @@ the current local Supabase schema. It fails on stale migrations and never resets
 local data. Browser tripwires and cache/session tests run with `npm run check`.
 Lefthook requires the database gate before push; CI rebuilds the database and runs
 it on every PR. See [Security & Multi-Tenancy](docs/SECURITY_AND_MULTI_TENANCY.md#6-tenant-regression-guardrails)
-for the access inventory, new-feature requirements, and required GitHub merge checks.
+for the access inventory, new-feature requirements, and CI publishing checks.

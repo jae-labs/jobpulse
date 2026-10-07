@@ -4,13 +4,26 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
+    "types": [
+      "node",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ]
   },
-  "include": ["src", ".storybook"]
+  "include": [
+    "src",
+    ".storybook",
+    "tests",
+    "*.config.ts"
+  ]
 }

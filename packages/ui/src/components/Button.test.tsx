@@ -30,3 +30,13 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toBeDisabled();
   });
 });
+
+it('does not submit a form unless explicitly configured to submit', () => {
+  const submit = vi.fn((event) => event.preventDefault());
+  const { rerender } = render(<form onSubmit={submit}><Button>Action</Button></form>);
+  fireEvent.click(screen.getByRole('button', { name: 'Action' }));
+  expect(submit).not.toHaveBeenCalled();
+  rerender(<form onSubmit={submit}><Button type="submit">Save</Button></form>);
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(submit).toHaveBeenCalledOnce();
+});

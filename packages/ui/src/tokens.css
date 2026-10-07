@@ -12,7 +12,7 @@
   --ds-color-overlay: rgba(0, 0, 0, 0.7);
   --ds-color-border: rgba(255, 255, 255, 0.08);
   --ds-color-border-strong: rgba(255, 255, 255, 0.16);
-  --ds-color-border-control: rgba(255, 255, 255, 0.24);
+  --ds-color-border-control: rgba(255, 255, 255, 0.36);
   --ds-color-text-primary: #eeeeee;
   --ds-color-text-secondary: #c8c8c8;
   --ds-color-text-muted: #a1a1a1;
@@ -56,6 +56,13 @@
   --ds-color-chart-6: #60a5fa;
   --ds-color-chart-7: #facc15;
   --ds-color-chart-8: var(--ds-color-accent);
+  --ds-font-body: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --ds-type-body: 0.875rem;
+  --ds-type-caption: 0.75rem;
+  --ds-space-field-gap: 0.375rem;
+  --ds-control-height: 2.25rem;
+  --ds-layer-overlay: 50;
+  --ds-layer-tooltip: 70;
   --ds-motion-fast: 160ms;
   --ds-motion-enter: 220ms;
   --ds-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -145,7 +152,7 @@
 
 .ds-field-shell:hover {
   background-color: var(--ds-color-hover);
-  border-color: var(--ds-color-border-strong);
+  border-color: var(--ds-color-border-control);
 }
 
 .ds-field-shell:focus-within {
@@ -165,7 +172,7 @@
 .ds-tooltip-anchor { display: inline-flex; }
 .ds-tooltip {
   position: fixed;
-  z-index: 70;
+  z-index: var(--ds-layer-tooltip);
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -264,3 +271,18 @@
 @media (pointer: coarse) {
   .ds-range-compact { height: 2.75rem; }
 }
+
+.ds-field { display: grid; gap: var(--ds-space-field-gap); min-width: 0; }
+.ds-field-control[aria-invalid=true] { border-color: var(--ds-color-negative); }
+input.ds-field-control, select.ds-field-control { height: var(--ds-control-height); }
+.ds-field-control { font-family: var(--ds-font-body); }
+@media (forced-colors: active) {
+  .ds-field-control { border-color: CanvasText; }
+  .ds-field-control[aria-invalid=true] { outline: 2px dashed CanvasText; }
+  .ds-focus-ring:focus-visible, .ds-control-focus:focus-visible { outline-color: Highlight; }
+}
+
+.ds-layer-overlay { z-index: var(--ds-layer-overlay); }
+
+.ds-field > label { font-size: var(--ds-type-body); }
+.ds-field > p { font-size: var(--ds-type-caption); }

@@ -48,6 +48,9 @@ jobs:
       - name: Audit JavaScript dependencies
         run: pnpm audit --audit-level moderate
 
+      - name: Install browser test runtime
+        run: pnpm --filter @jae-labs/ui exec playwright install --with-deps chromium
+
       - name: Run code quality, tests & build
         run: |
           pnpm run lint
@@ -55,6 +58,8 @@ jobs:
           pnpm run test:coverage
           pnpm run build
           pnpm run build-storybook
+          pnpm run test:ui
+          pnpm run test:ui:visual
 
   tenant-isolation:
     name: Tenant Isolation Guardrails

@@ -6,6 +6,7 @@ const meta = {
   title: 'Patterns/PageHeader',
   component: PageHeader,
   tags: ['autodocs'],
+  parameters: { docs: { description: { component: 'Page heading with optional description and actions. Keep actions concise and allow narrow layouts to wrap.' } } },
   args: { title: 'Overview', description: 'A concise description of this page.' },
   decorators: [(Story) => <div className="w-[min(90vw,44rem)]"><Story /></div>],
 } satisfies Meta<typeof PageHeader>;

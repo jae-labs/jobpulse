@@ -65,8 +65,8 @@ Chromium is required by browser-backed sources; install its OS dependencies too 
 
 Python dependencies are managed by `pyproject.toml` and `uv.lock`; commands use `uv run --locked`.
 Candidate scoring runs in PostgreSQL; the scraper does not load profile or scoring rules.
-Vacancies are retained when a source is old, empty or unavailable. The former
-`--prune-only` command has been removed; retirement needs source-specific closure evidence.
+Vacancies are retained when a source is old, empty or unavailable. The CLI rejects
+`--prune-only`; retirement needs source-specific closure evidence.
 Use backfill only for missing vectors or an intentional model migration; it is not a routine startup step.
 
 Shared HTTP requests use a certificate-error fallback; review the

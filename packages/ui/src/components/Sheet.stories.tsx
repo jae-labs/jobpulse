@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from './Button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './Sheet';
 
 const meta = {
   title: 'Primitives/Sheet',
   component: Sheet,
+  parameters: { docs: { description: { component: 'Modal side panel with named title/description, focus trapping and responsive width. A visible close control requires closeLabel; hideCloseButton requires a consumer-provided dismissal control.' } } },
   tags: ['autodocs'],
 } satisfies Meta<typeof Sheet>;
 
@@ -34,3 +36,13 @@ export const Left: Story = {
     </Sheet>
   ),
 };
+
+export const Keyboard: Story = { ...Right, play: async ({ canvasElement }) => {
+  const trigger = within(canvasElement).getByRole('button', { name: 'Open sheet' });
+  await userEvent.click(trigger);
+  const body = within(canvasElement.ownerDocument.body);
+  await waitFor(() => expect(body.getByRole('dialog', { name: 'Details' })).toBeVisible());
+  await userEvent.keyboard('{Escape}');
+  await expect(trigger).toHaveFocus();
+  await userEvent.click(trigger);
+} };

@@ -319,17 +319,16 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
                     item[key] = prior.get(key)
             if not has_description_body(item["description"]) and has_description_body(previous):
                 item["description"] = previous
-        # Unresolved listings are not new semantic documents. Existing rows remain intact
-        # for repair/retry; source failure never deletes a vacancy or candidate tracking.
-        complete_chunk = [item for item in chunk if has_description_body(item["description"])]
-        if len(complete_chunk) != len(chunk):
+        # Metadata-only listings are still real vacancies. Persist them so they
+        # stay visible and repairable; embedding preparation withdraws/skips stub
+        # bodies, so a missing body never produces a semantic document. A hydrated
+        # body is preserved above and never replaced by listing metadata.
+        bodyless = [item for item in chunk if not has_description_body(item["description"])]
+        if bodyless:
             logging.getLogger(__name__).warning(
-                "%d listings lack a published description body; retained for source retry",
-                len(chunk) - len(complete_chunk),
+                "%d listings lack a published description body; stored without embeddings for repair",
+                len(bodyless),
             )
-        chunk = complete_chunk
-        if not chunk:
-            continue
         try:
             persisted = response_records(
                 retry_supabase(

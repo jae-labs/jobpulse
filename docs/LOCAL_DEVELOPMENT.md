@@ -33,20 +33,24 @@ requires intentionally configured hosted Supabase credentials in `.env`.
 
 ## Migration Workflow
 
-Migrations are the schema source of truth. A local reset reapplies them before
-restoring backup data.
+Migrations are the schema source of truth. Create a forward migration, then apply it
+without deleting data on the existing developer stack:
 
 ```bash
 npm run db:migration <name>
-make db-reset
-npm run db:diff
-npm run db:push
-npm run db:types
-npm run check
+# Write the schema change in the generated migration file.
+supabase migration up --local
+make db-types
+make check
+npm run db:test
 ```
 
-Review `npm run db:diff` before pushing to the linked project. Never edit an
-applied migration; create a forward migration.
+Verify the baseline plus forward migrations separately on a disposable local stack;
+`supabase db reset --local` deletes data and is only appropriate for that stack or a
+deliberate backed-up rebuild. Review generated TypeScript and Python changes together.
+Hosted application follows [Release and recovery](RELEASE_AND_RECOVERY.md), including
+backup, target verification and local validation before `npm run db:push`.
+Never edit an applied migration.
 
 The pre-push tenant gate requires an exact local migration ledger. After pulling
 new migrations, update your running local database and rerun the gate:
@@ -172,4 +176,14 @@ make scrape-unit
 
 ## Backup retention
 
-Privacy contact: luiz@justanother.engineer. Completed local backups have a maximum age of 365 days. `make backup` prunes expired completed `jobpulse-*` snapshots after the new snapshot completes. `node scripts/prune-backups.mjs` can enforce the policy separately. The cleanup refuses symlink roots and ignores incomplete or unrelated directories; operators must review/remove abandoned incomplete exports manually. Provider logs may have shorter retention; verify settings and never extend retention beyond one year.
+Completed local backups have a maximum age of 365 days. `make backup` prunes expired completed `jobpulse-*` snapshots after the new snapshot completes. `node scripts/prune-backups.mjs` can enforce the policy separately. The cleanup refuses symlink roots and ignores incomplete or unrelated directories; operators must review/remove abandoned incomplete exports manually. Provider logs may have shorter retention; verify settings and never extend retention beyond one year.
+
+## UI catalog and browser checks
+
+`make storybook` (or `npm run storybook`) starts the reusable UI catalog on port 6006 without Supabase.
+`npm run build-storybook` writes the
+ignored `storybook-static/` build. Install Chromium with
+`pnpm --filter @jae-labs/ui exec playwright install chromium` for `npm run test:ui`.
+`npm run test:ui:visual` requires Docker and the built catalog; it uses a pinned Linux browser environment
+and a container-local port 6007. Follow the
+[UI verification guide](../packages/ui/DESIGN.md#storybook-and-verification) for reviewed fixture updates.

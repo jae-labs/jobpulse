@@ -23,9 +23,9 @@ data, routing, and business behavior. The dependency direction is always applica
 
 ## Component Layers and Decisions
 
-1. **Tokens** describe semantic color, radius, and shadow values.
+1. **Tokens** describe semantic color, type, control geometry, layers, radius, motion and shadow values.
 2. **Primitives** provide generic controls and surfaces: `Button`, `TextField`, `Select`, `Textarea`, `Range`,
-   `Card`, `Pill`, `Dialog`, `Sheet`, and `Tooltip`.
+   `Card`, `Pill`, `Field`, `Dialog`, `Sheet`, and `Tooltip`.
 3. **Patterns** compose primitives into generic arrangements: `PageHeader` and `EmptyState`.
 4. **Application components** compose the package with domain behavior, such as a job card or application
    timeline. They stay in their application.
@@ -126,6 +126,30 @@ meaning must be visible at rest; both destructive variants need clear action cop
 their own code. Its `color` and `style` props are intentionally unavailable so visual choices go through the
 token vocabulary.
 
+## Form and overlay contracts
+
+Use `Field` to connect a visible label, helper text and validation error to a native control:
+
+```tsx
+<Field label={label} description={helpText} error={errorText} required>
+  {(controlProps) => <TextField {...controlProps} value={value} onChange={onChange} />}
+</Field>
+```
+
+The render function supplies the control ID, native required state, `aria-invalid` and `aria-describedby`.
+Spread those props on the actual input, select or textarea. Consumer validation owns error text; the package
+links and presents it. Read-only fields remain readable and selectable; disabled fields prevent interaction.
+
+`Button` defaults to `type="button"`. Explicitly use `type="submit"` for form submission. `asChild` preserves
+native link semantics; supply an accessible link name and destination. Never use a disabled-looking link as
+an unavailable action.
+
+Compose modal content with `DialogTitle`/`DialogDescription` or `SheetTitle`/`SheetDescription`. A descriptive
+heading names the dialog; `aria-describedby={undefined}` is appropriate when its structured content should
+be read individually. Both overlays require localized `closeLabel` for their built-in close button. A sheet
+with `hideCloseButton` needs another visible, keyboard-accessible dismissal control. Dialog `size` is
+`default` for concise tasks or `wide` for structured content. Keep title text clear of the corner close control.
+
 ## Accessibility
 
 - Use semantic HTML controls and headings. Prefer native `button`, `input`, `select`, and `textarea` behavior;
@@ -143,11 +167,43 @@ token vocabulary.
 - Test interaction with a keyboard and screen reader where behavior changes; use the existing accessibility
   tests for regressions.
 
-## Verification
+## Storybook and verification
 
-From the repository root, run `npm run check` after changes. It runs lint, package boundary and token checks,
-TypeScript, tests, and a production build. Run `npm run storybook` to inspect component states locally and
-`npm run build-storybook` to verify the standalone component catalog. CI builds Storybook on every change.
+Storybook is the executable component catalog. `Foundations/Tokens` explains colors, typography, space,
+layers and motion. Primitive/pattern pages expose prop controls and state examples; `ComponentGallery`
+exercises composed controls and form validation. Documentation and preview canvases share the dark theme.
+The supported default is dark; a consumer theme override needs its own state and contrast verification.
+
+Install Chromium once after installing dependencies:
+
+```sh
+pnpm --filter @jae-labs/ui exec playwright install chromium
+```
+
+Linux CI uses `--with-deps` to install browser system libraries. Follow the repository
+[required verification contract](../../AGENTS.md#required-verification) for UI changes. Its commands run
+from the repository root; build the catalog before visual tests.
+
+`npm run test:ui` runs every story in headless Chromium, its interaction assertions and blocking axe checks
+for WCAG A/AA rules. UI browser coverage has independent minimums: statements/lines 75%, branches 60%,
+functions 70%. Application, UI unit and UI browser tests use Vitest 5 with separate configurations for
+application jsdom, package jsdom and real-browser execution. Keep Vitest and its browser, coverage and UI
+packages on matching versions. `npm run typecheck` also checks package source, stories and test configuration.
+
+Visual tests require Docker and a built catalog. The root visual command uses the checksum-pinned Linux
+Playwright image in `scripts/test-ui-visual.mjs`, including a fixed browser/font environment. Desktop and
+320px-wide screenshots cover composed controls, forms, dialogs, sheets and tooltips. The suite also verifies
+native slider keyboard behavior, reduced-motion CSS and documentation canvases. CI runs all these checks
+on direct pushes to main and optional pull requests.
+
+For an intentional visual change, run `npm run test:ui:visual:update`, inspect the changed PNGs under
+`packages/ui/tests/visual/linux/`, and commit only reviewed fixtures. Never regenerate snapshots to hide an
+unexplained failure. Build output, coverage and test failure output stay ignored. The package-level
+`test:visual` command runs the host browser for diagnosis; the root command owns canonical Linux baselines.
+
+Automated axe checks do not establish full WCAG conformance. Review focus order, zoom, touch, long/localized
+content, forced colors and screen-reader announcements when relevant behavior changes. Native semantics and
+blocking automated tests support that review; they do not replace it.
 
 ## Motion and shortcut hints
 

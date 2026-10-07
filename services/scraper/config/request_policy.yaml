@@ -1,0 +1,134 @@
+defaults:
+  min_interval_seconds: 3
+  block_cooldown_seconds: 900
+hosts:
+  kildarecoco.ie:
+    last_observation:
+      observed_at: '2026-10-07T17:27:09.332581+00:00'
+      url: https://kildarecoco.ie/AllServices/CareerOpportunities/
+      host: kildarecoco.ie
+      user_agent: JobPulseSourceAudit/1.0
+      requested_samples: 3
+      successful_samples: 3
+      interval_seconds: 5
+      blocking_threshold: null
+      responses:
+      - kind: robots
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      outcome: sample_accepted_limit_unknown
+      name: Kildare County Council
+    min_interval_seconds: 5
+  laois.ie:
+    last_observation:
+      observed_at: '2026-10-07T17:27:24.711413+00:00'
+      url: https://laois.ie/job-vacancies
+      host: laois.ie
+      user_agent: JobPulseSourceAudit/1.0
+      requested_samples: 3
+      successful_samples: 3
+      interval_seconds: 10
+      blocking_threshold: null
+      responses:
+      - kind: robots
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      outcome: sample_accepted_limit_unknown
+      name: Laois County Council
+    min_interval_seconds: 10
+  www.maynoothuniversity.ie:
+    last_observation:
+      observed_at: '2026-10-07T17:27:55.913384+00:00'
+      url: https://www.maynoothuniversity.ie/human-resources/vacancies
+      host: www.maynoothuniversity.ie
+      user_agent: JobPulseSourceAudit/1.0
+      requested_samples: 3
+      successful_samples: 3
+      interval_seconds: 10
+      blocking_threshold: null
+      responses:
+      - kind: robots
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      outcome: sample_accepted_limit_unknown
+      name: Maynooth University
+    min_interval_seconds: 10
+  publicjobs.tal.net:
+    last_observation:
+      observed_at: '2026-10-07T17:28:26.473579+00:00'
+      url: https://publicjobs.tal.net/vx/lang-en-GB/mobile-0/appcentre-ext/brand-4/xf-c0d4bb6feea9/candidate/jobboard/vacancy/3/adv/
+      host: publicjobs.tal.net
+      user_agent: JobPulseSourceAudit/1.0
+      requested_samples: 3
+      successful_samples: 3
+      interval_seconds: 10
+      blocking_threshold: null
+      responses:
+      - kind: robots
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      outcome: sample_accepted_limit_unknown
+      name: PublicJobs.ie
+    min_interval_seconds: 10
+  jobsireland.ie:
+    last_observation:
+      observed_at: '2026-10-07T17:28:58.774778+00:00'
+      url: https://jobsireland.ie/en-US/browse-jobs
+      host: jobsireland.ie
+      user_agent: JobPulseSourceAudit/1.0
+      requested_samples: 3
+      successful_samples: 3
+      interval_seconds: 5
+      blocking_threshold: null
+      responses:
+      - kind: robots
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      - kind: sample
+        status: 200
+        headers: {}
+      outcome: sample_accepted_limit_unknown
+      name: JobsIreland.ie
+    min_interval_seconds: 5

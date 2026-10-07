@@ -30,6 +30,48 @@ source; the scrape pipeline does not call it. See
 
 ## Scraping and matching workflow
 
+### Request pacing and bounded observations
+
+`services/scraper/config/request_policy.yaml`, beside the source seed, stores
+host-wide operator pacing and the latest bounded audit. It also applies to hosts
+used by database-backed boards and API endpoints. Default pacing is one request
+start every three seconds per host; a denial pauses that host for at least fifteen
+minutes. [`Retry-After` delta-seconds and HTTP dates](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after)
+extend that pause. Cooldowns
+persist in `.backups/http-cooldowns.json`, so restarting does not clear a block.
+Run one crawler/audit process at a time: pacing and state writes are not coordinated
+across processes or machines. Do not delete cooldown state to bypass a denial.
+
+```bash
+make scrape-request-audit
+make scrape-request-audit ARGS="--name JobsIreland.ie --run --apply"
+make scrape-request-audit ARGS="--limit 5 --samples 3 --interval 5 --run --apply"
+```
+
+The default command only lists enabled YAML seed targets, deduplicated by host.
+`--run` checks robots.txt then makes at most five career-page GETs per host, at
+least five seconds apart, on at most ten hosts. Robots exclusions stop the probe;
+crawl-delay/request-rate directives can only slow it. Required delays over sixty
+seconds stop the probe. It uses verified TLS, no retries, no redirect following,
+bounded response bodies, and stops at errors, denials or detected challenges.
+Redirected/failed robots checks require review; no career requests are sent.
+Reports go to `.backups/request-limits.json`; `--apply` records observations and
+slower pacing in the policy file without rewriting source identities.
+
+`blocking_threshold: null` is deliberate. Accepted samples are evidence of those
+requests at that timestamp, endpoint and audit user agent, not a safe rate ceiling.
+The audit does not test ATS API routes hidden behind career pages, all live catalog
+rows, or authenticated quotas. Inspect published provider limits before setting a
+host policy; a sample never authorizes increasing the request rate.
+
+Shared HTTP helpers pace initial requests, TLS retries and transient server retries.
+401/403/429 and server `Retry-After` responses stop immediately, preserve a cooldown
+and prevent browser fallback. The `fetch_via_browser` navigation helper respects
+those cooldowns; specialized adapters using `with_browser` directly, browser
+subresources and automatic HTTP redirects are not individually paced. A challenge
+found by the audit also pauses its host. Existing board-health cooldowns remain
+separate from transport cooldowns, and failed crawls never imply vacancy closure.
+
 1. Import or discover boards in preview mode, review identities, then apply the
    chosen changes. Link board employers separately if needed.
 2. Run `make scrape-boards ARGS="--limit 50"` for a bounded board-only crawl,
@@ -60,6 +102,15 @@ limits, source filters and report destinations. `make scrape-descriptions` and
 `make scrape-description-audit` handle body repair/coverage independently of discovery.
 
 ## Published descriptions
+
+JobsIreland ingestion first saves listing pages without visiting detail URLs, then
+fetches missing descriptions sequentially. `JOBSIRELAND_REQUEST_DELAY_SECONDS`
+sets the delay between listing pages and before each detail request (default 3 seconds,
+minimum 1). The detail phase stops at the first failed or unusable response, retains
+all discovered listings and completed descriptions, and reports the run incomplete.
+Rerunning `make scrape` rediscovers listings and skips stored usable bodies, retrying
+missing descriptions. A listing failure retains saved pages and reports incomplete
+without starting details. This reduces request pressure; it cannot guarantee source access.
 
 Vacancy descriptions must contain published source text. Listing summaries, login walls,
 access denial and generated metadata are not complete bodies. Failed detail fetches retain
@@ -128,15 +179,15 @@ substring of the validated business excerpt. Unsupported description claims are 
 Explicitly named Community Employment programmes can be individually reviewed as
 programme sponsors, with a stored placement witness; this does not classify their
 client organisations or introduce an automatic name-based classification rule.
-Database-only repairs clear unsupported legacy employer location, coordinates and
+Database-only repairs clear unsupported employer location, coordinates and
 website fields before marking that employer metadata verified. They retain only the
-reviewed business description, when supplied, rather than promoting legacy guesses.
+reviewed business description, when supplied, rather than promoting unsupported values.
 Vacancy records and coordinates remain untouched. Platform/account labels that contain
 postings for multiple hiring companies require separate job identity repairs; never
 apply one posting's industry to every vacancy in such an account.
 
-For proven historical headquarters substitutions, `tools/repair_employer_locations.py`
-reads only the public catalog section of the approved pre-enrichment snapshot. Supply
+To repair a vacancy location substituted with an employer headquarters,
+`tools/repair_employer_locations.py` reads only the public catalog section of a recovery snapshot. Supply
 `--snapshot PATH --report PATH` to review proposed restorations, then `--apply` to perform
 identity/location compare-and-set writes. It refreshes scoring documents/hashes through
 `prepare_embeddings`; a retry refreshes already restored matching facts too. No private
@@ -146,8 +197,7 @@ snapshot data is imported or used as fixtures.
 unverified JSON proposals. It has no apply mode, never writes employer/office records,
 rejects incomplete or non-exact identities, and leaves unknown sizes empty. Its report
 is not a reviewed registry: verify first-party field evidence before adding reviewed
-records to `enrich_employers.py --registry`. Automatic title-based programme upgrades
-are retired; review each programme placement witness through `--stored-evidence`.
+records to `enrich_employers.py --registry`. Programme classification requires reviewing each placement witness through `--stored-evidence`.
 
 ## Vacancy location verification
 
@@ -157,36 +207,23 @@ remote and ambiguous states, uses bounded provider budgets, and checks the curre
 before applying a result. Run `services/scraper/tools/verify_job_locations.py --help` for the
 current repair interface. Review reports before applying public location changes.
 
-## Historical local capacity evidence
+## Capacity verification
 
-Repeat the synthetic probe only against a disposable local project:
+Run synthetic probes only against a disposable local project:
 
 ```bash
 make db-benchmark PROJECT=jobpulse-benchmark
 ```
 
-The script rejects development and hosted Docker targets, creates only synthetic data, and removes its fixtures
-after the run, restoring the scheduler's original active state. Current fixtures use
-sector keys and normalized sub-scores. Record new measurements as dated evidence; do not treat a local result as a hosted SLO.
+`scripts/benchmark-database.mjs` rejects development and hosted Docker targets, creates
+synthetic fixtures, removes them after execution, and restores the scheduler's active state.
+Fixtures exercise normalized sectors, scoring factors and vectors. Inspect jobs, search,
+filter and overview latency alongside worker throughput and queue age.
 
-The 1 October 2026 SQL probe used PostgreSQL 17.6, 1,000 synthetic authorized profiles,
-1.5 million evaluations and 384-dimensional vectors. Each scenario ran for five seconds.
-It excluded HTTP, hosted pooling/network, cold caches, browser rendering and simultaneous
-profile edits. It is historical regression evidence, not a hosted SLO certification.
-
-| Catalog | Clients | Scenario | p50 | p95 |
-| --- | --- | --- | --- | --- |
-| 9,000 | 10 | Jobs | 72.9 ms | 88.2 ms |
-| 9,000 | 10 | Search | 78.9 ms | 94.8 ms |
-| 9,000 | 10 | Filter | 45.5 ms | 57.1 ms |
-| 9,000 | 10 | Overview | 30.7 ms | 39.3 ms |
-| 30,000 | 50 | Jobs | 511.3 ms | 970.7 ms |
-| 30,000 | 50 | Search | 499.0 ms | 630.6 ms |
-| 30,000 | 50 | Filter | 348.5 ms | 496.0 ms |
-| 30,000 | 50 | Overview | 265.0 ms | 358.5 ms |
-
-A scheduler tick processed 5,000 scores in 0.90 seconds at 9k and 1.51 seconds at 30k.
-The scheduler bounds slices and elapsed time, preserves an exact shortlist up to 1,500,
-and isolates tenant failures. Measure queue age and read latency together before scaling
-worker concurrency. See [Release and recovery](RELEASE_AND_RECOVERY.md) for current hosted
-load, alert-delivery, retention and backup-restore evidence requirements.
+Local SQL probes exclude HTTP, hosted pooling/network, public-network model downloads,
+browser rendering and target-device GPU behavior. Validate hosted reads alongside catalog
+refresh and concurrent profile edits before setting capacity or freshness expectations.
+Measure cold and warm paths separately, including failures and retries. Increase worker
+concurrency only while catalog reads retain their latency budget and tenant work remains bounded.
+See [Release and recovery](RELEASE_AND_RECOVERY.md) for hosted load, alert delivery,
+retention and backup-restore checks.

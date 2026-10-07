@@ -12,7 +12,7 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
     const input = <input
       ref={ref}
       className={cn(
-        'h-9 w-full rounded-ds-control border border-ds-border-control bg-ds-control px-3 text-ds-text-primary placeholder:text-ds-text-muted ds-motion-control hover:bg-ds-hover focus:border-ds-accent focus:outline-none ds-control-focus disabled:cursor-not-allowed disabled:opacity-50',
+        'h-9 w-full rounded-ds-control border border-ds-border-control bg-ds-control px-3 text-ds-text-primary placeholder:text-ds-text-muted ds-motion-control hover:bg-ds-hover focus:border-ds-accent focus:outline-none ds-control-focus ds-field-control disabled:cursor-not-allowed disabled:opacity-50',
         density === 'compact' ? 'text-xs' : 'text-sm',
         startAdornment && 'pl-8',
         className,

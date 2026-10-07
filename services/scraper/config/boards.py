@@ -104,7 +104,7 @@ def detect_provider(careers_url: str) -> tuple[str, str]:
 
 
 def _row_to_target(row: dict[str, Any]) -> dict[str, Any]:
-    """Map a `boards` row onto the legacy website dict shape."""
+    """Map a `boards` row to the crawler website configuration."""
     return {
         "name": row["company"],
         "sector": row.get("sector") or "General",

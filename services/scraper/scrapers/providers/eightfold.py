@@ -1,4 +1,4 @@
-"""Eightfold AI job board adapter (newer ``/api/pcsx/search`` + legacy ``/api/apply/v2/jobs``)."""
+"""Eightfold AI job board adapter for ``/api/pcsx/search`` and ``/api/apply/v2/jobs``."""
 
 from __future__ import annotations
 

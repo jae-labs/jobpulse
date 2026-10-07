@@ -1,4 +1,4 @@
-"""Dayforce (formerly Ceridian) careers-board adapter.
+"""Dayforce careers-board adapter.
 
 Every Dayforce career site is served from the single host ``jobs.dayforcehcm.com``
 under ``/<culture>/<tenant>/<site>``; a board is the ``<tenant>/<site>`` pair. The

@@ -10,6 +10,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   Button,
   TextField,
   Pill,
@@ -113,16 +114,18 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         closeLabel={t('common.close', 'Close')}
-        className="max-w-2xl overflow-y-auto max-h-[88vh]"
+        size="wide"
+        aria-describedby={undefined}
+        className="overflow-y-auto max-h-[88vh]"
       >
         <div className="flex items-center gap-3.5 pb-5 border-b border-ds-border">
           <div className="flex size-10 items-center justify-center rounded-ds-control bg-ds-control border border-ds-border-strong shrink-0">
             <Users aria-hidden="true" className="size-5 text-ds-text-secondary" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-semibold tracking-tight text-ds-text-primary">
+            <DialogTitle className="text-base sm:text-lg font-semibold tracking-tight text-ds-text-primary">
               {t('memberManagement.title')}
-            </h2>
+            </DialogTitle>
           </div>
         </div>
 

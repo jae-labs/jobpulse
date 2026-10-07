@@ -86,7 +86,8 @@ export function Tooltip({ children, label, shortcut, side = 'bottom', className 
     }}
     onPointerLeave={() => { clearTimer(); if (!focused.current) timer.current = setTimeout(() => setOpen(false), 100); }}
     onFocus={() => { focused.current = true; clearTimer(); setOpen(true); }}
-    onBlur={() => { focused.current = false; close(); }} onPointerDown={close}>
+    onBlur={() => { focused.current = false; close(); }} onPointerDown={close}
+    onClick={close}>
     {React.cloneElement(children, { 'aria-describedby': open ? [children.props['aria-describedby'], id].filter(Boolean).join(' ') : children.props['aria-describedby'] })}
     {tooltip}
   </span>;

@@ -163,9 +163,11 @@ export default defineConfig(({ mode }) => {
           functions: 20,
           lines: 20,
         },
-        include: ["src/**/*.{ts,tsx}"],
+        include: ["src/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
         exclude: [
-          "src/**/*.test.{ts,tsx}",
+          "**/*.test.{ts,tsx}",
+          "**/*.stories.tsx",
+          "packages/ui/src/test/**",
           "src/test/**",
           "src/types/**",
           "src/main.tsx",

@@ -16,9 +16,9 @@ The invitation directory exposes only the current account authorization row and 
 All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 
 - **Tables**: `user_profiles`, `user_job_statuses`, `user_job_evaluations`, `user_cvs`, `user_cover_letters`.
-- **Ownership**: Every candidate row requires `user_id = auth.uid()`. Legacy `user_email` columns have been dropped.
-- **Scoring Isolation**: Candidate scores, explanations, and profile-dependent classifications exist only in `user_job_evaluations`; shared `jobs` rows never contain candidate analysis. RPCs and browser queries return an unassessed result when the current user has no evaluation. Embedding tables remain unreadable to browser roles. Authenticated users submit only their own profile vector through `save_profile_embedding`, and `rescore_user` checks the caller UUID.
-- **Write Triggers**: Database triggers automatically enforce `user_id = auth.uid()` from the active session on all writes.
+- **Ownership**: Every candidate row requires `user_id = auth.uid()`. Ownership is keyed by the verified Auth UUID.
+- **Scoring Isolation**: Candidate scores, explanations, and profile-dependent classifications exist only in `user_job_evaluations`; shared `jobs` rows never contain candidate analysis. RPCs and browser queries return an unassessed result when the current user has no evaluation. Embedding tables remain unreadable to browser roles. Authenticated users submit only their own profile vector through `save_profile_embedding_guarded`, which validates the current profile snapshot, and `rescore_user` checks the caller UUID.
+- **Write Triggers**: Browser writes reject a supplied foreign owner and default an omitted owner to the verified `auth.uid()`. Service-role writes retain an explicit non-null owner.
 
 ## 3. Storage Security (Documents & Avatars)
 
@@ -56,8 +56,8 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 RLS is the enforcement boundary. Lint, hooks, and agent instructions are additional
 checks; they cannot prove isolation on their own.
 
-The [regression matrix](REGRESSION_PREVENTION.md) records the session's privacy,
-matching and query failures alongside the tenant contract. Review it when adding
+The [behavior-to-test matrix](REGRESSION_PREVENTION.md) specifies privacy,
+matching and query contracts alongside the tenant contract. Review it when adding
 private fields, asynchronous work or diagnostic integrations.
 
 | Layer | Gate | What it catches |
@@ -68,7 +68,7 @@ private fields, asynchronous work or diagnostic integrations.
 | Database requests | `tenant_rows.sql`, `tenant_invitations.sql` | Two-member read/write separation, ownership spoofing, Storage metadata isolation, candidate fields returned by jobs/overview RPCs, foreign rescoring, anonymous/uninvited/unconfirmed access, foreign invitation reads/code retrieval/deletion |
 | Guard self-tests | `tenant_mutations.sql` | Intentionally disables RLS, widens a policy, exposes a privileged RPC, grants anonymous execution, creates an unknown table, and makes documents public; the guards must reject each change |
 | Durable work | `tenant_scoring_queue.sql` | Invalid matching inputs/vectors, lost setup/retry state, ingestion fan-out, shortlist underfill, weight-edit rescoring, worker exposure and failed-tenant interference |
-| Catalog retention | `tenant_catalog_retention.sql` | A service-role caller cannot use the retired age-only pruning API to delete an old untracked vacancy without closure evidence |
+| Catalog retention | `tenant_catalog_retention.sql` | The service-only pruning RPC cannot delete a vacancy based on age alone |
 
 The public-table and browser-RPC inventory lives in
 `supabase/tests/helpers/tenant_contract.sql`. A new owner table must also have a
@@ -90,14 +90,15 @@ They do not upload/download real files or replace end-to-end Storage API tests.
 
 ### Local commands
 
+Follow the [required verification contract](../AGENTS.md#required-verification) for completion and
+conditional database gates. To diagnose the tenant database gate locally:
+
 ```bash
-npm run test:tenant-lint
 npm run db:start
 npm run db:test:tenancy
-npm run check
-# Run every top-level SQL suite, including existing behavior tests:
-npm run db:test
 ```
+
+`npm run db:test` runs every top-level SQL suite, including non-tenant behavior tests.
 
 The database runner uses the local Supabase Docker container named from
 `supabase/config.toml`; it accepts no database URL, hosted credentials, or reset
@@ -108,28 +109,23 @@ applies migrations automatically. Apply pending forward versions with
 a disposable database or a deliberately backed-up developer database. Existing non-tenant SQL suites also require the
 development seed.
 
-Lefthook runs browser checks at pre-commit through `lint` and `test`, and requires
+Lefthook runs source lint and jsdom/Node tests at pre-commit through `lint` and `test`, and requires
 `db:test:tenancy` at pre-push. Install hooks with `npm run prepare`. A stopped or
 stale local database fails the push gate. Do not bypass it to ship a feature.
 
-### CI and merge protection
+### CI and publishing
 
-The **Tenant Isolation Guardrails** job runs on every PR to `main`, including
-frontend-only changes, against a clean database with every migration applied. The
+The tenant job in the [CI gate inventory](STANDARDS_AND_CONVENTIONS.md#ci-gates) runs on pushes and PRs
+to `main`, including frontend-only changes, against a clean database with every migration applied. The
 same job auto-discovers all top-level `supabase/tests/*.sql`, so adding a suite
 does not require editing a hardcoded CI file list.
 
-In GitHub's ruleset/branch protection for `main`, require **Tenant Isolation
-Guardrails**, **Code Quality & Build Check**, and
-**Scraper Quality & Tests** before merging. The confirmed solo-maintainer policy
-requires a pull request with zero independent approvals; add independent/code-owner
-review when a second maintainer joins. Dismiss stale approvals after new commits
-and restrict bypass permissions. The checked-in
-workflow does not configure these repository settings. When adopting the consolidated
-job, remove the retired **Supabase Migration Lint** required status only after the
-replacement Tenant Isolation Guardrails run passes; otherwise merges wait forever.
-Migration lint and generated-type parity now execute inside that job. Hooks can be skipped locally
-and a CI failure only blocks merging when the status is required by the ruleset.
+Direct pushes and history rewriting follow [maintainer preferences](../AGENTS.md#maintainer-preferences);
+pull requests are optional. Complete the [required verification contract](../AGENTS.md#required-verification)
+before publishing and verify all jobs in the [CI gate inventory](STANDARDS_AND_CONVENTIONS.md#ci-gates).
+Migration lint and generated-type parity execute inside the tenant job.
+Hooks can be skipped locally; the workflow does not configure GitHub branch protection.
+Do not claim enforcement from workflow configuration alone.
 
 Existing failures are release blockers. Do not grandfather a known leak into the
 inventory, delete a negative test, or turn a denied request into an accepted one to

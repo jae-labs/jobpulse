@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from network.request_policy import gate
+
 try:
     from playwright.sync_api import sync_playwright
 
@@ -42,17 +44,28 @@ def fetch_via_browser(url: str, timeout: int = 25000, wait_for_idle: bool = Fals
     """Fetch a URL with a real headless browser and return (final_url, page_html)."""
     import time
 
+    gate.check(url)
+
     def _action(page: Any) -> tuple[str, str]:
         wait_until = "networkidle" if wait_for_idle else "domcontentloaded"
+        gate.wait(url)
         try:
-            page.goto(url, wait_until=wait_until, timeout=timeout)
+            response = page.goto(url, wait_until=wait_until, timeout=timeout)
+            if response is not None:
+                gate.observe(url, response.status, response.headers.get("retry-after"))
+                gate.check(url)
         except Exception:
+            gate.check(url)
             # Fallback to domcontentloaded if networkidle timed out
             if wait_until == "networkidle":
                 try:
-                    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+                    gate.wait(url)
+                    response = page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+                    if response is not None:
+                        gate.observe(url, response.status, response.headers.get("retry-after"))
+                        gate.check(url)
                 except Exception:
-                    pass
+                    gate.check(url)
 
         _dismiss_cookie_banner(page)
 

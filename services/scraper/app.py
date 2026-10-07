@@ -190,30 +190,38 @@ def main() -> None:
     print(f"  - Employers processed:       {result.get('scraped_employers', 'N/A')}")
     print(f"  - Vacancies saved/updated:   {result.get('added', 0)}")
 
-    msgs = result.get("messages", [])
-    if msgs:
-        failures = [
-            m
-            for m in msgs
-            if "error" in m.lower()
-            or "exception" in m.lower()
-            or "unavailable" in m.lower()
-            or "not found" in m.lower()
-        ]
-        successes = [m for m in msgs if m not in failures]
-        zero_roles = [m for m in successes if "0 opportunities" in m or "0 relevant" in m]
-        with_roles = [m for m in successes if m not in zero_roles]
+    outcomes = result.get("outcomes") or []
+    if outcomes:
+        # Count structured terminal outcomes, not English substrings: an
+        # ``unsupported`` board must never be reported as having opportunities,
+        # and cooldown-skipped boards are not scrapes at all.
+        groups: dict[str, list[dict]] = {}
+        for row in outcomes:
+            groups.setdefault(str(row.get("outcome", "")), []).append(row)
 
-        print(f"  - Employers with opportunities: {len(with_roles)}")
-        print(f"  - Employers with 0 found:    {len(zero_roles)}")
-        print(f"  - Employers with errors:     {len(failures)}")
+        synced = groups.get("synced", [])
+        empty = groups.get("empty", [])
+        unsupported = groups.get("unsupported", [])
+        blocked = groups.get("blocked", []) + groups.get("auth_wall", [])
+        failed = groups.get("failed", [])
+        processed = result.get("scraped_employers")
+        skipped = max(0, processed - len(outcomes)) if isinstance(processed, int) else 0
 
-        if failures:
+        print(f"  - Employers with opportunities: {len(synced)}")
+        print(f"  - Employers with 0 found:    {len(empty)}")
+        print(f"  - Employers unsupported:     {len(unsupported)}")
+        print(f"  - Employers blocked / auth:  {len(blocked)}")
+        print(f"  - Employers with errors:     {len(failed)}")
+        print(f"  - Employers skipped (cooldown): {skipped}")
+
+        actionable = failed + blocked
+        if actionable:
             print("\nFailed / Unavailable Employers:")
-            for err in failures[:10]:
-                print(f"    - {err}")
-            if len(failures) > 10:
-                print(f"    - ... and {len(failures) - 10} more.")
+            for row in actionable[:10]:
+                detail = row.get("detail") or row.get("message") or row.get("url") or "no detail"
+                print(f"    - {row.get('employer', '?')}: {detail}")
+            if len(actionable) > 10:
+                print(f"    - ... and {len(actionable) - 10} more.")
 
     incomplete = result.get("status") == "incomplete"
     if incomplete:

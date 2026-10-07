@@ -45,3 +45,13 @@ describe('Pill', () => {
     expect(screen.getByText('Custom Span').tagName).toBe('SPAN');
   });
 });
+
+it('does not activate a disabled filter and exposes selection state', () => {
+  const click = vi.fn();
+  render(<Pill label="Selected" active disabled onClick={click} />);
+  const filter = screen.getByRole('button', { name: 'Selected' });
+  expect(filter).toHaveAttribute('aria-pressed', 'true');
+  expect(filter).toBeDisabled();
+  fireEvent.click(filter);
+  expect(click).not.toHaveBeenCalled();
+});

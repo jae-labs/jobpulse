@@ -9,13 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request
 from urllib.request import urlopen as _stdlib_urlopen
 
-try:
-    from curl_cffi import requests as cffi_requests
-
-    HAS_CURL_CFFI = True
-except ImportError:
-    cffi_requests = None
-    HAS_CURL_CFFI = False
+from network.request_policy import HostCoolingDown, gate
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -29,8 +23,14 @@ def get_ssl_context() -> ssl.SSLContext:
 
 
 def _urlopen_with_tls_fallback(request: Request, timeout: int, context: ssl.SSLContext):
+    gate.wait(request.full_url)
     try:
-        return _stdlib_urlopen(request, timeout=timeout, context=context)
+        response = _stdlib_urlopen(request, timeout=timeout, context=context)
+        gate.observe(request.full_url, response.status, response.headers.get("Retry-After"))
+        return response
+    except HTTPError as exc:
+        gate.observe(request.full_url, exc.code, exc.headers.get("Retry-After"))
+        raise
     except (URLError, ssl.SSLCertVerificationError) as exc:
         reason = exc.reason if isinstance(exc, URLError) else exc
         if not isinstance(reason, ssl.SSLCertVerificationError):
@@ -38,26 +38,38 @@ def _urlopen_with_tls_fallback(request: Request, timeout: int, context: ssl.SSLC
         fallback = get_ssl_context()
         fallback.check_hostname = False
         fallback.verify_mode = ssl.CERT_NONE
-        return _stdlib_urlopen(request, timeout=timeout, context=fallback)
+        gate.wait(request.full_url)
+        try:
+            response = _stdlib_urlopen(request, timeout=timeout, context=fallback)
+            gate.observe(request.full_url, response.status, response.headers.get("Retry-After"))
+            return response
+        except HTTPError as error:
+            gate.observe(request.full_url, error.code, error.headers.get("Retry-After"))
+            raise
 
 
 @contextmanager
 def open_request(request: Request, timeout: int = 12, context: ssl.SSLContext | None = None):
-    """Retry certificate failures and transient HTTP errors for public crawl requests."""
+    """Pace public requests; retry transient errors while respecting host cooldowns."""
     ssl_context = context or get_ssl_context()
     delays = (1.5, 3.0)
+    response = None
     for attempt in range(len(delays) + 1):
         try:
             response = _urlopen_with_tls_fallback(request, timeout=timeout, context=ssl_context)
-            try:
-                yield response
-            finally:
-                response.close()
-            return
+            break
         except HTTPError as exc:
-            if exc.code not in (429,) and exc.code < 500 or attempt == len(delays):
+            if isinstance(exc, HostCoolingDown) or exc.code in (401, 403, 429) or exc.headers.get("Retry-After"):
+                raise
+            if exc.code < 500 or attempt == len(delays):
                 raise
             time.sleep(delays[attempt])
+    if response is None:
+        raise RuntimeError("HTTP request returned no response")
+    try:
+        yield response
+    finally:
+        response.close()
 
 
 def _read_and_decompress(resp) -> str:
@@ -105,26 +117,18 @@ def fetch_url_with_final(url: str, timeout: int = 12) -> tuple[str, str]:
         with _urlopen_with_tls_fallback(req, timeout=timeout, context=ssl_context) as resp:
             return resp.geturl(), _read_and_decompress(resp)
     except HTTPError as e:
-        if e.code in (401, 403) and cffi_requests is not None:
-            try:
-                r = cffi_requests.get(url, impersonate="chrome124", timeout=timeout)
-                if r.status_code == 200 and len(r.text) > 500:
-                    return str(r.url), r.text
-            except Exception:
-                pass
-        if e.code in (401, 403):
-            # Surface bot blocks for browser fallback instead of retrying with weaker TLS.
+        if isinstance(e, HostCoolingDown) or e.code in (401, 403, 429) or e.headers.get("Retry-After"):
             raise
-        if e.code >= 500 or e.code == 429:
-            # Retry transient server errors and rate limits with backoff.
-            delays = (5.0, 10.0) if e.code == 429 else (1.5, 3.0)
+        if e.code >= 500:
+            # Denials are already surfaced above; only transient server errors retry.
+            delays = (1.5, 3.0)
             for delay in delays:
                 time.sleep(delay)
                 try:
                     with _urlopen_with_tls_fallback(req, timeout=timeout, context=ssl_context) as resp:
                         return resp.geturl(), _read_and_decompress(resp)
                 except HTTPError as retry_err:
-                    if retry_err.code < 500 and retry_err.code != 429:
+                    if retry_err.code < 500 or retry_err.headers.get("Retry-After"):
                         raise
             raise
         raise

@@ -5,10 +5,11 @@ const meta = {
   title: 'Patterns/WidgetCard',
   component: WidgetCard,
   tags: ['autodocs'],
+  parameters: { docs: { description: { component: 'Dashboard panel with heading, responsive internal spacing and a slot for contextual controls. Chart data and interactions remain consumer content.' } } },
   args: {
     title: 'Dashboard trends',
     className: 'max-w-xl',
-    children: <div className="h-60 rounded-ds-control border border-ds-border bg-ds-control" aria-label="Chart content placeholder" />,
+    children: <div className="h-60 rounded-ds-control border border-ds-border bg-ds-control" role="img" aria-label="Chart content placeholder" />,
   },
 } satisfies Meta<typeof WidgetCard>;
 export default meta;

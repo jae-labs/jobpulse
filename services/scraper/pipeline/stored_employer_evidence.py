@@ -124,7 +124,7 @@ def stored_sector_evidence(
         sector, source = witness["sector"], f"database.jobs/{witness['job_id']}"
     else:
         return None
-    # Sector evidence does not validate legacy guessed headquarters, coordinates or websites.
+    # Sector evidence does not validate unsupported headquarters, coordinates or websites.
     return {
         "sector": sector,
         "metadata_source": "verified",

@@ -81,8 +81,8 @@ closed postings retain candidate history but are excluded from live overview met
 `scrapers/registry.py` owns specialized feeds, including JobsIreland, 4dayweek.io,
 JobStash and Google alongside council, university and employer scrapers. Aggregator
 records supply each posting's employer; nested company objects are reduced to their
-name before persistence. Paginated Google, JobStash and 4dayweek requests retain
-existing vacancies on listing failures or pagination limits and report incomplete
+name before persistence. Paginated Google, JobStash, 4dayweek and JobsIreland requests
+retain existing vacancies on listing failures or pagination limits and report incomplete
 ingestion, including any rows already persisted.
 
 - `make scrape` crawls all configured employers and saves jobs and embeddings.
@@ -115,7 +115,7 @@ Wildcard tunnel domains are never trusted implicitly.
 
 ## Safety
 
-The scraper service role key stays in the local process. Candidate records remain behind Supabase RLS. Deduplication transfers user statuses and evaluations through the service-only database RPC before deleting a duplicate. Age, an empty crawl or source failure never authorizes vacancy deletion. The retired `--prune-only` command is rejected; the old SQL pruning RPC is retained only as a no-op for deployed callers. The scraper never returns candidate data in API responses.
+The scraper service role key stays in the local process. Candidate records remain behind Supabase RLS. Deduplication transfers user statuses and evaluations through the service-only database RPC before deleting a duplicate. Age, an empty crawl or source failure never authorizes vacancy deletion. The CLI rejects `--prune-only`; the service-only SQL pruning RPC returns zero. The scraper never returns candidate data in API responses.
 
 Full sync responses retain `prune_stats: {}` for compatibility with existing consumers;
 there is no pruning phase. New retirement behavior requires source-specific closure
@@ -127,10 +127,13 @@ Run `make scrape-lint` and `make scrape-unit` after changes to this service.
 ## Full description ingestion
 
 Ingestion retrieves missing posting details by default and preserves complete API
-bodies rather than listing snippets. Failed detail requests cannot erase a stored
-body, and new metadata-only listings are not embedded. The catalog repair command
-updates descriptions in place, preserving job IDs and candidate tracking. Job
-embeddings cover the complete body through token windows. See
+bodies rather than listing snippets. JobsIreland persists listing pages before
+fetching missing bodies sequentially; completed bodies act as retry checkpoints,
+and the first unusable detail response stops further detail requests. Failed detail requests cannot erase a stored
+body, and new metadata-only listings are stored but not embedded, so they stay
+visible and repairable. The catalog repair command updates descriptions in place,
+preserving job IDs and candidate tracking. Job embeddings cover the complete body
+through token windows. See
 [Published job descriptions and semantic coverage](OPERATIONS.md#published-descriptions)
 for repair commands, body-gate limits and unresolved-source handling.
 
@@ -143,12 +146,12 @@ Failed persistence never caches an employer without an ID.
 
 Employer headquarters remain in `employers`; published vacancy locations stay in `jobs`.
 Ingestion accepts only complete, finite posting coordinate pairs, preserves zero values,
-and writes `coordinate_source='posting'`. Legacy coordinates remain stored with unknown
+and writes `coordinate_source='posting'`. Coordinates without a verified source remain stored with unknown
 provenance and are hidden in paginated results and deep-link details.
 
 `employers.metadata_source` distinguishes `curated`, `watchlist`, `verified`, and
 `unverified` metadata. Trusted `employers.sector` values define the single public
-catalog sector; unknown and historical inferred values contribute `Uncategorized`.
+catalog sector; unknown and unverified values contribute `Uncategorized`.
 Overview `categories` and page `p_sector` share this definition. Candidate role-sector assessments
 remain private scoring inputs; this display classification does not rewrite them.
 Match averages include assessed jobs only.
@@ -171,7 +174,7 @@ vacancy titles or model output alone are not verification. Programme sponsorship
 not establish a client's industry. Research produces proposals; only the reviewed
 registry/stored-witness workflow promotes metadata. See
 [reviewed employer operations](OPERATIONS.md#reviewed-employer-metadata) for commands,
-evidence formats and historical location repair.
+evidence formats and location repair.
 
 ## External company research
 

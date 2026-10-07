@@ -265,14 +265,17 @@ def test_unscoped_page_is_not_a_published_job_body(monkeypatch) -> None:
     assert general.extract_general_job_detail("https://example.com/job", "Example", "Engineer") == {}
 
 
-def test_missing_detail_does_not_create_or_embed_stub(monkeypatch) -> None:
+def test_missing_detail_persists_metadata_without_embedding(monkeypatch) -> None:
     client = MagicMock()
     client.table.return_value.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(data=[])
+    client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(
+        data=[{"id": 1, "description": "Example position: Engineer."}]
+    )
     monkeypatch.setattr(repository, "get_supabase", lambda: client)
     monkeypatch.setattr(repository, "is_valid_job_title", lambda *_: True)
     monkeypatch.setattr(repository, "is_valid_location", lambda *_: True)
     monkeypatch.setattr(universal, "extract_universal_job_spec", lambda *_: {})
-    embed = MagicMock()
+    embed = MagicMock(return_value=0)
     monkeypatch.setattr(repository, "prepare_embeddings", embed)
     assert (
         repository.save_jobs_batch(
@@ -286,10 +289,14 @@ def test_missing_detail_does_not_create_or_embed_stub(monkeypatch) -> None:
                 }
             ]
         )
-        == 0
+        == 1
     )
-    client.table.return_value.upsert.assert_not_called()
-    embed.assert_not_called()
+    # The metadata-only vacancy is stored for later repair, but its stub body must
+    # never become an embedded semantic document (the gate lives in prepare_embeddings
+    # and is covered by test_embedding_cache::test_stub_vectors_are_withdrawn_without_touching_tracking).
+    payload = client.table.return_value.upsert.call_args.args[0][0]
+    assert not has_description_body(payload["description"])
+    embed.assert_called_once()
 
 
 def test_failed_existing_read_cannot_fall_through_to_stub_write(monkeypatch) -> None:

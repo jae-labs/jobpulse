@@ -3,3 +3,6 @@ packages:
 
 overrides:
   source-map-js: 1.2.2
+
+  # Vitest 5 bundles its runner; Storybook does not use this optional legacy peer.
+  "@storybook/addon-vitest>@vitest/runner": "-"

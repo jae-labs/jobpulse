@@ -28,8 +28,11 @@ Supabase, routes, hooks, libraries, translations, or feature code. The root
 [`scripts/check-design-system-boundary.sh`](../scripts/check-design-system-boundary.sh) runs during `npm run lint`
 and in CI. It rejects application imports, literal hex/rgb colors, raw palette utilities, and arbitrary
 border-radius classes (enforcing `rounded-ds-control`, `rounded-ds-card`, or `rounded-full`), then validates
-token references. Oxlint also blocks forbidden imports at the module level. Run `npm run check` before completion
-and `npm run build-storybook` after changing UI states. CI builds the standalone Storybook catalog.
+token references. Oxlint also blocks forbidden imports at the module level. Follow the
+[required verification contract](../AGENTS.md#required-verification) for UI changes.
+CI builds the standalone catalog and runs blocking accessibility, interaction, coverage and visual gates.
+The [package verification guide](../packages/ui/DESIGN.md#storybook-and-verification) owns baseline updates
+and the pinned Linux rendering environment.
 
 The application maps domain statuses to the generic `Pill.tone` API in
 [`src/lib/statusTone.ts`](../src/lib/statusTone.ts).

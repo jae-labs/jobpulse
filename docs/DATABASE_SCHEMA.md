@@ -108,7 +108,7 @@ erDiagram
 | `user_cvs` | Uploaded resume metadata | Candidate RLS (`user_id = auth.uid()`) |
 | `user_cover_letters` | Uploaded cover letter metadata | Candidate RLS (`user_id = auth.uid()`) |
 
-Candidate tables strictly enforce `user_id = auth.uid()`. Legacy `user_email` columns have been dropped across all tables and scraper services. Storage objects (`user-documents` and `avatars`) enforce ownership via matching UID paths and RLS policies.
+Candidate tables strictly enforce `user_id = auth.uid()`. Storage objects (`user-documents` and `avatars`) enforce ownership via matching UID paths and RLS policies.
 
 ## Canonical Candidate Scoring
 
@@ -167,7 +167,7 @@ The Data and privacy danger zone calls the authenticated `delete-account` Edge F
   still matches, and read its hash, model version and durable scoring progress.
   Neither RPC returns a vector.
 - **`merge_duplicate_catalog_jobs(...)`**: Service-only deduplication; tenant statuses and evaluations are transferred inside PostgreSQL.
-- **`prune_stale_catalog_jobs(...)`**: Service-only compatibility RPC returning zero. Age-only pruning is disabled; the current scraper has no pruning CLI/wrapper.
+- **`prune_stale_catalog_jobs(...)`**: Service-only compatibility RPC returning zero. The scraper has no pruning CLI or wrapper.
 - **`close_stale_jobs(...)`**: Bounded service-only compatibility no-op. Source/board
   timestamps do not establish vacancy closure. Explicitly closed jobs retain candidate history.
 - **`record_board_outcome(...)`**: Service-only board
@@ -183,8 +183,11 @@ keys remove vectors when the associated job or profile is deleted.
 
 ## Migration Workflow
 
-The initial migration creates the baseline; the complete ordered forward migration
-chain builds the current schema. Never delete or edit applied versions as cleanup.
+A single baseline migration under `supabase/migrations/` creates the complete schema
+for a fresh database, and subsequent changes are forward migrations on top of it.
+The baseline restates explicit role privileges plus the bootstrap rows, Storage
+bucket rows and `pg_cron` schedules that a schema-only dump omits; keep them when
+regenerating it. Applied versions remain immutable.
 Follow [Local Development](LOCAL_DEVELOPMENT.md#migration-workflow)
 and regenerate both language types with `make db-types`. CI checks parity.
 
@@ -193,9 +196,9 @@ and regenerate both language types with `make db-types`. CI checks parity.
 `profile_scoring_embeddings` remains private. Authenticated users submit only their own
 384-dimensional MiniLM vector through `save_profile_embedding_guarded`; its hash and model
 version are exposed through `get_profile_embedding_state` without exposing the vector.
-`rescore_user` enqueues durable work in backend-only `candidate_scoring_work`. Profile and embedding writes enqueue atomically; missing embeddings and changed matching text retain an `awaiting_embedding` setup state until a new vector is saved. Old evaluations remain available while local inference is unfinished. Fingerprints exclude personal fields and composition weights. The worker computes an exact, stable top-1,500 shortlist, reuses unchanged evaluation factors, scores slices of at most 100 and trims native evaluations only after completion. Failures roll back that tenant's slice and retain a retry with exponential backoff and a generic SQLSTATE.
+`rescore_user` enqueues durable work in backend-only `candidate_scoring_work`. Profile and embedding writes enqueue atomically; missing embeddings and changed matching text retain an `awaiting_embedding` setup state until a new vector is saved. Assessed evaluations remain available while local inference is unfinished. Fingerprints exclude personal fields and composition weights. The worker computes an exact, stable top-1,500 shortlist, reuses unchanged evaluation factors, scores slices of at most 100 and trims native evaluations only after completion. Failures roll back that tenant's slice and retain a retry with exponential backoff and a generic SQLSTATE.
 
-`scoring_catalog_generation` advances once per job-vector statement. Ingestion never loops over candidates. A one-second Cron worker drains persisted requests; catalog changes refresh completed candidates asynchronously. Both work tables have RLS enabled and no browser grants. Queue work and profile vectors are removed when their account is deleted.
+`scoring_catalog_generation` advances once per job-vector statement. Ingestion never loops over candidates. A five-second Cron worker drains persisted requests; catalog changes refresh completed candidates asynchronously. Both work tables have RLS enabled and no browser grants. Queue work and profile vectors are removed when their account is deleted.
 
 `get_jobs_page` and `get_overview_metrics` recompose scores from persisted
 `ai_analysis.sub_scores` using current profile weights.
@@ -211,8 +214,7 @@ metadata (`metadata_source` is curated, watchlist or verified). The physical
 not replace the catalog sector or mutate shared employer facts.
 
 `get_overview_metrics.categories` and `sectors`, and `get_jobs_page.p_sector`, use
-this same shared classification. Sector is canonical; retired domain keys and
-arguments are not the current browser RPC contract.
+this same shared classification. Sector is the browser RPC classification contract.
 Overview match statistics still use assessed jobs only.
 
 Browsing groups normalize synonymous enriched labels without changing `employers.sector`.
@@ -226,7 +228,7 @@ Existing links with exact trusted employer labels remain supported.
 `jobs.location_verification` records the original posting location, provider,
 verification timestamp, status, confidence and precision. The service-only
 `apply_job_location_verifications` RPC guards both ID and unchanged location text.
-Changing that text invalidates old verification and geocoded coordinates. Employer
+Changing that text invalidates stored verification and geocoded coordinates. Employer
 headquarters never replace a vacancy location.
 
 The authorized browser RPC `get_job_map` applies the catalog filters and each
@@ -245,10 +247,8 @@ flag through the existing owner-table export; account deletion cascades remove i
 No new personal field or external telemetry is collected. Bookmark retention matches
 candidate tracking retention and the existing account deletion policy.
 
-The forward migration preserves Interested jobs as `status=new, is_saved=true`.
-Legacy Interested writes and links remain supported for rolling frontend deployment.
-The canonical application uses Saved filters/counts; legacy RPC count aliases are
-kept for previously deployed clients. Saved can overlap pipeline stages, so the
+The supported Interested input maps to `status=new, is_saved=true`.
+The application uses Saved filters/counts; RPCs also expose supported Interested count aliases. Saved can overlap pipeline stages, so the
 active-pipeline metric counts Applied and Interview only. Catalog merge logic ORs
 bookmark flags while retaining existing progress conflict checks.
 
@@ -260,3 +260,13 @@ data or verified vacancy-workplace claim. `employer_office_lookups` is backend-o
 persistent scheduling state. Both tables have RLS; the two research RPCs are service-only.
 The optional map office layer reuses the tenant-filtered catalog and labels workplace
 uncertainty. See [employer office enrichment](OPERATIONS.md#employer-research-and-offices).
+
+## Integrity enforcement
+
+The [required verification contract](../AGENTS.md#required-verification) owns schema-change gates.
+[The database runner](../scripts/test-database.mjs) checks the local migration ledger and executes SQL suites
+against the local stack; it does not migrate or reset developer data. The
+[tenant contract](../supabase/tests/helpers/tenant_contract.sql) classifies tables and browser RPCs and
+supports negative authorization tests. The [CI gate inventory](STANDARDS_AND_CONVENTIONS.md#ci-gates)
+identifies the disposable schema rebuild, migration lint and generated TypeScript/Python parity checks.
+These checks enforce their tested contracts; they do not verify hosted schema, backups or recovery readiness.

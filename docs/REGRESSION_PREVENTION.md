@@ -1,39 +1,38 @@
 # Regression prevention and safe cleanup
 
-The October 2026 review exposed failures in ownership, asynchronous state, scoring,
-query contracts and privacy. These are continuing engineering requirements, not
-temporary cleanup tasks. New features must preserve the contracts below.
+Ownership, asynchronous state, scoring, query contracts and privacy are database and
+application invariants. Changes preserve the behavior-to-test matrix below.
 
 Instructions and static lint cannot guarantee security. PostgreSQL grants, RLS and
 caller checks enforce access; role-based negative tests prove the declared behavior.
-Hooks provide local feedback, and required CI checks protect merges. A new data path
+Hooks provide local feedback, and CI verifies published source. A new data path
 needs its own behavioral tests even when every existing check passes.
 
-## Failure-to-test matrix
+## Behavior-to-test matrix
 
-Finding IDs identify the continuing failure contracts below.
+Each row defines a current contract and the tests that verify it.
 Test paths in this table are relative to the repository root. SQL suites live under
 `supabase/tests/` and run with `npm run db:test`; tenant suites also run at pre-push.
 
-| Finding | Contract future changes must preserve | Regression evidence |
+| Behavior | Contract | Verification |
 | --- | --- | --- |
-| F1: pagination CTE outage | Count and page share a SQL statement and filter population; empty/high-offset pages retain totals; sorts have stable ID tie breaks | `jobs_pagination.sql` |
-| F2: invitation access crossed tenants | Own access row and issuer-owned invitations only; foreign IDs/codes cannot authorize reads or deletion; pending invitations are bounded | `tenant_catalog.sql`, `tenant_rows.sql`, `tenant_invitations.sql` |
-| F3: malformed input interrupted shared work | Validate JSON shape, size, lists, numbers and vectors at the database boundary; roll back only the failing tenant's slice | `tenant_scoring_queue.sql` |
-| F4: telemetry could collect private data | Use the explicit-DSN diagnostic allowlist; drop identity, free text, request data, breadcrumbs, tracing and replay; consume invitation parameters first | `src/lib/sentry.test.ts`, `src/lib/logger.test.ts`, `src/components/auth/LoginView.test.tsx`, source lint |
-| F5: browser and SQL filters disagreed | Keep status/salary/sort enums aligned; use annual EUR thresholds and bounded literal search/location input | `jobs_pagination.sql`, `salary_normalization.sql`, `src/components/jobs/JobsView.test.tsx` |
-| F6: ingestion multiplied work by users | Advance one generation per vector statement; enqueue profile/vector changes atomically; process bounded durable slices outside request/write paths | `tenant_scoring_queue.sql`; [capacity probe](OPERATIONS.md#historical-local-capacity-evidence) |
-| F7: approximate ranking underfilled results | Exact stable shortlist of up to 1,500 eligible vectors; trim native results only after completion | `tenant_scoring_queue.sql` with 1,601-vector fixture |
-| F8: save/retry lost unfinished work | Persist awaiting-embedding state; retain usable old results; failed current-vector work retries; check UID and profile hash after inference | `tenant_scoring_queue.sql`, `src/lib/userProfile.test.ts` |
-| F9: loaded-page counters misled users | Server catalog supplies shared normalized sectors and facets; top 20 plus Other and Uncategorized reconcile across overview, pagination and maps independently of loaded pages | `overview_metrics.sql`, `tenant_sector_groups.sql`, `src/components/jobs/JobsView.test.tsx` |
-| F10: unassessed jobs appeared as poor matches | Match statistics use assessed jobs; categories include Uncategorized; chart labels name the population | `overview_metrics.sql`, `src/components/dashboard/OverviewView.test.tsx` |
-| F11: private/stale detail survived state changes | Central owner-scoped keys, before/after identity checks, account remount, complete invalidation and bounded freshness polling | `src/lib/queryKeys.test.ts`, `src/hooks/useTenantSwitch.test.tsx`, `src/hooks/useAuthSession.isolation.test.ts`, `src/hooks/useJobTrackingUpdates.test.tsx` |
-| F12: search hid failures | Debounce/cap input; use authoritative server results; show loading/error/retry/empty states; suppress stale results on failure | `src/components/ui/CommandMenu.states.test.tsx` |
-| F13: source outages triggered deletion | Missing/old data is not evidence of closure; never run age-only pruning; preserve candidate tracking during deduplication | `tenant_catalog_retention.sql`, `services/scraper/tests/test_pipeline_ingestion.py`, `services/scraper/tests/test_cli_outcomes.py`, `services/scraper/tests/test_boards_catalog.py`, `services/scraper/tests/test_jobstash.py`, `services/scraper/tests/test_repository_safety.py`, `candidate_statuses.sql` |
-| F14: inference dependency advisories | Locked dependency audits, checksum-pinned same-origin assets and bounded browser workers; verify the production CSP after upgrades | CI audits, `scripts/prepare-browser-model.mjs`, release browser inference smoke test |
-| Camera updates blanked dots or retained results across filter/identity changes | Keep GPU points during same-scope pending requests, clear on errors or scope changes, and restore layers after style reload | `src/components/jobs/JobsMapCanvas.test.tsx`, `src/lib/cspHeaders.test.ts` |
-| Company offices: directory evidence must remain separate from job workplace facts | Additive service-only discovery, persistent outcomes, named office layer, expiry/multiple-office exclusion and owner-filtered maps | `tenant_employer_offices.sql`, `services/scraper/tests/test_employer_offices.py`, `src/components/jobs/JobsMapView.test.tsx` |
-| Job geography: headquarters or stale text produced false pins | Verify each posting place externally; preserve precision; exclude unresolved places; guard ID and original text; tenant-specific map filters and service-only writes; role/company browsing preserves filters and pages the complete selected location | `tenant_job_map.sql`, `services/scraper/tests/test_job_locations.py`, `src/components/jobs/JobsMapView.test.tsx` |
+| Pagination | Count and page share a SQL statement and filter population; empty/high-offset pages retain totals; sorts have stable ID tie breaks | `jobs_pagination.sql` |
+| Invitation ownership | Own access row and issuer-owned invitations only; foreign IDs/codes cannot authorize reads or deletion; pending invitations are bounded | `tenant_catalog.sql`, `tenant_rows.sql`, `tenant_invitations.sql` |
+| Input validation and tenant rollback | Validate JSON shape, size, lists, numbers and vectors at the database boundary; roll back only the failing tenant's slice | `tenant_scoring_queue.sql` |
+| Telemetry privacy | Use the explicit-DSN diagnostic allowlist; drop identity, free text, request data, breadcrumbs, tracing and replay; consume invitation parameters first | `src/lib/sentry.test.ts`, `src/lib/logger.test.ts`, `src/components/auth/LoginView.test.tsx`, source lint |
+| Filter consistency | Keep status/salary/sort enums aligned; use annual EUR thresholds and bounded literal search/location input | `jobs_pagination.sql`, `salary_normalization.sql`, `src/components/jobs/JobsView.test.tsx` |
+| Bounded ingestion and scoring | Advance one generation per vector statement; enqueue profile/vector changes atomically; process bounded durable slices outside request/write paths | `tenant_scoring_queue.sql`; [capacity probe](OPERATIONS.md#capacity-verification) |
+| Exact shortlist coverage | Exact stable shortlist of up to 1,500 eligible vectors; trim native results only after completion | `tenant_scoring_queue.sql` with 1,601-vector fixture |
+| Durable save and retry | Persist awaiting-embedding state; retain usable assessed results; failed current-vector work retries; check UID and profile hash after inference | `tenant_scoring_queue.sql`, `src/lib/userProfile.test.ts` |
+| Authoritative catalog metrics | Server catalog supplies shared normalized sectors and facets; top 20 plus Other and Uncategorized reconcile across overview, pagination and maps independently of loaded pages | `overview_metrics.sql`, `tenant_sector_groups.sql`, `src/components/jobs/JobsView.test.tsx` |
+| Assessed match statistics | Match statistics use assessed jobs; categories include Uncategorized; chart labels name the population | `overview_metrics.sql`, `src/components/dashboard/OverviewView.test.tsx` |
+| Account-scoped freshness | Central owner-scoped keys, identity checks around asynchronous work, account remount, complete invalidation and bounded freshness polling | `src/lib/queryKeys.test.ts`, `src/hooks/useTenantSwitch.test.tsx`, `src/hooks/useAuthSession.isolation.test.ts`, `src/hooks/useJobTrackingUpdates.test.tsx` |
+| Search states | Debounce/cap input; use authoritative server results; show loading/error/retry/empty states; suppress stale results on failure | `src/components/ui/CommandMenu.states.test.tsx` |
+| Catalog retention | Missing/old data is not evidence of closure; never run age-only pruning; preserve candidate tracking during deduplication | `tenant_catalog_retention.sql`, `services/scraper/tests/test_pipeline_ingestion.py`, `services/scraper/tests/test_cli_outcomes.py`, `services/scraper/tests/test_boards_catalog.py`, `services/scraper/tests/test_jobstash.py`, `services/scraper/tests/test_repository_safety.py`, `candidate_statuses.sql` |
+| Inference supply chain | Locked dependency audits, checksum-pinned same-origin assets and bounded browser workers; verify the production CSP after upgrades | CI audits, `scripts/prepare-browser-model.mjs`, release browser inference smoke test |
+| Map state and camera updates | Keep GPU points during same-scope pending requests, clear on errors or scope changes, and restore layers after style reload | `src/components/jobs/JobsMapCanvas.test.tsx`, `src/lib/cspHeaders.test.ts` |
+| Company office evidence | Additive service-only discovery, persistent outcomes, named office layer, expiry/multiple-office exclusion and owner-filtered maps | `tenant_employer_offices.sql`, `services/scraper/tests/test_employer_offices.py`, `src/components/jobs/JobsMapView.test.tsx` |
+| Verified vacancy geography | Verify each posting place externally; preserve precision; exclude unresolved places; guard ID and original text; tenant-specific map filters and service-only writes; role/company browsing preserves filters and pages the complete selected location | `tenant_job_map.sql`, `services/scraper/tests/test_job_locations.py`, `src/components/jobs/JobsMapView.test.tsx` |
 
 Not every row is fully proved by static checks or mocks. Browser inference, actual
 Storage API requests, Edge Functions and hosted operational settings need the
@@ -90,43 +89,37 @@ the database before removing an item. Tests that assert obsolete implementation
 details can go; tests protecting ownership, recovery or denial must remain or be
 replaced with a behavioral regression for the replacement path.
 
-The follow-up cleanup removes the stale-pruning CLI/wrapper, the misleading mock
-test expecting it to delete rows, unused frontend gender fields/copy, the Sentry
-account-identity API, and duplicate browser matching/enqueue logic. The retired CLI
-now has a negative test, and privacy/source lint blocks common telemetry bypasses.
+Preserve these current contracts:
 
-The following remain intentionally:
-
-- Applied migrations: they are immutable history needed to rebuild a database.
-- `prune_stale_catalog_jobs`: a service-only compatibility RPC that returns zero.
-  Dropping it needs a forward migration and an inventory of deployed callers.
-- `prune_stats: {}` in full scraper sync responses: compatibility metadata only;
-  no pruning operation is executed. Removing an API field needs a consumer review.
-- Legacy gender values in the private database/generated schema: the frontend
-  stops collecting them; deletion or dropping the column needs a separate data
-  lifecycle decision and forward migration. Account export/deletion still covers them.
-- Tenant guard self-tests, synthetic capacity probes and dated remediation records:
-  these retain verification evidence and failure context.
-- Private backup snapshots: keep valid recovery points within the 365-day policy;
-  do not delete them as source cleanup or include them in repository scans/commits.
+- Applied migrations rebuild the schema in order and remain immutable.
+- `prune_stale_catalog_jobs` is a service-only RPC returning zero. Removing a supported
+  RPC requires a forward migration and a caller inventory.
+- `prune_stats: {}` is a supported full-sync response field; no pruning operation runs.
+  Removing a response field requires a consumer review.
+- Private schema fields remain covered by account export/deletion even when the
+  frontend does not collect them. Dropping a field requires a data lifecycle review
+  and forward migration.
+- Tenant guard self-tests and synthetic capacity probes verify isolation and bounded work.
+- Private backup snapshots remain valid recovery points within the 365-day policy;
+  keep them outside repository scans and commits.
 
 ## Completion and release evidence
 
-Run `make check`, `npm run db:test:tenancy`, and `npm run build-storybook`.
-For database or matching changes, run all SQL suites with `npm run db:test`.
+Follow the [required verification contract](../AGENTS.md#required-verification) and the affected rows of
+the behavior-to-test matrix. The [UI verification guide](../packages/ui/DESIGN.md#storybook-and-verification)
+explains browser checks and reviewed visual fixtures.
 CI rebuilds a disposable database from the entire migration chain and verifies
 both generated language models. A developer database behind the checkout uses
 `supabase migration up --local`; the runner never migrates or resets it implicitly.
 
-The PR must identify affected matrix rows, behavioral tests and any conditional
-integration checks. Report separately: local checks, hosted schema versions,
-deployed frontend commit, and operational evidence. A dated remediation document
-is historical evidence, not the current deployment source of truth. Recheck alerts,
-provider retention, backup restoration and hosted capacity before claiming them.
+A change summary identifies affected behavior contracts, tests and conditional integration
+checks. Review and update the relevant guides in the same change. Verify local checks,
+hosted schema, deployed frontend and operational behavior separately. Recheck alerts,
+provider retention, backup restoration and hosted capacity before claiming readiness.
 
 Saved is a bookmark, never a pipeline transition. Heart controls must remain sibling
 buttons on job cards, preserve card selection, support keyboard activation and expose
 `aria-pressed`. `tenant_saved_jobs.sql` verifies owner success, foreign denial, denied
-identities and Saved count/page/map consistency. `SavedJobButton.test.tsx` verifies
+identities and Saved count/page/map consistency. `src/components/jobs/SavedJobButton.test.tsx` verifies
 save/unsave without altering Applied progress. Keep bookmark flags through catalog
-merges and retain legacy Interested compatibility until older clients are retired.
+merges. The supported Interested input maps to `status=new, is_saved=true`.

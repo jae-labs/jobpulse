@@ -1,4 +1,4 @@
-// Historical chart sources and explicit annualisation assumptions.
+// Irish labour-market chart sources and explicit annualisation assumptions.
 export const irelandMarket = {
   minimumWageHoursPerWeek: 39,
   weeksPerYear: 52,
@@ -16,7 +16,7 @@ export type IrelandMarketChartId = typeof irelandMarketChartIds[number];
 // Q2 observations, not annual averages; extracted from QLF01, EHQ03 and EHQ16
 // (all sexes / employees / sectors), dataset releases 20 and 25 August 2026.
 // QLF01 reports thousands: converted to whole people. Minimum wage is the adult
-// rate in force at Q2, sourced from Government / WRC historical rates.
+// rate in force at Q2, sourced from Government / WRC published rates.
 export const irelandMarketHistory = [
   { period: 'Q2 2017', labourForce: 2348200, unemployed: 160800, vacancies: 19500, meanWeekly: 720.52, meanHourly: 22.27, minimumHourly: 9.25 },
   { period: 'Q2 2018', labourForce: 2407500, unemployed: 145900, vacancies: 22100, meanWeekly: 745.03, meanHourly: 22.94, minimumHourly: 9.55 },

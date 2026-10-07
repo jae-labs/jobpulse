@@ -35,6 +35,42 @@ def test_cli_exit_reports_ingestion_outcome(monkeypatch, capsys, status, exit_co
         assert "failed sources require retry" in capsys.readouterr().out
 
 
+def test_cli_summary_counts_structured_outcomes(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    """Unsupported and cooldown-skipped boards are not reported as opportunities."""
+    monkeypatch.setattr("sys.argv", ["scraper", "--core-only"])
+    monkeypatch.setattr(app, "sync_watchlist_metadata", Mock())
+    monkeypatch.setattr(
+        app,
+        "synchronize",
+        Mock(
+            return_value={
+                "status": "incomplete",
+                "added": 4,
+                "scraped_employers": 6,
+                "failed_sources": 3,
+                "outcomes": [
+                    {"employer": "A", "outcome": "synced", "opportunities_found": 4, "persisted": 4},
+                    {"employer": "B", "outcome": "empty"},
+                    {"employer": "C", "outcome": "unsupported"},
+                    {"employer": "D", "outcome": "blocked", "detail": "TCP blocked"},
+                    {"employer": "E", "outcome": "failed", "detail": "read timed out"},
+                ],
+            }
+        ),
+    )
+    with pytest.raises(SystemExit) as result:
+        app.main()
+    assert result.value.code == 1
+    out = capsys.readouterr().out
+    assert "Employers with opportunities: 1" in out
+    assert "Employers with 0 found:    1" in out
+    assert "Employers unsupported:     1" in out
+    assert "Employers blocked / auth:  1" in out
+    assert "Employers with errors:     1" in out
+    assert "Employers skipped (cooldown): 1" in out
+    assert "D: TCP blocked" in out and "E: read timed out" in out
+
+
 def test_invalid_configuration_prints_issues_and_fails(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["scraper", "--validate-config"])
     monkeypatch.setattr(app, "load_websites_config", lambda: [])
