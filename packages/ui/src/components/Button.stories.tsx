@@ -9,7 +9,7 @@ const meta = {
   args: { children: 'Continue', variant: 'primary', size: 'default', type: 'button' },
   argTypes: {
     variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger', 'quiet', 'dangerQuiet'], description: 'Semantic action emphasis.' },
-    size: { control: 'select', options: ['xs', 'sm', 'default', 'lg', 'icon'], description: 'Control size; icon-only controls require an accessible name.' },
+    size: { control: 'select', options: ['xs', 'sm', 'md', 'default', 'lg', 'icon'], description: 'Control size; icon-only controls require an accessible name.' },
     type: { control: 'select', options: ['button', 'submit', 'reset'] },
     disabled: { control: 'boolean' },
   },
@@ -27,6 +27,7 @@ export const Quiet: Story = { args: { variant: 'quiet', children: 'Reset filters
 export const DangerQuiet: Story = { args: { variant: 'dangerQuiet', children: 'Remove' } };
 export const ExtraSmall: Story = { args: { size: 'xs' } };
 export const Small: Story = { args: { size: 'sm' } };
+export const Medium: Story = { args: { size: 'md' } };
 export const Large: Story = { args: { size: 'lg' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Loading: Story = {

@@ -13,7 +13,7 @@ import type { Job, JobStatus } from '../../types/job';
 import SavedJobButton from './SavedJobButton';
 import IgnoredJobButton from './IgnoredJobButton';
 import { StatusPill, MatchScoreBadge } from '../ui/StatusPill';
-import { useJobDetailQuery } from '../../hooks/useQueries';
+import { useJobByIdQuery } from '../../hooks/useQueries';
 import { formatJobDescription } from '../../lib/formatDescription';
 import { formatCompactSalary } from '../../lib/formatSalary';
 import { cn } from '@jae-labs/ui';
@@ -43,7 +43,7 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const needsDetail = Boolean(job?.id);
-  const { data: detail, isLoading: isLoadingDetail, isError: isDetailError, refetch: refetchDetail } = useJobDetailQuery(
+  const { data: detail, isLoading: isLoadingDetail, isError: isDetailError, refetch: refetchDetail } = useJobByIdQuery(
     job?.id,
     userId,
     needsDetail

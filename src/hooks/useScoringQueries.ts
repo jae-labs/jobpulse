@@ -29,7 +29,7 @@ export function useScoringStateQuery(activeUserId?: string | null, enabled = tru
     void client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(activeUserId) });
     void client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(activeUserId) });
     void client.invalidateQueries({ queryKey: queryKeys.scoringPreviewJobs(activeUserId) });
-    void client.invalidateQueries({ predicate: q => (q.queryKey[0] === 'job-by-id' || q.queryKey[0] === 'job-detail') && q.queryKey[2] === activeUserId });
+    void client.invalidateQueries({ predicate: q => q.queryKey[0] === 'job-by-id' && q.queryKey[2] === activeUserId });
   }, [revision, activeUserId, client]);
   return query;
 }

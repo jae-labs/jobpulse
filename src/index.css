@@ -114,7 +114,12 @@
 .overview-widget-chart { grid-column: span 2; }
 .overview-widget-stat .widget-content [data-stat-heading] { padding-right: 2.5rem; }
 .overview-widget-stat .widget-content [data-stat-heading] > div { min-width: 0; }
-.overview-widget-stat .widget-content [data-stat-heading] span { min-width: 0; overflow-wrap: anywhere; }
+.overview-widget-stat .widget-content [data-stat-heading] [data-stat-title] {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 @media (max-width: 767px) {
   .bento-grid.overview-grid { grid-auto-rows: 28px; gap: 12px; }
   .overview-widget { align-self: stretch; }
@@ -210,6 +215,18 @@
   line-height: 20px;
   color: var(--ds-color-text-primary);
   outline: none;
+}
+
+/* The header bottom border is the command palette focus indicator; keep the input outline-free. */
+[cmdk-input]:focus-visible {
+  outline: none;
+}
+
+@media (forced-colors: active) {
+  [cmdk-input]:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }
 
 [cmdk-input]::placeholder {

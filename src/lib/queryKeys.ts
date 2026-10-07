@@ -9,7 +9,6 @@ export const queryKeys = {
   jobsSearchPage: (userId?: string | null, params?: unknown) => ["jobs-search-page", userId ?? null, ...(params === undefined ? [] : [params])] as const,
   scoringPreviewJobs: (userId?: string | null) => ["scoring-preview-jobs", userId ?? null] as const,
   jobById: (id?: number | null, userId?: string | null) => ["job-by-id", id, userId ?? null] as const,
-  jobDetail: (id?: number | null, userId?: string | null) => ["job-detail", id, userId ?? null] as const,
   avatarUrl: (path?: string | null) => ["avatar-url", path ?? null] as const,
   profile: (userId?: string | null) => ["profile", userId ?? null] as const,
   userCvs: (userId?: string | null) => ["user-cvs", userId ?? null] as const,

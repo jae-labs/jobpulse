@@ -590,7 +590,8 @@
     "unableToLoadRelevanceChart": "Não foi possível carregar o gráfico de distribuição de relevância",
     "unableToLoadSkillsChart": "Não foi possível carregar o gráfico de competências",
     "unableToLoadPrivacy": "Não foi possível carregar dados e privacidade",
-    "unableToLoadTaxCalculator": "Não foi possível carregar a calculadora de impostos"
+    "unableToLoadTaxCalculator": "Não foi possível carregar a calculadora de impostos",
+    "unableToLoadMemberManagement": "Não foi possível carregar o gerenciamento de membros"
   },
   "scoring": {
     "matchingPending": "Perfil salvo. A preparação das correspondências está pendente.",

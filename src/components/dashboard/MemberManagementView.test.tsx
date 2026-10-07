@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemberManagementModal } from './MemberManagementModal';
+import { MemberManagementView } from './MemberManagementView';
 import type { InvitationItem } from '../../hooks/useQueries';
 
 const mockMutateAsync = vi.fn();
@@ -44,7 +44,7 @@ vi.mock('../../hooks/useQueries', () => ({
   }),
 }));
 
-describe('MemberManagementModal', () => {
+describe('MemberManagementView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.assign(navigator, {
@@ -54,17 +54,11 @@ describe('MemberManagementModal', () => {
     });
   });
 
-  it('renders modal when open with invite form and list', () => {
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+  it('renders the invite form and directory as a page', () => {
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Invite and manage members');
-    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Invitations and members');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Invite and manage members');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Invitations and members');
     expect(screen.getByText('teammate@example.com')).toBeInTheDocument();
     expect(screen.getByText('peer@example.com')).toBeInTheDocument();
   });
@@ -78,13 +72,7 @@ describe('MemberManagementModal', () => {
       invite_code: 'token789',
     });
 
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
     const emailInput = screen.getByPlaceholderText(/name@example\.com/i);
     fireEvent.change(emailInput, { target: { value: 'newperson@example.com' } });
@@ -113,13 +101,7 @@ describe('MemberManagementModal', () => {
       already_pending: true,
     });
 
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
     const emailInput = screen.getByPlaceholderText(/name@example\.com/i);
     fireEvent.change(emailInput, { target: { value: 'teammate@example.com' } });
@@ -148,13 +130,7 @@ describe('MemberManagementModal', () => {
       code: '42883',
     });
 
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
     const emailInput = screen.getByPlaceholderText(/name@example\.com/i);
     fireEvent.change(emailInput, { target: { value: 'fail@example.com' } });
@@ -177,13 +153,7 @@ describe('MemberManagementModal', () => {
       invite_code: 'token789',
     });
 
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
     expect(screen.queryByRole('button', { name: /^Copy$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Delete$/i })).toBeInTheDocument();
@@ -206,13 +176,7 @@ describe('MemberManagementModal', () => {
   it('invokes revoke mutation when clicking delete button', async () => {
     mockRevokeMutateAsync.mockResolvedValueOnce({ success: true });
 
-    render(
-      <MemberManagementModal
-        isOpen={true}
-        onClose={vi.fn()}
-        currentUserId="admin@example.com"
-      />
-    );
+    render(<MemberManagementView currentUserId="admin@example.com" />);
 
     const deleteBtn = screen.getByTitle(/Delete/i);
     fireEvent.click(deleteBtn);

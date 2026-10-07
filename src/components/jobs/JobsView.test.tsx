@@ -11,7 +11,6 @@ vi.mock('./JobsMapView', () => ({ default: ({ onSelectLocation }: { onSelectLoca
 
 vi.mock('../../hooks/useQueries', () => ({
   useJobByIdQuery: () => ({ data: linked.data, isLoading: false }),
-  useJobDetailQuery: () => ({ data: null, isLoading: false, isError: false }),
   useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   useUpdateJobStatusMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useJobsInfiniteQuery: () => ({

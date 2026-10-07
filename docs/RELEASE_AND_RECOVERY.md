@@ -4,7 +4,7 @@ Operational checklist for deploying and recovering JobPulse.
 
 ## Pre-Release Verification
 
-- **Identity & Auth**: Verify hosted Supabase Auth requires confirmed email ownership. Confirm uninvited users are blocked by `is_authorized_user()`.
+- **Identity & Auth**: Verify hosted Supabase Auth requires confirmed email ownership (hosted `[auth.email].enable_confirmations` or equivalent), keeps password signup disabled or confirmation-gated, and retains the rate limits. Confirm uninvited users are blocked by `is_authorized_user()`.
 - **Database & RLS**:
   - Run `npm run db:diff` to ensure local migrations match linked production schema.
   - Verify all candidate tables enforce `user_id = auth.uid()` with RLS enabled.
@@ -15,6 +15,10 @@ Operational checklist for deploying and recovering JobPulse.
   deletion, checks retry cleanup, and verifies that the deleted session loses access.
   CI runs this alongside the tenant gate. Repeat a controlled equivalent on an
   designated hosted test environment before release.
+- **Function CORS**: Set the `delete-account` function's `ALLOWED_ORIGINS` to the
+  deployed site origin(s) and keep `verify_jwt` enabled. The function reflects only
+  allow-listed origins and never a wildcard; a request without an `Origin` header
+  still requires a valid bearer token.
 - **Pre-Release Snapshot**: Run `make backup` before applying schema migrations.
 - **Automated Gate**: Complete the [required verification contract](../AGENTS.md#required-verification),
   including its conditional UI and database gates. A red tenant suite blocks release.

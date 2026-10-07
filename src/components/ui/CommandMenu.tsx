@@ -12,6 +12,7 @@ interface CommandMenuProps {
   onOpenChange: (open: boolean) => void;
   onSelectJob: (job: Job) => void;
   onNavigateToPrivacy?: () => void;
+  onNavigateToMembers?: () => void;
   userId?: string | null;
 }
 
@@ -20,6 +21,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   onOpenChange,
   onSelectJob,
   onNavigateToPrivacy,
+  onNavigateToMembers,
   userId,
 }) => {
   const { t } = useTranslation();
@@ -36,20 +38,8 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
   );
   const commandJobs = userId ? (searchResults?.items ?? []) : [];
   const showPrivacy = Boolean(onNavigateToPrivacy) && t('privacy.notice').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
+  const showMembers = Boolean(onNavigateToMembers) && t('memberManagement.title').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
   const searching = Boolean(userId) && (isPending || searchQuery !== debouncedSearchQuery || isFetching);
-
-  // Global shortcut: ⌘K or Ctrl+K
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && (e.target as HTMLElement)?.tagName !== 'INPUT' && (e.target as HTMLElement)?.tagName !== 'TEXTAREA')) {
-        e.preventDefault();
-        onOpenChange(!isOpen);
-      }
-    };
-
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
-  }, [isOpen, onOpenChange]);
 
   if (!isOpen) return null;
 
@@ -63,7 +53,6 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
       <div className="flex items-center gap-2 border-b border-ds-border px-4 ds-motion-control focus-within:border-ds-accent">
         <Search className="size-4 shrink-0 text-ds-text-muted" />
         <Command.Input
-          className="ds-control-focus"
           placeholder={t('command.placeholder')}
           autoFocus
           value={searchQuery}
@@ -80,9 +69,13 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
           onNavigateToPrivacy?.();
           onOpenChange(false);
         }}>{t('privacy.notice')}</Command.Item>}
+        {showMembers && <Command.Item value="invite-and-manage-members" onSelect={() => {
+          onNavigateToMembers?.();
+          onOpenChange(false);
+        }}>{t('memberManagement.title')}</Command.Item>}
         {isError ? <div role="alert" className="p-4 space-y-2"><p className="text-xs text-ds-negative">{t('common.loadError')}</p><Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button></div>
           : searching ? <div role="status" className="p-4">{t('common.loading')}</div>
-          : commandJobs.length === 0 && !showPrivacy ? <div role="status" className="p-4">{t('command.noResults')}</div> : null}
+          : commandJobs.length === 0 && !showPrivacy && !showMembers ? <div role="status" className="p-4">{t('command.noResults')}</div> : null}
 
         {(!isError && !searching ? commandJobs : []).map((job) => (
           <Command.Item

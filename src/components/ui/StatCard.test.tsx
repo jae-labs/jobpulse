@@ -10,6 +10,11 @@ describe('StatCard', () => {
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 
+  it('exposes the full title for a heading that may be truncated', () => {
+    render(<StatCard title="Opportunities" value={12} />);
+    expect(screen.getByText('Opportunities')).toHaveAttribute('title', 'Opportunities');
+  });
+
   it('triggers onClick handler when clicked', () => {
     const handleClick = vi.fn();
     render(<StatCard title="Clickable" value={10} onClick={handleClick} />);

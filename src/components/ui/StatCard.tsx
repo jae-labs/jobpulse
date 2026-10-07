@@ -39,7 +39,7 @@ const StatCardComponent: React.FC<StatCardProps> = ({
           <div data-stat-heading className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               {Icon && <Icon className="size-3.5 text-ds-text-secondary shrink-0" />}
-              <span className="text-xs font-medium text-ds-text-secondary">
+              <span data-stat-title title={title} className="text-xs font-medium text-ds-text-secondary">
                 {title}
               </span>
             </div>
@@ -85,7 +85,7 @@ const StatCardComponent: React.FC<StatCardProps> = ({
         <div data-stat-heading className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {Icon && <Icon className="size-3.5 text-ds-text-secondary shrink-0" />}
-            <span className="text-xs font-medium text-ds-text-secondary">
+            <span data-stat-title title={title} className="text-xs font-medium text-ds-text-secondary">
               {title}
             </span>
           </div>

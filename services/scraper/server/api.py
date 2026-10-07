@@ -24,6 +24,17 @@ from pipeline.runner import synchronize
 
 GLOBAL_DATA_VERSION = int(time.time() * 1000)
 ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
+# Presence of any of these means the request arrived through a proxy or tunnel, so
+# the peer address is not the true client and loopback trust must not apply.
+FORWARDED_HEADERS = (
+    "X-Forwarded-For",
+    "X-Forwarded-Host",
+    "X-Forwarded-Proto",
+    "Forwarded",
+    "X-Real-IP",
+    "CF-Connecting-IP",
+    "X-Original-Forwarded-For",
+)
 MAX_PAGE_SIZE = 100
 MAX_REQUEST_BYTES = 64 * 1024
 SYNC_LOCK = threading.Lock()
@@ -83,15 +94,28 @@ class ApiHandler(BaseHTTPRequestHandler):
             raise ValueError("Expected a JSON object")
         return payload
 
+    def _is_direct_loopback(self) -> bool:
+        """Trust loopback only for a direct request, never through a proxy or tunnel."""
+        client_ip = self.client_address[0] if self.client_address else ""
+        if client_ip not in {"127.0.0.1", "::1"}:
+            return False
+        if any(self.headers.get(header) for header in FORWARDED_HEADERS):
+            return False
+        host = (self.headers.get("Host") or "").strip()
+        if host.startswith("["):
+            host = host[1 : host.find("]")] if "]" in host else host
+        else:
+            host = host.split(":", 1)[0]
+        return host.lower() in {"127.0.0.1", "localhost", "::1"}
+
     def _authorized(self) -> bool:
         """Reject untrusted browser origins before checking loopback/token access."""
         origin = self.headers.get("Origin")
         if origin is not None and not self._cors_origin():
             return False
         token = os.environ.get("JOBPULSE_API_TOKEN", "")
-        client_ip = self.client_address[0] if self.client_address else ""
         if not token:
-            return client_ip in {"127.0.0.1", "::1"} and (origin is None or origin.strip() in ALLOWED_ORIGINS)
+            return self._is_direct_loopback() and (origin is None or origin.strip() in ALLOWED_ORIGINS)
         authorization = self.headers.get("Authorization", "")
         if not authorization.startswith("Bearer "):
             return False

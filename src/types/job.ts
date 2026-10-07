@@ -69,8 +69,9 @@ export interface Job {
   role_sector?: string;
   seniority_level?: string;
   ai_analysis?: AiAnalysis;
-  // Preview scores; full analysis loads with useJobDetailQuery.
+  // Preview scores come from the candidate evaluation; full analysis loads with useJobByIdQuery.
   sub_scores?: SubScores;
+  employer?: Employer | null;
   status: JobStatus;
   last_seen_at: string;
 }

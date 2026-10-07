@@ -159,6 +159,11 @@
   border-color: var(--ds-color-accent);
 }
 
+/* A text control inside the shell defers focus to the shell border instead of drawing its own outline. */
+.ds-field-shell :is(input, select, textarea):focus-visible:not([type="range"]) {
+  outline: none;
+}
+
 /* Restrict motion to paint/composite properties; never animate layout or use transition-all. */
 .ds-motion-control {
   transition-property: background-color, border-color, color, opacity, transform;
@@ -280,6 +285,7 @@ input.ds-field-control, select.ds-field-control { height: var(--ds-control-heigh
   .ds-field-control { border-color: CanvasText; }
   .ds-field-control[aria-invalid=true] { outline: 2px dashed CanvasText; }
   .ds-focus-ring:focus-visible, .ds-control-focus:focus-visible { outline-color: Highlight; }
+  .ds-field-shell :is(input, select, textarea):focus-visible:not([type="range"]) { outline: 2px solid Highlight; outline-offset: -2px; }
 }
 
 .ds-layer-overlay { z-index: var(--ds-layer-overlay); }

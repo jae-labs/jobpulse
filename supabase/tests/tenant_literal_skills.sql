@@ -15,7 +15,7 @@ CREATE FUNCTION pg_temp.drain_literal_scoring() RETURNS void LANGUAGE plpgsql SE
 BEGIN FOR i IN 1..50 LOOP PERFORM public.process_candidate_scoring(100); END LOOP; END $$;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}',true);
-SELECT public.save_profile_embedding(('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64),'all-MiniLM-L6-v2:384:v1');
+SELECT pg_temp.save_own_embedding('a1111111-1111-4111-8111-111111111111',('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64));
 DO $$ BEGIN
  IF has_function_privilege('authenticated','public.jobpulse_has_literal_skill(text,text)','EXECUTE')
   OR has_function_privilege('authenticated','public.score_job_for_user(uuid,bigint,real)','EXECUTE') THEN
@@ -27,7 +27,7 @@ DO $$ BEGIN
  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 SELECT set_config('request.jwt.claims','{"sub":"b2222222-2222-4222-8222-222222222222","role":"authenticated"}',true);
-SELECT public.save_profile_embedding(('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('b',64),'all-MiniLM-L6-v2:384:v1');
+SELECT pg_temp.save_own_embedding('b2222222-2222-4222-8222-222222222222',('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('b',64));
 -- Run the backend worker with its real service context, outside browser claims.
 RESET ROLE;
 SELECT set_config('request.jwt.claims','{"role":"service_role"}',true);

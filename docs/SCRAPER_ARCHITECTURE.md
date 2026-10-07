@@ -99,11 +99,13 @@ Discovery and standalone enrichment wrappers are documented in the
 [operating workflow](OPERATIONS.md#scraping-and-matching-workflow). Matching runs
 in PostgreSQL after vector writes; there is no separate scraper scoring command.
 
-The API permits token-free requests only from loopback clients with no `Origin`
-header (local CLI tools), or the exact local dashboard origins
-`http://localhost:5173` and `http://127.0.0.1:5173`. Untrusted browser origins
-are rejected before catalog reads or sync execution, including simple POSTs
-that do not need a CORS preflight.
+The API permits token-free requests only from a direct loopback connection
+(`127.0.0.1`/`::1` peer, a loopback `Host`, and no forwarding headers) with no
+`Origin` header (local CLI tools), or the exact local dashboard origins
+`http://localhost:5173` and `http://127.0.0.1:5173`. A request that arrived through
+a proxy or tunnel carries forwarding headers, so its loopback peer address does not
+grant access. Untrusted browser origins are rejected before catalog reads or sync
+execution, including simple POSTs that do not need a CORS preflight.
 
 For an external dashboard, set `JOBPULSE_ALLOWED_ORIGIN` to its exact origin
 (scheme, hostname and optional port, without a path or trailing slash) and set
@@ -111,7 +113,8 @@ For an external dashboard, set `JOBPULSE_ALLOWED_ORIGIN` to its exact origin
 Setting a token requires it for all protected requests, including local clients;
 external origins and non-loopback clients cannot use token-free access. Origin
 checks apply even with a valid token. Health/version endpoints remain public.
-Wildcard tunnel domains are never trusted implicitly.
+Never expose the server through a tunnel or reverse proxy without a token; wildcard
+tunnel domains are never trusted implicitly.
 
 ## Safety
 

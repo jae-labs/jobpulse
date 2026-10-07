@@ -38,6 +38,21 @@ SELECT 'user-documents',storage_path FROM public.user_cvs WHERE user_id IN
  ('a1111111-1111-4111-8111-111111111111','b2222222-2222-4222-8222-222222222222')
 UNION ALL SELECT 'avatars',u || '/avatar' FROM unnest(ARRAY[
  'a1111111-1111-4111-8111-111111111111','b2222222-2222-4222-8222-222222222222']) u;
+-- Own-profile embedding writer for tests. The guarded RPC is the only
+-- browser-callable profile-vector path; the raw writer is backend-only.
+CREATE FUNCTION pg_temp.save_own_embedding(p_user uuid, p_embedding extensions.vector, p_hash text) RETURNS void
+LANGUAGE sql SET search_path TO '' AS $$
+  SELECT public.save_profile_embedding_guarded(
+    p_user,
+    (SELECT jsonb_build_object(
+      'headline',coalesce(p.headline,''),'current_role',coalesce(p.current_role,''),
+      'summary',coalesce(p.summary,''),'keywords',coalesce(to_jsonb(p.keywords),'[]'::jsonb),
+      'tools_software',coalesce(to_jsonb(p.tools_software),'[]'::jsonb),'languages',coalesce(to_jsonb(p.languages),'[]'::jsonb),
+      'certifications',coalesce(p.certifications,''),'education',coalesce(p.education,''))
+     FROM public.user_profiles p WHERE p.user_id = p_user),
+    p_embedding, p_hash, 'all-MiniLM-L6-v2:384:v1');
+$$;
+
 -- Capture INSERT payloads before switching roles, so the test cannot pass by selecting zero foreign rows.
 CREATE TEMP TABLE tenant_insert_payloads(table_name text PRIMARY KEY,payload jsonb NOT NULL);
 DO $$ DECLARE t text; p jsonb; BEGIN

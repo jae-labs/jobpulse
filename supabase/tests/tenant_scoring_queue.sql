@@ -19,12 +19,12 @@ DO $$ DECLARE bad jsonb; result jsonb; BEGIN
   EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
  END LOOP;
  BEGIN
-  PERFORM public.save_profile_embedding(('[0,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64),'all-MiniLM-L6-v2:384:v1');
+  PERFORM pg_temp.save_own_embedding('a1111111-1111-4111-8111-111111111111',('[0,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64));
   RAISE EXCEPTION 'Zero vector accepted';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM='Zero vector accepted' THEN RAISE; END IF;
  END;
- PERFORM public.save_profile_embedding(('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64),'all-MiniLM-L6-v2:384:v1');
+ PERFORM pg_temp.save_own_embedding('a1111111-1111-4111-8111-111111111111',('[1,'||repeat('0,',382)||'0]')::extensions.vector,repeat('a',64));
  result:=public.get_profile_embedding_state();
  IF result->>'scoring_state'<>'pending' THEN RAISE EXCEPTION 'Embedding and queue were not atomic'; END IF;
  IF has_function_privilege('authenticated','public.process_candidate_scoring_queue(integer)','EXECUTE') THEN RAISE EXCEPTION 'Browser queue execution exposed'; END IF;

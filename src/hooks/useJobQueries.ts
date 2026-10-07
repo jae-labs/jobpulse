@@ -14,21 +14,16 @@ import { jobsRpcArgs } from '../lib/jobsRpcArgs';
 async function reconcileJobTracking(client: QueryClient, userId: string | null | undefined, update: JobTrackingUpdate, error: unknown) {
   await Promise.all([
     client.invalidateQueries({ queryKey: queryKeys.jobById(update.job.id, userId) }),
-    client.invalidateQueries({ queryKey: queryKeys.jobsPage(userId) }),
-    client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(userId) }),
+    // The list and search caches are patched in place by commitJobTrackingUpdate. Mark them
+    // stale without forcing a refetch of every retained infinite page on each tracking write;
+    // the aggregate metrics and map still refresh because they are not projected locally.
+    client.invalidateQueries({ queryKey: queryKeys.jobsPage(userId), refetchType: 'none' }),
+    client.invalidateQueries({ queryKey: queryKeys.jobsSearchPage(userId), refetchType: 'none' }),
     client.invalidateQueries({ queryKey: queryKeys.jobMap(userId) }),
     client.invalidateQueries({ queryKey: queryKeys.overviewMetrics(userId) }),
   ]);
   // A failed refresh must not undo a write the server already confirmed.
   if (!error) await withActiveUser(userId, async () => commitJobTrackingUpdate(client, userId!, update));
-}
-
-export interface JobDetailResult {
-  description?: string;
-  ai_analysis?: Job['ai_analysis'];
-  relevance: number;
-  fit_tier?: string;
-  employer?: Employer | null;
 }
 
 export function useOverviewMetricsQuery(activeUserId?: string | null, enabled = true) {
@@ -148,39 +143,31 @@ export function useScoringPreviewJobsQuery(activeUserId?: string | null, enabled
   });
 }
 
-export function useJobDetailQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
-
-  return useQuery({
-    queryKey: queryKeys.jobDetail(jobId, activeUserId),
+export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
+  const updates = useJobTrackingUpdates(activeUserId);
+  const query = useQuery({
+    queryKey: queryKeys.jobById(jobId, activeUserId),
     enabled: Boolean(supabase) && Boolean(activeUserId) && Boolean(jobId) && enabled,
-    queryFn: async (): Promise<JobDetailResult> => withActiveUser(activeUserId, async () => {
-      if (!supabase || !jobId) throw new Error("Supabase is not initialized or invalid jobId");
+    queryFn: async (): Promise<Job | null> => withActiveUser(activeUserId, async () => {
+      if (!supabase || !jobId) return null;
       const userId = activeUserId ? await getCurrentUserId() : null;
-
-      const [jobRes, evalRes, profileRes] = await Promise.all([
-        supabase
-          .from("jobs")
-          .select("description, employer_id, employers(id, name, sector, size, website, employer_offices(place_id, name, address, city, country_code))")
-          .eq("id", jobId)
-          .maybeSingle(),
+      const [jobResult, statusResult, evaluationResult, profileResult] = await Promise.all([
+        supabase.from('jobs').select('*, employers(id, name, sector, size, website, metadata_source, employer_offices(place_id, name, address, city, country_code))').eq('id', jobId).maybeSingle(),
         userId
-          ? supabase
-              .from("user_job_evaluations")
-              .select("relevance, fit_tier, matched_skills, ai_analysis")
-              .eq("job_id", jobId)
-              .eq("user_id", userId)
-              .maybeSingle()
+          ? supabase.from('user_job_statuses').select('status,is_saved').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        userId
+          ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         supabase.from('user_profiles').select('scoring_rules').eq('user_id', userId!).maybeSingle(),
       ]);
-
-      if (jobRes.error) throw new Error(jobRes.error.message);
-
-      if (evalRes.error) throw new Error(evalRes.error.message);
-      if (profileRes.error) throw new Error(profileRes.error.message);
-      const fields = candidateEvaluationFields(evalRes.data, resolveScoringRules(profileRes.data?.scoring_rules));
-
-      const rawEmployer = jobRes.data?.employers;
+      if (jobResult.error) throw new Error(jobResult.error.message);
+      if (statusResult.error) throw new Error(statusResult.error.message);
+      if (evaluationResult.error) throw new Error(evaluationResult.error.message);
+      if (!jobResult.data) return null;
+      if (profileResult.error) throw new Error(profileResult.error.message);
+      const evaluation = evaluationResult.data;
+      const rawEmployer = jobResult.data.employers;
       const employer: Employer | null = rawEmployer
         ? {
             id: rawEmployer.id,
@@ -200,47 +187,11 @@ export function useJobDetailQuery(jobId?: number | null, activeUserId?: string |
               : [],
           }
         : null;
-
-      return {
-        description: jobRes.data?.description ?? undefined,
-        ai_analysis: fields.ai_analysis,
-        relevance: fields.relevance,
-        fit_tier: fields.fit_tier,
-        employer,
-      };
-    }),
-    staleTime: 1000 * 60 * 10, // 10 minutes
-  });
-}
-
-export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | null, enabled = true) {
-  const updates = useJobTrackingUpdates(activeUserId);
-  const query = useQuery({
-    queryKey: queryKeys.jobById(jobId, activeUserId),
-    enabled: Boolean(supabase) && Boolean(activeUserId) && Boolean(jobId) && enabled,
-    queryFn: async (): Promise<Job | null> => withActiveUser(activeUserId, async () => {
-      if (!supabase || !jobId) return null;
-      const userId = activeUserId ? await getCurrentUserId() : null;
-      const [jobResult, statusResult, evaluationResult, profileResult] = await Promise.all([
-        supabase.from('jobs').select('*, employers(sector, metadata_source)').eq('id', jobId).maybeSingle(),
-        userId
-          ? supabase.from('user_job_statuses').select('status,is_saved').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        userId
-          ? supabase.from('user_job_evaluations').select('relevance, fit_tier, matched_skills, ai_analysis').eq('job_id', jobId).eq('user_id', userId).maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        supabase.from('user_profiles').select('scoring_rules').eq('user_id', userId!).maybeSingle(),
-      ]);
-      if (jobResult.error) throw new Error(jobResult.error.message);
-      if (statusResult.error) throw new Error(statusResult.error.message);
-      if (evaluationResult.error) throw new Error(evaluationResult.error.message);
-      if (!jobResult.data) return null;
-      if (profileResult.error) throw new Error(profileResult.error.message);
-      const evaluation = evaluationResult.data;
       return {
         ...jobResult.data,
-        sector: jobResult.data.employers && ['curated', 'verified', 'watchlist'].includes(jobResult.data.employers.metadata_source)
-          ? jobResult.data.employers.sector || 'Uncategorized' : 'Uncategorized',
+        employer,
+        sector: rawEmployer && ['curated', 'verified', 'watchlist'].includes(rawEmployer.metadata_source)
+          ? rawEmployer.sector || 'Uncategorized' : 'Uncategorized',
         latitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.latitude : null,
         longitude: ['posting', 'geocoded'].includes(jobResult.data.coordinate_source ?? '') ? jobResult.data.longitude : null,
         last_seen_at: jobResult.data.last_seen_at ?? new Date().toISOString(),

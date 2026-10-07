@@ -33,6 +33,9 @@ const TaxCalculatorView = React.lazy(() =>
 const PrivacyView = React.lazy(() =>
   import('./components/privacy/PrivacyView').then((m) => ({ default: m.PrivacyView }))
 );
+const MemberManagementView = React.lazy(() =>
+  import('./components/dashboard/MemberManagementView').then((m) => ({ default: m.MemberManagementView }))
+);
 const ProfileView = React.lazy(() =>
   import('./components/profile/ProfileView').then((m) => ({ default: m.ProfileView }))
 );
@@ -46,10 +49,10 @@ import { supabase } from './lib/supabase';
 import { DEFAULT_PROFILE } from './lib/defaultProfile';
 import { LoginView } from './components/auth/LoginView';
 import { AccessDeniedView } from './components/auth/AccessDeniedView';
-import { MemberManagementModal } from './components/dashboard/MemberManagementModal';
 import { clearAppCache } from './lib/queryClient';
 import { useAuthSession } from './hooks/useAuthSession';
 import { useErrorDismissal } from './hooks/useErrorDismissal';
+import { useCommandMenuShortcut } from './hooks/useCommandMenuShortcut';
 import {
   useOverviewMetricsQuery,
   useProfileQuery,
@@ -68,7 +71,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const { t } = useTranslation();
   const { session, isAuthorized, authError, isAuthChecking } = auth;
   const [overviewActions, setOverviewActions] = useState<HTMLDivElement | null>(null);
-  const [isMemberManagementOpen, setIsMemberManagementOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab: DashboardTab =
@@ -97,6 +99,11 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const workspaceRef = useRef<HTMLElement>(null);
   useWorkspaceArrowScroll(activeTab, workspaceRef, isCommandMenuOpen);
+
+  const toggleCommandMenu = useCallback(() => {
+    setIsCommandMenuOpen((open) => !open);
+  }, []);
+  useCommandMenuShortcut(toggleCommandMenu);
 
   // Global numeric keyboard navigation: 1 -> Overview, 2 -> Opportunities, 3 -> Tax Calculator
   useEffect(() => {
@@ -308,7 +315,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
               profile={profile}
               onNavigateToProfile={() => setActiveTab('profile')}
               onNavigateToPrivacy={() => setActiveTab('privacy')}
-              onOpenMemberManagement={() => setIsMemberManagementOpen(true)}
+              onOpenMemberManagement={() => setActiveTab('members')}
               onSignOut={handleSignOut}
             />
           </div>
@@ -454,6 +461,12 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
                   />
                 </ErrorBoundary>
               )}
+
+              {activeTab === 'members' && (
+                <ErrorBoundary fallbackTitle={t('errorBoundary.unableToLoadMemberManagement')}>
+                  <MemberManagementView currentUserId={session.user.id} />
+                </ErrorBoundary>
+              )}
             </React.Suspense>
           </div>
         </main>
@@ -464,7 +477,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         aria-label={t('nav.mobileNavigation')}
       >
         {dashboardNavigation
-          .filter((item) => item.id !== 'profile' && item.id !== 'privacy')
+          .filter((item) => item.id !== 'profile' && item.id !== 'privacy' && item.id !== 'members')
           .map(({ id, icon: Icon }) => {
             const isActive = activeTab === id;
             const shortLabel = getNavLabel(t, id);
@@ -500,6 +513,7 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
         <React.Suspense fallback={null}>
           <CommandMenu
             onNavigateToPrivacy={() => setActiveTab('privacy')}
+            onNavigateToMembers={() => setActiveTab('members')}
             isOpen={isCommandMenuOpen}
             onOpenChange={setIsCommandMenuOpen}
             userId={userId}
@@ -510,12 +524,6 @@ const AppSession: React.FC<{ auth: ReturnType<typeof useAuthSession> }> = ({ aut
           />
         </React.Suspense>
       )}
-
-      <MemberManagementModal
-        isOpen={isMemberManagementOpen}
-        onClose={() => setIsMemberManagementOpen(false)}
-        currentUserId={session.user.id}
-      />
     </div>
   );
 };

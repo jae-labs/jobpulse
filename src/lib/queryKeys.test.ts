@@ -13,7 +13,6 @@ const cases = {
   jobsSearchPage: (uid: string) => queryKeys.jobsSearchPage(uid, { search: 'same query' }),
   scoringPreviewJobs: (uid: string) => queryKeys.scoringPreviewJobs(uid),
   jobById: (uid: string) => queryKeys.jobById(101, uid),
-  jobDetail: (uid: string) => queryKeys.jobDetail(101, uid),
   profile: (uid: string) => queryKeys.profile(uid),
   userCvs: (uid: string) => queryKeys.userCvs(uid),
   userCoverLetters: (uid: string) => queryKeys.userCoverLetters(uid),

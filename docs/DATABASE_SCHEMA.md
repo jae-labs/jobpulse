@@ -194,7 +194,8 @@ and regenerate both language types with `make db-types`. CI checks parity.
 ## Durable native scoring
 
 `profile_scoring_embeddings` remains private. Authenticated users submit only their own
-384-dimensional MiniLM vector through `save_profile_embedding_guarded`; its hash and model
+384-dimensional MiniLM vector through `save_profile_embedding_guarded`; the unguarded
+`save_profile_embedding` writer is restricted to the service role. Its hash and model
 version are exposed through `get_profile_embedding_state` without exposing the vector.
 `rescore_user` enqueues durable work in backend-only `candidate_scoring_work`. Profile and embedding writes enqueue atomically; missing embeddings and changed matching text retain an `awaiting_embedding` setup state until a new vector is saved. Assessed evaluations remain available while local inference is unfinished. Fingerprints exclude personal fields and composition weights. The worker computes an exact, stable top-1,500 shortlist, reuses unchanged evaluation factors, scores slices of at most 100 and trims native evaluations only after completion. Failures roll back that tenant's slice and retain a retry with exponential backoff and a generic SQLSTATE.
 

@@ -86,7 +86,8 @@ hooks or domain types.
   look the same under the pointer. Active or selected state should remain distinguishable without hover. The
   package's `ds-interactive-surface` and `ds-field-shell` helpers encode common transitions.
 - Keyboard focus must remain visible. Preserve `ds-focus-ring` and control focus styles; do not remove an
-  outline without an equivalent visible treatment.
+  outline without an equivalent visible treatment. A text control nested in `ds-field-shell` defers focus to
+  the shell border instead of drawing its own outline, with an outline fallback under `forced-colors`.
 - Disabled controls must look unavailable and prevent interaction. For a pending action, disable repeated
   activation, keep the label understandable, and expose progress accessibly. The current `Button` has no
   `loading` prop; do not document or assume one.
@@ -139,6 +140,7 @@ Use `Field` to connect a visible label, helper text and validation error to a na
 The render function supplies the control ID, native required state, `aria-invalid` and `aria-describedby`.
 Spread those props on the actual input, select or textarea. Consumer validation owns error text; the package
 links and presents it. Read-only fields remain readable and selectable; disabled fields prevent interaction.
+Pair a button inline with a field using `Button size="md"`, which matches the field control height.
 
 `Button` defaults to `type="button"`. Explicitly use `type="submit"` for form submission. `asChild` preserves
 native link semantics; supply an accessible link name and destination. Never use a disabled-looking link as

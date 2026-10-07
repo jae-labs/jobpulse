@@ -20,8 +20,9 @@ BEGIN
     RAISE EXCEPTION 'Scoring internals are exposed to browser roles';
   END IF;
   IF NOT has_function_privilege('authenticated', 'public.rescore_user(uuid,integer)', 'EXECUTE')
-    OR NOT has_function_privilege('authenticated', 'public.save_profile_embedding(extensions.vector,text,text)', 'EXECUTE') THEN
-    RAISE EXCEPTION 'Authenticated profile scoring RPCs are unavailable';
+    OR has_function_privilege('authenticated', 'public.save_profile_embedding(extensions.vector,text,text)', 'EXECUTE')
+    OR NOT has_function_privilege('authenticated', 'public.save_profile_embedding_guarded(uuid,jsonb,extensions.vector,text,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Authenticated profile scoring RPCs are unavailable or mis-scoped';
   END IF;
 
   INSERT INTO public.job_scoring_embeddings(job_id,content_hash,model_version,embedding)

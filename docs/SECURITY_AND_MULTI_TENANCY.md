@@ -5,6 +5,7 @@ JobPulse enforces strict tenant isolation and data protection across the databas
 ## 1. Identity & Access Control
 
 - **Invite-Only Access**: Enforced via `authorized_users`. Unbound invitations are claimed on first login and bound to `auth.users.id`.
+- **Confirmed identity only**: Hosted Auth must keep email confirmation enabled and password signup disabled or confirmation-gated. Invitation claiming and `is_authorized_user()` depend on `auth.users.email_confirmed_at`, so a project that auto-confirms arbitrary signups would let an uninvited party claim an invited email.
 - **Authorization Guard**: Stored procedures and policies verify `public.is_authorized_user()`, requiring a confirmed Auth account and bound invite.
 - **Unauthenticated Blocking**: `anon` access to private tables and catalog RPCs is revoked.
 - **Error Masking & Information Leakage Prevention**: Access checks filter strictly by authenticated identity (`auth.uid()` and the authenticated session UUID) to avoid multi-row collisions (PGRST116), and the UI displays sanitized, localized copy (`AccessDeniedView`) rather than exposing internal database error messages, schema names, or table keys.
@@ -17,7 +18,7 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 
 - **Tables**: `user_profiles`, `user_job_statuses`, `user_job_evaluations`, `user_cvs`, `user_cover_letters`.
 - **Ownership**: Every candidate row requires `user_id = auth.uid()`. Ownership is keyed by the verified Auth UUID.
-- **Scoring Isolation**: Candidate scores, explanations, and profile-dependent classifications exist only in `user_job_evaluations`; shared `jobs` rows never contain candidate analysis. RPCs and browser queries return an unassessed result when the current user has no evaluation. Embedding tables remain unreadable to browser roles. Authenticated users submit only their own profile vector through `save_profile_embedding_guarded`, which validates the current profile snapshot, and `rescore_user` checks the caller UUID.
+- **Scoring Isolation**: Candidate scores, explanations, and profile-dependent classifications exist only in `user_job_evaluations`; shared `jobs` rows never contain candidate analysis. RPCs and browser queries return an unassessed result when the current user has no evaluation. Embedding tables remain unreadable to browser roles. Authenticated users submit only their own profile vector through `save_profile_embedding_guarded`, which validates the current profile snapshot; the unguarded `save_profile_embedding` writer is restricted to the service role. `rescore_user` checks the caller UUID.
 - **Write Triggers**: Browser writes reject a supplied foreign owner and default an omitted owner to the verified `auth.uid()`. Service-role writes retain an explicit non-null owner.
 
 ## 3. Storage Security (Documents & Avatars)
@@ -25,7 +26,7 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 - **`user-documents` Bucket**:
   - Private bucket; 10 MB per-file limit with allowed MIME types.
   - Storage paths are prefixed with `${auth.uid()}/`.
-  - Object access requires an existing metadata row in `user_cvs` or `user_cover_letters` owned by `auth.uid()`.
+  - Object access requires both the `${auth.uid()}/` path prefix and an existing metadata row in `user_cvs` or `user_cover_letters` owned by `auth.uid()`. The metadata row alone is not durable ownership: it can be removed while the object persists, so every policy (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) checks the prefix.
   - Document download/deletion APIs require a specific numeric document ID and scope metadata queries to the authenticated UUID.
   - Object deletion precedes metadata deletion because Storage policies depend on that metadata; a Storage failure retains the record.
   - Downloads use short-lived signed URLs (60-second TTL) with `Content-Disposition: attachment` to stream directly to disk without browser memory buffering.
@@ -38,6 +39,7 @@ All candidate tables enforce strict tenant isolation using PostgreSQL RLS:
 - **Headers**: `public/_headers` sets `nosniff`, frame denial (`DENY`), strict referrer policy, and Content Security Policy (CSP).
 - **CSP Allowlist**: Restricts `connect-src` to same-origin, configured Supabase endpoints, and Sentry ingestion domains.
 - **Credential Hygiene**: The client uses only publishable `VITE_SUPABASE_*` keys. Service-role keys are never bundled.
+- **Edge Function CORS**: `delete-account` reflects only the allow-listed origins (`ALLOWED_ORIGINS` plus local development origins) and never a wildcard. Requests without an `Origin` header (CLI or server-to-server) still require a valid bearer token.
 - **PII Protection**: Error reporting is explicitly configured by deployment and disabled by default in development. The event allowlist keeps generic error types and static bundle locations only; it drops user IDs, messages, request data, arbitrary scope/context, breadcrumbs and URLs. SDK v11 data collection is disabled for personal fields, headers, bodies, query parameters, and local variables; tracing and replay are off. Invitation parameters are cleared before telemetry initializes.
 
 ## 5. Self-Service Account Deletion
@@ -66,6 +68,7 @@ private fields, asynchronous work or diagnostic integrations.
 | Browser cache/session | `npm run test` | Cache key collisions between two users, unclassified new factories, logout/account-switch cache retention, stale asynchronous session restoration |
 | Database inventory | `tenant_catalog.sql` | Unclassified public relations/RPC exposure, disabled RLS, missing owner columns, browser vector access, anonymous RPC grants, missing definer search paths, writable public schema, public/unclassified Storage buckets |
 | Database requests | `tenant_rows.sql`, `tenant_invitations.sql` | Two-member read/write separation, ownership spoofing, Storage metadata isolation, candidate fields returned by jobs/overview RPCs, foreign rescoring, anonymous/uninvited/unconfirmed access, foreign invitation reads/code retrieval/deletion |
+| Document objects | `tenant_document_paths.sql`, `tenant_document_quota.sql` | Claimed foreign Storage paths and document-count leaks through ownership-error differences |
 | Guard self-tests | `tenant_mutations.sql` | Intentionally disables RLS, widens a policy, exposes a privileged RPC, grants anonymous execution, creates an unknown table, and makes documents public; the guards must reject each change |
 | Durable work | `tenant_scoring_queue.sql` | Invalid matching inputs/vectors, lost setup/retry state, ingestion fan-out, shortlist underfill, weight-edit rescoring, worker exposure and failed-tenant interference |
 | Catalog retention | `tenant_catalog_retention.sql` | The service-only pruning RPC cannot delete a vacancy based on age alone |

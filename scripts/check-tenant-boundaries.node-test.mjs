@@ -7,7 +7,7 @@ test('accepts a session-scoped factory',() => {
   assert.deepEqual(auditTenantSource(`${imports} query({queryKey:keys.profile(userId)});`,'src/hooks/example.ts'),[]);
 });
 test('rejects raw and missing-identity query keys, including import aliases',() => {
-  for (const expression of ["['profile']",'keys.profile()','keys.profile(undefined)','keys.jobDetail(jobId)']) {
+  for (const expression of ["['profile']",'keys.profile()','keys.profile(undefined)','keys.jobById(jobId)']) {
     assert.ok(auditTenantSource(`${imports} query({queryKey:${expression}});`,'src/hooks/example.ts').length);
   }
 });

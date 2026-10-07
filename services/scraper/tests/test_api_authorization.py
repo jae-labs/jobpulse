@@ -166,6 +166,45 @@ def test_non_loopback_client_requires_token(monkeypatch, token, authorization, a
     assert handler._authorized() is allowed
 
 
+@pytest.mark.parametrize(
+    "host,forwarded",
+    [
+        ("127.0.0.1:8000", {"X-Forwarded-For": "203.0.113.7"}),
+        ("127.0.0.1:8000", {"Forwarded": "for=203.0.113.7"}),
+        ("127.0.0.1:8000", {"X-Real-IP": "203.0.113.7"}),
+        ("127.0.0.1:8000", {"X-Forwarded-Host": "attacker.ngrok-free.app"}),
+        ("attacker.ngrok-free.app", {}),
+        ("", {}),
+    ],
+)
+def test_loopback_trust_is_revoked_behind_a_proxy(monkeypatch, host, forwarded):
+    monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
+    handler = object.__new__(api.ApiHandler)
+    handler.headers = HTTPMessage()
+    if host:
+        handler.headers["Host"] = host
+    for name, value in forwarded.items():
+        handler.headers[name] = value
+    handler.client_address = ("127.0.0.1", 12345)
+    assert handler._authorized() is False
+
+
+def test_direct_loopback_without_proxy_headers_is_trusted(monkeypatch):
+    monkeypatch.delenv("JOBPULSE_API_TOKEN", raising=False)
+    handler = object.__new__(api.ApiHandler)
+    handler.headers = HTTPMessage()
+    handler.headers["Host"] = "127.0.0.1:8000"
+    handler.client_address = ("127.0.0.1", 12345)
+    assert handler._authorized() is True
+
+
+def test_forwarded_loopback_request_requires_token(api_server):
+    address, _sync, database = api_server
+    status, _ = request_api(address, "GET", "/api/sources", {"X-Forwarded-For": "203.0.113.7"})
+    assert status == HTTPStatus.UNAUTHORIZED
+    database.assert_not_called()
+
+
 def test_profile_read_requires_authorization(monkeypatch) -> None:
     monkeypatch.setenv("JOBPULSE_API_TOKEN", "secret")
     monkeypatch.setattr(api, "get_supabase", Mock(side_effect=AssertionError("database must not be read")))
@@ -187,6 +226,7 @@ def test_catalog_rejects_candidate_domain_filter(monkeypatch) -> None:
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/jobs?domain=Engineering"
     handler.headers = HTTPMessage()
+    handler.headers["Host"] = "127.0.0.1:8000"
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
 
@@ -202,6 +242,7 @@ def test_profile_endpoint_is_not_available(monkeypatch) -> None:
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/profile"
     handler.headers = HTTPMessage()
+    handler.headers["Host"] = "127.0.0.1:8000"
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
     handler.do_GET()
@@ -215,6 +256,7 @@ def test_catalog_rejects_candidate_status_filter(monkeypatch) -> None:
     handler = object.__new__(api.ApiHandler)
     handler.path = "/api/jobs?status=applied"
     handler.headers = HTTPMessage()
+    handler.headers["Host"] = "127.0.0.1:8000"
     handler.client_address = ("127.0.0.1", 12345)
     handler.send_json = Mock()
     handler.do_GET()

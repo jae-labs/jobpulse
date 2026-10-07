@@ -36,7 +36,7 @@ export function useSaveProfileMutation(activeUserId?: string | null) {
           void queryClient.invalidateQueries({ queryKey });
         }
         void queryClient.invalidateQueries({ predicate: query =>
-          (query.queryKey[0] === 'job-by-id' || query.queryKey[0] === 'job-detail') && query.queryKey[2] === activeUserId });
+          query.queryKey[0] === 'job-by-id' && query.queryKey[2] === activeUserId });
       }
     },
   });

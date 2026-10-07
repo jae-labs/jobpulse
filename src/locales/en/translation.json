@@ -590,7 +590,8 @@
     "unableToLoadRelevanceChart": "Unable to load relevance distribution chart",
     "unableToLoadSkillsChart": "Unable to load skills chart",
     "unableToLoadPrivacy": "Unable to load data and privacy",
-    "unableToLoadTaxCalculator": "Unable to load tax calculator"
+    "unableToLoadTaxCalculator": "Unable to load tax calculator",
+    "unableToLoadMemberManagement": "Unable to load member management"
   },
   "scoring": {
     "matchingPending": "Profile saved. Matching setup is pending.",

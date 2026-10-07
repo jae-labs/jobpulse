@@ -21,7 +21,6 @@ INSERT INTO browser_rpc_contract VALUES
   ('public.get_overview_metrics()'), ('public.set_job_saved(bigint,boolean)'), ('public.is_authorized_user()'),
   ('public.jobpulse_literal_search_pattern(text)'), ('public.owns_document_object(text)'),
   ('public.get_profile_embedding_state()'),
-  ('public.save_profile_embedding(extensions.vector,text,text)'),
   ('public.save_profile_embedding_guarded(uuid,jsonb,extensions.vector,text,text)'),
   ('public.rescore_user(uuid,integer)'), ('public.score_from_subscores(jsonb,jsonb)'),
   ('public.fit_tier_for_score(integer)'), ('public.normalize_job_salary()');

@@ -78,8 +78,10 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.jobs WHERE id=-910001) THEN
    RAISE EXCEPTION 'Tenant guard: authorized shared catalog read was denied';
   END IF;
-  UPDATE public.jobs SET title=title WHERE id=-910001;
-  GET DIAGNOSTICS changed=ROW_COUNT;
+  BEGIN
+   UPDATE public.jobs SET title=title WHERE id=-910001;
+   GET DIAGNOSTICS changed=ROW_COUNT;
+  EXCEPTION WHEN insufficient_privilege THEN changed:=0; END;
   IF changed<>0 THEN RAISE EXCEPTION 'Tenant guard: shared catalog browser UPDATE'; END IF;
   page:=public.get_jobs_page(p_search=>'TenantGuardVacancy',p_limit=>100);
   SELECT value INTO item FROM jsonb_array_elements(page->'items') WHERE (value->>'id')::bigint=-910001;
@@ -92,8 +94,8 @@ BEGIN
     OR metrics::text LIKE '%' || (CASE WHEN caller::text LIKE 'a%' THEN 'private-marker-b' ELSE 'private-marker-a' END) || '%' THEN
    RAISE EXCEPTION 'Tenant guard: candidate analysis leaked through catalog/overview RPC';
   END IF;
-  PERFORM public.save_profile_embedding(('[' || array_to_string(array_fill(0.1::real,ARRAY[384]),',') || ']')::extensions.vector,
-    repeat(CASE WHEN caller::text LIKE 'a%' THEN 'a' ELSE 'b' END,64),'all-MiniLM-L6-v2:384:v1');
+  PERFORM pg_temp.save_own_embedding(caller,('[' || array_to_string(array_fill(0.1::real,ARRAY[384]),',') || ']')::extensions.vector,
+    repeat(CASE WHEN caller::text LIKE 'a%' THEN 'a' ELSE 'b' END,64));
   IF public.get_profile_embedding_state()->>'content_hash' <> repeat(CASE WHEN caller::text LIKE 'a%' THEN 'a' ELSE 'b' END,64) THEN
    RAISE EXCEPTION 'Tenant guard: own embedding state unavailable';
   END IF;

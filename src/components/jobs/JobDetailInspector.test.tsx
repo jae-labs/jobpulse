@@ -5,26 +5,14 @@ import type { Job } from '../../types/job';
 
 const queryState = vi.hoisted(() => ({
   loading: false,
-  data: null as {
-    description?: string;
-    relevance?: number;
-    fit_tier?: string;
-    employer?: {
-      id: number;
-      name: string;
-      sector: string;
-      size?: string | null;
-      website?: string | null;
-      offices?: Array<{ place_id: string; name: string; address: string; city: string | null }>;
-    } | null;
-  } | null,
+  data: null as Job | null,
 }));
 afterEach(() => { queryState.loading = false; queryState.data = null; });
 
 vi.mock('../../hooks/useQueries', () => ({
   useUpdateJobSavedMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   useUpdateJobStatusMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
-  useJobDetailQuery: () => ({ data: queryState.data, isLoading: queryState.loading, isError: false, refetch: vi.fn() }),
+  useJobByIdQuery: () => ({ data: queryState.data, isLoading: queryState.loading, isError: false, refetch: vi.fn() }),
 }));
 
 const job: Job = {
@@ -54,7 +42,7 @@ describe('JobDetailInspector', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Retrieving detailed job description');
     expect(screen.queryByText('Build platform services.')).not.toBeInTheDocument();
     queryState.loading = false;
-    queryState.data = { description: 'The newly loaded specification.' };
+    queryState.data = { ...job, id: 2, description: 'The newly loaded specification.' };
     rerender(<JobDetailInspector job={{ ...nextJob }} {...props} />);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(screen.getByText('The newly loaded specification.')).toBeInTheDocument();
@@ -85,6 +73,7 @@ describe('JobDetailInspector', () => {
 
   it('renders company size badge and Ireland offices when employer metadata is present', () => {
     queryState.data = {
+      ...job,
       description: 'Platform engineer job spec.',
       employer: {
         id: 2,
@@ -92,6 +81,7 @@ describe('JobDetailInspector', () => {
         sector: 'Cloud & Platform Engineering',
         size: '5000+',
         website: 'https://aws.amazon.com',
+        careers_url: '',
         offices: [
           {
             place_id: 'ie-office-aws-1',

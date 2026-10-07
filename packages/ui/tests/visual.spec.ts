@@ -21,6 +21,16 @@ for (const [name, id, trigger] of [
   });
 }
 
+test('field shell owns the focus border for its control', async ({ page }) => {
+  await page.goto('/iframe.html?id=patterns-fieldshell--default&viewMode=story');
+  const control = page.getByRole('textbox', { name: 'Example filter' });
+  const shell = control.locator('..');
+  const restBorder = await shell.evaluate((element) => getComputedStyle(element).borderTopColor);
+  await control.focus();
+  await expect(control).toHaveCSS('outline-style', 'none');
+  await expect.poll(() => shell.evaluate((element) => getComputedStyle(element).borderTopColor)).not.toBe(restBorder);
+});
+
 test('native slider keyboard', async ({ page }) => {
   await page.goto('/iframe.html?id=primitives-range--stepped&viewMode=story');
   const slider = page.getByRole('slider');
