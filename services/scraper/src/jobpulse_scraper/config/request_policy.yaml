@@ -131,4 +131,10 @@ hosts:
         headers: {}
       outcome: sample_accepted_limit_unknown
       name: JobsIreland.ie
-    min_interval_seconds: 5
+    min_interval_seconds: 3
+    pace_pilot:
+      interval_seconds: 3
+      successful_detail_samples: 23
+      denials: 0
+      robots_crawl_delay_seconds: 0
+      quota_established: false

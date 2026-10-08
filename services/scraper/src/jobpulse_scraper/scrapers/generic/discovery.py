@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 
 from jobpulse_scraper.engine.text_cleaner import clean_text
 from jobpulse_scraper.network.http_client import fetch_url_with_final
+from jobpulse_scraper.network.request_policy import ContentChallenge
 
 # Use direct ATS URLs as listings without further discovery.
 DIRECT_ATS_DOMAINS = [
@@ -37,6 +38,10 @@ DIRECT_ATS_DOMAINS = [
 ]
 
 AUTH_WALL_PATTERN = re.compile(r"(login|signin|sign-in|/sso/|oauth2/authorize|microsoftonline\.com)", re.I)
+
+
+def _must_stop(error: Exception) -> bool:
+    return isinstance(error, ContentChallenge) or (isinstance(error, HTTPError) and error.code in {401, 403, 429})
 
 
 def is_auth_wall(url: str) -> bool:
@@ -67,9 +72,17 @@ def _candidate_manager_listing_page(url: str, page_html: str) -> tuple[str, str]
     try:
         return fetch_url_with_final(listing_url, timeout=10)
     except Exception as error:
-        if isinstance(error, HTTPError) and error.code in {401, 403, 429}:
+        if _must_stop(error):
             raise
         return listing_url, page_html
+
+
+def _url_identity(url: str) -> str:
+    """Normalize only transport-equivalent URL details for loop detection."""
+    parsed = urllib.parse.urlsplit(url)
+    return urllib.parse.urlunsplit(
+        (parsed.scheme.casefold(), parsed.netloc.casefold(), parsed.path.rstrip("/"), parsed.query, "")
+    )
 
 
 def discover_employer_careers(name: str, start_url: str) -> tuple[str, str]:
@@ -84,18 +97,33 @@ def discover_employer_careers(name: str, start_url: str) -> tuple[str, str]:
     """
     target_url = start_url
     page_html = ""
+    visited = {_url_identity(start_url)}
+
+    def fetch_new(url: str, *, timeout: int) -> tuple[str, str] | None:
+        """Do not spend requests revisiting the same page during generic discovery."""
+        key = _url_identity(url)
+        if key in visited:
+            return None
+        visited.add(key)
+        return fetch_url_with_final(url, timeout=timeout)
+
     start_err: Exception | None = None
     try:
         target_url, page_html = fetch_url_with_final(start_url, timeout=10)
+        visited.add(_url_identity(target_url))
     except Exception as e:
-        if isinstance(e, HTTPError) and e.code in {401, 403, 429}:
+        if _must_stop(e):
             raise
         start_err = e
         # Fall back to root company domain
         p = urllib.parse.urlparse(start_url)
         root = f"{p.scheme}://{p.netloc}"
         try:
-            root_final, root_html = fetch_url_with_final(root, timeout=10)
+            root_page = fetch_new(root, timeout=10)
+            if root_page is None:
+                raise start_err or RuntimeError("Careers URL resolved to an already visited page")
+            root_final, root_html = root_page
+            visited.add(_url_identity(root_final))
             links = re.findall(
                 r"<a\s+[^>]*href=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</a>",
                 root_html,
@@ -124,14 +152,21 @@ def discover_employer_careers(name: str, start_url: str) -> tuple[str, str]:
                         break
             if best_link:
                 try:
-                    target_url, page_html = fetch_url_with_final(best_link, timeout=10)
+                    best_page = fetch_new(best_link, timeout=10)
+                    if best_page is None:
+                        target_url, page_html = best_link, root_html
+                    else:
+                        target_url, page_html = best_page
+                        visited.add(_url_identity(target_url))
                 except Exception as error:
-                    if isinstance(error, HTTPError) and error.code in {401, 403, 429}:
+                    if _must_stop(error):
                         raise
                     target_url, page_html = root_final, root_html
             else:
                 target_url, page_html = root_final, root_html
         except Exception as e2:
+            if _must_stop(e2):
+                raise
             raise (start_err or e2) from e2
 
     if any(d.lower() in start_url.lower() for d in DIRECT_ATS_DOMAINS):
@@ -223,7 +258,12 @@ def discover_employer_careers(name: str, start_url: str) -> tuple[str, str]:
             if "myworkdayjobs.com" in best_url:
                 return best_url, page_html
             try:
-                deeper_url, deeper_html = fetch_url_with_final(best_url, timeout=8)
+                deeper_page = fetch_new(best_url, timeout=8)
+                if deeper_page is None:
+                    return best_url, page_html
+                else:
+                    deeper_url, deeper_html = deeper_page
+                    visited.add(_url_identity(deeper_url))
                 target_url, page_html = deeper_url, deeper_html
                 # Check if deeper page links to external ATS portal
                 deeper_links = re.findall(
@@ -253,14 +293,18 @@ def discover_employer_careers(name: str, start_url: str) -> tuple[str, str]:
                         if "myworkdayjobs.com" in dfull:
                             return dfull, deeper_html
                         try:
-                            target_url, page_html = fetch_url_with_final(dfull, timeout=8)
+                            ats_page = fetch_new(dfull, timeout=8)
+                            if ats_page is None:
+                                continue
+                            target_url, page_html = ats_page
+                            visited.add(_url_identity(target_url))
                         except Exception as error:
-                            if isinstance(error, HTTPError) and error.code in {401, 403, 429}:
+                            if _must_stop(error):
                                 raise
                             target_url = dfull
                         break
             except Exception as error:
-                if isinstance(error, HTTPError) and error.code in {401, 403, 429}:
+                if _must_stop(error):
                     raise
                 target_url = best_url
 

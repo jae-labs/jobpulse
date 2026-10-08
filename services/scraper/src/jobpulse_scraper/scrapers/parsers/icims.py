@@ -14,7 +14,7 @@ _TITLE = re.compile(r"<h3[^>]*>(.*?)</h3>", re.I | re.DOTALL)
 
 _HREF = re.compile(r'<a[^>]*href="([^"]*?/jobs/[^"]+?)"', re.I)
 
-_LOCATION = re.compile(r'field-label">Location</span>\s*<span[^>]*>(.*?)</span>', re.I | re.DOTALL)
+_LOCATION = re.compile(r'field-label">(?:Job\s+)?Locations?</span>\s*<span[^>]*>(.*?)</span>', re.I | re.DOTALL)
 
 _DESCRIPTION = re.compile(r'col-xs-12 description">(.*?)</div>', re.I | re.DOTALL)
 
@@ -22,6 +22,10 @@ _DESCRIPTION = re.compile(r'col-xs-12 description">(.*?)</div>', re.I | re.DOTAL
 def _location(raw: str) -> tuple[str, bool]:
     """Return (display, is_irish). Country-coded locations are authoritative."""
     text = clean_text(html.unescape(raw))
+    alternatives = [part.strip() for part in text.split("|")]
+    if len(alternatives) > 1:
+        irish = [_location(part)[0] for part in alternatives if _location(part)[1]]
+        return "; ".join(irish) if irish else text, bool(irish)
     prefixed = re.match(r"^([A-Za-z]{2})-(.+)$", text)
     if prefixed:
         country = prefixed.group(1).upper()

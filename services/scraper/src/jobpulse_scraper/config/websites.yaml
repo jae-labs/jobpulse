@@ -1220,7 +1220,7 @@ websites:
 - name: Couchbase
   sector: Distributed NoSQL Database
   priority: 88
-  careers_url: https://boards.greenhouse.io/couchbase
+  careers_url: https://job-boards.greenhouse.io/couchbaseinc
   enabled: true
   scraper: generic_crawler
   scraper_type: watchlist
@@ -1367,7 +1367,7 @@ websites:
 - name: Global-e
   sector: Cross-Border E-commerce
   priority: 88
-  careers_url: https://boards.greenhouse.io/globale
+  careers_url: https://www.global-e.com/careers/
   enabled: true
   scraper: generic_crawler
   scraper_type: watchlist

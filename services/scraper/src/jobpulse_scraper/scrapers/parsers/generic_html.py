@@ -5,9 +5,11 @@ import re
 from typing import Any
 from urllib.parse import urljoin
 
+from jobpulse_scraper.engine.location import is_explicit_ireland_location
 from jobpulse_scraper.engine.salary import extract_salary_from_context
 from jobpulse_scraper.engine.text_cleaner import clean_text, extract_surrounding_text
 from jobpulse_scraper.engine.validators import is_valid_job_title
+from jobpulse_scraper.scrapers.parsers.html_tree import Element, TreeParser
 
 ATS_URL_PATTERNS = [
     "/job/",
@@ -95,13 +97,36 @@ def extract_html_link_opportunities(
     opportunities: list[dict[str, Any]] = []
 
     for h, t in links:
-        inner_h = re.search(r"<h[1-5][^>]*>(.*?)</h[1-5]>", t, re.I | re.DOTALL)
-        ct = (
-            clean_text(inner_h.group(1))
-            if inner_h and is_valid_job_title(clean_text(inner_h.group(1)), h)
-            else clean_text(t)
-        )
         full = urljoin(listing_url, html.unescape(h.strip()))
+        card_location: str | None = None
+        # A linked Elementor card owns its title and location. Adjacent cards
+        # and page-wide country filters are not evidence for this vacancy.
+        if "elementor-widget-theme-post-title" in t:
+            nodes = list(TreeParser(t).root.elements())
+            title_node = next(
+                (node for node in nodes if "elementor-widget-theme-post-title" in node.attrs.get("class", "").split()),
+                None,
+            )
+            locations = [
+                clean_text(node.text)
+                for node in nodes
+                if node.tag == "span"
+                and not any(isinstance(child, Element) for child in node.children)
+                and len(node.text) <= 120
+                and is_explicit_ireland_location(node.text)
+            ]
+            if title_node is not None:
+                if not locations:
+                    continue
+                ct = clean_text(title_node.text)
+                card_location = locations[0]
+            else:
+                ct = clean_text(t)
+        else:
+            ct = clean_text(t)
+        inner_h = re.search(r"<h[1-5][^>]*>(.*?)</h[1-5]>", t, re.I | re.DOTALL)
+        if card_location is None and inner_h and is_valid_job_title(clean_text(inner_h.group(1)), h):
+            ct = clean_text(inner_h.group(1))
         clean_title = re.sub(r"\s*(?:View Job|Apply Now|Apply Online|Job ID #\d+).*$", "", ct, flags=re.I).strip()
         clean_title = re.sub(r"^[►▼•\-\*>\s]+", "", clean_title).strip()
 
@@ -140,11 +165,9 @@ def extract_html_link_opportunities(
                     )
                     ctx_snippet = extract_surrounding_text(html_content, h)
                     salary = extract_salary_from_context(ctx_snippet, clean_title)
-                    loc = (
-                        "Dublin, Ireland"
-                        if any(k in f"{full} {clean_title} {ctx_snippet}".lower() for k in ["dublin", "cork", "galway"])
-                        else "Ireland"
-                    )
+                    # Preserve unknown locations instead of inventing a city
+                    # from surrounding cards. Detail enrichment supplies proof.
+                    loc = card_location or ""
                     opportunities.append(
                         {
                             "title": clean_title,

@@ -730,6 +730,7 @@ def test_smartrecruiters_reads_irish_posting_on_later_page():
         jobs = extract_smartrecruiters_opportunities("Example", "https://careers.smartrecruiters.com/example")
     assert [job["title"] for job in jobs] == ["Irish role"]
     assert "offset=100" in fetch.call_args.args[0].full_url
+    assert "country=ie" in fetch.call_args.args[0].full_url
 
 
 def test_greenhouse_malformed_response_is_not_empty():

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import concurrent.futures
+import socket
 import threading
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
 from jobpulse_scraper.config.boards import board_url, catalog_entry_for, catalog_entry_for_url, is_cooled_down
@@ -21,7 +22,16 @@ from jobpulse_scraper.database.repository import (
     update_source_status,
 )
 from jobpulse_scraper.network.browser import fetch_via_browser
+from jobpulse_scraper.network.experience import (
+    event,
+    preferred_route,
+    preferred_transport,
+    remember_route,
+    remember_transport,
+    source_scope,
+)
 from jobpulse_scraper.network.legacy_transport import RequestOpener
+from jobpulse_scraper.network.request_policy import ContentChallenge, HostCoolingDown
 from jobpulse_scraper.pipeline.logger import format_error_message, log_scraper_event
 from jobpulse_scraper.scrapers.generic.discovery import discover_employer_careers, is_auth_wall
 from jobpulse_scraper.scrapers.generic.listing import EMPTY_BOARD_PROVIDERS, extract_jobs_from_listing
@@ -50,6 +60,9 @@ class EmployerSyncResult:
     detail: str
     failed_writes: int = 0
     vectors_pending: int = 0
+    error_code: str | None = None
+    http_status: int | None = None
+    request_sent: bool | None = None
 
     def as_dict(self, employer: str) -> dict[str, Any]:
         return {
@@ -62,6 +75,9 @@ class EmployerSyncResult:
             "vectors_pending": self.vectors_pending,
             "url": self.discovered_url,
             "detail": self.detail,
+            "error_code": self.error_code,
+            "http_status": self.http_status,
+            "request_sent": self.request_sent,
         }
 
 
@@ -93,6 +109,9 @@ def _result(
     detail: str,
     failed_writes: int = 0,
     vectors_pending: int = 0,
+    error_code: str | None = None,
+    http_status: int | None = None,
+    request_sent: bool | None = None,
 ) -> EmployerSyncResult:
     return EmployerSyncResult(
         added=added,
@@ -103,6 +122,9 @@ def _result(
         detail=detail,
         failed_writes=failed_writes,
         vectors_pending=vectors_pending,
+        error_code=error_code,
+        http_status=http_status,
+        request_sent=request_sent,
     )
 
 
@@ -140,7 +162,24 @@ def sync_single_employer(
 ) -> EmployerSyncResult:
     """Scrape one employer, then record its catalog board health when known."""
     entry = catalog_entry_for_url(careers_url) or catalog_entry_for(name)
-    result = _crawl_employer(name, careers_url, sector, priority, request_opener=request_opener)
+    with source_scope(name, careers_url):
+        generic = not entry or entry.get("provider") in {None, "generic"}
+        route = preferred_route(name, careers_url) if generic else careers_url
+        result = _crawl_employer(
+            name, careers_url, sector, priority, request_opener=request_opener, acquisition_url=route
+        )
+        if generic:
+            remember_route(
+                name,
+                careers_url,
+                result.discovered_url,
+                success=result.outcome in {ScrapeOutcome.SYNCED, ScrapeOutcome.EMPTY},
+            )
+        if (
+            result.outcome not in {ScrapeOutcome.SYNCED, ScrapeOutcome.EMPTY}
+            and preferred_transport(name, careers_url) == "browser"
+        ):
+            remember_transport(name, careers_url, "browser", success=False)
     if record_health and entry and entry.get("board_id") is not None:
         success = result.outcome in (ScrapeOutcome.SYNCED, ScrapeOutcome.EMPTY)
         try:
@@ -165,6 +204,7 @@ def _crawl_employer(
     priority: int = 50,
     *,
     request_opener: RequestOpener | None = None,
+    acquisition_url: str | None = None,
 ) -> EmployerSyncResult:
     """
     Scrape a single employer:
@@ -175,19 +215,36 @@ def _crawl_employer(
     Returns a typed result that distinguishes an empty board from scrape failures.
     """
     discovered_url = careers_url
+    acquisition_url = acquisition_url or careers_url
     fetch_method = "HTTP"
     entry = catalog_entry_for_url(careers_url) or catalog_entry_for(name)
     provider = entry.get("provider") if entry else None
     known_url = board_url(provider, entry.get("board", "")) if entry and provider else None
-    log_scraper_event("QUERYING", name, "Querying website", careers_url, method="HTTP")
+    browser_first = provider in {None, "generic"} and preferred_transport(name, careers_url) == "browser"
+    browser_attempted = browser_first
+    event(
+        "transport_selected",
+        transport="browser" if browser_first else "http",
+        data={"reason": "recent_positive_extraction" if browser_first else "configured_adapter_or_http_probe"},
+    )
+    log_scraper_event(
+        "QUERYING", name, "Querying website", careers_url, method="Playwright" if browser_first else "HTTP"
+    )
     try:
         if provider in EMPTY_BOARD_PROVIDERS and known_url:
             discovered_url, html_data = known_url, ""
+        elif browser_first:
+            try:
+                discovered_url, html_data = fetch_via_browser(acquisition_url, wait_for_idle=True)
+                fetch_method = "Playwright"
+            except Exception:
+                event("transport_fallback", transport="http", data={"reason": "learned_browser_failed"})
+                discovered_url, html_data = discover_employer_careers(name, careers_url)
         else:
-            discovered_url, html_data = discover_employer_careers(name, careers_url)
+            discovered_url, html_data = discover_employer_careers(name, acquisition_url)
 
         if is_auth_wall(discovered_url):
-            if fetch_method == "HTTP":
+            if fetch_method == "HTTP" and not browser_attempted:
                 log_scraper_event(
                     "INFO",
                     name,
@@ -196,6 +253,7 @@ def _crawl_employer(
                     method="HTTP",
                 )
                 fetch_method = "Playwright"
+                browser_attempted = True
                 try:
                     discovered_url, html_data = fetch_via_browser(careers_url, wait_for_idle=True)
                 except Exception as b_err:
@@ -256,6 +314,20 @@ def _crawl_employer(
             )
 
         opportunities = extract_jobs_from_listing(name, discovered_url, html_data, provider)
+        if (
+            browser_first
+            and fetch_method == "Playwright"
+            and not opportunities
+            and not has_explicit_empty_board(html_data)
+        ):
+            event(
+                "transport_fallback",
+                transport="http",
+                data={"reason": "learned_browser_has_no_extractable_opportunities"},
+            )
+            discovered_url, html_data = discover_employer_careers(name, careers_url)
+            fetch_method = "HTTP"
+            opportunities = extract_jobs_from_listing(name, discovered_url, html_data, provider)
 
         # A known catalog identity can read a board hidden behind a vanity domain.
         if not opportunities and known_url and known_url.rstrip("/") != (discovered_url or "").rstrip("/"):
@@ -270,8 +342,18 @@ def _crawl_employer(
                 log_scraper_event("INFO", name, f"Resolved via catalog board ({provider})", known_url, method="HTTP")
 
         fallback_error: str | None = None
-        if not opportunities and fetch_method == "HTTP" and (provider is None or provider == "generic"):
+        if (
+            not opportunities
+            and fetch_method == "HTTP"
+            and not browser_attempted
+            and provider in {None, "generic"}
+            and not has_explicit_empty_board(html_data)
+        ):
             try:
+                browser_attempted = True
+                event(
+                    "transport_fallback", transport="browser", data={"reason": "http_has_no_extractable_opportunities"}
+                )
                 log_scraper_event(
                     "INFO",
                     name,
@@ -362,6 +444,10 @@ def _crawl_employer(
                 )
 
             if provider in EMPTY_BOARD_PROVIDERS or has_explicit_empty_board(html_data):
+                if provider in {None, "generic"}:
+                    remember_transport(
+                        name, careers_url, "browser" if fetch_method == "Playwright" else "http", success=True
+                    )
                 detail = "Careers board has no Irish opportunities."
                 update_employer_status(
                     name=name, status="Empty", opportunities_found=0, discovered_jobs_url=discovered_url
@@ -402,6 +488,8 @@ def _crawl_employer(
                 detail=detail,
             )
 
+        if provider in {None, "generic"}:
+            remember_transport(name, careers_url, "browser" if fetch_method == "Playwright" else "http", success=True)
         added = save_jobs_batch(opportunities)
 
         status_text = "Synced"
@@ -439,7 +527,25 @@ def _crawl_employer(
             detail=detail_text,
         )
     except Exception as e:
-        denied = isinstance(e, HTTPError) and e.code in {401, 403, 429}
+        denied = isinstance(e, ContentChallenge) or (isinstance(e, HTTPError) and e.code in {401, 403, 429})
+        reason = e.reason if isinstance(e, URLError) else e
+        error_code = "source_acquisition_failed"
+        http_status = None
+        request_sent = None
+        if isinstance(e, HostCoolingDown):
+            error_code, request_sent = "source_cooldown", False
+        elif isinstance(e, ContentChallenge):
+            error_code, http_status = "source_content_challenge", e.status
+        elif isinstance(e, HTTPError):
+            error_code, http_status = "source_http_denial" if denied else "source_http_failed", e.code
+        elif isinstance(reason, TimeoutError):
+            error_code = "source_connection_timeout"
+        elif isinstance(reason, socket.gaierror):
+            error_code = "source_dns_failed"
+        elif isinstance(e, URLError):
+            error_code = "source_connection_failed"
+        elif isinstance(e, IngestionIncompleteError):
+            error_code = "source_ingestion_incomplete"
         err_detail = format_error_message(e)
         log_scraper_event("ERROR", name, f"Error ({err_detail})", discovered_url, method="HTTP")
         update_employer_status(name=name, status="Blocked" if denied else "Failed")
@@ -452,6 +558,9 @@ def _crawl_employer(
             message=f"{name}: failed during scraping ({err_detail}).",
             outcome=ScrapeOutcome.BLOCKED if denied else ScrapeOutcome.FAILED,
             detail=err_detail,
+            error_code=error_code,
+            http_status=http_status,
+            request_sent=request_sent,
         )
 
 

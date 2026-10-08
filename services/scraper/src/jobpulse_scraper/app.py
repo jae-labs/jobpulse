@@ -135,20 +135,35 @@ def main() -> None:
     parser.add_argument("--sync", action="store_true", help="Run the synchronous pipeline explicitly")
     parser.add_argument("--enqueue", action="store_true", help="Queue enabled sources durably without crawling")
     parser.add_argument("--worker", action="store_true", help="Process bounded durable crawl tasks")
+    parser.add_argument("--concurrency", type=int, default=None, help="Concurrent task slots (1-4; auto defaults to 4)")
+    parser.add_argument("--task-timeout", type=int, default=120, help="Hard task deadline in seconds (1-3600)")
     parser.add_argument("--replay", help="Replay a snapshot metadata key offline without database writes")
     parser.add_argument(
         "--request-history", action="store_true", help="Show bounded public-source transport observations"
+    )
+    parser.add_argument(
+        "--crawl-report", action="store_true", help="Compare the latest 100 durable runs; --employer filters a company"
     )
     args = parser.parse_args()
 
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
+    if args.concurrency is not None and not 1 <= args.concurrency <= 4:
+        parser.error("--concurrency must be between 1 and 4")
+    if not 1 <= args.task_timeout <= 3600:
+        parser.error("--task-timeout must be between 1 and 3600")
 
     if args.request_history:
         from jobpulse_scraper.network.ledger import RequestLedger
         from jobpulse_scraper.network.request_policy import STATE_PATH
 
         print(json.dumps(RequestLedger(STATE_PATH.with_suffix(".sqlite3")).summary(), indent=2))
+        return
+
+    if args.crawl_report:
+        from jobpulse_scraper.runtime.reporting import crawl_report
+
+        print(json.dumps(crawl_report(args.employer), indent=2))
         return
 
     if args.replay:
@@ -185,9 +200,28 @@ def main() -> None:
         if args.enqueue:
             print(json.dumps({"queued": enqueue_configured(queue, args.employer, args.limit)}))
         if args.worker or auto:
-            result = run_worker(queue, max_tasks=args.limit or (MAX_WORKER_TASKS if auto else 20))
+            from jobpulse_scraper.runtime.reporting import save_crawl_report
+
+            report_failed = False
+            try:
+                result = run_worker(
+                    queue,
+                    max_tasks=args.limit or (MAX_WORKER_TASKS if auto else 20),
+                    concurrency=args.concurrency or (4 if auto else 1),
+                    task_timeout=args.task_timeout,
+                )
+            finally:
+                try:
+                    print(json.dumps(save_crawl_report()), flush=True)
+                except Exception:
+                    report_failed = True
+                    print(
+                        json.dumps({"crawl_event": "report_failed", "error_code": "crawl_report_unavailable"}),
+                        file=sys.stderr,
+                        flush=True,
+                    )
             print(json.dumps(result))
-            if result["incomplete"] or result["lease_lost"]:
+            if result["incomplete"] or result["lease_lost"] or report_failed:
                 raise SystemExit(1)
         return
 

@@ -17,7 +17,10 @@ def is_valid_location(location: str, title: str = "", url: str = "") -> bool:
     """Verify that the job location is within Ireland and not overseas."""
     title_l = title.lower()
     loc_l = location.lower()
-    url_l = url.lower()
+    # A language/region route (en-US, fr-CA) is presentation locale, not
+    # vacancy geography. Explicit location text and geographic paths still apply.
+    url_path = urllib.parse.urlsplit(url).path.lower()
+    url_l = re.sub(r"/(?:en|fr|de|es|pt|nl|it|pl)[-_][a-z]{2}(?=/)", "", url_path)
     combined_foreign = f"{title_l} {loc_l} {url_l}"
 
     # Explicit known foreign locations

@@ -48,102 +48,106 @@ backup: ## Save the linked production database and every Storage bucket.
 	bash scripts/backup-production.sh
 
 scrape: ## Process due durable work and queue eligible sources; successful and failed sources wait six hours.
-	@cd services/scraper && uv run --locked python app.py --auto $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --auto $(ARGS)
+
+.PHONY: scrape-report
+scrape-report: ## Compare durable source metrics; ARGS='--employer "Company"' filters a company.
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --crawl-report $(ARGS)
 
 scrape-test: ## Test scraping a specific employer; set NAME="Employer Name".
 	@test -n "$(NAME)" || (echo "Set NAME='Employer Name'." >&2; exit 2)
-	@cd services/scraper && uv run --locked python app.py --employer "$(NAME)" $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --employer "$(NAME)" $(ARGS)
 
 scrape-core: ## Crawl specialized employer and aggregator feeds only.
-	@cd services/scraper && uv run --locked python app.py --core-only $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --core-only $(ARGS)
 
 scrape-boards: ## Crawl enabled database boards only; ARGS="--limit 50" bounds targets.
-	@cd services/scraper && uv run --locked python app.py --no-core $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --no-core $(ARGS)
 
 scrape-list-boards: ## List live catalog targets, including disabled boards; no writes.
-	@cd services/scraper && uv run --locked python app.py --list-boards $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --list-boards $(ARGS)
 
 scrape-import-boards: ## Preview YAML board import; ARGS="--apply" persists reviewed changes.
-	@cd services/scraper && uv run --locked python tools/import_boards.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/import_boards.py $(ARGS)
 
 scrape-discover-boards: ## Preview board discovery; ARGS="--source jobs --apply" persists candidates.
-	@cd services/scraper && uv run --locked python tools/discover_boards.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/discover_boards.py $(ARGS)
 
 scrape-harvest-ats: ## Preview ATS discovery from company websites; ARGS="--limit 50 --apply" persists.
-	@cd services/scraper && uv run --locked python tools/harvest_ats.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/harvest_ats.py $(ARGS)
 
 scrape-backfill-board-employers: ## Preview board/employer links; ARGS="--apply --create" permits new employers.
-	@cd services/scraper && uv run --locked python tools/backfill_board_employers.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/backfill_board_employers.py $(ARGS)
 
 scrape-backfill: ## Generate missing vectors for existing jobs without crawling.
-	@cd services/scraper && uv run --locked python app.py --backfill-embeddings $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --backfill-embeddings $(ARGS)
 
 scrape-backfill-employers: ## Preview employer links; set ARGS="--apply --limit 100" to persist.
-	@cd services/scraper && uv run --locked python tools/backfill_employers.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/backfill_employers.py $(ARGS)
 
 scrape-descriptions: ## Preview catalog body repairs; reports in .backups; set ARGS="--apply" to write.
-	@cd services/scraper && uv run --locked python tools/repair_descriptions.py --report ../../.backups/descriptions.csv $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/repair_descriptions.py --report ../../.backups/descriptions.csv $(ARGS)
 
 scrape-description-audit: ## Read-only body coverage; CSV and summary reports in .backups.
-	@cd services/scraper && uv run --locked python tools/audit_descriptions.py --report ../../.backups/description-audit.csv --summary ../../.backups/description-audit.json $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/audit_descriptions.py --report ../../.backups/description-audit.csv --summary ../../.backups/description-audit.json $(ARGS)
 
 scrape-validate: ## Validate websites.yaml configuration.
-	@cd services/scraper && uv run --locked python app.py --validate-config $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --validate-config $(ARGS)
 
 scrape-request-audit: ## Preview bounded source audit; ARGS="--run --apply" sends requests and saves observations.
-	@cd services/scraper && uv run --locked python tools/probe_request_limits.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/probe_request_limits.py $(ARGS)
 
 scrape-harvest: ## Probe candidate ATS URLs; supply ARGS="--seeds PATH"; add --apply to persist.
-	@cd services/scraper && uv run --locked python tools/harvest_boards.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/harvest_boards.py $(ARGS)
 
 scrape-sniff: ## Sniff underlying ATS platforms from generic career URLs; set ARGS="--apply" to persist.
-	@cd services/scraper && uv run --locked python tools/sniff_ats.py $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/sniff_ats.py $(ARGS)
 
 scrape-research-employers: ## Research public company evidence; proposals only, report in .backups.
-	@cd services/scraper && uv run --locked python tools/research_employers.py --report ../../.backups/employer-research.json $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/research_employers.py --report ../../.backups/employer-research.json $(ARGS)
 
 scrape-enrich-employers: ## Preview up to 100 employers; ARGS="--apply --limit 50" persists, report in .backups.
-	@cd services/scraper && uv run --locked python tools/enrich_employers.py --limit 100 --report ../../.backups/employer-enrichment.csv $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/enrich_employers.py --limit 100 --report ../../.backups/employer-enrichment.csv $(ARGS)
 
 scrape-verify-locations: ## Preview vacancy geocoding; ARGS="--apply --limit 100" persists, report in .backups.
-	@cd services/scraper && uv run --locked python tools/verify_job_locations.py --report ../../.backups/job-locations.json $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/verify_job_locations.py --report ../../.backups/job-locations.json $(ARGS)
 
 scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
-	@cd services/scraper && uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
 
 scrape-enrich-ai: ## Propose company metadata via agy (no writes); report in .backups.
-	@cd services/scraper && uv run --locked python tools/enrich_companies_ai.py --report ../../.backups/company-proposals.json $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/enrich_companies_ai.py --report ../../.backups/company-proposals.json $(ARGS)
 
 scrape-package: ## Build and verify the installed scraper wheel.
 	@mkdir -p .backups/scraper-dist
-	@cd services/scraper && uv build --wheel --out-dir ../../.backups/scraper-dist > ../../.backups/scraper-dist/build.log 2>&1
-	@cd services/scraper && uv run --locked python tools/verify_wheel.py ../../.backups/scraper-dist
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv build --wheel --out-dir ../../.backups/scraper-dist > ../../.backups/scraper-dist/build.log 2>&1
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/verify_wheel.py ../../.backups/scraper-dist
 
 scrape-enqueue: ## Queue configured crawl targets durably.
-	@cd services/scraper && uv run --locked python app.py --enqueue $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --enqueue $(ARGS)
 
 scrape-worker: ## Process a bounded set of durable source/detail/vector tasks.
-	@cd services/scraper && uv run --locked python app.py --worker $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --worker $(ARGS)
 
 scrape-history: ## Inspect bounded public-source transport observations.
-	@cd services/scraper && uv run --locked python app.py --request-history $(ARGS)
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python app.py --request-history $(ARGS)
 
 scrape-pilot: ## Compare Scrapy and composed execution on synthetic sources.
-	@cd services/scraper && uv run --locked --group pilot python tools/pilot_scrapy.py
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked --group pilot python tools/pilot_scrapy.py
 
 scrape-lint: ## Run ruff lint & format check on scraper code.
-	@cd services/scraper && uv run --locked ruff check .
-	@cd services/scraper && uv run --locked ruff format --check .
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked ruff check .
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked ruff format --check .
 
 scrape-format: ## Auto-format and fix lint issues in scraper code.
-	@cd services/scraper && uv run --locked ruff format .
-	@cd services/scraper && uv run --locked ruff check --fix .
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked ruff format .
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked ruff check --fix .
 
 scrape-unit: ## Run scraper unit tests with pytest.
-	@cd services/scraper && uv run --locked pytest
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked pytest
 
 scrape-typecheck: ## Check scraper types with Pyright.
-	@cd services/scraper && uv run --locked pyright
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked pyright
 
 db-types: ## Generate TypeScript and Python types from local Supabase schema.
 	npm run db:types

@@ -17,6 +17,58 @@ def test_default_tls_verifies_certificate_and_hostname():
     assert context.check_hostname
 
 
+def test_declared_waf_challenge_stops_http_requests_and_keeps_observed_status():
+    from jobpulse_scraper.network.experience import run_metrics
+    from jobpulse_scraper.network.request_policy import ContentChallenge, HostCoolingDown
+
+    response = MagicMock()
+    response.status = 202
+    response.headers = Message()
+    response.headers["x-amzn-waf-action"] = "challenge"
+    response.geturl.return_value = "https://synthetic.invalid/jobs"
+    with patch.object(http_client, "_stdlib_urlopen", return_value=response) as fetch:
+        with pytest.raises(ContentChallenge) as error:
+            with http_client.open_request(Request("https://synthetic.invalid/jobs")):
+                raise AssertionError("A challenge must not be passed to a job parser")
+        assert error.value.status == 202
+        with pytest.raises(HostCoolingDown):
+            with http_client.open_request(Request("https://synthetic.invalid/next")):
+                pass
+        assert fetch.call_count == 1
+    response.close.assert_called_once()
+    measured = run_metrics("", 1)
+    assert measured["requests_sent"] == measured["responses"] == measured["denials"] == 1
+    assert measured["hosts"][0]["latest_denial"]["status"] == 202
+    assert measured["hosts"][0]["latest_denial"]["content_challenge"] is True
+
+
+def test_ordinary_202_response_is_not_invented_as_a_challenge():
+    response = MagicMock()
+    response.status = 202
+    response.headers = Message()
+    with patch.object(http_client, "_stdlib_urlopen", return_value=response):
+        with http_client.open_request(Request("https://synthetic.invalid")) as actual:
+            assert actual is response
+
+
+def test_declared_captcha_error_keeps_real_status_and_does_not_retry():
+    from jobpulse_scraper.network.experience import run_metrics
+    from jobpulse_scraper.network.request_policy import ContentChallenge
+
+    headers = Message()
+    headers["x-amzn-waf-action"] = "captcha"
+    failure = HTTPError("https://synthetic.invalid", 405, "Synthetic CAPTCHA", headers, None)
+    with patch.object(http_client, "_stdlib_urlopen", side_effect=failure) as fetch:
+        with pytest.raises(ContentChallenge) as caught:
+            with http_client.open_request(Request("https://synthetic.invalid")):
+                pass
+    assert fetch.call_count == 1
+    assert caught.value.status == 405
+    metrics = run_metrics("", 1)
+    assert metrics["denials"] == metrics["responses"] == 1
+    assert metrics["hosts"][0]["latest_denial"]["status"] == 405
+
+
 @pytest.mark.parametrize("wrapped", [False, True])
 @pytest.mark.parametrize("method", ["GET", "POST"])
 def test_certificate_failure_retries_request_without_verification(wrapped, method):

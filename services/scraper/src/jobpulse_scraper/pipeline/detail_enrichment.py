@@ -2,6 +2,7 @@
 
 import logging
 from typing import Any
+from urllib.parse import urlsplit
 
 from jobpulse_scraper.engine.description_quality import has_description_body, needs_description_repair
 
@@ -17,8 +18,22 @@ def enrich_job(job: dict[str, Any]) -> dict[str, Any]:
             from jobpulse_scraper.extractors.universal import extract_universal_job_spec
 
             spec = extract_universal_job_spec(job["url"], job.get("company", ""), job.get("title", ""))
-            if spec and has_description_body(spec.get("description")):
-                job["description"] = spec["description"]
+            description = spec.get("description") if spec else None
+            published_short_body = (
+                bool(spec)
+                and spec.get("description_origin") == "published_detail"
+                and urlsplit(str(job["url"])).hostname == "jobsireland.ie"
+                and has_description_body(description, minimum_chars=1)
+                and not has_description_body(description)
+            )
+            if spec and (has_description_body(description) or published_short_body):
+                job["description"] = description
+                job.pop("description_is_snippet", None)
+                if published_short_body:
+                    # This flag stays in memory only. The catalog retains the
+                    # verified text while the vector worker applies its own
+                    # stricter minimum-body policy and clears stale vectors.
+                    job["_verified_short_detail"] = True
                 if spec.get("salary_text") and not job.get("salary_text"):
                     job["salary_text"] = spec["salary_text"]
                 if spec.get("location") and job.get("location") in ("Ireland", "Not specified", ""):

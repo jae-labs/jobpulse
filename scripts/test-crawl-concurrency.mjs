@@ -19,7 +19,8 @@ function sql(input) {
   if (result.status) throw new Error(result.stderr || 'Local SQL command failed');
   return result.stdout.trim().split('\n').filter((line) => line && !line.startsWith('{"role"'));
 }
-const keys = Array.from({ length: 3 }, () => `synthetic-concurrency:${randomUUID()}`);
+const kinds = ['native', 'native', 'discovery', 'discovery', 'detail', 'detail', 'vector', 'vector'];
+const keys = kinds.map(() => `synthetic-concurrency:${randomUUID()}`);
 const quoted = keys.map((key) => `'${key}'`).join(',');
 let session;
 try {
@@ -55,7 +56,13 @@ try {
       sql(`DELETE FROM public.crawl_tasks WHERE source_key='${autoKey}';`);
     }
   }
-  const ids = keys.map((key) => sql(`SELECT public.enqueue_crawl('${key}','{"employer":"Synthetic"}',100,'1970-01-01');`)[0]);
+  const ids = keys.map((key, index) => {
+    const kind = kinds[index];
+    const target = JSON.stringify(kind === 'detail' || kind === 'vector'
+      ? { kind, job_id: 1 }
+      : { employer: 'Synthetic', provider: kind === 'native' ? 'jsonld' : 'generic' });
+    return sql(`SELECT public.enqueue_crawl('${key}','${target}',100,'1970-01-01');`)[0];
+  });
   session = spawn('docker', command, { stdio: ['pipe', 'pipe', 'pipe'] });
   let output = '';
   let errors = '';
@@ -84,12 +91,7 @@ try {
   if (!ids.includes(orphan.id)) throw new Error('Crash fixture claimed unrelated work');
   sql(`UPDATE public.crawl_tasks SET lease_until=now()-interval '1 second' WHERE id='${orphan.id}';`);
   const reclaimed = JSON.parse(sql("SELECT json_build_object('id',id,'token',lease_token) FROM public.claim_crawl(120);")[0]);
-  // Other equally due fixtures can precede the expired row; reserve them before claiming again.
-  let recovered = reclaimed;
-  for (let index = 0; recovered.id !== orphan.id && index < 2; index += 1) {
-    if (!ids.includes(recovered.id)) throw new Error('Recovery fixture claimed unrelated work');
-    recovered = JSON.parse(sql("SELECT json_build_object('id',id,'token',lease_token) FROM public.claim_crawl(120);")[0]);
-  }
+  const recovered = reclaimed;
   if (recovered.id !== orphan.id || recovered.token === orphan.token) throw new Error('Crashed worker lease not reclaimed');
   const stale = sql(`SELECT public.finish_crawl('${orphan.id}','${orphan.token}','complete','{}');`)[0];
   if (stale !== 'f') throw new Error('Stale worker completed reclaimed work');

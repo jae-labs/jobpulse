@@ -81,7 +81,7 @@ def test_jobsireland_extracts_only_published_description(monkeypatch) -> None:
         jobsireland.extract_jobsireland_job_spec("https://jobsireland.ie/en-US/job-Details?id=1")["description"] == BODY
     )
     monkeypatch.setattr(jobsireland, "fetch_page", lambda _: "<main>Search jobs and register</main>")
-    assert jobsireland.extract_jobsireland_job_spec("https://jobsireland.ie/en-US/job-Details?id=1") == {}
+    assert jobsireland.extract_jobsireland_job_spec("https://jobsireland.ie/en-US/job-Details?id=2") == {}
 
 
 def test_smartrecruiters_keeps_qualifications_and_tail(monkeypatch) -> None:
@@ -574,6 +574,74 @@ def test_confirmed_short_published_body_is_saved_but_still_fails_embedding_gate(
         repair.recover_description({"url": "https://example.com/job", "company": "Example", "title": "Assistant"})
         is None
     )
+
+
+def test_jobsireland_published_short_detail_is_verified_without_becoming_a_vector_body(monkeypatch) -> None:
+    from jobpulse_scraper.pipeline.detail_enrichment import enrich_job
+
+    short_body = "Minimum of 2 years of experience required as either a Commis chef or a Chef de partie"
+    monkeypatch.setattr(
+        universal,
+        "extract_universal_job_spec",
+        lambda *_: {"description": short_body, "description_origin": "published_detail"},
+    )
+    result = enrich_job(
+        {
+            "url": "https://jobsireland.ie/en-US/job-Details?id=2473775",
+            "company": "Synthetic employer",
+            "title": "Chef de partie",
+            "description": "JobsIreland Vacancy Reference: #JOB-2473775",
+        }
+    )
+    assert result["description"] == short_body
+    assert result["_verified_short_detail"] is True
+    assert not has_description_body(result["description"])
+
+
+def test_unverified_short_detail_is_not_accepted_for_durable_enrichment(monkeypatch) -> None:
+    from jobpulse_scraper.pipeline.detail_enrichment import enrich_job
+
+    short_body = "Minimum of 2 years of experience required as a Chef de partie"
+    monkeypatch.setattr(universal, "extract_universal_job_spec", lambda *_: {"description": short_body})
+    result = enrich_job(
+        {
+            "url": "https://jobsireland.ie/en-US/job-Details?id=2473775",
+            "company": "Synthetic employer",
+            "title": "Chef de partie",
+            "description": "JobsIreland Vacancy Reference: #JOB-2473775",
+        }
+    )
+    assert result["description"] == "JobsIreland Vacancy Reference: #JOB-2473775"
+    assert "_verified_short_detail" not in result
+
+
+def test_verified_short_detail_routes_to_vector_validation_without_persisting_internal_marker() -> None:
+    from jobpulse_scraper.runtime.lease import Lease, active_lease
+
+    client = MagicMock()
+    client.rpc.return_value.execute.return_value = SimpleNamespace(data=[])
+    payload = {
+        "dedupe_key": "synthetic-short-job",
+        "title": "Chef de partie",
+        "company": "Synthetic employer",
+        "location": "Dublin, Ireland",
+        "description": "A complete, concise published requirement for this synthetic chef position.",
+        "url": "https://jobsireland.ie/en-US/job-Details?id=1",
+        "source": "JobsIreland.ie",
+        "_verified_short_detail": True,
+    }
+    token = active_lease.set(Lease("synthetic-task", "synthetic-token"))
+    try:
+        repository._persist_catalog_batch(client, [payload], {})
+    finally:
+        active_lease.reset(token)
+
+    function_name, params = client.rpc.call_args.args
+    record = params["p_jobs"][0]
+    assert function_name == "persist_crawl_jobs"
+    assert record["work_kind"] == "vector"
+    assert record["job"]["description"] == payload["description"]
+    assert "_verified_short_detail" not in record["job"]
 
 
 def test_jobsireland_rejects_a_different_vacancy_reference(monkeypatch) -> None:

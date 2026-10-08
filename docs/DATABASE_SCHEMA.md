@@ -290,8 +290,12 @@ refresh interval. Failed source crawls wait at least six hours, preserving longe
 remote delays; detail/vector retries retain independent backoff. Exhausted tasks
 do not restart automatically. Explicit enqueueing retains its separate refresh
 semantics without resetting pending attempts or retry dates.
-Service-only crawl RPCs claim work with `FOR UPDATE SKIP LOCKED`, renew live leases
-and reject stale writes or completion. `persist_crawl_jobs` atomically stores catalog
+Service-only crawl RPCs claim work with `FOR UPDATE SKIP LOCKED`
+and use indexed recent claims to prefer alternating source/detail/vector work.
+Expired leases recover first; native provider sources share turns with generic
+discovery. Concurrent claims remain nonblocking and can share a scheduling turn.
+The executable fairness contract lives in `tenant_crawl_fairness.sql`.
+They renew live leases and reject stale writes or completion. `persist_crawl_jobs` atomically stores catalog
 facts, source occurrences and detail/vector follow-up tasks. `store_crawl_vectors`
 accepts inference output only while its lease and expected job facts remain current.
 Candidate matching remains in `candidate_scoring_work` and its existing SQL worker.

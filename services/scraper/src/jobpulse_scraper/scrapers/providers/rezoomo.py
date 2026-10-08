@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 from urllib.request import Request
 
@@ -11,6 +10,7 @@ from jobpulse_scraper.network.http_client import get_ssl_context
 from jobpulse_scraper.network.http_client import open_request as urlopen
 from jobpulse_scraper.network.legacy_transport import RequestOpener
 from jobpulse_scraper.scrapers.parsers.rezoomo import parse_rezoomo_payload as parse_rezoomo_payload
+from jobpulse_scraper.scrapers.parsers.rezoomo import rezoomo_company_slug
 
 
 def extract_rezoomo_opportunities(
@@ -19,11 +19,9 @@ def extract_rezoomo_opportunities(
     """Extract vacancies from Rezoomo company job boards."""
     opportunities: list[dict[str, Any]] = []
 
-    rz = re.search(r"rezoomo\.com/company/([a-zA-Z0-9_-]+)", listing_url)
-    if not rz:
+    company_slug = rezoomo_company_slug(listing_url)
+    if not company_slug:
         return opportunities
-
-    company_slug = rz.group(1)
     boundary = "----JobPulseRezoomoBoundary"
     post_body = (
         f"--{boundary}\r\n"

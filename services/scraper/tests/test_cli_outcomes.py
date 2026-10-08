@@ -8,6 +8,52 @@ from jobpulse_scraper import app
 from jobpulse_scraper.config.loader import load_websites_config
 
 
+@pytest.fixture(autouse=True)
+def isolate_automatic_reports(monkeypatch):
+    monkeypatch.setattr(
+        "jobpulse_scraper.runtime.reporting.save_crawl_report",
+        Mock(return_value={"crawl_report": "synthetic-report.json"}),
+    )
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_worker_always_reports_and_preserves_failure_exit(monkeypatch, capsys, failure):
+    from jobpulse_scraper.runtime import queue as runtime
+    from jobpulse_scraper.runtime import reporting
+
+    monkeypatch.setattr("sys.argv", ["scraper", "--worker", "--limit", "10"])
+    monkeypatch.setattr(runtime, "CrawlQueue", Mock())
+    monkeypatch.setattr(
+        runtime, "run_worker", Mock(return_value={"complete": 1, "incomplete": int(failure), "lease_lost": 0})
+    )
+    report = Mock(return_value={"crawl_report": "synthetic-report.json"})
+    monkeypatch.setattr(reporting, "save_crawl_report", report)
+    if failure:
+        with pytest.raises(SystemExit) as result:
+            app.main()
+        assert result.value.code == 1
+    else:
+        app.main()
+    report.assert_called_once()
+    assert "synthetic-report.json" in capsys.readouterr().out
+
+
+def test_report_failure_is_visible_without_discarding_finished_tasks(monkeypatch, capsys):
+    from jobpulse_scraper.runtime import queue as runtime
+    from jobpulse_scraper.runtime import reporting
+
+    monkeypatch.setattr("sys.argv", ["scraper", "--worker"])
+    monkeypatch.setattr(runtime, "CrawlQueue", Mock())
+    monkeypatch.setattr(runtime, "run_worker", Mock(return_value={"complete": 1, "incomplete": 0, "lease_lost": 0}))
+    monkeypatch.setattr(reporting, "save_crawl_report", Mock(side_effect=OSError("synthetic private exception")))
+    with pytest.raises(SystemExit) as result:
+        app.main()
+    assert result.value.code == 1
+    output = capsys.readouterr()
+    assert '"complete": 1' in output.out and "report_failed" in output.err
+    assert "synthetic private exception" not in output.err
+
+
 def test_retired_pruning_command_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     synchronize = Mock()
     metadata = Mock()
@@ -126,7 +172,7 @@ def test_auto_start_uses_atomic_source_eligibility_and_then_drains(monkeypatch, 
     monkeypatch.setattr(app, "synchronize", synchronize)
     app.main()
     enqueue.assert_called_once_with(queue, only_if_idle=True)
-    worker.assert_called_once_with(queue, max_tasks=100)
+    worker.assert_called_once_with(queue, max_tasks=100, concurrency=4, task_timeout=120)
     synchronize.assert_not_called()
     assert f'"queued": {queued}' in capsys.readouterr().out
 
@@ -167,4 +213,4 @@ def test_auto_start_defaults_to_the_supported_maximum(monkeypatch):
     monkeypatch.setattr(runtime, "enqueue_configured", Mock(return_value=0))
     monkeypatch.setattr(runtime, "run_worker", worker)
     app.main()
-    worker.assert_called_once_with(queue, max_tasks=10_000)
+    worker.assert_called_once_with(queue, max_tasks=10_000, concurrency=4, task_timeout=120)

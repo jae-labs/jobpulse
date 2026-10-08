@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 PROVIDER_URL_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("greenhouse", re.compile(r"(?:job-boards|boards)(?:-api)?\.greenhouse\.io/([A-Za-z0-9_-]+)", re.I)),
     ("lever", re.compile(r"jobs\.lever\.co/([A-Za-z0-9_-]+)", re.I)),
-    ("ashby", re.compile(r"jobs\.ashbyhq\.com/([A-Za-z0-9_.-]+)", re.I)),
+    ("ashby", re.compile(r"jobs\.ashbyhq\.com/((?:[A-Za-z0-9_.-]|%20)+)", re.I)),
     ("smartrecruiters", re.compile(r"(?:careers|jobs)\.smartrecruiters\.com/([A-Za-z0-9_-]+)", re.I)),
     ("workable", re.compile(r"apply\.workable\.com/([A-Za-z0-9_-]+)", re.I)),
     ("bamboohr", re.compile(r"([A-Za-z0-9-]+)\.bamboohr\.com", re.I)),
@@ -51,6 +51,7 @@ _WORKDAY_PATTERN = re.compile(
 _UKG_PATTERN = re.compile(r"https?://([^/]+)/([^/]+)/JobBoard/([0-9a-fA-F-]{36})", re.I)
 
 _DAYFORCE_PATTERN = re.compile(r"jobs\.dayforcehcm\.com/(?:[a-z]{2}-[A-Z]{2}/)?([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)", re.I)
+_REZOOMO_TENANT_PATTERN = re.compile(r"https?://([A-Za-z0-9-]+)\.rezoomo\.com(?:[:/]|$)", re.I)
 
 _DB_CACHE: list[dict[str, Any]] | None = None
 _DB_CACHE_SET = False
@@ -90,6 +91,9 @@ def detect_provider(careers_url: str) -> tuple[str, str]:
     dayforce = _DAYFORCE_PATTERN.search(url)
     if dayforce:
         return "dayforce", f"{dayforce.group(1)}/{dayforce.group(2)}"
+    rezoomo = _REZOOMO_TENANT_PATTERN.search(url)
+    if rezoomo and rezoomo.group(1).lower() != "www":
+        return "rezoomo", rezoomo.group(1).lower()
     for provider, pattern in PROVIDER_URL_PATTERNS:
         match = pattern.search(url)
         if not match:
@@ -279,6 +283,7 @@ _CANONICAL_BOARD_URLS: dict[str, str] = {
     "rippling": "https://ats.rippling.com/{board}/jobs",
     "manatal": "https://www.careers-page.com/{board}",
     "dayforce": "https://jobs.dayforcehcm.com/en-US/{board}",
+    "rezoomo": "https://www.rezoomo.com/company/{board}/",
 }
 
 # Provider keys that carry a full host (optionally with a path) as their board.

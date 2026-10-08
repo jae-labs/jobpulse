@@ -31,8 +31,8 @@ def intel_ireland_facets(payload: dict[str, Any]) -> dict[str, list[str]]:
 def sync_intel() -> SyncReport:
     """Execute Playwright session to query Intel Workday CXS JSON API."""
 
-    def jobs_request(page: Any, payload: dict[str, Any]) -> dict[str, Any]:
-        return page.evaluate(
+    async def jobs_request(page: Any, payload: dict[str, Any]) -> dict[str, Any]:
+        return await page.evaluate(
             """async ({url, payload}) => {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -45,10 +45,10 @@ def sync_intel() -> SyncReport:
             {"url": INTEL_JOBS_URL, "payload": payload},
         )
 
-    def search(page: Any) -> tuple[dict[str, Any], dict[str, Any]]:
-        page.goto(INTEL_CAREERS_URL, wait_until="domcontentloaded")
-        first = jobs_request(page, {"limit": 20, "offset": 0, "searchText": "", "appliedFacets": {}})
-        second = jobs_request(
+    async def search(page: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+        await page.goto(INTEL_CAREERS_URL, wait_until="domcontentloaded")
+        first = await jobs_request(page, {"limit": 20, "offset": 0, "searchText": "", "appliedFacets": {}})
+        second = await jobs_request(
             page,
             {"limit": 20, "offset": 0, "searchText": "", "appliedFacets": intel_ireland_facets(first)},
         )

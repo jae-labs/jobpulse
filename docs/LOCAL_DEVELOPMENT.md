@@ -119,6 +119,9 @@ projects.
 ## Running the Scraper Pipeline Locally
 
 The Python scraper service lives in `services/scraper/`. Follow its [environment bootstrap](../services/scraper/README.md#run) to install locked dependencies and Chromium before crawling.
+All Make scraper commands print their log path and automatically record output in
+the repository's Git-ignored `logs/` directory. See [worker logging](OPERATIONS.md#scraping-and-matching-workflow)
+for live monitoring and local cleanup.
 
 ### Environment Setup
 

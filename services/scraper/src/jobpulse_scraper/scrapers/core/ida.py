@@ -19,12 +19,12 @@ IDA_OPEN_ROLES_URL = "https://www.idaireland.com/careers-at-ida-ireland/open-rol
 def sync_ida() -> SyncReport:
     """Scrape vacancies from IDA Ireland official recruitment portal using Playwright."""
 
-    def extract_roles(page: Any) -> list[dict[str, str]]:
-        page.goto(IDA_OPEN_ROLES_URL, wait_until="domcontentloaded", timeout=25000)
-        page.wait_for_timeout(3500)
+    async def extract_roles(page: Any) -> list[dict[str, str]]:
+        await page.goto(IDA_OPEN_ROLES_URL, wait_until="domcontentloaded", timeout=25000)
+        await page.wait_for_timeout(3500)
 
         # Extract job cards where 'View Job' links to the CandidateManager portal
-        raw_jobs = page.evaluate(
+        raw_jobs = await page.evaluate(
             """() => {
                 const results = [];
                 const viewLinks = Array.from(document.querySelectorAll("a")).filter(

@@ -53,13 +53,46 @@ See [board operations](../../docs/OPERATIONS.md#board-catalog) for discovery and
 | `make scrape-unit` | Run Python tests |
 
 `make scrape` processes up to the supported maximum of 10,000 due tasks and exits
-early when none remain. `make scrape ARGS="--limit 100"` sets a smaller task budget. Automatic startup
-queues eligible enabled sources independently. Pending or running source tasks keep
+early when none remain. `make scrape ARGS="--limit 100"` sets a smaller task budget. Automatic draining
+uses four task slots sharing that budget. `ARGS="--concurrency 1 --task-timeout 180"`
+selects one slot and a three-minute hard task deadline; defaults are four slots and
+120 seconds, with a four-slot maximum. Reusable task processes retain warm models
+and clients. Timeouts stop the task's process tree, preserve committed facts and
+record an incomplete result for scheduled retry. Database claims rotate due
+source/detail/vector work and give supported adapters regular turns ahead of
+generic discovery; apply the forward migrations to the selected database.
+Automatic startup
+queues eligible enabled sources independently in batches of at most 1,000 sources.
+Catalog size does not limit the total sources queued. Pending or running source tasks keep
 their progress and retry dates. Completed sources refresh after at least six hours;
 failed source crawls retry after at least six hours, with longer remote delays
 preserved. Delayed failures do not block eligible peers. Exhausted retries need
 explicit enqueueing. Detail/vector retries keep their separate backoff.
 `make scrape-worker` never seeds sources; it only processes existing due work.
+Workers flush timestamped JSON progress to stderr for task starts, processing
+stages, persisted outcomes, retries and lease loss. Active tasks report elapsed
+time during lease renewal, normally every thirty seconds. Final JSON counts
+remain on stdout. Progress never includes response bodies, credentials or raw exceptions.
+Every Make scraper command automatically saves stdout and stderr together to a
+unique `logs/<make-target>-<UTC-timestamp>-<suffix>.log` under the repository root.
+The terminal prints the log path at startup and keeps both streams live and separate.
+`make scrape-report` reads the latest 100 finished source/detail/vector runs.
+`make scrape` and `make scrape-worker` also archive that report automatically
+after each drain and print its path. Use ten-task batches for an investigation,
+review each log/report, then adjust one source or transport policy and remeasure.
+The maintained [agent process](../../AGENTS.md#scraper-measurement-and-improvement-process)
+defines the campaign and verification contract.
+Use `ARGS='--employer "Company"'` to compare one company's duration, request
+rates, transport mix, rate-limit evidence and ingestion-input body coverage.
+Metrics persist in each durable run result and the local bounded SQLite ledger.
+Generic sources learn successful browser extraction, skip redundant HTTP probes
+for seven days, and return to HTTP probing after expiry or three failures.
+
+Logs have owner-only permissions and include command completion or interruption status;
+the wrapper preserves exit codes and forwards interrupts. Python output is unbuffered.
+`logs/` is Git-ignored. Review or remove local logs as needed; they are separate from
+bounded database history and snapshot retention. Direct Python or installed CLI
+invocations keep their normal streams and do not use the Make logging wrapper.
 Explicit employer/core and
 maintenance commands retain their supported behavior.
 

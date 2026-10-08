@@ -19,19 +19,19 @@ ALLIANZ_CAREERS_URL = "https://careers.allianz.com/ie/en/search-results"
 def sync_allianz() -> SyncReport:
     """Scrape vacancies from Allianz Ireland careers portal using Playwright."""
 
-    def extract_roles(page: Any) -> list[dict[str, str]]:
-        page.goto(ALLIANZ_CAREERS_URL, wait_until="domcontentloaded", timeout=25000)
-        page.wait_for_timeout(2000)
+    async def extract_roles(page: Any) -> list[dict[str, str]]:
+        await page.goto(ALLIANZ_CAREERS_URL, wait_until="domcontentloaded", timeout=25000)
+        await page.wait_for_timeout(2000)
 
         # 1. Click SHOW JOBS to reveal the full listings & facets
         try:
-            page.locator("button:has-text('SHOW JOBS'), a:has-text('SHOW JOBS')").first.click()
-            page.wait_for_timeout(2500)
+            await page.locator("button:has-text('SHOW JOBS'), a:has-text('SHOW JOBS')").first.click()
+            await page.wait_for_timeout(2500)
         except Exception:
             pass
 
         # 2. Filter for Ireland positions
-        page.evaluate(
+        await page.evaluate(
             """() => {
                 const el = document.querySelector("[data-ph-at-text='Ireland']") ||
                            document.getElementById("country_phs_Ireland20") ||
@@ -39,10 +39,10 @@ def sync_allianz() -> SyncReport:
                 if (el) el.click();
             }"""
         )
-        page.wait_for_timeout(3500)
+        await page.wait_for_timeout(3500)
 
         # 3. Extract Ireland job cards
-        jobs = page.evaluate(
+        jobs = await page.evaluate(
             """() => {
                 const items = [];
                 const links = Array.from(document.querySelectorAll("a[data-ph-at-id='job-link'], .job-title a, h3 a"));

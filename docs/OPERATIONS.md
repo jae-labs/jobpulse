@@ -89,18 +89,45 @@ uv run --locked jobpulse-scraper --replay <snapshot-metadata-key>
 
 `make scrape` uses automatic durable startup: a service-only RPC serializes
 concurrent starters and queues sources independently when they are eligible.
+Large catalogs enqueue in bounded batches of at most 1,000 sources; this batch
+size is independent of the worker task budget. Rerun startup after a batch failure
+to enqueue remaining sources while preserving existing work.
 Pending/running sources keep their progress and retry dates. Future retries never
 block new or refresh-eligible peers. Completed sources refresh after at least six
 hours from `last_succeeded_at`. Failed source crawls wait at least six hours before
 retrying; longer remote delays remain authoritative. Detail/vector tasks retain
 their separate backoff. Exhausted (`dead`) tasks require explicit enqueueing.
 `make scrape` defaults to 10,000 due tasks, the supported maximum, and stops early
-when no work is due. `--limit` sets a smaller task budget. Explicit
-`make scrape-worker` defaults to 20 tasks. Use `make scrape-worker` to process only existing
+when no work is due. `--limit` sets a smaller task budget.
+Automatic drains use four task slots; `--concurrency 1` selects a single slot and
+`--concurrency 4` is the maximum. The budget is shared across slots. Tasks have a
+120-second hard deadline; `--task-timeout 180` changes it, up to 3,600 seconds.
+Timed-out tasks record `task_deadline_exceeded`, retain committed partial facts
+and wait for their normal retry date. Interrupts stop active child processes.
+The shared local host ledger coordinates pacing across slots and worker processes.
+Apply the forward claim migrations to the selected database before relying on
+source/detail/vector fairness. Source publication and hosted migration application
+remain separate operations.
+Explicit `make scrape-worker` defaults to 20 tasks and one slot. Use it to process only existing
 work, or `make scrape-enqueue` to deliberately request a source refresh, bypassing
 the successful freshness interval while retaining failed retry dates and transport
 cooldowns.
 `make scrape ARGS="--sync"` selects the synchronous pipeline.
+Durable workers emit flushed, timestamped `crawl_event` JSON lines on stderr.
+Task events identify the public source, kind and attempt; stage events show
+fetching, persistence and vector work. `task_active` reports elapsed time during
+long operations during lease renewal, normally every thirty seconds.
+`task_finished` follows fenced completion and reports outcome counts; failed
+source tasks include a minimum retry delay, while the database run history owns
+the scheduled retry date. Final aggregate JSON stays on stdout.
+Every Make scraper command uses `scripts/run-scraper.mjs` to save both streams
+to an owner-readable, unique log in the Git-ignored repository `logs/` directory.
+The terminal prints `[LOG]` with the absolute file path. Logs retain live output,
+completion status and interruptions without changing stdout/stderr routing or exit
+codes. Tail the printed path with `tail -f` to monitor a run from another terminal.
+Log files require local cleanup and have independent retention from database
+history and replay snapshots. Commands started before the wrapper is loaded keep
+their existing output behavior; direct Python commands do not use this wrapper.
 
 Enqueue selects enabled live boards, preserving the authoritative empty/disabled
 catalog behavior. Workers claim at most the requested task count and renew leases;
@@ -116,6 +143,105 @@ Workers require service credentials; browser roles cannot call queue/snapshot/ve
 RPCs. Keep source implementation, local schema application and hosted deployment
 as separate operations. The [architecture guide](SCRAPER_ARCHITECTURE.md#durable-work-provenance-and-replay)
 defines fencing, provenance and snapshot bounds.
+
+Use `make scrape-report` for the latest 100 finished runs or
+`make scrape-report ARGS='--employer "Company"'` for one company. The report is
+read-only and its JSON stdout is also saved by the normal log wrapper. Per-source
+results include average duration, measured/unmeasured run counts, sent requests,
+weighted requests per second, denials, ingestion-input body coverage and the two
+latest measured runs. Host details retain requests sent before a denial,
+preceding-minute host traffic, retry delay and the learned pacing interval.
+Request-level JSON diagnostics show transport and resource type without URLs,
+payloads or lease credentials. Local cooldown skips do not count as sent requests.
+Generic acquisition failures retain sanitized HTTP, timeout, DNS and cooldown
+categories. Reaching the shared task limit emits `task_budget_exhausted`;
+`no_due_tasks` indicates an empty due-work claim rather than a completed campaign.
+
+`make scrape` and `make scrape-worker` automatically save a unique owner-readable
+`logs/crawl-report-*.json` after each drain, including drains with failed tasks.
+The terminal prints its path and a compact report summary. The report covers the
+latest 100 finished runs, not an unlimited campaign history. A report failure
+emits `report_failed` and fails the command; already finished tasks remain saved.
+
+Start a review campaign with `make scrape ARGS="--limit 10 --concurrency 2"`.
+After reviewing outcomes with no new denials or worsening failures, increase to
+bounded batches of at most 50 tasks and four concurrent slots. Review the printed
+log and report before increasing either bound. Capture the configured source set and initial
+queue state in an ignored campaign manifest, track attempts and outstanding
+source/detail/vector work, and retain batch reports. Attempt coverage is separate
+from successful extraction: failures, deferred retries and unverified empty pages
+remain unresolved. A complete campaign verifies supported listing pagination and
+available detail data for the selected sources, records unpublished fields as
+unknown, and reviews remaining source limitations explicitly. Respect future retry dates.
+When a source route changes, verify its replacement on the employer's first-party
+careers page. Challenges and captchas remain blocked outcomes; do not bypass them.
+Use the maintained [agent process](../AGENTS.md#scraper-measurement-and-improvement-process)
+for evidence-driven changes and remeasurement between batches.
+
+At each checkpoint, record batch outcomes by status, sent requests and observed
+rate, denials/cooldowns, and extraction inputs. Label opportunity and write sums
+as source observations because the same job can appear at multiple employers.
+Classify blocked, unsupported, failed and verified-empty boards separately;
+only bounded source evidence justifies route or parser changes. Do not override
+retry dates to accelerate a campaign.
+
+Generic sources reuse a successful browser preference for up to seven days,
+probe HTTP again after expiry or three failures, and fall back once when the
+preferred transport fails. Known adapters stay authoritative. Durable run history
+keeps positive source evidence available when local state is absent.
+
+Generic sources also retain verified query-free HTTP(S) destinations in the local
+ledger for seven days. Successful extraction or an explicit empty signal establishes
+the route; failed use removes it. Configured source identities and ATS adapters remain
+authoritative. Query-bearing destinations are rediscovered to avoid retaining session
+parameters. Route evidence is local to the scraper machine.
+
+JobsIreland uses three-second host spacing supported by a bounded public-detail
+pilot, with automatic 429 backoff and remote cooldowns preserved. This observation
+does not establish a quota. Six-hour positive detail caching avoids repeated public
+body requests; stale detail tasks also reuse usable catalog bodies. Listing responses
+provide metadata and still need separate detail acquisition when bodies are absent.
+iCIMS sources use the direct server-rendered listing adapter, including current
+location labels and bounded published-link pagination. Synthetic multi-country
+and continuation tests verify that faster acquisition retains Irish coverage.
+Stage totals in reports separate host pacing, HTTP acquisition, catalog operations,
+detail extraction and vectors. These inclusive worker durations overlap; compare
+elapsed run time separately and never sum nested stages into a wall-time estimate.
+
+The full-cycle performance target is two hours for eligible listing acquisition,
+available detail hydration and vector work. Measure source coverage, detail coverage,
+queue growth and completed tasks alongside elapsed time. A drain that reaches its
+10,000-task budget or finds only future retries is not complete source coverage.
+Four slots improve overlap across hosts; host pacing and cooldowns still apply.
+Keep the 120-second hard deadline for paginated sources: shortening it without
+continuation evidence can lose completeness. Diagnose repeated deadlines using
+request counts, page continuations and bounded snapshot replay before changing budgets.
+
+Failure remediation follows the error classification:
+
+| Outcome | Required next action and acceptance evidence |
+| --- | --- |
+| Invalid payload | Verify provider/tenant route and schema; add synthetic malformed and pagination fixtures; retain failure until valid published data is parsed. |
+| Unsupported or generic failure | Verify the first-party careers/ATS link, install a focused parser or configured adapter, and compare published counts and fields. |
+| HTTP failure / DNS | Separate removed routes from transient outages; repair verified targets, retain backoff, and never turn an error page into an empty board. |
+| Denial / challenge / auth wall | Stop acquisition, preserve remote cooldown and host measurements, and use an authorized public feed only when available. |
+| Deadline / response budget | Inspect slow pages and oversized feeds; use supported filters and resumable pagination instead of raising limits blindly. |
+| Missing detail body | Replay the correct vacancy page, preserve concise verified text, and keep vector quality thresholds independent. |
+
+Each unsuccessful source needs a private action record keyed by configured source
+identity, including error, evidence, proposed route/parser change, executable test and
+validation status. Reports and observations remain in ignored logs or recovery files;
+maintained guides describe the current contracts. Compare a representative bounded
+sample after each change before estimating a full-cycle duration.
+
+For optimization, capture a source report, change one adapter or host setting,
+run a bounded sample, then compare duration, request mix, failure rate and field
+coverage. Compare similar source/detail workloads; a faster failed or empty run
+does not establish improved extraction. Validate counts and identities against
+synthetic pagination fixtures and selected published listings. Review detail body
+coverage with `make scrape-description-audit`. Rate-limit observations do not
+establish a guaranteed request allowance; automatic learning increases backoff
+on repeated 429 responses and respects longer remote cooldowns.
 
 Schedule bounded worker invocations with the deployment's existing scheduler, with SQL history maintenance performed at the start of each drain. The
 CLI does not create a hosted schedule or deploy workers. Inspect incomplete/dead

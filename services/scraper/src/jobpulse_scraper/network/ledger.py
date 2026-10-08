@@ -28,6 +28,28 @@ class RequestLedger:
                 "CREATE TABLE IF NOT EXISTS observations (id INTEGER PRIMARY KEY, source TEXT NOT NULL, "
                 "host TEXT NOT NULL, started REAL NOT NULL, status INTEGER, retry_after REAL NOT NULL DEFAULT 0)"
             )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS measurements(id INTEGER PRIMARY KEY, source TEXT NOT NULL, "
+                "run TEXT NOT NULL, at REAL NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL)"
+            )
+            connection.execute("CREATE INDEX IF NOT EXISTS measurements_run ON measurements(run,id)")
+            connection.execute("CREATE INDEX IF NOT EXISTS measurements_at ON measurements(at)")
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS measurements_sent_host ON measurements(json_extract(data,'$.host'),at) "
+                "WHERE kind='request_sent'"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS source_profiles(identity TEXT PRIMARY KEY, transport TEXT NOT NULL, "
+                "verified_at REAL NOT NULL, failures INTEGER NOT NULL DEFAULT 0)"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS source_routes(identity TEXT PRIMARY KEY, url TEXT NOT NULL, "
+                "verified_at REAL NOT NULL)"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS detail_bodies(identity TEXT PRIMARY KEY, body TEXT NOT NULL, "
+                "verified_at REAL NOT NULL)"
+            )
             connection.execute("BEGIN IMMEDIATE")
             yield connection
             connection.commit()
@@ -59,12 +81,13 @@ class RequestLedger:
                 (source_key.get(), host, now, status, retry_after),
             )
             connection.execute(
-                "UPDATE hosts SET cooldown=max(cooldown,?), interval=max(interval,?) WHERE host=?",
-                (cooldown, min(60, interval * 2) if status == 429 else 0, host),
+                "UPDATE hosts SET cooldown=max(cooldown,?), "
+                "interval=max(interval,CASE WHEN ?=429 THEN min(60,max(interval,?)*2) ELSE 0 END) WHERE host=?",
+                (cooldown, status, interval, host),
             )
             connection.execute(
-                "DELETE FROM observations WHERE started<? OR id NOT IN "
-                "(SELECT id FROM observations ORDER BY id DESC LIMIT 10000)",
+                "DELETE FROM observations WHERE started<? OR id <= "
+                "(SELECT coalesce(max(id),0)-10000 FROM observations)",
                 (now - 30 * 86400,),
             )
 

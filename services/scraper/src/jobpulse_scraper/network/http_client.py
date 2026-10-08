@@ -13,7 +13,7 @@ from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, HTTPSHandle
 
 from jobpulse_scraper.contracts import ResponseBudgetExceeded
 from jobpulse_scraper.network.limits import MAX_RESPONSE_BYTES
-from jobpulse_scraper.network.request_policy import HostCoolingDown, gate
+from jobpulse_scraper.network.request_policy import ContentChallenge, HostCoolingDown, gate, is_challenge_action
 
 
 class PacedRedirect(HTTPRedirectHandler):
@@ -43,6 +43,8 @@ def wire_url(url: str) -> str:
 
 
 def _stdlib_urlopen(request: Request, timeout: int, context: ssl.SSLContext):
+    from jobpulse_scraper.network.experience import measured_stage
+
     handlers = [PacedRedirect(), HTTPSHandler(context=context)]
     jar = _cookies.get()
     if jar is not None:
@@ -50,7 +52,9 @@ def _stdlib_urlopen(request: Request, timeout: int, context: ssl.SSLContext):
     encoded = Request(
         wire_url(request.full_url), data=request.data, headers=dict(request.header_items()), method=request.get_method()
     )
-    return BoundedResponse(build_opener(*handlers).open(encoded, timeout=timeout))
+    with measured_stage("http_open"):
+        response = build_opener(*handlers).open(encoded, timeout=timeout)
+    return BoundedResponse(response)
 
 
 class PublicSession:
@@ -85,14 +89,32 @@ def get_ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context()
 
 
+def _observe_http_response(response, url: str) -> None:
+    final_url = _response_url(response, url)
+    blocked = is_challenge_action(response.headers.get("x-amzn-waf-action"))
+    if blocked:
+        gate.observe(final_url, response.status, response.headers.get("Retry-After"), content_blocked=True)
+        response.close()
+        raise ContentChallenge(final_url, response.status)
+    gate.observe(final_url, response.status, response.headers.get("Retry-After"))
+
+
+def _observe_http_error(error: HTTPError) -> None:
+    if is_challenge_action(error.headers.get("x-amzn-waf-action")):
+        gate.observe(error.url, error.code, error.headers.get("Retry-After"), content_blocked=True)
+        error.close()
+        raise ContentChallenge(error.url, error.code) from error
+    gate.observe(error.url, error.code, error.headers.get("Retry-After"))
+
+
 def _urlopen_with_tls_fallback(request: Request, timeout: int, context: ssl.SSLContext):
     gate.wait(request.full_url)
     try:
         response = _stdlib_urlopen(request, timeout=timeout, context=context)
-        gate.observe(_response_url(response, request.full_url), response.status, response.headers.get("Retry-After"))
+        _observe_http_response(response, request.full_url)
         return response
     except HTTPError as exc:
-        gate.observe(exc.url, exc.code, exc.headers.get("Retry-After"))
+        _observe_http_error(exc)
         raise
     except (URLError, ssl.SSLCertVerificationError) as exc:
         reason = exc.reason if isinstance(exc, URLError) else exc
@@ -104,12 +126,10 @@ def _urlopen_with_tls_fallback(request: Request, timeout: int, context: ssl.SSLC
         gate.wait(request.full_url)
         try:
             response = _stdlib_urlopen(request, timeout=timeout, context=fallback)
-            gate.observe(
-                _response_url(response, request.full_url), response.status, response.headers.get("Retry-After")
-            )
+            _observe_http_response(response, request.full_url)
             return response
         except HTTPError as error:
-            gate.observe(error.url, error.code, error.headers.get("Retry-After"))
+            _observe_http_error(error)
             raise
 
 
@@ -154,9 +174,12 @@ class BoundedResponse:
         self.response.close()
 
     def read(self, size: int = -1) -> bytes:
+        from jobpulse_scraper.network.experience import measured_stage
+
         remaining = MAX_RESPONSE_BYTES - self.received
         requested = remaining + 1 if size < 0 else min(size, remaining + 1)
-        chunk = self.response.read(requested)
+        with measured_stage("http_body_read"):
+            chunk = self.response.read(requested)
         self.received += len(chunk)
         if self.received > MAX_RESPONSE_BYTES:
             raise ResponseBudgetExceeded("HTTP response exceeds cumulative wire budget")

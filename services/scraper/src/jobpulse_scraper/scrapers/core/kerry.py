@@ -15,11 +15,11 @@ KERRY_CAREERS_URL = "https://jobs.kerry.com/gb/en/search-results"
 def sync_kerry() -> SyncReport:
     """Launch browser, search Kerry Group Ireland positions, and persist vacancies."""
 
-    def search(page: Any) -> list[dict[str, str]]:
-        page.goto(KERRY_CAREERS_URL, wait_until="domcontentloaded")
-        page.locator('input[aria-label^="Ireland("]').check()
-        page.wait_for_timeout(1500)
-        jobs = page.locator('a[href*="/job/"]').evaluate_all(
+    async def search(page: Any) -> list[dict[str, str]]:
+        await page.goto(KERRY_CAREERS_URL, wait_until="domcontentloaded")
+        await page.locator('input[aria-label^="Ireland("]').check()
+        await page.wait_for_timeout(1500)
+        jobs = await page.locator('a[href*="/job/"]').evaluate_all(
             """items => [...new Map(items.map(a => [
                 a.href,
                 {title: a.innerText.trim().replace(/\\s+/g, ' '), url: a.href}
@@ -27,9 +27,9 @@ def sync_kerry() -> SyncReport:
         )
         for job in jobs:
             try:
-                page.goto(job["url"], wait_until="domcontentloaded", timeout=15000)
-                page.wait_for_timeout(1000)
-                job.update(extract_kerry_job_details(page.locator("body").inner_text()))
+                await page.goto(job["url"], wait_until="domcontentloaded", timeout=15000)
+                await page.wait_for_timeout(1000)
+                job.update(extract_kerry_job_details(await page.locator("body").inner_text()))
             except Exception:
                 pass
         return jobs

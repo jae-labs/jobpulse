@@ -65,6 +65,18 @@ class HostCoolingDown(HTTPError):
         super().__init__(url, 429, "Host is cooling down locally", headers, None)
 
 
+class ContentChallenge(RuntimeError):
+    """A server marks a response as an access challenge, not published source data."""
+
+    def __init__(self, url: str, status: int):
+        self.url, self.status = url, status
+        super().__init__("Public source returned an access challenge")
+
+
+def is_challenge_action(value: object) -> bool:
+    return isinstance(value, str) and value.strip().lower() in {"challenge", "captcha"}
+
+
 class RequestGate:
     def __init__(self):
         self.lock = threading.RLock()
@@ -91,21 +103,50 @@ class RequestGate:
             raise HostCoolingDown(url, until)
 
     def wait(self, url: str) -> None:
+        from jobpulse_scraper.network.experience import measured_stage
+
+        try:
+            with measured_stage("host_pacing"):
+                delay = self.reserve_delay(url)
+                if delay:
+                    time.sleep(delay)
+                self.check(url)
+        except HostCoolingDown:
+            from jobpulse_scraper.network.experience import event
+
+            event("cooldown_skipped", urlsplit(url).netloc.lower())
+            raise
+        from jobpulse_scraper.network.experience import event
+
+        event("request_sent", urlsplit(url).netloc.lower())
+
+    def reserve_delay(self, url: str, *, static_asset: bool = False) -> float:
+        """Reserve a shared host slot; async transports await its delay themselves."""
         self.check(url)
         host = urlsplit(url).netloc.lower()
         interval = self.settings(url)["min_interval_seconds"]
+        if static_asset:
+            interval = min(interval, 0.1)
         delay, cooldown = RequestLedger(STATE_PATH.with_suffix(".sqlite3")).reserve(host, time.time(), interval)
         if cooldown:
             raise HostCoolingDown(url, cooldown)
-        if delay:
-            time.sleep(delay)
-        self.check(url)
+        return delay
 
-    def observe(self, url: str, status: int, retry_after: str | None) -> None:
+    def observe(
+        self,
+        url: str,
+        status: int,
+        retry_after: str | None,
+        *,
+        transport: str = "http",
+        resource: str = "document",
+        run: str | None = None,
+        content_blocked: bool = False,
+    ) -> None:
         if not isinstance(status, int) or not 100 <= status <= 599:
             return
         retry_after = retry_after if isinstance(retry_after, str) else None
-        denied = status in (401, 403, 429) or bool(retry_after)
+        denied = status in (401, 403, 429) or bool(retry_after) or content_blocked
         settings = self.settings(url)
         now = time.time()
         retry_seconds = retry_after_seconds(retry_after)
@@ -118,6 +159,17 @@ class RequestGate:
             retry_seconds,
             cooldown,
             settings["min_interval_seconds"],
+        )
+        from jobpulse_scraper.network.experience import event
+
+        event(
+            "response_received",
+            host,
+            transport=transport,
+            resource=resource,
+            status=status,
+            run=run,
+            data={"retry_after_seconds": retry_seconds, "content_challenge": content_blocked},
         )
         if not denied:
             return

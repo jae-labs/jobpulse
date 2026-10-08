@@ -31,7 +31,9 @@ def extract_smartrecruiters_opportunities(
     sr_token = m_sr.group(1)
     offset = 0
     for _ in range(20):
-        sr_url = f"https://api.smartrecruiters.com/v1/companies/{sr_token}/postings?limit=100&offset={offset}"
+        sr_url = (
+            f"https://api.smartrecruiters.com/v1/companies/{sr_token}/postings?limit=100&offset={offset}&country=ie"
+        )
         sr_req = Request(sr_url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
         with (request_opener or urlopen)(sr_req, timeout=10, context=get_ssl_context()) as r:
             sr_data = json.loads(r.read().decode())

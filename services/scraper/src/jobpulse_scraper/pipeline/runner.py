@@ -16,6 +16,7 @@ from jobpulse_scraper.database.repository import (
     update_employer_status,
     update_source_status,
 )
+from jobpulse_scraper.network.experience import source_scope
 from jobpulse_scraper.pipeline.logger import format_error_message, log_scraper_event
 from jobpulse_scraper.scrapers.generic.crawler import sync_single_employer, sync_watchlist_employers
 from jobpulse_scraper.scrapers.registry import find_core_scraper_by_name, get_core_scrapers
@@ -95,7 +96,8 @@ def _scrape(
             sync_func, name, url, method = core_match
             log_scraper_event("QUERYING", name, "Querying specialized scraper", url, method=method)
             try:
-                report = sync_func()
+                with source_scope(name, url):
+                    report = sync_func()
                 count, message = report
                 clean_msg = message.removeprefix(f"{name}: ").strip()
                 found_count = report.result.found if isinstance(report, SyncReport) else count
@@ -203,7 +205,8 @@ def _scrape(
             scraped_employers_count += 1
             log_scraper_event("QUERYING", name, "Querying specialized scraper", url, method=method)
             try:
-                report = sync_func()
+                with source_scope(name, url):
+                    report = sync_func()
                 count, message = report
                 added += count
                 messages.append(message)

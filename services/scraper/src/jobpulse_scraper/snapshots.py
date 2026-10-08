@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import fcntl
+import gzip
 import hashlib
+import io
 import json
 import os
 import re
@@ -19,11 +21,16 @@ from jobpulse_scraper.network.limits import MAX_RESPONSE_BYTES
 from jobpulse_scraper.scrapers.adapters import ADAPTERS
 
 MAX_BODY_BYTES = MAX_RESPONSE_BYTES
-MAX_STORE_BYTES = 256 * 1024 * 1024
+MAX_STORE_BYTES = 5 * 1024 * 1024 * 1024
 MAX_FILES = 10000
 RETENTION_SECONDS = 30 * 86400
 PARSER_VERSION = "vacancy-parser:v1"
+_COMPRESSED_BODY_PREFIX = b"JPSNPZ1\x00"
 _SECRET_PARAMETERS = {"token", "key", "api_key", "access_token", "authorization", "password", "signature"}
+
+
+class SnapshotBudgetExceeded(ValueError):
+    """Bounded local response capture cannot accept another body or metadata file."""
 
 
 def public_url(url: str) -> str:
@@ -71,23 +78,75 @@ class SnapshotStore:
     def _write(self, key: str, body: bytes) -> None:
         path = self._path(key)
         if path.exists():
+            if key.endswith(".bin"):
+                existing = self._decode_body(path.read_bytes())
+                if existing != body:
+                    raise ValueError("Snapshot body checksum mismatch")
             os.utime(path, None)
             return
+        stored = body
+        if key.endswith(".bin"):
+            compressed = _COMPRESSED_BODY_PREFIX + gzip.compress(body, compresslevel=6, mtime=0)
+            if len(compressed) < len(body):
+                stored = compressed
         files = [item for item in self.root.iterdir() if item.is_file() and item.name != ".lock"]
-        if len(files) >= MAX_FILES or sum(item.stat().st_size for item in files) + len(body) > MAX_STORE_BYTES:
-            raise ValueError("Snapshot storage budget exhausted")
+        used_bytes = sum(item.stat().st_size for item in files)
+        if len(files) >= MAX_FILES:
+            raise SnapshotBudgetExceeded("Snapshot file-count budget exhausted")
+        if used_bytes + len(stored) > MAX_STORE_BYTES:
+            used_bytes = self._compact_bodies(len(stored), exclude=key, used_bytes=used_bytes)
+        if used_bytes + len(stored) > MAX_STORE_BYTES:
+            raise SnapshotBudgetExceeded("Snapshot storage budget exhausted")
         descriptor, temporary = tempfile.mkstemp(dir=self.root)
         try:
             with os.fdopen(descriptor, "wb") as output:
-                output.write(body)
+                output.write(stored)
             os.replace(temporary, path)
         finally:
             if os.path.exists(temporary):
                 os.unlink(temporary)
 
+    def _compact_bodies(self, required_bytes: int, *, exclude: str, used_bytes: int) -> int:
+        """Compress retained raw bodies in place before rejecting a new snapshot."""
+        for path in sorted(self.root.glob("*.bin"), key=lambda item: item.lstat().st_mtime):
+            if path.name == exclude or path.is_symlink():
+                continue
+            self._path(path.name)
+            raw = path.read_bytes()
+            if raw.startswith(_COMPRESSED_BODY_PREFIX):
+                continue
+            compressed = _COMPRESSED_BODY_PREFIX + gzip.compress(raw, compresslevel=6, mtime=0)
+            if len(compressed) >= len(raw):
+                continue
+            descriptor, temporary = tempfile.mkstemp(dir=self.root)
+            try:
+                with os.fdopen(descriptor, "wb") as output:
+                    output.write(compressed)
+                os.replace(temporary, path)
+            finally:
+                if os.path.exists(temporary):
+                    os.unlink(temporary)
+            used_bytes -= len(raw) - len(compressed)
+            if used_bytes + required_bytes <= MAX_STORE_BYTES:
+                return used_bytes
+        return used_bytes
+
+    @staticmethod
+    def _decode_body(stored: bytes) -> bytes:
+        if not stored.startswith(_COMPRESSED_BODY_PREFIX):
+            return stored
+        try:
+            with gzip.GzipFile(fileobj=io.BytesIO(stored[len(_COMPRESSED_BODY_PREFIX) :])) as stream:
+                body = stream.read(MAX_BODY_BYTES + 1)
+        except (OSError, EOFError) as error:
+            raise ValueError("Snapshot compressed body is invalid") from error
+        if len(body) > MAX_BODY_BYTES:
+            raise ValueError("Snapshot body exceeds budget")
+        return body
+
     def save(self, target: SourceTarget, response: FetchResponse) -> str:
         if len(response.body) > MAX_BODY_BYTES:
-            raise ValueError("Response exceeds snapshot body budget")
+            raise SnapshotBudgetExceeded("Response exceeds snapshot body budget")
         body_hash = hashlib.sha256(response.body).hexdigest()
         metadata = {
             "target": {**asdict(target), "url": public_url(target.url)},
@@ -124,7 +183,7 @@ class SnapshotStore:
         body_path = self._path(metadata["body_hash"] + ".bin")
         if body_path.stat().st_size > MAX_BODY_BYTES:
             raise ValueError("Snapshot body exceeds budget")
-        body = body_path.read_bytes()
+        body = self._decode_body(body_path.read_bytes())
         if hashlib.sha256(body).hexdigest() != metadata["body_hash"] or len(body) != metadata["body_bytes"]:
             raise ValueError("Snapshot checksum mismatch")
         response = FetchResponse(metadata["url"], metadata["status"], body, metadata["content_type"])

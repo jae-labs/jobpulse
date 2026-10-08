@@ -16,6 +16,7 @@ from jobpulse_scraper.engine.normalization import normalized_key as normalized_k
 from jobpulse_scraper.engine.salary import extract_salary_from_context
 from jobpulse_scraper.engine.text_cleaner import clean_description_text, normalize_location
 from jobpulse_scraper.engine.validators import is_valid_job_title, is_valid_location
+from jobpulse_scraper.network.experience import measure_quality
 from jobpulse_scraper.pipeline.detail_enrichment import enrich_job as enrich_job
 from jobpulse_scraper.pipeline.employer_lookup import get_employer_lookup_service
 from jobpulse_scraper.runtime.lease import active_lease, active_snapshot
@@ -57,16 +58,27 @@ def _is_ingestable_job(job: dict[str, Any]) -> bool:
 def _persist_catalog_batch(supabase: Any, payloads: list[dict[str, Any]], identities: dict[str, str]) -> Any:
     lease = active_lease.get()
     if lease is None:
-        return supabase.table("jobs").upsert(payloads, on_conflict="dedupe_key").execute()
+        direct_payloads = [
+            {key: value for key, value in item.items() if key != "_verified_short_detail"} for item in payloads
+        ]
+        return supabase.table("jobs").upsert(direct_payloads, on_conflict="dedupe_key").execute()
     records = [
         {
-            "job": item,
+            "job": {key: value for key, value in item.items() if key != "_verified_short_detail"},
             "snapshot_id": active_snapshot.get(),
-            "work_kind": "vector" if has_description_body(item["description"]) else "detail",
+            "work_kind": (
+                "vector"
+                if item.get("_verified_short_detail") or has_description_body(item["description"])
+                else "detail"
+            ),
             "external_id": identities.get(item["dedupe_key"]) or canonical_job_url(item["url"]),
             "content_hash": hashlib.sha256(
                 json.dumps(
-                    {key: value for key, value in item.items() if key not in {"last_seen_at", "closed_at"}},
+                    {
+                        key: value
+                        for key, value in item.items()
+                        if key not in {"last_seen_at", "closed_at", "_verified_short_detail"}
+                    },
                     sort_keys=True,
                 ).encode()
             ).hexdigest(),
@@ -85,6 +97,7 @@ def _persist_catalog_batch(supabase: Any, payloads: list[dict[str, Any]], identi
 
 def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
     """Validate, enrich, persist, and embed shared vacancy facts."""
+    measure_quality(jobs)
     if not jobs:
         return 0
 
@@ -97,6 +110,8 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
     for job in jobs:
         if not _is_ingestable_job(job):
             continue
+
+        verified_short_detail = job.pop("_verified_short_detail", False) is True
 
         if enrich:
             job = enrich_job(job)
@@ -156,6 +171,7 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
                 "last_seen_at": now,
                 # Re-seen postings reopen: the upsert clears a prior soft-close.
                 "closed_at": None,
+                "_verified_short_detail": verified_short_detail,
             }
         )
 
@@ -166,6 +182,7 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
         previous = unique_payloads.get(item["dedupe_key"])
         if previous and has_description_body(previous["description"]) and not has_description_body(item["description"]):
             item["description"] = previous["description"]
+            item["_verified_short_detail"] = False
         unique_payloads[item["dedupe_key"]] = item
     payloads_to_save = list(unique_payloads.values())
 
@@ -210,11 +227,21 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
         # stay visible and repairable; embedding preparation withdraws/skips stub
         # bodies, so a missing body never produces a semantic document. A hydrated
         # body is preserved above and never replaced by listing metadata.
-        bodyless = [item for item in chunk if not has_description_body(item["description"])]
+        verified_short = [item for item in chunk if item.get("_verified_short_detail")]
+        bodyless = [
+            item
+            for item in chunk
+            if not item.get("_verified_short_detail") and not has_description_body(item["description"])
+        ]
         if bodyless:
             logging.getLogger(__name__).warning(
                 "%d listings lack a published description body; stored without embeddings for repair",
                 len(bodyless),
+            )
+        if verified_short:
+            logging.getLogger(__name__).info(
+                "%d verified short published descriptions stored without semantic vectors",
+                len(verified_short),
             )
         try:
             persisted = response_records(

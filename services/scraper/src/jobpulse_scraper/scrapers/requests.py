@@ -4,20 +4,27 @@ import json
 import re
 
 from jobpulse_scraper.contracts import FetchRequest, SourceTarget
+from jobpulse_scraper.scrapers.parsers.rezoomo import rezoomo_company_slug
+from jobpulse_scraper.scrapers.parsers.workday import workday_board_parts
 
 JSON_HEADERS = (("Content-Type", "application/json"), ("Accept", "application/json"))
 
 
-def workday_request(target: SourceTarget, offset: int = 0, search_text: str = "Ireland") -> FetchRequest:
-    match = re.search(r"https://([^.]+)\.wd(\d+)\.myworkdayjobs\.com/(?:[a-zA-Z-]+/)?([^/?#]+)", target.url)
-    if not match:
-        raise ValueError("Invalid Workday board")
-    tenant, generation, site = match.groups()
+def workday_request(
+    target: SourceTarget,
+    offset: int = 0,
+    search_text: str = "Ireland",
+    *,
+    applied_facets: dict[str, list[str]] | None = None,
+) -> FetchRequest:
+    tenant, generation, site = workday_board_parts(target.url)
     url = f"https://{tenant}.wd{generation}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs"
     return FetchRequest(
         url,
         "POST",
-        json.dumps({"limit": 20, "offset": offset, "searchText": search_text, "appliedFacets": {}}).encode(),
+        json.dumps(
+            {"limit": 20, "offset": offset, "searchText": search_text, "appliedFacets": applied_facets or {}}
+        ).encode(),
         JSON_HEADERS,
     )
 
@@ -33,12 +40,12 @@ def hubspot_request(target: SourceTarget) -> FetchRequest:
 
 
 def rezoomo_request(target: SourceTarget) -> FetchRequest:
-    match = re.search(r"rezoomo\.com/company/([a-zA-Z0-9_-]+)", target.url)
-    if not match:
+    company_slug = rezoomo_company_slug(target.url)
+    if not company_slug:
         raise ValueError("Invalid Rezoomo board")
     boundary = "----JobPulseRezoomoBoundary"
     body = (
-        f'--{boundary}\r\nContent-Disposition: form-data; name="action"\r\n\r\napi.front.company.onMount\r\n--{boundary}\r\nContent-Disposition: form-data; name="companyUrl"\r\n\r\n{match.group(1)}\r\n--{boundary}--\r\n'
+        f'--{boundary}\r\nContent-Disposition: form-data; name="action"\r\n\r\napi.front.company.onMount\r\n--{boundary}\r\nContent-Disposition: form-data; name="companyUrl"\r\n\r\n{company_slug}\r\n--{boundary}--\r\n'
     ).encode()
     return FetchRequest(
         "https://www.rezoomo.com/index.cfm",

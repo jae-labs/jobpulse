@@ -14,33 +14,33 @@ from jobpulse_scraper.scrapers.parsers.corehr_core import extract_maynooth_jobs 
 def fetch_corehr_results(search_url: str) -> str:
     """Submit and paginate a CoreHR vacancy search, returning all result HTML."""
 
-    def search(page: Any) -> str:
-        page.goto(search_url, wait_until="domcontentloaded")
+    async def search(page: Any) -> str:
+        await page.goto(search_url, wait_until="domcontentloaded")
         form = page.locator('form[name="callErecruitDoSearch"]')
         comp_sel = form.locator('select[name="p_competition_type"]')
-        if comp_sel.count() > 0:
-            comp_sel.select_option("ALLOPTIONS")
+        if await comp_sel.count() > 0:
+            await comp_sel.select_option("ALLOPTIONS")
         dept_sel = form.locator('select[name="p_department"]')
-        if dept_sel.count() > 0:
-            dept_sel.select_option("ALLOPTIONS")
-        with page.expect_navigation(wait_until="domcontentloaded"):
-            form.evaluate("(element) => element.requestSubmit()")
-        page.locator("td.erq_searchv4_result_row").first.wait_for()
+        if await dept_sel.count() > 0:
+            await dept_sel.select_option("ALLOPTIONS")
+        async with page.expect_navigation(wait_until="domcontentloaded"):
+            await form.evaluate("(element) => element.requestSubmit()")
+        await page.locator("td.erq_searchv4_result_row").first.wait_for()
         pages = []
         seen_references = set()
         for _ in range(20):
-            content = page.content()
+            content = await page.content()
             references = set(re.findall(r"viewTheJobSpec\('(\d+)'\)", content))
             if not references.difference(seen_references):
                 break
             seen_references.update(references)
             pages.append(content)
             next_page = page.get_by_role("link", name="Next", exact=True)
-            if not next_page.count():
+            if not await next_page.count():
                 break
-            with page.expect_navigation(wait_until="domcontentloaded"):
-                next_page.click()
-            page.locator("td.erq_searchv4_result_row").first.wait_for()
+            async with page.expect_navigation(wait_until="domcontentloaded"):
+                await next_page.click()
+            await page.locator("td.erq_searchv4_result_row").first.wait_for()
         return "\n".join(pages)
 
     return with_browser(search)

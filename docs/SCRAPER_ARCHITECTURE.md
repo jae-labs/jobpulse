@@ -35,6 +35,19 @@ inversion and small-abstraction principles in
 [Architecture Patterns with Python](https://www.cosmicpython.com/book/chapter_02_repository)
 and its [coupling chapter](https://www.cosmicpython.com/book/chapter_03_abstractions).
 
+Workday starts with a keyword-free public listing probe, then uses published Irish
+country or location facet IDs when available. Pagination retains those facets.
+Ambiguous locations require an entirely Irish returned facet scope; missing
+locations alone do not establish Irish eligibility. The compatibility provider
+uses the same adapter and page bound, and an unfinished listing fails explicitly.
+Linked Elementor vacancy cards use their own title and Irish location evidence.
+Generic links keep unknown locations empty instead of borrowing a neighboring
+card's location. Detail enrichment supplies additional published facts.
+Rezoomo company pages can use either the canonical company path or a published
+tenant subdomain; both resolve to the same company-slug listing request. Its
+parser retains only published locations, and leaves unavailable descriptions
+empty for durable detail enrichment instead of generating vacancy filler text.
+
 ## Data Flow
 
 ```mermaid
@@ -74,11 +87,25 @@ its own verified HTTP client. Connection/protocol failures remain source failure
 The request gate reserves host slots in a local SQLite transaction before sleeping.
 Independent worker processes share host pacing and durable cooldowns on one machine;
 separate machines require their own coordinated deployment policy. Redirects, TLS
-fallbacks, transient retries and browser document/script/XHR requests use the gate.
-Browser images, fonts and media are blocked. Denials and `Retry-After` stop further
+fallbacks and transient retries use the gate. Async browser document/XHR requests
+keep the configured interval; required scripts/stylesheets reserve shared host slots
+at up to ten starts per second with four concurrent asset transfers. Learned denial
+intervals and cooldowns override asset pacing. Each browser session admits at most
+128 requests and blocks images, fonts, media, beacons, known tracking hosts and
+known optional embedded-media hosts before their responses can affect denial
+learning for the job source.
+Browser callbacks await pacing without blocking the event loop. Generic navigation
+uses one DOM-content-loaded attempt with a thirty-second cap and bounded rendering
+settle time. Denials and `Retry-After` stop further
 host requests, including fallback transport attempts. Source observations record
 accepted responses, denials, timestamps and server retry directions; accepted samples
 never establish a safe request ceiling. See [request operations](OPERATIONS.md#request-pacing-and-bounded-observations).
+
+HTTP responses explicitly marked `x-amzn-waf-action: challenge` or `captcha`
+are blocked source data even when the status is 202. HTTP stops after that
+observation and retains the actual status with its challenge flag and cooldown.
+An ordinary 202 remains an ordinary response. Browser rendering retains its
+existing bounded interstitial settling behavior.
 
 ## Durable work, provenance and replay
 
@@ -97,9 +124,13 @@ the current scoring facts with the inference snapshot before accepting output.
 
 Snapshots contain public bodies and sanitized public URLs, never authorization headers,
 cookies, credentials or candidate records. Local storage enforces a 16 MiB body limit,
-a 256 MiB aggregate limit, at most 10,000 files and thirty-day retention under a
-process-safe lock. Replay validates metadata/body checksums and invokes the registered
-parser without network or database writes. Registered adapter pages receive replayable
+a 5 GiB aggregate limit, at most 10,000 files and thirty-day retention under a
+process-safe lock. New bodies are compressed when this saves space; when the aggregate
+budget is reached, older raw body files are compressed in place without changing their
+content hashes, metadata keys or thirty-day retention. Replay accepts both compressed
+and legacy raw bodies, validates metadata/body checksums and invokes the registered
+parser without network or database writes. Snapshot-budget failures have their own
+error category instead of appearing as malformed source payloads. Registered adapter pages receive replayable
 snapshots. Durable compatibility workflows retain source provenance
 and transport observations; their occurrence snapshot link can be null. SQL history retention removes snapshots
 older than thirty days or beyond 10,000 rows, and finished runs older than thirty days
@@ -107,14 +138,119 @@ or beyond 100,000 rows; provenance remains when its snapshot expires. Workers in
 Automatic `make scrape` startup uses the service-only `enqueue_crawls_if_idle`
 RPC with per-source eligibility. Concurrent starters serialize through a
 transaction-scoped advisory lock. Pending/running source tasks stay untouched;
-future retries do not block other eligible sources. Source targets commit together
-before workers can claim them. Completed sources wait six hours from
+future retries do not block other eligible sources. Startup sends batches of at most
+1,000 targets and 4 MiB of serialized JSON, below the database's 8 MiB budget.
+Each batch commits atomically; repeated startup safely resumes after a later batch
+fails because already pending sources remain unchanged. Completed sources wait six hours from
 `last_succeeded_at`. Failed source crawls receive a six-hour minimum retry date,
 with longer remote delays preserved. Detail/vector tasks keep independent backoff,
 and exhausted tasks require explicit enqueueing. Only successful fenced completion
 advances the successful timestamp.
 Repeated scheduling preserves pending targets, retry attempts and retry dates; it
 starts a new attempt cycle only for completed or dead work.
+Due claims prefer the next source/detail/vector kind based on the latest committed
+claim, while retaining nonblocking `SKIP LOCKED` ownership. Expired leases recover
+first. Source selection gives registered adapters three turns before yielding to
+generic discovery when both queues have work; concurrent claims can share a turn.
+The service-only scheduling query uses the indexed run history.
+
+Automatic drains use four concurrent task slots sharing one 10,000-task budget.
+`--concurrency` accepts one to four slots; explicit workers default to one.
+Each slot owns a reusable spawned process, preserving warm clients/models and
+setting the current lease/source context for each task. A 120-second default hard
+deadline includes acquisition and persistence; `--task-timeout` accepts 1–3,600
+seconds. Timeout or interruption terminates task descendants before completion or
+lease release. A timeout records `task_deadline_exceeded` as incomplete; committed
+partial catalog facts remain intact and retries keep their existing policy.
+Synthetic cancellation, crash recovery, asset rendering and pool-budget tests
+enforce these contracts. Candidate matching is independent of these slots.
+
+Source acquisition measurements live in the shared local SQLite ledger and in
+`crawl_runs.result.acquisition_metrics`, linked through each task to its configured
+source and company. Sent attempts, replies, transport/resource counts, wall-time
+request rates, host denials, preceding-minute host traffic, retry delays, learned
+intervals and ingestion-input field coverage remain separate measurements.
+Stage measurements separate host pacing, HTTP open/body reads, catalog reads,
+detail extraction, catalog persistence and vector preparation. Stages are inclusive:
+redirect pacing can overlap HTTP open, and detail extraction includes transport.
+Reports retain summed worker durations; neither nested stages nor concurrent task
+durations can be summed as elapsed runtime. Missing stage measurements remain unknown.
+JobsIreland detail bodies use exact-URL hashed identities in a local six-hour cache.
+Only positively parsed bodies are retained, with a 64 KiB body ceiling and at most
+1,000 entries. Larger bodies remain complete but bypass caching; unavailable,
+mismatched-reference and challenge responses never enter the cache. Cached bodies
+stay out of diagnostics. Existing usable catalog bodies satisfy stale detail tasks
+without another request. Source refresh retains its independent freshness contract.
+Diagnostic run IDs hash the task/lease pair; acquisition JSON logs contain no lease credentials,
+request bodies, query parameters or vacancy text. Local measurements retain at
+most 50,000 events for 30 days; source profiles retain at most 10,000 identities
+for 30 days. Existing SQL history retention bounds durable run results.
+
+Generic sources remember positive extraction or an explicit empty-board signal
+for their exact company/configured URL. A recent browser preference skips HTTP
+discovery; browser failure or unusable extraction falls back to HTTP once.
+Preferences expire after seven days or three failed crawls, including deadlines.
+Verified query-free HTTP(S) destinations also bind to the configured company/URL,
+expire after seven days and are discarded after unsuccessful use. They bypass
+repeated redirect/discovery hops without changing catalog or job identities.
+Routes exclude credentials, query strings and fragments and retain at most 10,000
+entries for 30 days in the local ledger.
+Registered adapters take precedence. A recent positive profile can restore from
+the latest successful durable run when local state is absent; it cannot reset
+equal/newer local failure evidence. Repeated 429 responses double the learned
+host interval up to 60 seconds without reducing the configured floor or cooldown.
+An observed denial ordinal is evidence about that run, never a safe quota.
+
+Generic discovery normalizes URLs within one source attempt and skips candidates
+already visited, including redirect-equivalent pages. This avoids duplicate
+discovery requests while provider adapters retain their own continuation and page
+budgets. A page with no Ireland-qualified results does not establish that later
+provider pages are empty.
+
+Presentation locale segments such as `en-US` and query names such as `id` never
+count as vacancy geography. Geography checks inspect location/title text and the
+URL path, excluding host names, query parameters and fragments.
+Published location text and geographic URL paths still enforce foreign-location
+rejection. Detail tasks report incomplete when persistence writes no vacancy;
+a fetched body alone cannot establish successful catalog repair. Verified concise
+JobsIreland requirements remain valid regardless of length, while empty fields,
+placeholders, mismatched references and closure notices remain unavailable.
+
+iCIMS uses the public server-rendered `/jobs/search` route with `in_iframe=1`,
+without generic browser discovery. The pure parser accepts Location/Job Locations
+labels and keeps only explicitly Irish alternatives from a multi-location card.
+Pagination follows published next links on the same HTTPS listing origin, up to
+20 pages; foreign-only pages do not stop continuation. Responses without listing
+markers remain failures, and missing descriptions stay eligible for detail repair.
+
+SmartRecruiters listing requests use its documented `country=ie` filter and
+carry that filter across offset pages. The parser still validates each returned
+location as Ireland; a filtered empty result remains bounded source evidence,
+not proof that an employer has no vacancies. Synthetic pagination tests enforce
+the request and continuation contract.
+
+Ashby board names containing spaces are accepted only as `%20` in the path and
+are passed unchanged to the fixed public API origin. Encoded path separators
+remain invalid; provider-detection tests enforce both cases.
+
+`make scrape-report` compares the latest 100 finished runs, optionally filtered
+by company. It distinguishes unmeasured history, reports weighted request rates,
+description-body coverage and the latest measured duration change. Coverage
+describes input fields, not proof that every published vacancy or full body is
+captured. Source/detail tasks remain separate; missing salary is not fabricated.
+CLI durable drains automatically archive this report with owner-only permissions,
+including incomplete drains. Report failures do not undo completed work and remain
+visible as a failing command. Batch campaign review follows the
+[agent process](../AGENTS.md#scraper-measurement-and-improvement-process).
+
+Greenhouse listing requests include descriptions with `content=true`, as defined
+by the [Job Board API](https://docs.greenhouse.io/job-board.html). A full-body
+response exceeding the existing byte budget falls back once to metadata;
+durable detail work supplies missing bodies. Denials never trigger that recovery.
+HubSpot's supported Greenhouse recovery also requests published descriptions.
+Synchronous core/watchlist entry points use independent source scopes and retain
+measurements in the local ledger and logs. They preserve an existing durable run
+context when called by a worker. Only durable tasks write `crawl_runs` results.
 
 PDF detail extraction accepts at most 10 MiB, 100 pages and 200,000 extracted
 characters. Catalog identity URLs retain their original values; public acquisition

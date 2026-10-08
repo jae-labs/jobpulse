@@ -44,6 +44,52 @@
 
 ## Required Verification
 
+### Scraper measurement and improvement process
+
+- Every scrape is a measurement opportunity. `make scrape` and durable worker
+  commands automatically archive a source report alongside their ignored logs.
+  Report failures remain visible and fail the command without undoing crawl work.
+- Start with `make scrape ARGS="--limit 10 --concurrency 2"`. After reviewing
+  outcomes and confirming no new denials or worsening failures, raise the next
+  bounded batch to at most 50 tasks and four concurrent slots. Review each log
+  and generated report before increasing either bound. Track the configured source set,
+  attempted sources, retries, dead work and outstanding detail/vector tasks.
+- A batch is a review checkpoint, not an automatic retry loop: inspect
+  `task_finished` statuses and per-source acquisition summaries, record useful
+  route/parser/throttle findings in the ignored campaign checkpoint, then choose
+  the next batch from due queue work without overriding six-hour/remote cooldowns.
+  Include source count and status, requests/rates/denials, opportunities/writes
+  (label cross-source sums as observations), and description coverage in each
+  checkpoint. Separate blocked, unsupported, failed and verified-empty outcomes.
+- Use public-page evidence and bounded probes before changing routes or parsers.
+  Add a focused synthetic fixture and run the relevant checks before remeasuring;
+  do not infer a safe request quota from a denial ordinal or a successful sample.
+  When a source redirects or changes its page, verify the replacement route from
+  the employer's first-party careers page. Treat challenges and captchas as
+  blocked outcomes; do not bypass them or rotate identities to evade controls.
+- Compare accuracy and completeness with speed: verify job identities, published
+  opportunity counts, pagination and detail-body coverage. Missing salary or other
+  unpublished fields stay unknown. A quicker failure or empty result is not an
+  extraction improvement. Keep candidate matching separate.
+- Evaluate the two-hour complete-cycle target using eligible source coverage,
+  detail-body coverage, pending queue growth and actual elapsed time. Measure host
+  pacing, network, extraction, persistence and vector stages separately; inclusive
+  stages overlap and cannot be summed as wall time. A budget stop or faster failure
+  does not establish completeness. Prefer verified route/body reuse and supported
+  pagination filters before increasing request rates. Validate host tuning with a
+  bounded sample, preserve automatic backoff and treat an accepted sample as evidence,
+  never a guaranteed quota.
+- Measure transport mix, request rates, denials and requests preceding throttling.
+  Reuse verified source preferences and cooldown evidence. Change one adapter or
+  policy at a time, add a meaningful synthetic regression, run the relevant gates,
+  then remeasure a bounded source sample. Never bypass remote cooldowns to finish
+  a campaign, and never interpret a short successful sample as a guaranteed quota.
+- Maintain current process details in `docs/OPERATIONS.md` and implementation
+  contracts in `docs/SCRAPER_ARCHITECTURE.md`. Keep operational run artifacts
+  ignored; document reproducible behavior and tests, not incident narratives.
+
+### Completion gates
+
 Run `make check` before completion. It runs frontend lint, TypeScript, Vitest/Node tests
 and production build (`npm run check`), plus scraper Ruff, Pyright and pytest.
 
