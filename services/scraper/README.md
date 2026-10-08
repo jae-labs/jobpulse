@@ -135,3 +135,10 @@ The scraper CI job installs Chromium and Linux system dependencies through the
 locked Python Playwright package before pytest. Browser runtime tests exercise
 real rendering and request budgets; the frontend browser installation belongs to
 a separate CI job and does not provide the scraper runtime.
+
+Public CRO and regional Overture snapshots are downloaded and indexed locally with
+`make scrape-company-index` from the repository root. `make scrape-company-pilot`
+reports review-only identity coverage for 200 public employers. Files stay in the
+Git-ignored `.backups/company-index/` directory. See
+[local company index operations](../../docs/OPERATIONS.md#local-irish-company-index)
+for refresh, provenance, attribution and evidence limits.

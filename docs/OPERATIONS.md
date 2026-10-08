@@ -419,3 +419,62 @@ Measure cold and warm paths separately, including failures and retries. Increase
 concurrency only while catalog reads retain their latency budget and tenant work remains bounded.
 See [Release and recovery](RELEASE_AND_RECOVERY.md) for hosted load, alert delivery,
 retention and backup-restore checks.
+
+## Local Irish company index
+
+`make scrape-company-index` downloads public CRO and regional Overture Places
+snapshots and builds `.backups/company-index/companies.sqlite3`. The raw ZIP,
+regional JSONL, SQLite index, lock and pilot report are Git-ignored. Imports use a
+process lock and replace each source in one SQLite transaction; interruption or
+invalid/empty imports retain the previous indexed snapshot. Downloads publish
+atomically, enforce size bounds, verify CRO ZIP checksums and log progress.
+Overture uses four DuckDB threads, a 1 GiB memory limit and a fifteen-minute query
+budget. The optional locked `company-index` dependency group provides DuckDB.
+
+```bash
+make scrape-company-index
+make scrape-company-pilot
+# Refresh one source, or rebuild from the downloaded files without network:
+make scrape-company-index ARGS="--source cro"
+make scrape-company-index ARGS="--source overture --release 2026-09-23.1"
+make scrape-company-index ARGS="--local"
+# Supply public employer JSON instead of reading the configured catalog:
+make scrape-company-pilot ARGS="--employers /tmp/public-employers.json --limit 200"
+```
+
+The pilot reads public employer IDs, names and websites in bounded pages; it does
+not read candidates or write Supabase. Its default sample is the first 200 employers
+by ID, not a statistically representative accuracy sample. `pilot.json` contains
+snapshot checksums, attribution, import timestamps, candidate evidence, matching
+reasons, conflicts, coverage counts and elapsed time. Exact domain/company-number
+support establishes an identity candidate, not a verified office. Name-only
+matches, conflicting domains, closed places and duplicate legal records require
+review. The match response retains at most 100 candidates and flags truncation.
+
+CRO supplies legal identities and **registered addresses**, which may belong to
+agents. Conflicting records for a company number remain separate variants.
+Overture supplies **operating-place candidates**, with source evidence, confidence,
+websites, categories, taxonomy and coordinates. The geographic extract includes the island bounding box;
+explicit non-IE address records are excluded, while unknown country records remain
+unverified candidates. This preserves missing-address coverage without asserting
+that every point lies in the Republic. Snapshot freshness and field evidence must
+be reviewed before any production use; no automatic office or vacancy updates are
+connected to this index. `make scrape-enrich-offices` keeps its existing provider
+workflow. Review correct identities, actual operating-office evidence, duplicate
+places and missing addresses before integrating a lookup shortcut.
+
+CRO attribution: Contains Irish Public Sector Data licensed under a Creative Commons
+Attribution 4.0 International (CC BY 4.0) licence; Companies Registration Office.
+Overture records retain upstream sources; redistribution must follow
+[Overture attribution and licensing](https://docs.overturemaps.org/attribution/).
+Source formats follow the [CRO dataset](https://opendata.cro.ie/dataset/companies)
+and [Overture DuckDB extraction guide](https://docs.overturemaps.org/getting-data/duckdb/).
+The local index keeps only the latest successful import per source; refreshes are
+operator-triggered. Local raw files contain public company data and are not a
+Supabase recovery backup.
+
+Acceptance contracts: both imports complete with provenance; source refresh failure
+preserves the previous index; legal addresses remain separate from operating places;
+ambiguous identity evidence remains review-only; the bounded 200-employer pilot
+reports coverage and runtime with zero catalog writes. Synthetic tests enforce the
+matching and recovery contracts in `services/scraper/tests/test_company_index.py`.

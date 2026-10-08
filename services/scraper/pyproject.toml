@@ -20,10 +20,14 @@ dependencies = [
 pilot = ["scrapy>=2.14,<3"]
 dev = [
     {include-group = "pilot"},
+    {include-group = "company-index"},
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.9.0",
     "pyright>=1.1.390",
+]
+company-index = [
+    "duckdb>=1.5,<2",
 ]
 
 [tool.ruff]

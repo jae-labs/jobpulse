@@ -158,3 +158,10 @@ check: ## Run the full quality gate (frontend and scraper).
 	@$(MAKE) scrape-lint
 	@$(MAKE) scrape-typecheck
 	@$(MAKE) scrape-unit
+
+.PHONY: scrape-company-index scrape-company-pilot
+scrape-company-index: ## Download and index CRO and Irish Overture snapshots locally under ignored .backups.
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked --group company-index python tools/company_index.py refresh $(ARGS)
+
+scrape-company-pilot: ## Review-only coverage report for 200 catalog employers; no database writes.
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked --group company-index python tools/company_index.py pilot $(ARGS)

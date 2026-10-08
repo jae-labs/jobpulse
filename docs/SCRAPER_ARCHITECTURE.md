@@ -434,3 +434,16 @@ company discovery and Geoapify supplies explicit street-address geocoding. Resul
 are review proposals, never ingestion-time industry or vacancy-location inference.
 Reviewed metadata can be previewed/applied through `tools/enrich_employers.py --registry`.
 See [the operational guide](OPERATIONS.md#employer-research-and-offices) for configuration and evidence rules.
+
+## Local company evidence index
+
+`company_index/` owns public snapshot acquisition, streaming source import and
+transactional SQLite indexing. `tools/company_index.py` composes refresh and
+review-only coverage commands. Its default state lives under the Git-ignored
+`.backups/company-index/`; it does not participate in candidate matching or
+catalog writes. CRO legal registered addresses and Overture operating-place
+candidates carry separate kinds and provenance. Indexed name, domain and legal
+number lookups retain ambiguity, source conflicts and closed status. All returned
+candidates require review; identity support is not office verification.
+See [local index operations](OPERATIONS.md#local-irish-company-index) for download,
+refresh, attribution and coverage acceptance contracts.
