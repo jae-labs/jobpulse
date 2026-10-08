@@ -205,7 +205,7 @@ def test_office_total_budget_pages_distinct_pairs_in_preview_and_apply(monkeypat
     assert counts["checked"] == 205
     assert len({(r["employer_id"], r["location"]) for r in records}) == 205
     assert len(client.saved) == (205 if apply else 0)
-    assert records[-1]["employer_id"] == 206
+    assert {r["employer_id"] for r in records} == set(range(1, 207)) - {101}
 
 
 def test_office_eligibility_retains_refresh_and_name_changes():
@@ -235,7 +235,7 @@ def test_office_provider_failure_budget_stops_without_advancing_all_pairs(monkey
     monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
     monkeypatch.setattr(module, "get_supabase", lambda: client)
     monkeypatch.setattr(module, "discover_offices", lambda *args: (_ for _ in ()).throw(ResearchError("synthetic")))
-    counts = module.enrich_offices(apply=True, limit=10000)
+    counts = module.enrich_offices(apply=True, limit=10000, concurrency=1)
     assert counts["checked"] == counts["provider_failed"] == len(client.saved) == 5
 
 
@@ -248,3 +248,42 @@ def test_office_large_budget_stops_when_catalog_is_exhausted(monkeypatch):
         module, "discover_offices", lambda provider, row, key: {**row, "status": "remote", "offices": []}
     )
     assert module.enrich_offices(limit=10000)["checked"] == 3
+
+
+def test_office_pool_has_bounded_parallelism_and_single_writer(monkeypatch):
+    import threading
+
+    from jobpulse_scraper.pipeline import employer_offices as module
+
+    main_thread = threading.get_ident()
+    barrier = threading.Barrier(4)
+    client = OfficeClient(office_jobs(4))
+    original_rpc = client.rpc
+
+    def rpc(name, params):
+        assert threading.get_ident() == main_thread
+        return original_rpc(name, params)
+
+    def discover(provider, row, key):
+        barrier.wait(timeout=3)
+        return {**row, "status": "unresolved", "offices": []}
+
+    monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
+    monkeypatch.setattr(client, "rpc", rpc)
+    monkeypatch.setattr(module, "get_supabase", lambda: client)
+    monkeypatch.setattr(module, "discover_offices", discover)
+    counts = module.enrich_offices(apply=True, limit=4, concurrency=4)
+    assert counts["checked"] == counts["updated"] == len(client.saved) == 4
+
+
+def test_office_concurrent_failure_stop_drains_only_inflight_work(monkeypatch):
+    from jobpulse_scraper.pipeline import employer_offices as module
+    from jobpulse_scraper.pipeline.company_research import ResearchError
+
+    client = OfficeClient(office_jobs(100))
+    monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
+    monkeypatch.setattr(module, "get_supabase", lambda: client)
+    monkeypatch.setattr(module, "discover_offices", lambda *args: (_ for _ in ()).throw(ResearchError("synthetic")))
+    counts = module.enrich_offices(apply=True, limit=100, concurrency=4)
+    assert 5 <= counts["checked"] <= 8
+    assert counts["checked"] == counts["provider_failed"] == len(client.saved)

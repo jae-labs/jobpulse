@@ -17,9 +17,12 @@ def main() -> None:
     parser.add_argument(
         "--limit", type=int, default=25, help="Total company/location budget (1–10000); reads use pages of 100"
     )
+    parser.add_argument(
+        "--concurrency", type=int, default=4, help="Concurrent lookup slots (1–8); shared request pacing"
+    )
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
-    counts = enrich_offices(apply=args.apply, limit=args.limit, report=args.report)
+    counts = enrich_offices(apply=args.apply, limit=args.limit, report=args.report, concurrency=args.concurrency)
     print(json.dumps(counts, sort_keys=True))
     if counts["provider_failed"] or counts["conflicts"]:
         raise SystemExit(1)

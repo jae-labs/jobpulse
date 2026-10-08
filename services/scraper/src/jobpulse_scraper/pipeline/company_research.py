@@ -6,11 +6,16 @@ import fcntl
 import hashlib
 import json
 import math
+import os
 import re
+import sys
+import threading
 import time
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -23,6 +28,7 @@ class ResearchProvider(Protocol):
 
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 GEOAPIFY_API = "https://api.geoapify.com/v1/geocode/search"
+_LOG_LOCK = threading.Lock()
 BLOCKED_NAMES = {
     "jobsireland employer",
     "unavailable",
@@ -51,6 +57,12 @@ class ResearchClient:
             raise ValueError("Request interval must be at least one second")
         self.cache, self.client, self.interval = cache, client, interval
         self.last_request = 0.0
+        self._request_lock = threading.Lock()
+        self._metrics_lock = threading.Lock()
+        self._requests = 0
+        self._cache_hits = 0
+        self._request_seconds = 0.0
+        self._rate_limits = 0
         cache.mkdir(parents=True, exist_ok=True)
 
     def reserve_geocoding_request(self) -> None:
@@ -68,25 +80,104 @@ class ResearchClient:
             stream.write(str(used + 1))
             stream.flush()
 
+    def _event(self, event: str, url: str, **fields: Any) -> None:
+        with _LOG_LOCK:
+            print(
+                json.dumps({"research_event": event, "endpoint": urlsplit(url).path, **fields}),
+                file=sys.stderr,
+                flush=True,
+            )
+
+    def metrics(self) -> dict[str, Any]:
+        with self._metrics_lock:
+            return {
+                "requests": self._requests,
+                "cache_hits": self._cache_hits,
+                "request_seconds": round(self._request_seconds, 3),
+                "rate_limits": self._rate_limits,
+            }
+
+    def _geoapify_gate(self, delay: float = 0, *, url: str = GEOAPIFY_API) -> None:
+        """Coordinate request starts and cooldowns across threads and local processes."""
+        path = self.cache.parent / "geoapify-transport.json"
+        with path.with_suffix(".lock").open("a+") as stream:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+            state = json.loads(path.read_text()) if path.exists() else {}
+            now = time.time()
+            if delay:
+                state["cooldown_until"] = max(state.get("cooldown_until", 0), now + delay)
+            else:
+                wait = max(0, state.get("next_start", 0) - now, state.get("cooldown_until", 0) - now)
+                if wait > 30:
+                    raise ResearchError("Provider cooling down; retry after the saved deadline")
+                if wait:
+                    self._event("pacing", url, wait_seconds=round(wait, 3))
+                    time.sleep(wait)
+                self.reserve_geocoding_request()
+                state["next_start"] = time.time() + self.interval
+            temporary = path.with_suffix(f".{os.getpid()}.tmp")
+            temporary.write_text(json.dumps(state))
+            temporary.replace(path)
+
     def get(self, url: str, params: dict[str, str]) -> dict[str, Any]:
         public_params = {k: v for k, v in params.items() if k != "apiKey"}
         digest = hashlib.sha256(json.dumps([url, public_params], sort_keys=True).encode()).hexdigest()
-        path = self.cache / f"{digest}.json"
+        locks = self.cache.parent / ".research-locks"
+        locks.mkdir(parents=True, exist_ok=True)
+        # Keep the lock outside the response cache; failures never publish a body.
+        with (locks / f"{digest}.lock").open("a+") as stream:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+            return self._get(url, params, self.cache / f"{digest}.json")
+
+    def _get(self, url: str, params: dict[str, str], path: Path) -> dict[str, Any]:
         if path.exists() and time.time() - path.stat().st_mtime < 30 * 86400:
+            with self._metrics_lock:
+                self._cache_hits += 1
+            self._event("cache_hit", url)
             return json.loads(path.read_text())
         for attempt in range(3):
-            if url.startswith("https://api.geoapify.com/"):
-                self.reserve_geocoding_request()
-            time.sleep(max(0, self.interval - (time.monotonic() - self.last_request)))
-            self.last_request = time.monotonic()
+            geoapify = url.startswith("https://api.geoapify.com/")
+            if geoapify:
+                self._geoapify_gate(url=url)
+            else:
+                with self._request_lock:
+                    time.sleep(max(0, self.interval - (time.monotonic() - self.last_request)))
+                    self.last_request = time.monotonic()
+            started = time.monotonic()
+            with self._metrics_lock:
+                self._requests += 1
+            self._event("request_sent", url, attempt=attempt + 1)
             try:
                 response = self.client.get(url, params=params)
             except httpx.HTTPError:
+                elapsed = time.monotonic() - started
+                with self._metrics_lock:
+                    self._request_seconds += elapsed
+                self._event("request_failed", url, elapsed_seconds=round(elapsed, 3), error_code="connection_failed")
                 raise ResearchError("Provider connection failed") from None
+            elapsed = time.monotonic() - started
+            with self._metrics_lock:
+                self._request_seconds += elapsed
+            self._event("response_received", url, status=response.status_code, elapsed_seconds=round(elapsed, 3))
             if response.status_code == 429 or response.status_code >= 500:
-                delay = response.headers.get("Retry-After", "")
+                retry_after = response.headers.get("Retry-After", "")
+                delay = float(2 ** (attempt + 1))
+                if retry_after.isdigit():
+                    delay = max(delay, float(retry_after))
+                elif retry_after:
+                    try:
+                        delay = max(delay, parsedate_to_datetime(retry_after).timestamp() - time.time())
+                    except (ValueError, TypeError, OverflowError):
+                        pass
+                if geoapify and response.status_code == 429:
+                    with self._metrics_lock:
+                        self._rate_limits += 1
+                    self._geoapify_gate(delay, url=url)
+                    if delay > 30:
+                        raise ResearchError("Provider cooling down; retry after the saved deadline")
                 if attempt < 2:
-                    time.sleep(min(30, int(delay)) if delay.isdigit() else 2 ** (attempt + 1))
+                    if not (geoapify and response.status_code == 429):
+                        time.sleep(delay)
                     continue
             if response.status_code != 200:
                 raise ResearchError(f"Provider returned HTTP {response.status_code}")

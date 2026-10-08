@@ -172,3 +172,112 @@ def test_office_endpoints_share_existing_provider_budget(tmp_path, endpoint):
     assert len(budgets) == 1 and budgets[0].read_text() == "1"
     researcher.get(endpoint, {"apiKey": "another-secret"})
     assert budgets[0].read_text() == "1"  # cached requests spend no additional allowance
+
+
+def test_concurrent_identical_requests_share_one_response_and_hide_keys(tmp_path, capsys):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        time.sleep(0.05)
+        return httpx.Response(200, json={"features": []})
+
+    first = client(tmp_path / "office-cache", handler)
+    second = client(tmp_path / "office-cache", handler)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(first.get, "https://api.geoapify.com/v2/places", {"apiKey": "first-private-key"})
+        b = pool.submit(second.get, "https://api.geoapify.com/v2/places", {"apiKey": "second-private-key"})
+        assert a.result() == b.result() == {"features": []}
+    assert len(calls) == 1
+    assert first.metrics()["requests"] + second.metrics()["requests"] == 1
+    assert first.metrics()["cache_hits"] + second.metrics()["cache_hits"] == 1
+    output = capsys.readouterr().err
+    assert "private-key" not in output
+    assert "response_received" in output and "cache_hit" in output
+    assert all(isinstance(json.loads(line), dict) for line in output.splitlines())
+
+
+def test_distinct_concurrent_requests_overlap_but_share_one_second_pacing(tmp_path):
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    barrier = threading.Barrier(2)
+    starts = []
+
+    def handler(request):
+        starts.append(time.monotonic())
+        barrier.wait(timeout=5)
+        return httpx.Response(200, json={"features": []})
+
+    researchers = [client(tmp_path / "office-cache", handler) for _ in range(2)]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(r.get, "https://api.geoapify.com/v2/places", {"name": str(i), "apiKey": "secret"})
+            for i, r in enumerate(researchers)
+        ]
+        assert all(f.result() == {"features": []} for f in futures)
+    assert 0.9 <= abs(starts[1] - starts[0]) < 4
+
+
+@pytest.mark.parametrize("retry_after", ["120", "Wed, 01 Jan 2999 00:00:00 GMT"])
+def test_rate_limit_cooldown_is_shared_and_long_delays_fail_fast(tmp_path, retry_after):
+    import time
+
+    first = client(tmp_path / "office-cache", lambda request: httpx.Response(429, headers={"Retry-After": retry_after}))
+    second = client(tmp_path / "office-cache", lambda request: pytest.fail("Cooldown must prevent network calls"))
+    started = time.monotonic()
+    with pytest.raises(ResearchError, match="cooling down"):
+        first.get("https://api.geoapify.com/v2/places", {"name": "first", "apiKey": "secret"})
+    with pytest.raises(ResearchError, match="cooling down"):
+        second.get("https://api.geoapify.com/v2/places", {"name": "second", "apiKey": "secret"})
+    assert time.monotonic() - started < 2
+    assert first.metrics()["rate_limits"] == 1
+    assert second.metrics()["requests"] == 0
+    assert not list((tmp_path / "office-cache").glob("*.json"))
+
+
+def test_interrupted_rate_state_publication_keeps_existing_cooldown(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    researcher = client(tmp_path / "office-cache", lambda request: pytest.fail("No provider call expected"))
+    state = tmp_path / "geoapify-transport.json"
+    existing = {"cooldown_until": 9999999999}
+    state.write_text(json.dumps(existing))
+    original = Path.replace
+
+    def interrupted(path, target):
+        if target == state:
+            raise OSError("Synthetic interrupted publication")
+        return original(path, target)
+
+    monkeypatch.setattr(Path, "replace", interrupted)
+    with pytest.raises(OSError):
+        researcher._geoapify_gate(120)
+    assert json.loads(state.read_text()) == existing
+
+
+def test_provider_cooldown_is_visible_to_another_process(tmp_path):
+    import subprocess
+    import sys
+
+    researcher = client(tmp_path / "office-cache", lambda request: pytest.fail("No provider call expected"))
+    researcher._geoapify_gate(120)
+    script = f"""
+from pathlib import Path
+import httpx
+from jobpulse_scraper.pipeline.company_research import ResearchClient, ResearchError
+researcher = ResearchClient(Path({str(tmp_path / "office-cache")!r}), httpx.Client())
+try:
+    researcher._geoapify_gate()
+except ResearchError:
+    print("cooldown-blocked")
+else:
+    raise AssertionError("Another process must observe the cooldown")
+"""
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "cooldown-blocked"

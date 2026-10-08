@@ -6,8 +6,11 @@ import ipaddress
 import math
 import os
 import re
+import time
 from collections.abc import Iterator
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
+from itertools import islice
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -221,7 +224,9 @@ def pending_office_rows(client: Client) -> Iterator[dict[str, Any]]:
             return
 
 
-def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None = None) -> dict[str, int]:
+def enrich_offices(
+    *, apply: bool = False, limit: int = 25, report: Path | None = None, concurrency: int = 4
+) -> dict[str, int]:
     import json
 
     client = get_supabase()  # Loads backend credentials before checking the provider key.
@@ -230,33 +235,103 @@ def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None 
         raise ValueError("GEOAPIFY_API_KEY is not configured")
     if not 1 <= limit <= 10000:
         raise ValueError("limit must be between 1 and 10000")
+    if not 1 <= concurrency <= 8:
+        raise ValueError("concurrency must be between 1 and 8")
     counts = dict(checked=0, found=0, unresolved=0, ambiguous=0, remote=0, provider_failed=0, updated=0, conflicts=0)
     records = []
     cache = REPO_ROOT / ".backups/employer-office-cache"
+    started = time.monotonic()
+    print(
+        json.dumps({"research_event": "office_pool_start", "concurrency": concurrency, "max_pairs": limit}), flush=True
+    )
     with httpx.Client(
-        timeout=httpx.Timeout(60, connect=10), headers={"User-Agent": "JobPulseEmployerOffices/1.0"}
+        timeout=httpx.Timeout(30, connect=10),
+        headers={"User-Agent": "JobPulseEmployerOffices/1.0"},
+        limits=httpx.Limits(max_connections=concurrency, max_keepalive_connections=concurrency),
     ) as http:
         researcher = ResearchClient(cache, http)
-        for row in pending_office_rows(client):
+
+        def lookup(row: dict[str, Any]) -> dict[str, Any]:
+            task_started = time.monotonic()
             try:
                 record = discover_offices(researcher, row, key)
             except ResearchError:
                 record = {**row, "status": "provider_failed", "offices": []}
-            counts["checked"] += 1
-            counts[record["status"]] += 1
-            if apply:
-                saved = retry_supabase(
-                    lambda record=record: client.rpc("save_employer_office_lookup", {"p_record": record}).execute()
-                ).data
-                counts["updated" if saved else "conflicts"] += 1
-            records.append(record)
-            if counts["checked"] % 25 == 0:
-                print(json.dumps(counts, sort_keys=True), flush=True)
-            if report:
-                report.parent.mkdir(parents=True, exist_ok=True)
-                report.write_text(json.dumps({"counts": counts, "records": records}, indent=2) + "\n")
-            if counts["provider_failed"] >= 5 or counts["checked"] >= limit:
-                break
+            return {**record, "elapsed_seconds": round(time.monotonic() - task_started, 3)}
+
+        rows = iter(islice(pending_office_rows(client), limit))
+        exhausted = False
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            pending: set[Future[dict[str, Any]]] = set()
+            while pending or not exhausted:
+                while not exhausted and len(pending) < concurrency and counts["provider_failed"] < 5:
+                    row = next(rows, None)
+                    if row is None:
+                        exhausted = True
+                        break
+                    pending.add(pool.submit(lookup, row))
+                if not pending:
+                    break
+                ready, pending = wait(pending, timeout=15, return_when=FIRST_COMPLETED)
+                if not ready:
+                    print(
+                        json.dumps(
+                            {
+                                "research_event": "office_pool_progress",
+                                "active": len(pending),
+                                "counts": counts,
+                                "metrics": researcher.metrics(),
+                            }
+                        ),
+                        flush=True,
+                    )
+                for future in ready:
+                    record = future.result()
+                    counts["checked"] += 1
+                    counts[record["status"]] += 1
+                    if apply:
+                        saved = retry_supabase(
+                            lambda record=record: client.rpc(
+                                "save_employer_office_lookup", {"p_record": record}
+                            ).execute()
+                        ).data
+                        counts["updated" if saved else "conflicts"] += 1
+                    records.append(record)
+                    print(
+                        json.dumps(
+                            {
+                                "research_event": "office_lookup_finished",
+                                "employer_id": record["employer_id"],
+                                "status": record["status"],
+                                "elapsed_seconds": record["elapsed_seconds"],
+                                "counts": counts,
+                            }
+                        ),
+                        flush=True,
+                    )
+                    if report:
+                        report.parent.mkdir(parents=True, exist_ok=True)
+                        temporary = report.with_suffix(f".{os.getpid()}.tmp")
+                        temporary.write_text(
+                            json.dumps(
+                                {"counts": counts, "metrics": researcher.metrics(), "records": records}, indent=2
+                            )
+                            + "\n"
+                        )
+                        temporary.replace(report)
+                if counts["provider_failed"] >= 5:
+                    exhausted = True  # Save completed in-flight work; schedule no more pairs.
+        print(
+            json.dumps(
+                {
+                    "research_event": "office_pool_finished",
+                    "counts": counts,
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "metrics": researcher.metrics(),
+                }
+            ),
+            flush=True,
+        )
     if report and not records:
         report.parent.mkdir(parents=True, exist_ok=True)
         report.write_text(json.dumps({"counts": counts, "records": []}, indent=2) + "\n")

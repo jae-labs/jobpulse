@@ -318,9 +318,15 @@ Ambiguous names, job-board platforms and feed placeholders must stay unresolved.
 `make scrape-enrich-offices` performs bounded office research. Provider credentials stay in
 the scraper environment. `ARGS="--apply --limit 10000"` processes up to 10,000 distinct
 eligible company/location pairs, using database pages of at most 100. The default is 25;
-preview mode advances through the same distinct pairs without writing outcomes. Progress
-prints every 25 pairs, and five provider failures stop the run. Successful saved lookups
+preview mode advances through the same distinct pairs without writing outcomes. The command
+uses four lookup slots by default (`--concurrency 1` through `8`). Request starts share
+one-second pacing and provider cooldowns across local processes; cache locks coalesce
+identical requests. Lookup completions, 15-second heartbeats and credential-free request
+timings go to the automatic log. Five provider failures stop new scheduling; in-flight
+outcomes finish and are saved. Successful saved lookups
 retain their existing refresh intervals. Provider request budgets and identity checks remain active.
+The report includes request counts, cache hits, accumulated request time and rate-limit counts.
+Concurrency overlaps provider latency; it does not establish a higher permitted request rate.
 Apply only reviewed identity/address evidence with source, confidence
 and review metadata. A company office is a separate map layer and never establishes a vacancy's
 work location. Provider failure must retain already ingested vacancies.
