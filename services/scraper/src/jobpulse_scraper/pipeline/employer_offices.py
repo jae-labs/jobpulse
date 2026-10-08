@@ -6,11 +6,14 @@ import ipaddress
 import math
 import os
 import re
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
+from supabase import Client
 
 from jobpulse_scraper.database.client import get_supabase, retry_supabase
 from jobpulse_scraper.database.records import response_records
@@ -152,6 +155,72 @@ def discover_offices(researcher: ResearchProvider, employer: dict[str, Any], key
     return {**record, "status": "found" if offices else "unresolved", "offices": list(offices.values())}
 
 
+def pending_office_rows(client: Client) -> Iterator[dict[str, Any]]:
+    """Page public catalog identities without repeating pairs in preview or apply mode."""
+    cursor = 0
+    seen: set[tuple[int, str]] = set()
+    while True:
+        query = (
+            client.table("jobs")
+            .select("id,location,employers!inner(id,name,website)")
+            .order("id")
+            .gt("id", cursor)
+            .limit(100)
+        )
+        jobs = response_records(retry_supabase(query.execute).data)
+        if not jobs:
+            return
+        cursor = jobs[-1]["id"]
+        candidates: dict[tuple[int, str], dict[str, Any]] = {}
+        for job in jobs:
+            employer, location = job["employers"], job.get("location")
+            if (
+                not isinstance(employer, dict)
+                or not isinstance(location, str)
+                or not 1 <= len(location.strip(" ")) <= 500
+            ):
+                continue
+            identity = (employer["id"], location)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            candidates[identity] = {
+                "employer_id": employer["id"],
+                "name": employer["name"],
+                "website": employer.get("website"),
+                "location": location,
+            }
+        previous: dict[tuple[int, str], dict[str, Any]] = {}
+        if candidates:
+            offset = 0
+            while True:
+                lookup = (
+                    client.table("employer_office_lookups")
+                    .select("employer_id,location,employer_name,retry_after")
+                    .in_("employer_id", list({identity[0] for identity in candidates}))
+                    .in_("location", list({identity[1] for identity in candidates}))
+                    .order("employer_id")
+                    .order("location")
+                    .range(offset, offset + 99)
+                )
+                outcomes = response_records(retry_supabase(lookup.execute).data)
+                previous.update({(row["employer_id"], row["location"]): row for row in outcomes})
+                if len(outcomes) < 100:
+                    break
+                offset += 100
+        now = datetime.now(UTC)
+        for identity, row in candidates.items():
+            outcome = previous.get(identity)
+            if (
+                outcome is None
+                or outcome["employer_name"] != row["name"]
+                or datetime.fromisoformat(outcome["retry_after"].replace("Z", "+00:00")) <= now
+            ):
+                yield row
+        if len(jobs) < 100:
+            return
+
+
 def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None = None) -> dict[str, int]:
     import json
 
@@ -159,19 +228,16 @@ def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None 
     key = os.environ.get("GEOAPIFY_API_KEY", "")
     if not key:
         raise ValueError("GEOAPIFY_API_KEY is not configured")
-    if not 1 <= limit <= 100:
-        raise ValueError("limit must be between 1 and 100")
+    if not 1 <= limit <= 10000:
+        raise ValueError("limit must be between 1 and 10000")
     counts = dict(checked=0, found=0, unresolved=0, ambiguous=0, remote=0, provider_failed=0, updated=0, conflicts=0)
-    rows = response_records(
-        retry_supabase(lambda: client.rpc("pending_employer_office_lookups", {"p_limit": limit}).execute()).data
-    )
     records = []
     cache = REPO_ROOT / ".backups/employer-office-cache"
     with httpx.Client(
         timeout=httpx.Timeout(60, connect=10), headers={"User-Agent": "JobPulseEmployerOffices/1.0"}
     ) as http:
         researcher = ResearchClient(cache, http)
-        for row in rows:
+        for row in pending_office_rows(client):
             try:
                 record = discover_offices(researcher, row, key)
             except ResearchError:
@@ -184,10 +250,12 @@ def enrich_offices(*, apply: bool = False, limit: int = 25, report: Path | None 
                 ).data
                 counts["updated" if saved else "conflicts"] += 1
             records.append(record)
+            if counts["checked"] % 25 == 0:
+                print(json.dumps(counts, sort_keys=True), flush=True)
             if report:
                 report.parent.mkdir(parents=True, exist_ok=True)
                 report.write_text(json.dumps({"counts": counts, "records": records}, indent=2) + "\n")
-            if counts["provider_failed"] >= 5:
+            if counts["provider_failed"] >= 5 or counts["checked"] >= limit:
                 break
     if report and not records:
         report.parent.mkdir(parents=True, exist_ok=True)

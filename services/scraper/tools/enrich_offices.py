@@ -14,7 +14,9 @@ from jobpulse_scraper.pipeline.employer_offices import enrich_offices
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--limit", type=int, default=25)
+    parser.add_argument(
+        "--limit", type=int, default=25, help="Total company/location budget (1–10000); reads use pages of 100"
+    )
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     counts = enrich_offices(apply=args.apply, limit=args.limit, report=args.report)

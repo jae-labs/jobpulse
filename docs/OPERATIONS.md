@@ -316,7 +316,12 @@ limits. Keep public company evidence in `services/scraper/src/jobpulse_scraper/c
 Ambiguous names, job-board platforms and feed placeholders must stay unresolved.
 
 `make scrape-enrich-offices` performs bounded office research. Provider credentials stay in
-the scraper environment. Apply only reviewed identity/address evidence with source, confidence
+the scraper environment. `ARGS="--apply --limit 10000"` processes up to 10,000 distinct
+eligible company/location pairs, using database pages of at most 100. The default is 25;
+preview mode advances through the same distinct pairs without writing outcomes. Progress
+prints every 25 pairs, and five provider failures stop the run. Successful saved lookups
+retain their existing refresh intervals. Provider request budgets and identity checks remain active.
+Apply only reviewed identity/address evidence with source, confidence
 and review metadata. A company office is a separate map layer and never establishes a vacancy's
 work location. Provider failure must retain already ingested vacancies.
 

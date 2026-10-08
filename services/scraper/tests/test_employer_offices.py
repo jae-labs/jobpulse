@@ -118,3 +118,133 @@ def test_malformed_provider_results_are_retryable(features):
 
     with pytest.raises(ResearchError):
         discover_offices(Provider(features), EMPLOYER, "secret")
+
+
+class OfficeQuery:
+    def __init__(self, client, table):
+        self.client, self.table = client, table
+        self.cursor, self.start, self.end = 0, 0, 99
+        self.filters = {}
+
+    def select(self, fields):
+        return self
+
+    def order(self, field):
+        return self
+
+    def gt(self, field, value):
+        self.cursor = value
+        return self
+
+    def limit(self, value):
+        assert value <= 100
+        return self
+
+    def in_(self, field, values):
+        assert len(values) <= 100
+        self.filters[field] = values
+        return self
+
+    def range(self, start, end):
+        assert end - start + 1 <= 100
+        self.start, self.end = start, end
+        return self
+
+    def execute(self):
+        from types import SimpleNamespace
+
+        if self.table == "jobs":
+            rows = [r for r in self.client.jobs if r["id"] > self.cursor][:100]
+        else:
+            rows = [
+                r for r in self.client.lookups if all(r[field] in values for field, values in self.filters.items())
+            ][self.start : self.end + 1]
+        return SimpleNamespace(data=rows)
+
+
+class OfficeClient:
+    def __init__(self, jobs, lookups=()):
+        self.jobs, self.lookups, self.saved = jobs, lookups, []
+
+    def table(self, table):
+        assert table in {"jobs", "employer_office_lookups"}
+        return OfficeQuery(self, table)
+
+    def rpc(self, name, params):
+        from types import SimpleNamespace
+
+        assert name == "save_employer_office_lookup"
+        self.saved.append(params["p_record"])
+        return SimpleNamespace(execute=lambda: SimpleNamespace(data=True))
+
+
+def office_jobs(count):
+    return [
+        {"id": i, "location": "Dublin", "employers": {"id": i, "name": f"Synthetic {i}", "website": None}}
+        for i in range(1, count + 1)
+    ]
+
+
+@pytest.mark.parametrize("apply", [False, True])
+def test_office_total_budget_pages_distinct_pairs_in_preview_and_apply(monkeypatch, tmp_path, apply):
+    from jobpulse_scraper.pipeline import employer_offices as module
+
+    jobs = office_jobs(250)
+    jobs[100]["employers"] = jobs[0]["employers"]  # repeated pair across page boundary
+    client = OfficeClient(jobs)
+    monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
+    monkeypatch.setattr(module, "get_supabase", lambda: client)
+    monkeypatch.setattr(
+        module, "discover_offices", lambda provider, row, key: {**row, "status": "unresolved", "offices": []}
+    )
+    report = tmp_path / "offices.json"
+    counts = module.enrich_offices(apply=apply, limit=205, report=report)
+    import json
+
+    records = json.loads(report.read_text())["records"]
+    assert counts["checked"] == 205
+    assert len({(r["employer_id"], r["location"]) for r in records}) == 205
+    assert len(client.saved) == (205 if apply else 0)
+    assert records[-1]["employer_id"] == 206
+
+
+def test_office_eligibility_retains_refresh_and_name_changes():
+    from typing import cast
+
+    from supabase import Client
+
+    from jobpulse_scraper.pipeline.employer_offices import pending_office_rows
+
+    lookups = [
+        {"employer_id": 1, "location": "Dublin", "employer_name": "Synthetic 1", "retry_after": "2999-01-01T00:00:00Z"},
+        {"employer_id": 2, "location": "Dublin", "employer_name": "Renamed", "retry_after": "2999-01-01T00:00:00Z"},
+        {"employer_id": 3, "location": "Dublin", "employer_name": "Synthetic 3", "retry_after": "2000-01-01T00:00:00Z"},
+    ]
+    assert [r["employer_id"] for r in pending_office_rows(cast(Client, OfficeClient(office_jobs(4), lookups)))] == [
+        2,
+        3,
+        4,
+    ]
+
+
+def test_office_provider_failure_budget_stops_without_advancing_all_pairs(monkeypatch):
+    from jobpulse_scraper.pipeline import employer_offices as module
+    from jobpulse_scraper.pipeline.company_research import ResearchError
+
+    client = OfficeClient(office_jobs(200))
+    monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
+    monkeypatch.setattr(module, "get_supabase", lambda: client)
+    monkeypatch.setattr(module, "discover_offices", lambda *args: (_ for _ in ()).throw(ResearchError("synthetic")))
+    counts = module.enrich_offices(apply=True, limit=10000)
+    assert counts["checked"] == counts["provider_failed"] == len(client.saved) == 5
+
+
+def test_office_large_budget_stops_when_catalog_is_exhausted(monkeypatch):
+    from jobpulse_scraper.pipeline import employer_offices as module
+
+    monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
+    monkeypatch.setattr(module, "get_supabase", lambda: OfficeClient(office_jobs(3)))
+    monkeypatch.setattr(
+        module, "discover_offices", lambda provider, row, key: {**row, "status": "remote", "offices": []}
+    )
+    assert module.enrich_offices(limit=10000)["checked"] == 3
