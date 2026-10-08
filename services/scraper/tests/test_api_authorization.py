@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from server import api
+from jobpulse_scraper.server import api
 
 
 @pytest.fixture
@@ -89,7 +89,16 @@ def test_incomplete_ingestion_is_not_reported_as_success(api_server, persisted, 
         "",
     ],
 )
-@pytest.mark.parametrize("method,path", [("POST", "/api/sync"), ("GET", "/api/sources")])
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("POST", "/api/sync"),
+        ("GET", "/api/sources"),
+        ("POST", "/api/crawl/enqueue"),
+        ("GET", "/api/crawl/runs"),
+        ("GET", "/api/crawl/requests"),
+    ],
+)
 def test_untrusted_loopback_browser_cannot_access_api(api_server, origin, method, path):
     address, sync, database = api_server
     status, headers = request_api(address, method, path, {"Origin": origin, "Content-Type": "text/plain"})

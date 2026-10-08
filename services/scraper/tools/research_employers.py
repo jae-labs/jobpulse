@@ -19,10 +19,10 @@ from supabase import Client
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from database.client import get_supabase, retry_supabase
-from database.records import response_records
-from pipeline.company_research import BLOCKED_NAMES, ResearchClient, ResearchError
-from pipeline.employer_lookup import load_evidence_registry
+from jobpulse_scraper.database.client import get_supabase, retry_supabase
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.pipeline.company_research import BLOCKED_NAMES, ResearchClient, ResearchError
+from jobpulse_scraper.pipeline.employer_lookup import load_evidence_registry
 
 SOURCES = {"jobsireland": "JobsIreland.ie"}
 

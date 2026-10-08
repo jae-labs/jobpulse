@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from pipeline import employer_lookup
+from jobpulse_scraper.pipeline import employer_lookup
 from tools import enrich_employers as enrichment
 
 

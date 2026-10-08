@@ -17,9 +17,13 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from database.client import get_supabase  # noqa: E402
-from database.records import select_all_records  # noqa: E402
-from pipeline.employer_lookup import EmployerLookupService, curated_employer, normalize_company_key  # noqa: E402
+from jobpulse_scraper.database.client import get_supabase  # noqa: E402
+from jobpulse_scraper.database.records import select_all_records  # noqa: E402
+from jobpulse_scraper.pipeline.employer_lookup import (  # noqa: E402
+    EmployerLookupService,
+    curated_employer,
+    normalize_company_key,
+)
 
 LIVE_STATUSES = ["pending", "active"]
 

@@ -16,7 +16,7 @@ def isolate_http_cooldown_state(tmp_path, monkeypatch):
     isolation, one test that mocks a blocked response poisons the developer's real
     state file and makes later runs fail with a spurious local cooldown.
     """
-    from network import request_policy
+    from jobpulse_scraper.network import request_policy
 
     monkeypatch.setattr(request_policy, "STATE_PATH", tmp_path / "http-cooldowns.json")
     request_policy.gate.last_started.clear()

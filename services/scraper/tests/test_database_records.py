@@ -2,7 +2,7 @@
 
 import pytest
 
-from database.records import response_records
+from jobpulse_scraper.database.records import response_records
 
 
 def test_table_records_preserve_fields_and_allow_empty_results():
@@ -20,7 +20,7 @@ def test_malformed_database_results_are_rejected(value):
 def test_paginated_records_read_beyond_api_limit():
     from types import SimpleNamespace
 
-    from database.records import select_all_records
+    from jobpulse_scraper.database.records import select_all_records
 
     rows = [{"id": i} for i in range(1001)]
     ranges = []

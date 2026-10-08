@@ -1,6 +1,6 @@
 """Tests for scraper text cleaner and description formatting."""
 
-from engine.text_cleaner import clean_description_text, format_description_text
+from jobpulse_scraper.engine.text_cleaner import clean_description_text, format_description_text
 
 
 def test_format_description_text_empty():

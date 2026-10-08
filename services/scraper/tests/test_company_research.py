@@ -7,7 +7,7 @@ import httpx
 import pytest
 from supabase import Client
 
-from pipeline.company_research import ResearchClient, ResearchError
+from jobpulse_scraper.pipeline.company_research import ResearchClient, ResearchError
 
 
 def client(tmp_path, handler):
@@ -74,7 +74,7 @@ def test_api_error_not_cached(tmp_path):
 
 
 def test_exact_entity_supplies_company_not_headquarters_centroid(tmp_path, monkeypatch):
-    monkeypatch.setattr("pipeline.company_research.time.sleep", lambda seconds: None)
+    monkeypatch.setattr("jobpulse_scraper.pipeline.company_research.time.sleep", lambda seconds: None)
 
     def handler(request):
         if request.url.path == "/w/api.php":

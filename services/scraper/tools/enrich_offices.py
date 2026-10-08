@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pipeline.employer_offices import enrich_offices
+from jobpulse_scraper.pipeline.employer_offices import enrich_offices
 
 
 def main() -> None:

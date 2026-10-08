@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pipeline.ai_enrichment import (
+from jobpulse_scraper.pipeline.ai_enrichment import (
     ENRICHMENT_SCHEMA,
     VALID_SIZES,
     enrich_companies_with_ai,
@@ -64,8 +64,8 @@ def test_enrich_companies_with_ai_empty() -> None:
 
 
 @pytest.mark.parametrize("size", ["11-50", None, "invented"])
-@patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
-@patch("pipeline.ai_enrichment.subprocess.run")
+@patch("jobpulse_scraper.pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
+@patch("jobpulse_scraper.pipeline.ai_enrichment.subprocess.run")
 def test_enrichment_discards_invalid_office_coordinates(
     mock_run: MagicMock, mock_which: MagicMock, size: str | None
 ) -> None:
@@ -102,15 +102,17 @@ def test_enrichment_discards_invalid_office_coordinates(
 
 def test_agy_fallback_uses_current_home() -> None:
     with (
-        patch("pipeline.ai_enrichment.Path.home", return_value=Path("/synthetic/home")),
-        patch("pipeline.ai_enrichment.shutil.which", side_effect=[None, "/synthetic/home/.local/bin/agy"]) as which,
+        patch("jobpulse_scraper.pipeline.ai_enrichment.Path.home", return_value=Path("/synthetic/home")),
+        patch(
+            "jobpulse_scraper.pipeline.ai_enrichment.shutil.which", side_effect=[None, "/synthetic/home/.local/bin/agy"]
+        ) as which,
     ):
         assert find_agy_binary() == "/synthetic/home/.local/bin/agy"
         assert which.call_args.args == ("/synthetic/home/.local/bin/agy",)
 
 
-@patch("pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
-@patch("pipeline.ai_enrichment.subprocess.run")
+@patch("jobpulse_scraper.pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
+@patch("jobpulse_scraper.pipeline.ai_enrichment.subprocess.run")
 def test_enrich_companies_with_ai_mocked(mock_run: MagicMock, mock_which: MagicMock) -> None:
     sample_response = {
         "structured_output": {

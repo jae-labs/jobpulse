@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import yaml  # noqa: E402
 
-from config.loader import load_websites_config  # noqa: E402
-from network.request_policy import POLICY_PATH, gate, load_policy  # noqa: E402
+from jobpulse_scraper.config.loader import load_websites_config  # noqa: E402
+from jobpulse_scraper.network.request_policy import POLICY_PATH, gate, load_policy  # noqa: E402
 
 USER_AGENT = "JobPulseSourceAudit/1.0"
 HEADER_NAMES = (

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import config.boards as boards
-from config import loader
+import jobpulse_scraper.config.boards as boards
+from jobpulse_scraper.config import loader
 
 
 def test_cli_rejects_nonpositive_crawl_limit_before_writes(monkeypatch):
     import pytest
 
-    import app
+    from jobpulse_scraper import app
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Invalid crawl limits must not start database work")
@@ -24,7 +24,7 @@ def test_cli_rejects_nonpositive_crawl_limit_before_writes(monkeypatch):
 
 
 def test_list_boards_uses_live_catalog_without_seed_fallback_or_writes(monkeypatch, capsys):
-    import app
+    from jobpulse_scraper import app
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Listing an available catalog must not read YAML or write metadata")
@@ -361,10 +361,10 @@ def test_catalog_entry_for_url_disambiguates_duplicate_names(monkeypatch) -> Non
 
 
 def test_listing_prefers_catalog_provider(monkeypatch) -> None:
-    from scrapers.generic import listing
+    from jobpulse_scraper.scrapers.generic import listing
 
     sentinel = [{"url": "https://boards.greenhouse.io/acme/jobs/1", "title": "Role"}]
-    monkeypatch.setattr(listing, "extract_greenhouse_opportunities", lambda n, u, h: sentinel)
+    monkeypatch.setattr(listing, "extract_greenhouse_opportunities", lambda n, u, h, **kwargs: sentinel)
     result = listing.extract_jobs_from_listing(
         "Acme", "https://job-boards.greenhouse.io/acme", "", provider="greenhouse"
     )
@@ -411,7 +411,7 @@ def test_cooled_down_companies(monkeypatch) -> None:
 
 
 def test_record_board_outcome_payload() -> None:
-    from database.board_health import record_board_outcome
+    from jobpulse_scraper.database.board_health import record_board_outcome
 
     captured: dict = {}
 
@@ -436,7 +436,7 @@ def test_record_board_outcome_payload() -> None:
 
 
 def test_watchlist_skips_cooled_boards(monkeypatch) -> None:
-    from scrapers.generic import crawler
+    from jobpulse_scraper.scrapers.generic import crawler
 
     called: list[str] = []
 
@@ -469,7 +469,7 @@ def test_watchlist_skips_cooled_boards(monkeypatch) -> None:
 
 
 def test_disabled_catalog_does_not_resurrect_yaml(monkeypatch):
-    from config import loader
+    from jobpulse_scraper.config import loader
 
     boards.clear_board_cache()
     monkeypatch.setattr(boards, "_fetch_all_targets", lambda: [{**_db_row(), "enabled": False}])
@@ -499,13 +499,13 @@ def test_catalog_indexes_are_built_once_and_reload_health(monkeypatch):
 def test_empty_api_board_is_success_and_api_failure_is_not(monkeypatch):
     from unittest.mock import Mock
 
-    from scrapers.generic import crawler, listing
+    from jobpulse_scraper.scrapers.generic import crawler, listing
 
     monkeypatch.setattr(crawler, "catalog_entry_for_url", lambda _: {"provider": "greenhouse", "board": "acme"})
     monkeypatch.setattr(crawler, "update_source_status", Mock())
     monkeypatch.setattr(crawler, "update_employer_status", Mock())
     monkeypatch.setattr(crawler, "log_scraper_event", Mock())
-    monkeypatch.setattr(listing, "extract_greenhouse_opportunities", lambda *args: [])
+    monkeypatch.setattr(listing, "extract_greenhouse_opportunities", lambda *args, **kwargs: [])
     result = crawler._crawl_employer("Acme", "https://vanity.example.invalid")
     assert result.outcome == crawler.ScrapeOutcome.EMPTY
 

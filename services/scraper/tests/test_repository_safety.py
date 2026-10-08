@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from database import repository
+from jobpulse_scraper.database import ingestion, repository
 
 
 @pytest.mark.parametrize("failure", ["writes", "vectors"])
@@ -25,13 +25,13 @@ def test_incomplete_ingestion_never_returns_success(monkeypatch, failure):
         writer.side_effect = RuntimeError("Synthetic write failure")
     else:
         writer.return_value = SimpleNamespace(data=[{"id": 7, **job}])
-    monkeypatch.setattr(repository, "get_supabase", lambda: client)
-    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
-    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
-    monkeypatch.setattr(repository, "prepare_embeddings", lambda rows: len(rows))
-    with pytest.raises(repository.IngestionIncompleteError) as caught:
-        repository.save_jobs_batch([job], enrich=False)
+    monkeypatch.setattr(ingestion, "get_supabase", lambda: client)
+    monkeypatch.setattr(ingestion, "retry_supabase", lambda fn: fn())
+    monkeypatch.setattr(ingestion, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(ingestion, "is_valid_location", lambda *args: True)
+    monkeypatch.setattr(ingestion, "prepare_embeddings", lambda rows: len(rows))
+    with pytest.raises(ingestion.IngestionIncompleteError) as caught:
+        ingestion.save_jobs_batch([job], enrich=False)
     assert caught.value.persisted == (1 if failure == "vectors" else 0)
     assert caught.value.failed == (1 if failure == "writes" else 0)
     assert caught.value.vectors_pending == (1 if failure == "vectors" else 0)
@@ -52,15 +52,15 @@ def test_ingestion_writes_only_vacancy_facts_and_job_embeddings(monkeypatch: pyt
     client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(
         data=[{"id": 7, "title": "Engineer", "description": "Build things"}]
     )
-    monkeypatch.setattr(repository, "get_supabase", lambda: client)
-    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
-    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
+    monkeypatch.setattr(ingestion, "get_supabase", lambda: client)
+    monkeypatch.setattr(ingestion, "retry_supabase", lambda fn: fn())
+    monkeypatch.setattr(ingestion, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(ingestion, "is_valid_location", lambda *args: True)
     client.table.return_value.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(data=[])
     embedder = MagicMock()
-    monkeypatch.setattr(repository, "prepare_embeddings", embedder)
+    monkeypatch.setattr(ingestion, "prepare_embeddings", embedder)
 
-    assert repository.save_jobs_batch([job], enrich=False) == 1
+    assert ingestion.save_jobs_batch([job], enrich=False) == 1
     payload = client.table.return_value.upsert.call_args.args[0][0]
     assert not set(payload) & {"status", "relevance", "ai_analysis", "fit_tier", "matched_skills"}
     embedder.assert_called_once_with([{"id": 7, "title": "Engineer", "description": "Build things"}])
@@ -130,16 +130,16 @@ def test_save_jobs_batch_deduplicates_conflicting_rows_in_same_batch(monkeypatch
     client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(
         data=[{"id": 10, "title": "Chef", "description": ""}]
     )
-    monkeypatch.setattr(repository, "get_supabase", lambda: client)
-    monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    monkeypatch.setattr(repository, "is_valid_job_title", lambda *args: True)
-    monkeypatch.setattr(repository, "is_valid_location", lambda *args: True)
-    monkeypatch.setattr(repository, "prepare_embeddings", MagicMock())
+    monkeypatch.setattr(ingestion, "get_supabase", lambda: client)
+    monkeypatch.setattr(ingestion, "retry_supabase", lambda fn: fn())
+    monkeypatch.setattr(ingestion, "is_valid_job_title", lambda *args: True)
+    monkeypatch.setattr(ingestion, "is_valid_location", lambda *args: True)
+    monkeypatch.setattr(ingestion, "prepare_embeddings", MagicMock())
 
     client.table.return_value.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(data=[])
 
     # Should deduplicate down to 1 row in the upsert payload to prevent Postgres 21000 error
-    assert repository.save_jobs_batch(jobs, enrich=False) == 1
+    assert ingestion.save_jobs_batch(jobs, enrich=False) == 1
     upsert_payload = client.table.return_value.upsert.call_args.args[0]
     assert len(upsert_payload) == 1
     assert upsert_payload[0]["dedupe_key"] == repository.normalized_key(

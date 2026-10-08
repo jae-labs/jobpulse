@@ -6,6 +6,8 @@ INSERT INTO tenant_contract VALUES
   ('jobs', 'shared'), ('sources', 'shared'), ('employers', 'shared'),
   ('employer_offices', 'shared'), ('employer_office_lookups', 'backend'),
   ('boards', 'backend'),
+  ('crawl_tasks', 'backend'), ('crawl_runs', 'backend'),
+  ('crawl_snapshots', 'backend'), ('job_occurrences', 'backend'),
   ('catalog_stats', 'backend'),
   ('user_profiles', 'owner'), ('user_job_statuses', 'owner'),
   ('user_job_evaluations', 'owner'), ('user_cvs', 'owner'), ('user_cover_letters', 'owner'),

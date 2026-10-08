@@ -86,3 +86,7 @@ __pycache__/
 services/scraper/.env
 services/scraper/.env.*
 !services/scraper/.env.example
+
+# Python distribution artifacts
+*.egg-info/
+services/scraper/build/

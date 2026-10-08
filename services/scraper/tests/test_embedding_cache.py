@@ -6,8 +6,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from database import embeddings as cache
-from engine import embeddings as scoring
+from jobpulse_scraper.database import embeddings as cache
+from jobpulse_scraper.engine import embeddings as scoring
 
 BODY = "Build reports and operate analytics systems for our engineering team. " * 4
 
@@ -169,3 +169,23 @@ def test_stub_vectors_are_withdrawn_without_touching_tracking(monkeypatch: pytes
     client.rpc.assert_not_called()
     client.table.return_value.upsert.assert_not_called()
     encoder.assert_not_called()
+
+
+def test_durable_vector_write_carries_input_snapshot_and_accounts_for_changed_job(monkeypatch):
+    from jobpulse_scraper.runtime.lease import Lease, active_lease
+
+    job = {"id": 7, "title": "Analyst", "description": BODY}
+    client = Mock()
+    client.table.return_value.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(data=[])
+    client.rpc.return_value.execute.return_value = SimpleNamespace(data=0)
+    monkeypatch.setattr(cache, "get_supabase", lambda: client)
+    monkeypatch.setattr(cache, "encode_documents", lambda _: [[1.0] + [0.0] * 383])
+    token = active_lease.set(Lease("synthetic-task", "synthetic-token"))
+    try:
+        assert cache.prepare_embeddings([job]) == 1
+    finally:
+        active_lease.reset(token)
+    name, payload = client.rpc.call_args.args
+    assert name == "store_crawl_vectors"
+    assert payload["p_vectors"][0]["expected_facts"] == cache.scoring_facts(job)
+    client.table.return_value.upsert.assert_not_called()

@@ -19,7 +19,7 @@ SCRAPER_ROOT = Path(__file__).resolve().parent.parent
 if str(SCRAPER_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRAPER_ROOT))
 
-from scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
+from jobpulse_scraper.scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
 
 
 def test_single_board(employer: str, careers_url: str) -> list[dict[str, Any]]:
@@ -76,9 +76,9 @@ def harvest_boards(
 
 def upsert_boards(active_seeds: list[dict[str, Any]]) -> int:
     """Insert newly verified Irish boards into the database catalog as pending rows."""
-    from config.boards import detect_provider  # noqa: PLC0415
-    from database.client import get_supabase  # noqa: PLC0415
-    from database.records import select_all_records  # noqa: PLC0415
+    from jobpulse_scraper.config.boards import detect_provider  # noqa: PLC0415
+    from jobpulse_scraper.database.client import get_supabase  # noqa: PLC0415
+    from jobpulse_scraper.database.records import select_all_records  # noqa: PLC0415
 
     client = get_supabase()
     existing = select_all_records(

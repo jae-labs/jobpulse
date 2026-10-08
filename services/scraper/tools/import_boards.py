@@ -13,13 +13,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from jobpulse_scraper.paths import PACKAGE_ROOT
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import yaml  # noqa: E402
 
-from config import detect_provider, load_websites_config  # noqa: E402
-from database.client import get_supabase  # noqa: E402
-from database.records import select_all_records  # noqa: E402
+from jobpulse_scraper.config import detect_provider, load_websites_config  # noqa: E402
+from jobpulse_scraper.database.client import get_supabase  # noqa: E402
+from jobpulse_scraper.database.records import select_all_records  # noqa: E402
 
 SCRAPER_ROOT = Path(__file__).resolve().parent.parent
 LIVE_STATUSES = ["pending", "active"]
@@ -54,7 +56,7 @@ def build_payloads() -> list[dict[str, Any]]:
     """Merge watchlist entries and candidate seeds, config winning on identity."""
     payloads: dict[tuple[str, str, str], dict[str, Any]] = {}
     # Seeds first so a watchlist row with the same identity overrides it.
-    for entry in _seed_entries(SCRAPER_ROOT / "config" / "board_seeds.yaml"):
+    for entry in _seed_entries(PACKAGE_ROOT / "config" / "board_seeds.yaml"):
         item = _payload(entry, discovery_source="seed", status="pending")
         payloads[(item["provider"], item["board"].lower(), item["region"])] = item
     for entry in load_websites_config():

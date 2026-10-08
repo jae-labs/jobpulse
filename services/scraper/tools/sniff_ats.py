@@ -20,13 +20,15 @@ from urllib.parse import urljoin
 
 import yaml
 
+from jobpulse_scraper.paths import PACKAGE_ROOT
+
 SCRAPER_ROOT = Path(__file__).resolve().parent.parent
 if str(SCRAPER_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRAPER_ROOT))
 
-from config import load_websites_config, validate_websites_config  # noqa: E402
-from network.http_client import fetch_url_with_final  # noqa: E402
-from scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
+from jobpulse_scraper.config import load_websites_config, validate_websites_config  # noqa: E402
+from jobpulse_scraper.network.http_client import fetch_url_with_final  # noqa: E402
+from jobpulse_scraper.scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
 
 ATS_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     # (Provider Name, Pattern, URL Template)
@@ -224,10 +226,10 @@ def apply_resolved_boards(resolved: list[dict[str, Any]], client: Any | None = N
     the company identity. Conflicting identities are skipped rather than failing
     the whole scan.
     """
-    from config.boards import detect_provider  # noqa: PLC0415
+    from jobpulse_scraper.config.boards import detect_provider  # noqa: PLC0415
 
     if client is None:
-        from database.client import get_supabase  # noqa: PLC0415
+        from jobpulse_scraper.database.client import get_supabase  # noqa: PLC0415
 
         client = get_supabase()
     updated = 0
@@ -335,7 +337,7 @@ def main() -> None:
     parser.add_argument(
         "--config",
         type=Path,
-        default=SCRAPER_ROOT / "config" / "websites.yaml",
+        default=PACKAGE_ROOT / "config" / "websites.yaml",
         help="Path to websites.yaml",
     )
     parser.add_argument("--limit", type=int, default=None, help="Limit number of websites to scan")

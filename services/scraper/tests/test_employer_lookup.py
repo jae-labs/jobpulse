@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from database import repository
-from engine.text_cleaner import normalize_location
-from pipeline import employer_lookup as lookup
+from jobpulse_scraper.database import ingestion as repository
+from jobpulse_scraper.engine.text_cleaner import normalize_location
+from jobpulse_scraper.pipeline import employer_lookup as lookup
 
 
 @pytest.fixture(autouse=True)

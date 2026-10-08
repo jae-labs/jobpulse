@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-import app
-from config.loader import load_websites_config
+from jobpulse_scraper import app
+from jobpulse_scraper.config.loader import load_websites_config
 
 
 def test_retired_pruning_command_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -109,3 +109,62 @@ def test_valid_configuration_retains_disabled_sources_and_defaults(tmp_path):
     path.write_text("- name: Example\n  careers_url: https://example.invalid\n  enabled: false")
     sources = load_websites_config(path)
     assert sources[0]["enabled"] is False and sources[0]["priority"] == 50
+
+
+@pytest.mark.parametrize("queued", [0, 3])
+def test_auto_start_uses_atomic_source_eligibility_and_then_drains(monkeypatch, capsys, queued):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    queue = Mock(spec=runtime.CrawlQueue)
+    enqueue = Mock(return_value=queued)
+    worker = Mock(return_value={"complete": 2, "incomplete": 0, "lease_lost": 0})
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--limit", "100"])
+    monkeypatch.setattr(runtime, "CrawlQueue", lambda: queue)
+    monkeypatch.setattr(runtime, "enqueue_configured", enqueue)
+    monkeypatch.setattr(runtime, "run_worker", worker)
+    synchronize = Mock()
+    monkeypatch.setattr(app, "synchronize", synchronize)
+    app.main()
+    enqueue.assert_called_once_with(queue, only_if_idle=True)
+    worker.assert_called_once_with(queue, max_tasks=100)
+    synchronize.assert_not_called()
+    assert f'"queued": {queued}' in capsys.readouterr().out
+
+
+def test_explicit_worker_never_seeds_even_with_make_auto_flag(monkeypatch):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    enqueue = Mock()
+    worker = Mock(return_value={"complete": 0, "incomplete": 0, "lease_lost": 0})
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--worker"])
+    monkeypatch.setattr(runtime, "CrawlQueue", Mock())
+    monkeypatch.setattr(runtime, "enqueue_configured", enqueue)
+    monkeypatch.setattr(runtime, "run_worker", worker)
+    app.main()
+    enqueue.assert_not_called()
+    worker.assert_called_once()
+
+
+def test_invalid_auto_worker_bound_is_rejected_before_enqueuing(monkeypatch):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    enqueue = Mock()
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--limit", "10001"])
+    monkeypatch.setattr(runtime, "enqueue_configured", enqueue)
+    with pytest.raises(SystemExit) as result:
+        app.main()
+    assert result.value.code == 2
+    enqueue.assert_not_called()
+
+
+def test_auto_start_defaults_to_the_supported_maximum(monkeypatch):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    queue = Mock(spec=runtime.CrawlQueue)
+    worker = Mock(return_value={"complete": 0, "incomplete": 0, "lease_lost": 0})
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto"])
+    monkeypatch.setattr(runtime, "CrawlQueue", lambda: queue)
+    monkeypatch.setattr(runtime, "enqueue_configured", Mock(return_value=0))
+    monkeypatch.setattr(runtime, "run_worker", worker)
+    app.main()
+    worker.assert_called_once_with(queue, max_tasks=10_000)

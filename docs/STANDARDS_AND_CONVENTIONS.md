@@ -10,7 +10,7 @@ and refactors as well as bug fixes.
 
 - **No `any`**: Strictly type all interfaces, handlers, and database interactions.
 - **Single Source of Truth**: Import types from `src/types/database.types.ts` (React)
-  and `database/models.py` (Python scraper).
+  and `services/scraper/src/jobpulse_scraper/database/models.py` (Python scraper).
 - **Schema Parity**: PostgreSQL schema in `supabase/migrations/` is the sole authority.
   Forward migrations must be immediately synchronized across both languages via
   `make db-types` (or `npm run db:types`). Zero drift is strictly enforced in CI.
@@ -57,7 +57,7 @@ formatter caching and server-aggregation rules. Consult it before changing those
 
 - **Code Style & Formatting**: Enforced via Ruff (`pyproject.toml`). Line length is 120. Formatted with `uv run --locked ruff format` (or `make scrape-format`).
 - **Linting Rules**: `E`, `F`, `I` (isort), `UP` (pyupgrade), `B` (flake8-bugbear). Verified via `make scrape-lint`.
-- **Modular Provider Adapters**: All ATS and careers-board extraction logic must live in dedicated, stateless adapters under `services/scraper/scrapers/providers/`. Never bloat `listing.py` with inline parsing; use `listing.py` solely as a high-level dispatcher.
+- **Modular Provider Adapters**: Pure ATS and careers-board parsers live under `services/scraper/src/jobpulse_scraper/scrapers/parsers/`. Acquisition lives in typed adapters and provider workflows under `services/scraper/src/jobpulse_scraper/scrapers/`. Never bloat `listing.py` with inline parsing; use `listing.py` solely as a high-level dispatcher.
 - **Provider Test Fixtures**: Every new provider adapter must include isolated unit tests with mock responses or fixture HTML in `services/scraper/tests/test_provider_adapters.py`.
 - **Type Safety**: Strictly annotate function signatures and models. Use Pydantic v2 models
   generated from live Supabase schema (`database/models.py`).
@@ -102,8 +102,8 @@ installation uses the committed lockfiles. All of these CI jobs must pass for re
 | CI job | Name | Verification |
 | --- | --- | --- |
 | `check` | Code Quality & Build Check | History secret scan, JavaScript audit, lint, TypeScript, coverage tests, production build, Storybook build, browser accessibility/interaction coverage and pinned Linux visual tests |
-| `tenant-isolation` | Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, TypeScript/Python schema parity, real account-deletion isolation |
-| `scraper-check` | Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, pytest |
+| `tenant-isolation` | Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, crawl concurrency/recovery, TypeScript/Python schema parity, real account-deletion isolation |
+| `scraper-check` | Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, installed wheel verification, pytest |
 
 CI resets its disposable stack. Local checks never reset a developer database.
 Migration lint is part of Tenant Isolation Guardrails. GitHub settings are configured outside the workflow;

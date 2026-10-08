@@ -8,7 +8,7 @@ from urllib.request import Request
 
 import pytest
 
-from network import http_client, request_policy
+from jobpulse_scraper.network import http_client, request_policy
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ def test_retry_after(value, expected):
 
 def test_host_pacing_covers_different_paths(monkeypatch):
     sleeps = []
-    monkeypatch.setattr(request_policy.time, "monotonic", lambda: 100)
+    monkeypatch.setattr(request_policy.time, "time", lambda: 100)
     monkeypatch.setattr(request_policy.time, "sleep", sleeps.append)
     request_policy.gate.wait("https://example.invalid/a")
     request_policy.gate.wait("https://example.invalid/b")
@@ -56,7 +56,7 @@ def test_denial_stops_http_and_later_paths_without_request(monkeypatch, status):
 
 
 def test_cooldown_blocks_browser_fallback(monkeypatch):
-    from network import browser
+    from jobpulse_scraper.network import browser
 
     request_policy.gate.observe("https://example.invalid/a", 403, None)
     launch = MagicMock()

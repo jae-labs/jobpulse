@@ -16,10 +16,10 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from database.client import get_supabase, retry_supabase
-from database.embeddings import prepare_embeddings
-from database.records import response_records
-from engine.text_cleaner import normalize_location
+from jobpulse_scraper.database.client import get_supabase, retry_supabase
+from jobpulse_scraper.database.embeddings import prepare_embeddings
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.engine.text_cleaner import normalize_location
 
 
 def read_catalog_snapshot(path: Path) -> dict[int, dict[str, str | None]]:

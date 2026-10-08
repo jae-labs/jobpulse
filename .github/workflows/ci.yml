@@ -81,6 +81,7 @@ jobs:
           supabase db reset --local
           supabase db lint --local
           node scripts/test-database.mjs
+          node scripts/test-crawl-concurrency.mjs
 
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # ratchet:astral-sh/setup-uv@v10.2.0
@@ -93,7 +94,7 @@ jobs:
       - name: Verify database type parity (TypeScript & Python)
         run: |
           make db-types
-          git diff --exit-code src/types/database.types.ts services/scraper/database/models.py
+          git diff --exit-code src/types/database.types.ts services/scraper/src/jobpulse_scraper/database/models.py
 
       - name: Install integration test dependencies
         run: |
@@ -134,6 +135,9 @@ jobs:
           cd services/scraper
           uv export --locked --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file /tmp/jobpulse-requirements.txt
           uvx --from pip-audit==2.10.1 pip-audit --disable-pip --no-deps -r /tmp/jobpulse-requirements.txt
+
+      - name: Verify installed package
+        run: make scrape-package
 
       - name: Run unit tests
         run: cd services/scraper && uv run --locked pytest

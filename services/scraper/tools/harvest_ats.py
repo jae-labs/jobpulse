@@ -20,10 +20,10 @@ from urllib.parse import urljoin, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config.boards import board_url, detect_provider  # noqa: E402
-from database.client import get_supabase  # noqa: E402
-from database.records import select_all_records  # noqa: E402
-from network.http_client import fetch_url_with_final  # noqa: E402
+from jobpulse_scraper.config.boards import board_url, detect_provider  # noqa: E402
+from jobpulse_scraper.database.client import get_supabase  # noqa: E402
+from jobpulse_scraper.database.records import select_all_records  # noqa: E402
+from jobpulse_scraper.network.http_client import fetch_url_with_final  # noqa: E402
 from tools.sniff_ats import sniff_ats_from_url_and_html  # noqa: E402
 
 CAREERS_PATHS = ("/careers", "/jobs", "/careers/", "/about/careers", "/company/careers", "/en/careers")
@@ -151,7 +151,7 @@ def detect_board(url: str, *, allow_browser: bool = True) -> tuple[str, str] | N
         return None
     # A JS-rendered careers page (React/Vue shell) exposes the ATS only after render.
     try:
-        from network.browser import fetch_via_browser  # noqa: PLC0415
+        from jobpulse_scraper.network.browser import fetch_via_browser  # noqa: PLC0415
 
         browser_url, browser_html = fetch_via_browser(final_url or url, wait_for_idle=True)
         if browser_html:

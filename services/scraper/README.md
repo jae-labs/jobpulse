@@ -8,7 +8,7 @@ The scraper discovers Irish employer openings, extracts job details, generates j
 `enabled` field to false; rejected and retired boards are not crawled. An empty
 catalog stays empty. YAML is used only when the database catalog is unavailable.
 
-Edit [`config/websites.yaml`](config/websites.yaml) to change the bootstrap seed:
+Edit [`src/jobpulse_scraper/config/websites.yaml`](src/jobpulse_scraper/config/websites.yaml) to change the bootstrap seed:
 
 ```yaml
 - name: Dublin Port Company
@@ -41,10 +41,27 @@ See [board operations](../../docs/OPERATIONS.md#board-catalog) for discovery and
 | `make scrape-test NAME="The Housing Agency"` | Scrape one employer |
 | `make scrape-core` | Run specialized scrapers |
 | `make scrape-boards ARGS="--limit 50"` | Crawl only database boards, bounded by target count |
-| `make scrape` | Scrape, deduplicate, and embed jobs |
+| `make scrape` | Process due work and queue eligible sources with six-hour success/failure intervals |
+| `make scrape ARGS="--sync"` | Run the synchronous scrape, detail, embedding and deduplication pipeline |
 | `make scrape-backfill` | Generate missing vectors for existing jobs after migration |
+| `make scrape-enqueue ARGS="--limit 20"` | Queue enabled targets durably |
+| `make scrape-worker ARGS="--limit 20"` | Drain bounded source/detail/vector tasks |
+| `make scrape-history` | Inspect public-source request evidence and denials |
+| `make scrape-package` | Build and verify the installable wheel |
+| `make scrape-pilot` | Evaluate engines on synthetic ATS, HTML and browser fixtures |
 | `make scrape-lint` | Check Python lint and formatting |
 | `make scrape-unit` | Run Python tests |
+
+`make scrape` processes up to the supported maximum of 10,000 due tasks and exits
+early when none remain. `make scrape ARGS="--limit 100"` sets a smaller task budget. Automatic startup
+queues eligible enabled sources independently. Pending or running source tasks keep
+their progress and retry dates. Completed sources refresh after at least six hours;
+failed source crawls retry after at least six hours, with longer remote delays
+preserved. Delayed failures do not block eligible peers. Exhausted retries need
+explicit enqueueing. Detail/vector retries keep their separate backoff.
+`make scrape-worker` never seeds sources; it only processes existing due work.
+Explicit employer/core and
+maintenance commands retain their supported behavior.
 
 Discovery, research, enrichment and verification helpers are listed in
 [the operating workflow](../../docs/OPERATIONS.md#scraping-and-matching-workflow).
@@ -62,6 +79,13 @@ uv run --locked playwright install chromium
 ```
 
 Chromium is required by browser-backed sources; install its OS dependencies too on Linux if prompted.
+
+The installed entrypoint is `jobpulse-scraper`; `python -m jobpulse_scraper.app`
+provides the same flags. `app.py` preserves service-root invocations. Package imports
+use `jobpulse_scraper.*`; configuration resources ship in the wheel. Set
+`JOBPULSE_SCRAPER_HOME` for an explicit environment/configuration home and
+`JOBPULSE_CRAWL_STATE` for writable snapshots. No privileged credentials ship in the
+package. Offline replay uses `--replay <snapshot-metadata-key>`.
 
 Python dependencies are managed by `pyproject.toml` and `uv.lock`; commands use `uv run --locked`.
 Candidate scoring runs in PostgreSQL; the scraper does not load profile or scoring rules.

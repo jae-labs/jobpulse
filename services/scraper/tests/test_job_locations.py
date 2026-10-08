@@ -1,6 +1,6 @@
 import pytest
 
-from pipeline.job_locations import verify_location
+from jobpulse_scraper.pipeline.job_locations import verify_location
 
 
 class Provider:

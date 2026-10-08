@@ -12,9 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from database.client import get_supabase, retry_supabase
-from database.records import response_records
-from pipeline.ai_enrichment import enrich_companies_with_ai
+from jobpulse_scraper.database.client import get_supabase, retry_supabase
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.pipeline.ai_enrichment import enrich_companies_with_ai
 
 
 def main() -> None:

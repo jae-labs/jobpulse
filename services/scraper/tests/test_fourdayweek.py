@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from scrapers.core.fourdayweek import extract_fourdayweek_items
+from jobpulse_scraper.scrapers.core.fourdayweek import extract_fourdayweek_items
 
 
 def test_extract_fourdayweek_filters_ireland() -> None:

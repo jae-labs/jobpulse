@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from database.repository import IngestionIncompleteError
-from scrapers.core.jobsireland import (
+from jobpulse_scraper.database.repository import IngestionIncompleteError
+from jobpulse_scraper.scrapers.core.jobsireland import (
     extract_jobsireland_cards,
     fetch_jobsireland_page,
     parse_longlats_map,
@@ -100,17 +100,17 @@ class TestJobsIreland(unittest.TestCase):
         self.assertIn("Co. Meath", job2["location"])
         self.assertEqual(job2["url"], "https://jobsireland.ie/en-US/job-Details?id=2472850")
 
-    @patch("scrapers.core.jobsireland.fetch_page", return_value=SAMPLE_JOBSIRELAND_HTML)
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.fetch_page", return_value=SAMPLE_JOBSIRELAND_HTML)
     def test_fetch_jobsireland_page(self, mock_fetch: MagicMock) -> None:
         total, opps = fetch_jobsireland_page(page=1, page_size=100)
         self.assertEqual(total, 4923)
         self.assertEqual(len(opps), 2)
         mock_fetch.assert_called_once()
 
-    @patch("scrapers.core.jobsireland.pending_jobsireland_details", return_value=[])
-    @patch("scrapers.core.jobsireland.save_jobs_batch", return_value=2)
-    @patch("scrapers.core.jobsireland.update_source_status")
-    @patch("scrapers.core.jobsireland.fetch_jobsireland_page")
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.pending_jobsireland_details", return_value=[])
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.save_jobs_batch", return_value=2)
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.update_source_status")
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.fetch_jobsireland_page")
     def test_sync_jobsireland(
         self,
         mock_fetch_page: MagicMock,
@@ -127,10 +127,10 @@ class TestJobsIreland(unittest.TestCase):
         mock_save.assert_called_once()
         mock_update_status.assert_called_once()
 
-    @patch("scrapers.core.jobsireland.time.sleep")
-    @patch("scrapers.core.jobsireland.save_jobs_batch", return_value=2)
-    @patch("scrapers.core.jobsireland.update_source_status")
-    @patch("scrapers.core.jobsireland.fetch_jobsireland_page")
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.time.sleep")
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.save_jobs_batch", return_value=2)
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.update_source_status")
+    @patch("jobpulse_scraper.scrapers.core.jobsireland.fetch_jobsireland_page")
     def test_sync_jobsireland_reports_partial_crawl_as_incomplete(
         self,
         mock_fetch_page: MagicMock,
@@ -150,7 +150,7 @@ class TestJobsIreland(unittest.TestCase):
 
 
 def test_discovery_is_persisted_before_any_details_and_stops_on_failure(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     cards = extract_jobsireland_cards(SAMPLE_JOBSIRELAND_HTML)
     events = []
@@ -196,7 +196,7 @@ def test_discovery_is_persisted_before_any_details_and_stops_on_failure(monkeypa
 
 
 def test_pending_details_skips_persisted_bodies(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     cards = extract_jobsireland_cards(SAMPLE_JOBSIRELAND_HTML)
     client = MagicMock()
@@ -209,7 +209,7 @@ def test_pending_details_skips_persisted_bodies(monkeypatch):
 
 
 def test_listing_page_without_catalog_marker_is_not_an_empty_success(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     monkeypatch.setattr(jobsireland, "fetch_page", lambda _: "<main>Access denied</main>")
     with unittest.TestCase().assertRaises(ValueError):
@@ -217,7 +217,7 @@ def test_listing_page_without_catalog_marker_is_not_an_empty_success(monkeypatch
 
 
 def test_description_failure_does_not_request_remaining_jobs(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     cards = extract_jobsireland_cards(SAMPLE_JOBSIRELAND_HTML)
     monkeypatch.setattr(jobsireland, "fetch_jobsireland_page", lambda **kwargs: (2, cards))
@@ -234,7 +234,7 @@ def test_description_failure_does_not_request_remaining_jobs(monkeypatch):
 
 
 def test_successful_description_phase_counts_each_job_once(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     cards = extract_jobsireland_cards(SAMPLE_JOBSIRELAND_HTML)
     monkeypatch.setattr(jobsireland, "fetch_jobsireland_page", lambda **kwargs: (2, cards))
@@ -253,7 +253,7 @@ def test_successful_description_phase_counts_each_job_once(monkeypatch):
 
 
 def test_empty_page_before_catalog_end_reports_incomplete(monkeypatch):
-    from scrapers.core import jobsireland
+    from jobpulse_scraper.scrapers.core import jobsireland
 
     monkeypatch.setattr(jobsireland, "fetch_jobsireland_page", lambda **kwargs: (2, []))
     status = MagicMock()

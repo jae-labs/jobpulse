@@ -7,10 +7,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from database import repository
-from engine.description_quality import has_closed_notice, has_description_body, needs_description_repair
-from extractors import general, jobsireland, smartrecruiters, universal
-from scrapers.providers import extract_greenhouse_opportunities, extract_lever_opportunities
+from jobpulse_scraper.database import ingestion as repository
+from jobpulse_scraper.engine.description_quality import (
+    has_closed_notice,
+    has_description_body,
+    needs_description_repair,
+)
+from jobpulse_scraper.extractors import general, jobsireland, smartrecruiters, universal
+from jobpulse_scraper.scrapers.providers import extract_greenhouse_opportunities, extract_lever_opportunities
 from tools import repair_descriptions as repair
 
 BODY = "Design distributed systems and operate production services. " * 20 + "TAIL: Kubernetes and PostgreSQL required."
@@ -105,7 +109,7 @@ def test_smartrecruiters_keeps_qualifications_and_tail(monkeypatch) -> None:
 
 
 def test_greenhouse_preserves_api_body_beyond_old_cap(monkeypatch) -> None:
-    from scrapers.providers import greenhouse
+    from jobpulse_scraper.scrapers.providers import greenhouse
 
     monkeypatch.setattr(
         greenhouse,
@@ -127,7 +131,7 @@ def test_greenhouse_preserves_api_body_beyond_old_cap(monkeypatch) -> None:
 
 
 def test_lever_includes_list_sections_and_additional_text(monkeypatch) -> None:
-    from scrapers.providers import lever
+    from jobpulse_scraper.scrapers.providers import lever
 
     monkeypatch.setattr(
         lever,
@@ -322,7 +326,7 @@ def test_failed_existing_read_cannot_fall_through_to_stub_write(monkeypatch) -> 
 
 
 def test_amazon_recovery_matches_exact_posting_id(monkeypatch) -> None:
-    from extractors import api_details
+    from jobpulse_scraper.extractors import api_details
 
     monkeypatch.setattr(
         api_details,
@@ -340,7 +344,7 @@ def test_amazon_recovery_matches_exact_posting_id(monkeypatch) -> None:
 
 
 def test_oracle_keeps_role_responsibilities_and_qualifications(monkeypatch) -> None:
-    from extractors import api_details
+    from jobpulse_scraper.extractors import api_details
 
     calls = []
 
@@ -365,7 +369,7 @@ def test_oracle_keeps_role_responsibilities_and_qualifications(monkeypatch) -> N
 
 
 def test_custom_greenhouse_url_uses_configured_board(monkeypatch) -> None:
-    from extractors import api_details
+    from jobpulse_scraper.extractors import api_details
 
     monkeypatch.setattr(
         api_details,
@@ -404,7 +408,7 @@ def test_pdf_body_keeps_late_pages_and_text_beyond_old_cap(monkeypatch) -> None:
     from pypdf import PdfWriter
     from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
-    from extractors import pdf
+    from jobpulse_scraper.extractors import pdf
 
     writer = PdfWriter()
     font = DictionaryObject(
@@ -427,8 +431,9 @@ def test_pdf_body_keeps_late_pages_and_text_beyond_old_cap(monkeypatch) -> None:
     writer.write(output)
 
     class PDFResponse(Response):
-        def read(self):
-            return output.getvalue()
+        def read(self, size=-1):
+            data = output.getvalue()
+            return data if size < 0 else data[:size]
 
     monkeypatch.setattr(pdf, "urlopen", lambda *_args, **_kwargs: PDFResponse(None))
     spec = pdf.extract_pdf_job_spec("https://example.com/booklet.pdf", "Engineer")
@@ -481,11 +486,11 @@ def test_long_aggregator_snippet_still_fetches_detail(monkeypatch) -> None:
     }
     fetch = MagicMock(return_value={"description": BODY + " Full source duties."})
     monkeypatch.setattr(universal, "extract_universal_job_spec", fetch)
-    result = repository._enrich_job(job)
+    result = repository.enrich_job(job)
     fetch.assert_called_once()
     assert result["description"].endswith("Full source duties.")
     monkeypatch.setattr(universal, "extract_universal_job_spec", lambda *_: {})
-    assert repository._enrich_job(job)["description"] == ""
+    assert repository.enrich_job(job)["description"] == ""
 
 
 def test_generic_careers_landing_page_is_not_a_job_body(monkeypatch) -> None:
@@ -521,7 +526,7 @@ def test_related_jobposting_cannot_replace_requested_role(monkeypatch) -> None:
 
 
 def test_short_published_workday_body_is_not_discarded(monkeypatch) -> None:
-    from extractors import workday_cxs
+    from jobpulse_scraper.extractors import workday_cxs
 
     published = "Maintain reliable production services and support our customers. " * 2
     monkeypatch.setattr(
@@ -536,7 +541,7 @@ def test_short_published_workday_body_is_not_discarded(monkeypatch) -> None:
 
 
 def test_hubspot_custom_detail_uses_current_public_board(monkeypatch) -> None:
-    from extractors import api_details
+    from jobpulse_scraper.extractors import api_details
 
     calls = []
 
@@ -626,3 +631,23 @@ def test_coverage_audit_detects_vector_drift_and_never_confirms_dry_runs(monkeyp
     assert {call.args[0] for call in client.table.call_args_list} == {"jobs", "job_scoring_embeddings"}
     jobs_table.update.assert_not_called()
     vectors_table.delete.assert_not_called()
+
+
+def test_candidatemanager_scoped_body_excludes_page_chrome():
+    from jobpulse_scraper.extractors.general import extract_general_job_detail
+
+    page = '<nav>Foreign role and cookie content</nav><div id="ctl00_masterPageBodyContentPlaceholder_jobDetailsGroup"><h2>Job Purpose</h2><p>Published responsibilities and qualifications for the synthetic engineering role.</p></div><footer>Private account form</footer>'
+    result = extract_general_job_detail("https://example.invalid/job/1", "Synthetic", "Engineer", html_content=page)
+    assert "Published responsibilities" in result["description"]
+    assert "cookie" not in result["description"] and "account" not in result["description"]
+
+
+def test_official_booklet_selection_rejects_privacy_related_roles_and_foreign_origins():
+    from jobpulse_scraper.extractors.booklet_links import find_job_booklet
+
+    page = '<div class="housing-editor-content"><a href="/privacy.pdf">Privacy Notice</a><a href="https://foreign.invalid/role.pdf">Engineer</a><a href="/other.pdf">Director</a><a href="/engineer.pdf">Further information - Engineer</a></div>'
+    assert (
+        find_job_booklet(page, "Engineer", "https://www.housingagency.ie/careers/engineer")
+        == "https://www.housingagency.ie/engineer.pdf"
+    )
+    assert find_job_booklet(page, "Engineer", "https://example.invalid/careers/engineer") is None

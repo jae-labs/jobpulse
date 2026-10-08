@@ -15,12 +15,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from database.client import get_supabase, retry_supabase  # noqa: E402
-from database.embeddings import prepare_embeddings  # noqa: E402
-from database.records import response_records
-from engine.description_quality import has_description_body, needs_description_repair  # noqa: E402
-from engine.text_cleaner import clean_description_text  # noqa: E402
-from extractors.universal import extract_universal_job_spec  # noqa: E402
+from jobpulse_scraper.database.client import get_supabase, retry_supabase  # noqa: E402
+from jobpulse_scraper.database.embeddings import prepare_embeddings  # noqa: E402
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.engine.description_quality import has_description_body, needs_description_repair  # noqa: E402
+from jobpulse_scraper.engine.text_cleaner import clean_description_text  # noqa: E402
+from jobpulse_scraper.extractors.universal import extract_universal_job_spec  # noqa: E402
 
 
 class DescriptionSourceBlocked(RuntimeError):

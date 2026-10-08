@@ -24,11 +24,11 @@ from urllib.parse import quote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config.boards import board_url, detect_provider  # noqa: E402
-from engine.text_cleaner import clean_text  # noqa: E402
-from network.http_client import fetch_url_with_final  # noqa: E402
-from scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
-from scrapers.providers.location import is_explicit_ireland_location  # noqa: E402
+from jobpulse_scraper.config.boards import board_url, detect_provider  # noqa: E402
+from jobpulse_scraper.engine.text_cleaner import clean_text  # noqa: E402
+from jobpulse_scraper.network.http_client import fetch_url_with_final  # noqa: E402
+from jobpulse_scraper.scrapers.generic.listing import extract_jobs_from_listing  # noqa: E402
+from jobpulse_scraper.scrapers.providers.location import is_explicit_ireland_location  # noqa: E402
 
 CDX_BASE = "https://index.commoncrawl.org"
 LIVE_STATUSES = ["pending", "active"]
@@ -236,7 +236,7 @@ def probe_irish(provider: str, board: str, board_url: str, company: str) -> int:
 def _live_boards() -> set[tuple[str, str]]:
     """Existing live board identities as ``(provider, lower(board))``."""
     try:
-        from config.boards import load_board_config  # noqa: PLC0415
+        from jobpulse_scraper.config.boards import load_board_config  # noqa: PLC0415
 
         return {(entry["provider"], entry["board"].lower()) for entry in load_board_config()}
     except Exception:
@@ -368,7 +368,7 @@ def discover_from_records(
 
 
 def discover_from_freehire(*, limit: int | None = None, apply: bool = False) -> dict[str, int]:
-    from database.client import get_supabase  # noqa: PLC0415
+    from jobpulse_scraper.database.client import get_supabase  # noqa: PLC0415
 
     try:
         client = get_supabase()
@@ -383,8 +383,8 @@ def discover_from_freehire(*, limit: int | None = None, apply: bool = False) -> 
 
 def discover_from_jobs(*, limit: int | None = None, apply: bool = False) -> dict[str, int]:
     """Recover token-based board identities from the postings we already store."""
-    from database.client import get_supabase, retry_supabase  # noqa: PLC0415
-    from database.records import response_records  # noqa: PLC0415
+    from jobpulse_scraper.database.client import get_supabase, retry_supabase  # noqa: PLC0415
+    from jobpulse_scraper.database.records import response_records  # noqa: PLC0415
 
     rows: list[dict[str, Any]] = []
     client = None
@@ -419,8 +419,8 @@ def discover(
     crawls: int = 3,
     apply: bool = False,
 ) -> dict[str, int]:
-    from database.client import get_supabase  # noqa: PLC0415
-    from database.records import select_all_records  # noqa: PLC0415
+    from jobpulse_scraper.database.client import get_supabase  # noqa: PLC0415
+    from jobpulse_scraper.database.records import select_all_records  # noqa: PLC0415
 
     try:
         client = get_supabase()
@@ -479,8 +479,8 @@ def discover(
 
 
 def _select_all(client: Any, table: str, columns: str) -> list[dict[str, Any]]:
-    from database.client import retry_supabase  # noqa: PLC0415
-    from database.records import response_records  # noqa: PLC0415
+    from jobpulse_scraper.database.client import retry_supabase  # noqa: PLC0415
+    from jobpulse_scraper.database.records import response_records  # noqa: PLC0415
 
     rows: list[dict[str, Any]] = []
     page = 0
@@ -505,9 +505,9 @@ def discover_from_employers(*, limit: int | None = None, apply: bool = False) ->
     Independent of any third-party catalogue: it reads the employers we already track
     and sniffs the ATS behind each careers URL, so a custom-domain site becomes a board.
     """
-    from config.boards import detect_provider  # noqa: PLC0415
-    from database.client import get_supabase  # noqa: PLC0415
-    from network.http_client import fetch_url_with_final  # noqa: PLC0415
+    from jobpulse_scraper.config.boards import detect_provider  # noqa: PLC0415
+    from jobpulse_scraper.database.client import get_supabase  # noqa: PLC0415
+    from jobpulse_scraper.network.http_client import fetch_url_with_final  # noqa: PLC0415
     from tools.sniff_ats import sniff_ats_from_url_and_html  # noqa: PLC0415
 
     try:

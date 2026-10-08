@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from scrapers.core.jobstash import extract_jobstash_items
+from jobpulse_scraper.scrapers.core.jobstash import extract_jobstash_items
 
 
 def test_extract_jobstash_filters_ireland() -> None:
@@ -40,8 +40,8 @@ def test_partial_feed_failure_preserves_count_and_reports_incomplete(monkeypatch
 
     import pytest
 
-    from database.repository import IngestionIncompleteError
-    from scrapers.core import jobstash
+    from jobpulse_scraper.database.repository import IngestionIncompleteError
+    from jobpulse_scraper.scrapers.core import jobstash
 
     responses = iter(
         [

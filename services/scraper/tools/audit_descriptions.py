@@ -11,11 +11,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from database.client import get_supabase, retry_supabase  # noqa: E402
-from database.embeddings import job_scoring_hash  # noqa: E402
-from database.records import response_records
-from engine.description_quality import has_description_body  # noqa: E402
-from engine.embeddings import EMBEDDING_MODEL_VERSION  # noqa: E402
+from jobpulse_scraper.database.client import get_supabase, retry_supabase  # noqa: E402
+from jobpulse_scraper.database.embeddings import job_scoring_hash  # noqa: E402
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.engine.description_quality import has_description_body  # noqa: E402
+from jobpulse_scraper.engine.embeddings import EMBEDDING_MODEL_VERSION  # noqa: E402
 
 
 def audit_descriptions(*, report: Path, summary: Path, repair_reports: list[Path]) -> dict:

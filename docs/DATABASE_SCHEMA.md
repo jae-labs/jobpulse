@@ -95,6 +95,10 @@ erDiagram
 | `employer_offices` | Shared company addresses and public evidence; not verified vacancy workplaces | Shared read for authorized users; backend writes |
 | `employer_office_lookups` | Persistent office research outcomes and retry dates | Backend-only; RLS and no browser grants |
 | `sources` | Feed sync status and crawl telemetry | Shared read for authorized users |
+| `crawl_tasks` | Durable source/detail/vector tasks, fenced leases, bounded attempts and retry dates | Backend-only; RLS and no browser grants |
+| `crawl_runs` | Structured public operational outcomes for each lease attempt | Backend-only; RLS and no browser grants |
+| `crawl_snapshots` | Bounded public response metadata and replay checksums; bodies remain in local storage | Backend-only; RLS and no browser grants |
+| `job_occurrences` | Provider posting identity, public origin, content hash and first/last observation | Backend-only; RLS and no browser grants |
 | `boards` | Scraper crawl-target catalog: provider/board/region to company, with crawl health | Backend-only; RLS and no browser grants |
 | `catalog_stats` | Shared overview facet rollup refreshed by the scraper; `is_valid` is cleared transactionally by job/employer writes | Backend-only; RLS and no browser grants |
 | `authorized_users` | Access and invitations (`pending`, `accepted`); revocation deletes the invitation | Own authorization row and issuer-owned invitations |
@@ -271,3 +275,30 @@ against the local stack; it does not migrate or reset developer data. The
 supports negative authorization tests. The [CI gate inventory](STANDARDS_AND_CONVENTIONS.md#ci-gates)
 identifies the disposable schema rebuild, migration lint and generated TypeScript/Python parity checks.
 These checks enforce their tested contracts; they do not verify hosted schema, backups or recovery readiness.
+
+`make db-types` generates both languages into ignored temporary files, validates
+the output and atomically replaces each complete model. Failed generation retains
+the existing files; readers never see an empty redirected output.
+
+## Durable scraper writes
+
+`enqueue_crawls_if_idle` serializes automatic starters and atomically seeds bounded
+source batches using per-source eligibility. Pending/running tasks retain their
+progress; their future retry dates never block eligible peers. Successful fenced
+completion records `crawl_tasks.last_succeeded_at` and enforces a six-hour minimum
+refresh interval. Failed source crawls wait at least six hours, preserving longer
+remote delays; detail/vector retries retain independent backoff. Exhausted tasks
+do not restart automatically. Explicit enqueueing retains its separate refresh
+semantics without resetting pending attempts or retry dates.
+Service-only crawl RPCs claim work with `FOR UPDATE SKIP LOCKED`, renew live leases
+and reject stale writes or completion. `persist_crawl_jobs` atomically stores catalog
+facts, source occurrences and detail/vector follow-up tasks. `store_crawl_vectors`
+accepts inference output only while its lease and expected job facts remain current.
+Candidate matching remains in `candidate_scoring_work` and its existing SQL worker.
+
+Snapshot metadata has a sixteen-MiB response ceiling. History maintenance removes
+expired or excess snapshots/runs while source occurrences retain their job identity.
+Deduplication transfers provenance and candidate tracking together. Scheduling does
+not overwrite a running or pending target or erase its retry budget. Executable
+contracts live in `tenant_crawl_runtime.sql`, `tenant_crawl_enrichment.sql` and
+`scripts/test-crawl-concurrency.mjs`; see [Required Verification](../AGENTS.md#required-verification).

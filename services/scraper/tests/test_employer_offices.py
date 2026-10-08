@@ -2,7 +2,7 @@
 
 import pytest
 
-from pipeline.employer_offices import DETAILS_API, PLACES_API, discover_offices, website_domain
+from jobpulse_scraper.pipeline.employer_offices import DETAILS_API, PLACES_API, discover_offices, website_domain
 
 
 class Provider:
@@ -95,14 +95,17 @@ def test_unsafe_website_is_not_stored(value):
 
 
 def test_office_stage_failure_does_not_fail_scrape_or_location_verification(monkeypatch):
-    from pipeline import runner
+    from jobpulse_scraper.pipeline import runner
 
     monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic")
     monkeypatch.setattr(runner, "_scrape", lambda *args: {"added": 3})
     monkeypatch.setattr(
-        "pipeline.employer_offices.enrich_offices", lambda **kwargs: (_ for _ in ()).throw(RuntimeError())
+        "jobpulse_scraper.pipeline.employer_offices.enrich_offices",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError()),
     )
-    monkeypatch.setattr("pipeline.job_locations.verify_catalog_locations", lambda **kwargs: {"updated": 2})
+    monkeypatch.setattr(
+        "jobpulse_scraper.pipeline.job_locations.verify_catalog_locations", lambda **kwargs: {"updated": 2}
+    )
     result = runner.synchronize()
     assert result == {"added": 3, "employer_offices": {"failed": 1}, "locations": {"updated": 2}}
 
@@ -111,7 +114,7 @@ def test_office_stage_failure_does_not_fail_scrape_or_location_verification(monk
     "features", [[None], [{"properties": None}], [office(name=None)], [office(categories="office.it")]]
 )
 def test_malformed_provider_results_are_retryable(features):
-    from pipeline.company_research import ResearchError
+    from jobpulse_scraper.pipeline.company_research import ResearchError
 
     with pytest.raises(ResearchError):
         discover_offices(Provider(features), EMPLOYER, "secret")

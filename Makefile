@@ -47,8 +47,8 @@ storage-import: ## Import exported Storage files locally; set BACKUP=.backups/jo
 backup: ## Save the linked production database and every Storage bucket.
 	bash scripts/backup-production.sh
 
-scrape: ## Run full scraper pipeline against Supabase.
-	@cd services/scraper && uv run --locked python app.py $(ARGS)
+scrape: ## Process due durable work and queue eligible sources; successful and failed sources wait six hours.
+	@cd services/scraper && uv run --locked python app.py --auto $(ARGS)
 
 scrape-test: ## Test scraping a specific employer; set NAME="Employer Name".
 	@test -n "$(NAME)" || (echo "Set NAME='Employer Name'." >&2; exit 2)
@@ -113,6 +113,23 @@ scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --r
 
 scrape-enrich-ai: ## Propose company metadata via agy (no writes); report in .backups.
 	@cd services/scraper && uv run --locked python tools/enrich_companies_ai.py --report ../../.backups/company-proposals.json $(ARGS)
+
+scrape-package: ## Build and verify the installed scraper wheel.
+	@mkdir -p .backups/scraper-dist
+	@cd services/scraper && uv build --wheel --out-dir ../../.backups/scraper-dist > ../../.backups/scraper-dist/build.log 2>&1
+	@cd services/scraper && uv run --locked python tools/verify_wheel.py ../../.backups/scraper-dist
+
+scrape-enqueue: ## Queue configured crawl targets durably.
+	@cd services/scraper && uv run --locked python app.py --enqueue $(ARGS)
+
+scrape-worker: ## Process a bounded set of durable source/detail/vector tasks.
+	@cd services/scraper && uv run --locked python app.py --worker $(ARGS)
+
+scrape-history: ## Inspect bounded public-source transport observations.
+	@cd services/scraper && uv run --locked python app.py --request-history $(ARGS)
+
+scrape-pilot: ## Compare Scrapy and composed execution on synthetic sources.
+	@cd services/scraper && uv run --locked --group pilot python tools/pilot_scrapy.py
 
 scrape-lint: ## Run ruff lint & format check on scraper code.
 	@cd services/scraper && uv run --locked ruff check .

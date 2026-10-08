@@ -2,8 +2,10 @@
 
 from unittest.mock import Mock
 
-from pipeline import runner
-from scrapers.generic.crawler import EmployerSyncResult, ScrapeOutcome
+import pytest
+
+from jobpulse_scraper.pipeline import runner
+from jobpulse_scraper.scrapers.generic.crawler import EmployerSyncResult, ScrapeOutcome
 
 
 def test_synchronize_runs_ingestion_once(monkeypatch) -> None:
@@ -57,7 +59,7 @@ def test_partial_source_failure_does_not_prune_catalog(monkeypatch) -> None:
 
 
 def test_post_scrape_location_verification_is_bounded_and_preserves_ingestion(monkeypatch):
-    from pipeline import job_locations
+    from jobpulse_scraper.pipeline import job_locations
 
     monkeypatch.setenv("GEOAPIFY_API_KEY", "synthetic-key")
     monkeypatch.setattr(runner, "_scrape", Mock(return_value={"added": 4}))
@@ -86,8 +88,8 @@ def test_synchronize_reloads_catalog_for_every_run(monkeypatch):
 def test_new_core_sources_propagate_request_failure(monkeypatch):
     import pytest
 
-    from database.repository import IngestionIncompleteError
-    from scrapers.core import fourdayweek, google, jobsireland, jobstash
+    from jobpulse_scraper.database.repository import IngestionIncompleteError
+    from jobpulse_scraper.scrapers.core import fourdayweek, google, jobsireland, jobstash
 
     def unavailable(url):
         raise OSError("Listing unavailable")
@@ -99,3 +101,22 @@ def test_new_core_sources_propagate_request_failure(monkeypatch):
         with pytest.raises(IngestionIncompleteError):
             getattr(module, "sync_" + module.__name__.rsplit(".", 1)[-1])()
         assert status.call_args.args[1] == "Failed"
+
+
+@pytest.mark.parametrize("module_name,sync_name", [("housing_agency", "sync_housing_agency"), ("kerry", "sync_kerry")])
+def test_empty_core_crawl_does_not_delete_filtered_catalog_rows(monkeypatch, module_name, sync_name):
+    import importlib
+    from unittest.mock import MagicMock
+
+    from jobpulse_scraper.database import repository
+
+    module = importlib.import_module("jobpulse_scraper.scrapers.core." + module_name)
+    client = MagicMock()
+    monkeypatch.setattr(repository, "get_supabase", lambda: client)
+    if module_name == "housing_agency":
+        monkeypatch.setattr(module, "fetch_page", lambda _: "<html>No current opportunities</html>")
+    else:
+        monkeypatch.setattr(module, "with_browser", lambda _: [])
+    result = getattr(module, sync_name)()
+    assert result.result.persisted == 0
+    client.table.return_value.delete.assert_not_called()

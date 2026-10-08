@@ -51,6 +51,7 @@ Additional gates:
 - UI package changes: `npm run build-storybook`, `npm run test:ui` and `npm run test:ui:visual`.
   CI runs the catalog build, blocking accessibility/interaction tests and pinned Linux visual checks.
   Update visual fixtures only for intentional changes and inspect every changed screenshot.
+- Scraper package changes: `make scrape-package`; durable crawl/worker changes: `npm run db:test:crawl`.
 - Every completed change: `npm run db:test:tenancy`; never reset a developer database to pass it.
 - Database or matching changes: all SQL suites via `npm run db:test`, plus the relevant integration checks in [Release & Recovery](docs/RELEASE_AND_RECOVERY.md).
 
@@ -64,8 +65,8 @@ Additional gates:
 | Server state | `src/hooks/useQueries.ts`, domain query hooks, `src/lib/queryKeys.ts` |
 | Profiles and scoring | `src/lib/userProfile.ts`, `defaultProfile.ts`, `src/components/profile/` |
 | Localization | `src/lib/i18n.ts`, `src/locales/{en,pt-BR}/translation.json` |
-| Database | `supabase/migrations/`, `config.toml`; generated models in `src/types/database.types.ts` and `services/scraper/database/models.py` |
-| Scraper | `services/scraper/app.py`, `config/`, `scrapers/`, `pipeline/`, `engine/`, `database/`, `server/` |
+| Database | `supabase/migrations/`, `config.toml`; generated models in `src/types/database.types.ts` and `services/scraper/src/jobpulse_scraper/database/models.py` |
+| Scraper | `services/scraper/app.py`, `services/scraper/src/jobpulse_scraper/{config,scrapers,pipeline,engine,database,network,runtime,server}/` |
 
 Pipeline statuses are `new`, `applied`, `interviewing`, `rejected`, `not_interested`.
 Saved is the independent owner-only `is_saved` bookmark, not a stage.
@@ -143,10 +144,10 @@ Progressive discovery index: [`docs/`](docs/).
 - If database tables, RLS, or schema change: create a forward migration
   (`npm run db:migration <name>`), test the complete chain with a reset on a disposable local stack,
   synchronize both TypeScript and Python types together (`make db-types` or `npm run db:types`),
-  verify parity across both codebases (`git diff src/types/database.types.ts services/scraper/database/models.py`),
+  verify parity across both codebases (`git diff src/types/database.types.ts services/scraper/src/jobpulse_scraper/database/models.py`),
   inspect parity against remote (`npm run db:diff`), and follow the release guide for hosted application.
   Never edit an applied migration. CI enforces zero drift across both `src/types/database.types.ts`
-  and `services/scraper/database/models.py`.
+  and `services/scraper/src/jobpulse_scraper/database/models.py`.
   On an existing developer database, apply pending versions with `supabase migration up --local`.
   A reset deletes local data; never use it as an automatic recovery from a stale tenant-test ledger.
 - If data fetching or mutations change: update `src/hooks/useQueries.ts` and maintain clean query cache

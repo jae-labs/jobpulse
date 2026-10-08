@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pipeline.job_locations import verify_catalog_locations
+from jobpulse_scraper.pipeline.job_locations import verify_catalog_locations
 
 
 def main() -> None:

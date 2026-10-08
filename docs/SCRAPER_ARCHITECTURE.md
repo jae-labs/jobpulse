@@ -2,19 +2,64 @@
 
 `services/scraper/` is a vacancy data provider. It does not read profiles, evaluate candidates, or write `user_job_evaluations`.
 
+## Package and boundaries
+
+The installable `jobpulse_scraper` package lives in `services/scraper/src/jobpulse_scraper/`.
+`jobpulse-scraper` and `python -m jobpulse_scraper.app` expose the CLI; the service-root
+`app.py` keeps existing Makefile and script invocations working. Packaged YAML/JSON
+resources load relative to the package. `JOBPULSE_SCRAPER_HOME` selects an explicit
+service home and `JOBPULSE_CRAWL_STATE` selects writable crawl state. The editable
+checkout defaults to `.backups/crawler/`; an installed wheel defaults to its working
+directory's `.backups/crawler/`.
+
+Paths in the module table are relative to the package root:
+
+| Boundary | Modules | Contract |
+| --- | --- | --- |
+| Published facts | `contracts.py` | Immutable targets/responses, typed transport protocol, raw vacancy models and explicit result counts |
+| Parsing | `scrapers/parsers/` | Supplied-response functions import neither acquisition nor persistence; ATS JSON, HTML, XML and embedded feed parsers remain replayable |
+| Acquisition | `scrapers/adapters.py`, `scrapers/requests.py`, `scrapers/providers/` | Typed GET/POST requests and injected request openers control bounded pagination and permitted endpoint recovery |
+| Compatibility workflows | `scrapers/core/`, `scrapers/generic/` | Supported synchronous commands compose acquisition, normalization and ingestion |
+| Public transport | `network/transport.py`, `network/http_client.py`, `network/browser.py` | Injected HTTP/browser transports share pacing, denial handling and response bounds |
+| Catalog normalization | `engine/normalization.py` | Pure identities preserve canonical requisition URLs and PostgreSQL dedupe keys |
+| Detail extraction | `pipeline/detail_enrichment.py`, `extractors/` | Published detail hydration preserves listing facts and existing bodies on failure |
+| Persistence | `database/ingestion.py`, `database/repository.py` | Catalog writes and maintenance contain no candidate evaluation loop |
+| Durable execution | `runtime/queue.py`, `runtime/lease.py` | Database leases fence source writes, vectors and completion; detail/vector tasks retry independently |
+| Replay | `snapshots.py`, `network/recording.py` | Bounded public responses use content checksums and an injected metadata sink |
+
+Composition keeps parsers reusable by fixtures, snapshot replay and alternate
+execution engines. Stateful classes own transport, queue or storage lifecycles;
+pure transformations remain functions. Provider compatibility functions accept a typed
+`RequestOpener`; the primary adapter contract accepts an injected `Transport`. These boundaries follow the dependency
+inversion and small-abstraction principles in
+[Architecture Patterns with Python](https://www.cosmicpython.com/book/chapter_02_repository)
+and its [coupling chapter](https://www.cosmicpython.com/book/chapter_03_abstractions).
+
 ## Data Flow
 
 ```mermaid
 flowchart LR
-    Sources[Employer and ATS sources] --> Crawlers[Core and generic crawlers]
-    Crawlers --> Clean[Validation, text cleaning, salary normalization]
-    Clean --> Jobs[save_jobs_batch: shared jobs]
-    Jobs --> Embeddings[SentenceTransformers MiniLM 384d job embeddings]
-    Embeddings --> DB[(Supabase job_scoring_embeddings)]
+    Sources[Employer and ATS sources] --> Tasks[Durable source tasks]
+    Tasks --> Transport[Public transport and snapshots]
+    Transport --> Parsers[Supplied-response parsers]
+    Parsers --> Clean[Shared normalization]
+    Clean --> Jobs[Lease-fenced catalog and provenance transaction]
+    Jobs --> Details[Durable published-detail tasks]
+    Jobs --> Vectors[Durable job-vector tasks]
+    Details --> Jobs
+    Vectors --> DB[(Supabase job_scoring_embeddings)]
     DB --> Trigger[PostgreSQL advances catalog generation]
 ```
 
-`pipeline/runner.py` coordinates the crawlers and catalog maintenance. Every adapter writes through `database/repository.py:save_jobs_batch`, which validates, cleans, deduplicates, and saves shared vacancy facts. Once each batch is persisted, `database/embeddings.py:prepare_embeddings` computes missing or changed `all-MiniLM-L6-v2` job vectors. The model runs locally with Apple Metal when available and CPU otherwise. It never loads a profile model or candidate data.
+`pipeline/runner.py` preserves synchronous CLI/API synchronization. Durable workers
+use typed adapters where available and the supported specialized acquisition paths
+for other sources. `database/ingestion.py:save_jobs_batch` validates, cleans and saves
+shared vacancy facts. Durable writes enqueue detail or vector tasks in the same
+transaction; synchronous compatibility calls hydrate and prepare vectors inline.
+`database/embeddings.py:prepare_embeddings` computes missing or changed
+`all-MiniLM-L6-v2` job vectors. The model uses Apple Metal when available and CPU
+otherwise, and reads no profile or candidate data. Core reports carry explicit
+counts while preserving two-value Python unpacking; health never parses display text.
 
 The statement trigger on `job_scoring_embeddings` advances one catalog generation. Candidate scoring is decoupled from ingestion and driven by the durable worker. User profile vectors are generated in a browser worker; profile/vector writes enqueue work atomically. `rescore_user` requests a retry or shortlist limit change and does not score synchronously. A completed request keeps at most 1,500 native evaluations. Catalog refreshes score only changed or missing facts. Score composition for weight changes happens in `get_jobs_page` and overview metrics from stored sub-scores.
 
@@ -22,11 +67,75 @@ The scraper hashes scoring job facts separately from the embedding document. A s
 
 ## Network policy
 
-Shared public-page and ATS requests verify TLS first, then retry certificate errors
-without certificate or hostname verification on any crawl host. Other connection
-errors still fail. Supabase connections keep their own verified transport.
-The fallback permits interception or alteration of public crawl traffic; it does
-not extend to the database client or disable verification on the first attempt.
+Public HTTP requests verify TLS first and retry certificate errors with verification
+disabled. Browser contexts ignore public-source certificate errors. Supabase keeps
+its own verified HTTP client. Connection/protocol failures remain source failures.
+
+The request gate reserves host slots in a local SQLite transaction before sleeping.
+Independent worker processes share host pacing and durable cooldowns on one machine;
+separate machines require their own coordinated deployment policy. Redirects, TLS
+fallbacks, transient retries and browser document/script/XHR requests use the gate.
+Browser images, fonts and media are blocked. Denials and `Retry-After` stop further
+host requests, including fallback transport attempts. Source observations record
+accepted responses, denials, timestamps and server retry directions; accepted samples
+never establish a safe request ceiling. See [request operations](OPERATIONS.md#request-pacing-and-bounded-observations).
+
+## Durable work, provenance and replay
+
+`crawl_tasks`, `crawl_runs`, `crawl_snapshots` and `job_occurrences` are backend-only
+public-source operational tables: RLS is enabled and browser roles receive no grants.
+Claims use `FOR UPDATE SKIP LOCKED`, renewable leases and unique fencing tokens.
+An expired claim records an expired attempt and permits recovery; stale tokens cannot
+write vacancies, snapshots, vectors or completion. Retry dates and bounded attempts
+survive process termination. Candidate matching remains in its existing SQL queue.
+
+A catalog write records the source identity, provider ID or canonical posting URL,
+content hash and available snapshot link. Deduplication transfers observations and
+candidate tracking to the retained job. Metadata-only listings remain catalog rows;
+failed source/detail requests do not close or delete vacancies. Vector writes compare
+the current scoring facts with the inference snapshot before accepting output.
+
+Snapshots contain public bodies and sanitized public URLs, never authorization headers,
+cookies, credentials or candidate records. Local storage enforces a 16 MiB body limit,
+a 256 MiB aggregate limit, at most 10,000 files and thirty-day retention under a
+process-safe lock. Replay validates metadata/body checksums and invokes the registered
+parser without network or database writes. Registered adapter pages receive replayable
+snapshots. Durable compatibility workflows retain source provenance
+and transport observations; their occurrence snapshot link can be null. SQL history retention removes snapshots
+older than thirty days or beyond 10,000 rows, and finished runs older than thirty days
+or beyond 100,000 rows; provenance remains when its snapshot expires. Workers invoke `purge_crawl_history()` with service credentials before a bounded drain.
+Automatic `make scrape` startup uses the service-only `enqueue_crawls_if_idle`
+RPC with per-source eligibility. Concurrent starters serialize through a
+transaction-scoped advisory lock. Pending/running source tasks stay untouched;
+future retries do not block other eligible sources. Source targets commit together
+before workers can claim them. Completed sources wait six hours from
+`last_succeeded_at`. Failed source crawls receive a six-hour minimum retry date,
+with longer remote delays preserved. Detail/vector tasks keep independent backoff,
+and exhausted tasks require explicit enqueueing. Only successful fenced completion
+advances the successful timestamp.
+Repeated scheduling preserves pending targets, retry attempts and retry dates; it
+starts a new attempt cycle only for completed or dead work.
+
+PDF detail extraction accepts at most 10 MiB, 100 pages and 200,000 extracted
+characters. Catalog identity URLs retain their original values; public acquisition
+encodes invalid wire characters such as spaces. Role-specific booklet links stay on
+the official origin and exclude unrelated privacy documents.
+
+## Execution engine decision
+
+The runtime uses composed adapters with PostgreSQL durability. `make scrape-pilot`
+compares this executor with Scrapy on synthetic ATS JSON, paginated HTML and real
+Chromium rendering. The executable contract requires identical vacancy records and
+only one remote request after a denial, under the same host pacing. This workload
+does not establish a material Scrapy throughput benefit, so production does not
+require Scrapy. Scrapy lives in the evaluation/development dependency group.
+
+Reevaluate the engine when broad HTML frontiers require its spider scheduler,
+duplicate filtering or downloader middleware. Keep database leases and candidate
+boundaries authoritative if an additional engine is introduced. Scrapy's
+[architecture](https://docs.scrapy.org/en/latest/topics/architecture.html) and
+[embedded crawler APIs](https://docs.scrapy.org/en/latest/topics/practices.html)
+provide the extension points; the parser contract remains independent of them.
 
 ## Board catalog
 
@@ -129,7 +238,8 @@ Run `make scrape-lint` and `make scrape-unit` after changes to this service.
 
 ## Full description ingestion
 
-Ingestion retrieves missing posting details by default and preserves complete API
+Synchronous ingestion retrieves missing posting details by default; durable ingestion
+queues independent detail tasks. Both preserve complete API
 bodies rather than listing snippets. JobsIreland persists listing pages before
 fetching missing bodies sequentially; completed bodies act as retry checkpoints,
 and the first unusable detail response stops further detail requests. Failed detail requests cannot erase a stored

@@ -16,10 +16,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from database.client import get_supabase, retry_supabase
-from database.records import response_records
-from pipeline.employer_lookup import curated_employer, load_evidence_registry
-from pipeline.stored_employer_evidence import load_reviewed_evidence, stored_sector_evidence, trusted_sector_index
+from jobpulse_scraper.database.client import get_supabase, retry_supabase
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.pipeline.employer_lookup import curated_employer, load_evidence_registry
+from jobpulse_scraper.pipeline.stored_employer_evidence import (
+    load_reviewed_evidence,
+    stored_sector_evidence,
+    trusted_sector_index,
+)
 
 logger = logging.getLogger(__name__)
 

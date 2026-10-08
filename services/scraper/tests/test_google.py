@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from scrapers.core.google import _ds1_payload, extract_google_items
+from jobpulse_scraper.scrapers.core.google import _ds1_payload, extract_google_items
 
 
 def _record(job_id: str, title: str, brand: str, locations: list[str], about: str = "") -> list:

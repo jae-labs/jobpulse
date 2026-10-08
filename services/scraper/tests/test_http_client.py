@@ -8,7 +8,7 @@ from urllib.request import Request
 
 import pytest
 
-from network import http_client
+from jobpulse_scraper.network import http_client
 
 
 def test_default_tls_verifies_certificate_and_hostname():
@@ -78,3 +78,46 @@ def test_http_error_does_not_trigger_certificate_fallback():
             with http_client.open_request(Request("https://example.invalid")):
                 pass
     assert fetch.call_count == 1
+
+
+def test_wire_encoding_preserves_identity_and_existing_escapes():
+    from jobpulse_scraper.network.http_client import wire_url
+
+    url = "https://example.invalid/spec/Engineer Booklet%20(final).pdf?reference=role 1&encoded=%2F"
+    assert (
+        wire_url(url) == "https://example.invalid/spec/Engineer%20Booklet%20(final).pdf?reference=role%201&encoded=%2F"
+    )
+    assert "Engineer Booklet" in url
+
+
+def test_public_stream_budget_is_cumulative(monkeypatch):
+    import io
+
+    import pytest
+
+    from jobpulse_scraper.contracts import ResponseBudgetExceeded
+    from jobpulse_scraper.network import http_client
+
+    monkeypatch.setattr(http_client, "MAX_RESPONSE_BYTES", 5)
+    response = http_client.BoundedResponse(io.BytesIO(b"123456"))
+    assert response.read(3) == b"123"
+    with pytest.raises(ResponseBudgetExceeded):
+        response.read(3)
+
+
+def test_decompression_budget_rejects_small_compressed_expansion(monkeypatch):
+    import gzip
+    import io
+
+    import pytest
+
+    from jobpulse_scraper.contracts import ResponseBudgetExceeded
+    from jobpulse_scraper.network import transport
+
+    monkeypatch.setattr(transport, "MAX_RESPONSE_BYTES", 100)
+
+    class Response(io.BytesIO):
+        headers = {"Content-Encoding": "gzip"}
+
+    with pytest.raises(ResponseBudgetExceeded):
+        transport.bounded_body(Response(gzip.compress(b"x" * 101)))

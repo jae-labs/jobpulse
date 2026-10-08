@@ -105,7 +105,7 @@ def test_group_token_boards_prefers_external_id_over_url() -> None:
 
 
 def test_discover_from_employers_uses_direct_ats(monkeypatch) -> None:
-    import database.client as dclient
+    import jobpulse_scraper.database.client as dclient
     from tools import discover_boards as db
 
     monkeypatch.setattr(

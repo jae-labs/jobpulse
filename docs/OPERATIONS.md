@@ -32,15 +32,17 @@ source; the scrape pipeline does not call it. See
 
 ### Request pacing and bounded observations
 
-`services/scraper/config/request_policy.yaml`, beside the source seed, stores
+`services/scraper/src/jobpulse_scraper/config/request_policy.yaml`, beside the source seed, stores
 host-wide operator pacing and the latest bounded audit. It also applies to hosts
 used by database-backed boards and API endpoints. Default pacing is one request
 start every three seconds per host; a denial pauses that host for at least fifteen
 minutes. [`Retry-After` delta-seconds and HTTP dates](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after)
 extend that pause. Cooldowns
-persist in `.backups/http-cooldowns.json`, so restarting does not clear a block.
-Run one crawler/audit process at a time: pacing and state writes are not coordinated
-across processes or machines. Do not delete cooldown state to bypass a denial.
+persist in `.backups/http-cooldowns.sqlite3`; `.backups/http-cooldowns.json` is the
+compatible diagnostic export. Worker processes share reservations and denials on
+one machine. Separate machines need coordinated host pacing. Do not remove either
+state file to bypass a denial. `make scrape-history` reports source/host observations;
+the ledger retains at most 10,000 events and thirty days of responses.
 
 ```bash
 make scrape-request-audit
@@ -67,16 +69,69 @@ host policy; a sample never authorizes increasing the request rate.
 Shared HTTP helpers pace initial requests, TLS retries and transient server retries.
 401/403/429 and server `Retry-After` responses stop immediately, preserve a cooldown
 and prevent browser fallback. The `fetch_via_browser` navigation helper respects
-those cooldowns; specialized adapters using `with_browser` directly, browser
-subresources and automatic HTTP redirects are not individually paced. A challenge
+those cooldowns. Specialized browser sessions, document/script/XHR requests and
+HTTP redirects also use host reservations; images, fonts and media are blocked. A challenge
 found by the audit also pauses its host. Existing board-health cooldowns remain
 separate from transport cooldowns, and failed crawls never imply vacancy closure.
+
+Local cooldown rejections use `source_cooldown` with `request_sent: false`; only an actual remote response contributes an HTTP status and denial observation.
+
+### Durable crawl workers
+
+```bash
+make scrape ARGS="--limit 100"
+make scrape-enqueue ARGS="--employer Tines"
+make scrape-worker ARGS="--limit 20"
+make scrape-history
+cd services/scraper
+uv run --locked jobpulse-scraper --replay <snapshot-metadata-key>
+```
+
+`make scrape` uses automatic durable startup: a service-only RPC serializes
+concurrent starters and queues sources independently when they are eligible.
+Pending/running sources keep their progress and retry dates. Future retries never
+block new or refresh-eligible peers. Completed sources refresh after at least six
+hours from `last_succeeded_at`. Failed source crawls wait at least six hours before
+retrying; longer remote delays remain authoritative. Detail/vector tasks retain
+their separate backoff. Exhausted (`dead`) tasks require explicit enqueueing.
+`make scrape` defaults to 10,000 due tasks, the supported maximum, and stops early
+when no work is due. `--limit` sets a smaller task budget. Explicit
+`make scrape-worker` defaults to 20 tasks. Use `make scrape-worker` to process only existing
+work, or `make scrape-enqueue` to deliberately request a source refresh, bypassing
+the successful freshness interval while retaining failed retry dates and transport
+cooldowns.
+`make scrape ARGS="--sync"` selects the synchronous pipeline.
+
+Enqueue selects enabled live boards, preserving the authoritative empty/disabled
+catalog behavior. Workers claim at most the requested task count and renew leases;
+source, detail and vector tasks share the durable queue. A failed task receives a
+retry date and bounded attempts. Re-enqueue deliberately requests another source
+crawl; it does not clear transport cooldowns. Independent processes can drain the
+same queue safely. Replay reads the configured state directory without database writes.
+
+Protected operator API routes include `POST /api/crawl/enqueue`,
+`GET /api/crawl/runs` and `GET /api/crawl/requests`. They use the same loopback/token
+and origin checks as synchronization. Run history returns at most 100 rows.
+Workers require service credentials; browser roles cannot call queue/snapshot/vector
+RPCs. Keep source implementation, local schema application and hosted deployment
+as separate operations. The [architecture guide](SCRAPER_ARCHITECTURE.md#durable-work-provenance-and-replay)
+defines fencing, provenance and snapshot bounds.
+
+Schedule bounded worker invocations with the deployment's existing scheduler, with SQL history maintenance performed at the start of each drain. The
+CLI does not create a hosted schedule or deploy workers. Inspect incomplete/dead
+work and source cooldowns before retrying; increasing concurrency does not establish
+provider permission or a higher safe request rate. Request history includes the latest
+denial status, response ordinal within retained source history, preceding-minute host
+response count, Retry-After, learned interval and cooldown. These are observations,
+not a published or guaranteed quota. Browser callback observations retain the
+source identity, and cookie-based ATS sessions share the public request gate.
 
 1. Import or discover boards in preview mode, review identities, then apply the
    chosen changes. Link board employers separately if needed.
 2. Run `make scrape-boards ARGS="--limit 50"` for a bounded board-only crawl,
-   `make scrape-core` for specialized feeds, or `make scrape` for both. `--limit`
-   bounds board targets, not postings or core feeds. Nonpositive limits are rejected.
+   `make scrape-core` for specialized feeds, or `make scrape` for automatic durable
+   execution. In synchronous mode, `--limit` bounds board targets, not postings or
+   core feeds; in durable worker mode it bounds tasks. Nonpositive limits are rejected.
 3. Ingestion validates and saves vacancy facts, links employers, retrieves missing
    descriptions and prepares job vectors. A full or board-only run also deduplicates
    through the candidate-safe RPC and refreshes shared overview facets.
@@ -131,7 +186,7 @@ CSP and compare reference vectors before keeping the same vector-space version.
 Employer metadata is shared catalog data. Sectors need curated or reviewed public evidence;
 candidate-private classifications never supply a shared sector. Research stored employers
 using `make scrape-research-employers ARGS="--help"` for report and provider
-limits. Keep public company evidence in `services/scraper/config/employer_evidence.json`.
+limits. Keep public company evidence in `services/scraper/src/jobpulse_scraper/config/employer_evidence.json`.
 Ambiguous names, job-board platforms and feed placeholders must stay unresolved.
 
 `make scrape-enrich-offices` performs bounded office research. Provider credentials stay in

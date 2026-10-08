@@ -237,6 +237,145 @@ export type Database = {
         }
         Relationships: []
       }
+      crawl_runs: {
+        Row: {
+          attempt: number
+          finished_at: string | null
+          id: string
+          lease_token: string
+          result: Json
+          started_at: string
+          status: string
+          task_id: string
+        }
+        Insert: {
+          attempt: number
+          finished_at?: string | null
+          id?: string
+          lease_token: string
+          result?: Json
+          started_at?: string
+          status?: string
+          task_id: string
+        }
+        Update: {
+          attempt?: number
+          finished_at?: string | null
+          id?: string
+          lease_token?: string
+          result?: Json
+          started_at?: string
+          status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_runs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_snapshots: {
+        Row: {
+          body_bytes: number
+          body_key: string
+          content_hash: string
+          fetched_at: string
+          http_status: number
+          id: string
+          parser_version: string
+          replay_key: string | null
+          run_id: string | null
+          source_key: string
+          url: string
+        }
+        Insert: {
+          body_bytes: number
+          body_key: string
+          content_hash: string
+          fetched_at?: string
+          http_status: number
+          id?: string
+          parser_version: string
+          replay_key?: string | null
+          run_id?: string | null
+          source_key: string
+          url: string
+        }
+        Update: {
+          body_bytes?: number
+          body_key?: string
+          content_hash?: string
+          fetched_at?: string
+          http_status?: number
+          id?: string
+          parser_version?: string
+          replay_key?: string | null
+          run_id?: string | null
+          source_key?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_tasks: {
+        Row: {
+          attempt: number
+          created_at: string
+          id: string
+          last_succeeded_at: string | null
+          lease_token: string | null
+          lease_until: string | null
+          max_attempts: number
+          next_fetch_at: string
+          priority: number
+          source_key: string
+          status: string
+          target: Json
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          id?: string
+          last_succeeded_at?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          next_fetch_at?: string
+          priority?: number
+          source_key: string
+          status?: string
+          target: Json
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          id?: string
+          last_succeeded_at?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          next_fetch_at?: string
+          priority?: number
+          source_key?: string
+          status?: string
+          target?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employer_office_lookups: {
         Row: {
           checked_at: string
@@ -390,6 +529,57 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      job_occurrences: {
+        Row: {
+          content_hash: string
+          external_id: string
+          first_seen_at: string
+          id: number
+          job_id: number
+          last_seen_at: string
+          snapshot_id: string | null
+          source_key: string
+          source_url: string
+        }
+        Insert: {
+          content_hash: string
+          external_id: string
+          first_seen_at?: string
+          id?: number
+          job_id: number
+          last_seen_at?: string
+          snapshot_id?: string | null
+          source_key: string
+          source_url: string
+        }
+        Update: {
+          content_hash?: string
+          external_id?: string
+          first_seen_at?: string
+          id?: number
+          job_id?: number
+          last_seen_at?: string
+          snapshot_id?: string | null
+          source_key?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_occurrences_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_occurrences_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       job_scoring_embeddings: {
         Row: {
@@ -839,6 +1029,30 @@ export type Database = {
         Args: { p_records: Json }
         Returns: Json
       }
+      claim_crawl: {
+        Args: { p_lease_seconds?: number }
+        Returns: {
+          attempt: number
+          created_at: string
+          id: string
+          last_succeeded_at: string | null
+          lease_token: string | null
+          lease_until: string | null
+          max_attempts: number
+          next_fetch_at: string
+          priority: number
+          source_key: string
+          status: string
+          target: Json
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "crawl_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       close_stale_jobs: {
         Args: { p_grace_days?: number; p_limit?: number }
         Returns: number
@@ -848,6 +1062,26 @@ export type Database = {
       enqueue_candidate_scoring: {
         Args: { p_top_k?: number; p_user_id: string }
         Returns: undefined
+      }
+      enqueue_crawl: {
+        Args: {
+          p_due?: string
+          p_priority?: number
+          p_source_key: string
+          p_target: Json
+        }
+        Returns: string
+      }
+      enqueue_crawls_if_idle: { Args: { p_targets: Json }; Returns: number }
+      finish_crawl: {
+        Args: {
+          p_result: Json
+          p_retry_at?: string
+          p_status: string
+          p_task_id: string
+          p_token: string
+        }
+        Returns: boolean
       }
       fit_tier_for_score: { Args: { p_score: number }; Returns: string }
       get_job_map: {
@@ -910,6 +1144,40 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      persist_crawl_jobs: {
+        Args: { p_jobs: Json; p_task_id: string; p_token: string }
+        Returns: {
+          closed_at: string | null
+          closed_reason: string | null
+          company: string
+          coordinate_source: string | null
+          dedupe_key: string
+          description: string
+          employer_id: number | null
+          employment_type: string
+          first_seen_at: string | null
+          id: number
+          last_seen_at: string | null
+          latitude: number | null
+          location: string
+          location_verification: Json | null
+          longitude: number | null
+          salary_currency: string | null
+          salary_max_amount: number | null
+          salary_min_amount: number | null
+          salary_period: string | null
+          salary_text: string | null
+          source: string
+          title: string
+          url: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       process_candidate_scoring: {
         Args: { p_batch_size?: number }
         Returns: number
@@ -922,6 +1190,7 @@ export type Database = {
         Args: { p_retention_days?: number }
         Returns: number
       }
+      purge_crawl_history: { Args: never; Returns: number }
       record_board_outcome: {
         Args: {
           p_board_id: number
@@ -932,7 +1201,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_crawl_snapshot: {
+        Args: { p_snapshot: Json; p_task_id: string; p_token: string }
+        Returns: string
+      }
       refresh_catalog_stats: { Args: never; Returns: undefined }
+      renew_crawl: {
+        Args: { p_lease_seconds?: number; p_task_id: string; p_token: string }
+        Returns: boolean
+      }
       rescore_user: {
         Args: { p_top_k?: number; p_user_id: string }
         Returns: number
@@ -967,6 +1244,10 @@ export type Database = {
       set_job_saved: {
         Args: { p_job_id: number; p_saved: boolean }
         Returns: undefined
+      }
+      store_crawl_vectors: {
+        Args: { p_task_id: string; p_token: string; p_vectors: Json }
+        Returns: number
       }
     }
     Enums: {

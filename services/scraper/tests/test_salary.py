@@ -2,7 +2,7 @@
 
 import pytest
 
-from engine.salary import extract_salary_from_context
+from jobpulse_scraper.engine.salary import extract_salary_from_context
 
 
 @pytest.mark.parametrize(
