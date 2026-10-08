@@ -510,3 +510,70 @@ Reports separate fuzzy-only employer coverage and truncated searches. Review
 actual identities and first-party operating-office evidence before accepting a
 proposal. Synthetic typo, token-order, country/domain conflict, acronym, refresh
 rollback and result-bound tests live in `services/scraper/tests/test_company_index.py`.
+
+### Evidence-based company comparison
+
+`make scrape-company-review` compares exact snapshot candidates through the
+operator-installed `agy` CLI. Fuzzy name retrieval is not used. The command reads
+public employer IDs/names/websites only, fetches bounded first-party text, and
+writes `.backups/company-index/identity-review.json`. The default budget is twenty
+employers; `--limit` accepts 1–10000. Reports and caches remain Git-ignored.
+
+```bash
+make scrape-company-review ARGS="--limit 20"
+make scrape-company-review ARGS="--limit 10000"
+# Supply public employer records or published alias witness URLs:
+make scrape-company-review ARGS="--employers /tmp/public-employers.json --aliases /tmp/company-aliases.json"
+# Snapshot facts alone usually cannot establish legal identity:
+make scrape-company-review ARGS="--no-fetch --limit 5"
+```
+
+Employer JSON supplies `id`, `name`, `website` and optional `company_number`.
+Private or unrelated input fields are discarded. Alias JSON is a list of records
+with `employer_id`, `url` and `aliases` (at most three aliases and one witness URL
+per employer). The URL must belong to the employer's exact website domain. Each
+alias must occur in fetched visible text before it participates in exact lookup.
+Published alias occurrence is a research lead, not automatic proof of identity.
+
+Acquisition admits at most two witness URLs and four same-domain redirects per
+employer page. Without an explicit alias page, it can follow one same-domain
+legal/terms/privacy/about/corporate link published on the homepage. It rejects credential/query URLs, non-public addresses and foreign
+redirects, pins validated public IPs, shares source pacing/cooldowns, and fails fast
+when pacing exceeds five seconds. Five-second socket timeouts and elapsed-time
+response/redirect checks bound slow responses. HTML bodies are capped at 1 MiB and
+visible witnesses at 12,000 characters. Unsupported encodings and source challenges
+remain failures; no browser fallback is used. Public-source TLS certificate failures
+retain the scraper's bounded fallback policy. Witnesses retain URL, content checksum,
+fetch time and truncation; their cache expires after seven days and is capped at
+3,000 entries/50 MiB. Missing/blocked text remains explicit evidence failure.
+
+Exact normalized names, website domains, supplied company numbers and witnessed
+aliases retrieve at most ten candidates, with truncation explicit. `agy` receives
+only the supplied public facts in an isolated temporary workspace with a minimal
+environment, sandbox/plan mode and instructions to use no tools or remembered facts.
+The default configured model is `gemini-3.8-flash-low`; `--model` selects an available
+operator model. `--timeout` accepts 1–300 seconds, default 120. Provider subprocess
+groups are terminated on exit/timeout. Logs report progress every fifteen seconds
+without printing prompts, response bodies or provider errors.
+
+Decisions are `same_company`, `different_company` or `insufficient_evidence`.
+Every pair must occur once; invented IDs, unsupported actions and invented quote
+citations fail validation. Positive proposals need matching cited company numbers
+or a cited first-party statement containing both names plus the candidate identity.
+Subsidiaries/departments and closed entities cannot pass that positive gate.
+Unsupported positive or uncited negative claims become `insufficient_evidence`.
+Exact quote validation checks supplied text, not the truth of the model's semantic
+interpretation. All outcomes require evidence review; the command has no apply
+mode and never writes catalog links, offices, coordinates or candidate records.
+
+Requests split at 128 KiB and at most twenty pairs. Response output is capped at
+256 KiB and provider stderr at 64 KiB. Model/prompt/evidence hashes key completed
+comparisons; cached outputs are revalidated. The cache expires after thirty days
+and retains at most 5,000 entries/100 MiB. Full caches skip new cache publication
+without changing validation. A flushed per-employer JSONL journal and atomic compact progress checkpoints retain
+partial results; the full JSON report is published once after the bounded run.
+a restart reuses completed comparisons. Three provider failures stop further work,
+and any provider failure exits nonzero. Cache reuse preserves public fact evidence
+but does not replace current employer/catalog checks before any future application.
+Synthetic citation, entity, privacy, acquisition, cache and timeout tests live in
+`services/scraper/tests/test_company_review.py`.

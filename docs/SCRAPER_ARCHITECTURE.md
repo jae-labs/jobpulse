@@ -454,3 +454,13 @@ character/token similarity in `company_index/similarity.py`. Scores explain name
 resemblance without asserting identity; exact evidence remains authoritative and
 all fuzzy results remain review-only. The pilot retains the exact-only report and
 writes fuzzy coverage separately.
+
+`company_index/review.py` validates evidence-bound agy identity proposals using
+strict response models and exact supplied citations. `company_index/evidence.py`
+acquires bounded first-party HTML text through shared source pacing/cooldowns and
+validated public addresses. `tools/review_company_matches.py` composes exact
+retrieval, witnessed aliases, provider calls, cache revalidation and atomic local
+checkpoints. Company numbers and first-party identity statements remain distinct
+from name/domain clues. Subsidiaries, departments, closed records and unsupported
+claims retain uncertainty. This path invokes no fuzzy retrieval and performs no
+Supabase writes or automatic office/location inference.
