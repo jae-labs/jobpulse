@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { normalizePythonModels } from './normalize-python-models.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 function command(binary, args) {
@@ -22,7 +23,7 @@ try {
   const stagedTs = join(directory, 'database.types.ts');
   const stagedPython = join(directory, 'models.py');
   writeFileSync(stagedTs, typescript);
-  writeFileSync(stagedPython, python);
+  writeFileSync(stagedPython, normalizePythonModels(python));
   command('uv', ['run', '--project', 'services/scraper', '--locked', 'ruff', 'format', '--config', 'services/scraper/pyproject.toml', stagedPython]);
   if (!readFileSync(stagedPython, 'utf8').includes('class PublicJobs(')) throw new Error('Formatted models are incomplete');
   renameSync(stagedTs, join(root, 'src/types/database.types.ts'));

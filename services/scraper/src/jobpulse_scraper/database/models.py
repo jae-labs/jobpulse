@@ -85,6 +85,366 @@ class PublicAuthorizedUsersUpdate(TypedDict):
     user_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="user_id")]]
 
 
+class PublicBoards(BaseModel):
+    board: str = Field(alias="board")
+    careers_url: str = Field(alias="careers_url")
+    company: str = Field(alias="company")
+    consecutive_failures: int = Field(alias="consecutive_failures")
+    cooldown_until: Optional[datetime.datetime] = Field(alias="cooldown_until")
+    created_at: datetime.datetime = Field(alias="created_at")
+    discovery_source: str = Field(alias="discovery_source")
+    employer_id: Optional[int] = Field(alias="employer_id")
+    enabled: bool = Field(alias="enabled")
+    id: int = Field(alias="id")
+    last_crawled_at: Optional[datetime.datetime] = Field(alias="last_crawled_at")
+    last_error: Optional[str] = Field(alias="last_error")
+    last_ingested_count: int = Field(alias="last_ingested_count")
+    last_verified_at: Optional[datetime.datetime] = Field(alias="last_verified_at")
+    metadata: Json[Any] = Field(alias="metadata")
+    priority: int = Field(alias="priority")
+    provider: str = Field(alias="provider")
+    region: str = Field(alias="region")
+    sector: str = Field(alias="sector")
+    status: str = Field(alias="status")
+    updated_at: datetime.datetime = Field(alias="updated_at")
+
+
+class PublicBoardsInsert(TypedDict):
+    board: Annotated[str, Field(alias="board")]
+    careers_url: Annotated[str, Field(alias="careers_url")]
+    company: Annotated[str, Field(alias="company")]
+    consecutive_failures: NotRequired[Annotated[int, Field(alias="consecutive_failures")]]
+    cooldown_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="cooldown_until")]]
+    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
+    discovery_source: NotRequired[Annotated[str, Field(alias="discovery_source")]]
+    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
+    enabled: NotRequired[Annotated[bool, Field(alias="enabled")]]
+    id: NotRequired[Annotated[int, Field(alias="id")]]
+    last_crawled_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_crawled_at")]]
+    last_error: NotRequired[Annotated[Optional[str], Field(alias="last_error")]]
+    last_ingested_count: NotRequired[Annotated[int, Field(alias="last_ingested_count")]]
+    last_verified_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_verified_at")]]
+    metadata: NotRequired[Annotated[Json[Any], Field(alias="metadata")]]
+    priority: NotRequired[Annotated[int, Field(alias="priority")]]
+    provider: Annotated[str, Field(alias="provider")]
+    region: NotRequired[Annotated[str, Field(alias="region")]]
+    sector: NotRequired[Annotated[str, Field(alias="sector")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+
+
+class PublicBoardsUpdate(TypedDict):
+    board: NotRequired[Annotated[str, Field(alias="board")]]
+    careers_url: NotRequired[Annotated[str, Field(alias="careers_url")]]
+    company: NotRequired[Annotated[str, Field(alias="company")]]
+    consecutive_failures: NotRequired[Annotated[int, Field(alias="consecutive_failures")]]
+    cooldown_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="cooldown_until")]]
+    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
+    discovery_source: NotRequired[Annotated[str, Field(alias="discovery_source")]]
+    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
+    enabled: NotRequired[Annotated[bool, Field(alias="enabled")]]
+    id: NotRequired[Annotated[int, Field(alias="id")]]
+    last_crawled_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_crawled_at")]]
+    last_error: NotRequired[Annotated[Optional[str], Field(alias="last_error")]]
+    last_ingested_count: NotRequired[Annotated[int, Field(alias="last_ingested_count")]]
+    last_verified_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_verified_at")]]
+    metadata: NotRequired[Annotated[Json[Any], Field(alias="metadata")]]
+    priority: NotRequired[Annotated[int, Field(alias="priority")]]
+    provider: NotRequired[Annotated[str, Field(alias="provider")]]
+    region: NotRequired[Annotated[str, Field(alias="region")]]
+    sector: NotRequired[Annotated[str, Field(alias="sector")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+
+
+class PublicCandidateScoringWork(BaseModel):
+    attempts: int = Field(alias="attempts")
+    catalog_generation: int = Field(alias="catalog_generation")
+    completed_catalog_generation: int = Field(alias="completed_catalog_generation")
+    completed_fingerprint: str = Field(alias="completed_fingerprint")
+    completed_revision: int = Field(alias="completed_revision")
+    cursor: int = Field(alias="cursor")
+    desired_revision: int = Field(alias="desired_revision")
+    fingerprint: str = Field(alias="fingerprint")
+    job_ids: Optional[List[int]] = Field(alias="job_ids")
+    last_error_code: Optional[str] = Field(alias="last_error_code")
+    needs_embedding: bool = Field(alias="needs_embedding")
+    retry_at: datetime.datetime = Field(alias="retry_at")
+    shortlist_ids: Optional[List[int]] = Field(alias="shortlist_ids")
+    state: str = Field(alias="state")
+    top_k: int = Field(alias="top_k")
+    updated_at: datetime.datetime = Field(alias="updated_at")
+    user_id: uuid.UUID = Field(alias="user_id")
+
+
+class PublicCandidateScoringWorkInsert(TypedDict):
+    attempts: NotRequired[Annotated[int, Field(alias="attempts")]]
+    catalog_generation: NotRequired[Annotated[int, Field(alias="catalog_generation")]]
+    completed_catalog_generation: NotRequired[Annotated[int, Field(alias="completed_catalog_generation")]]
+    completed_fingerprint: NotRequired[Annotated[str, Field(alias="completed_fingerprint")]]
+    completed_revision: NotRequired[Annotated[int, Field(alias="completed_revision")]]
+    cursor: NotRequired[Annotated[int, Field(alias="cursor")]]
+    desired_revision: NotRequired[Annotated[int, Field(alias="desired_revision")]]
+    fingerprint: Annotated[str, Field(alias="fingerprint")]
+    job_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="job_ids")]]
+    last_error_code: NotRequired[Annotated[Optional[str], Field(alias="last_error_code")]]
+    needs_embedding: NotRequired[Annotated[bool, Field(alias="needs_embedding")]]
+    retry_at: NotRequired[Annotated[datetime.datetime, Field(alias="retry_at")]]
+    shortlist_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="shortlist_ids")]]
+    state: NotRequired[Annotated[str, Field(alias="state")]]
+    top_k: NotRequired[Annotated[int, Field(alias="top_k")]]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+    user_id: Annotated[uuid.UUID, Field(alias="user_id")]
+
+
+class PublicCandidateScoringWorkUpdate(TypedDict):
+    attempts: NotRequired[Annotated[int, Field(alias="attempts")]]
+    catalog_generation: NotRequired[Annotated[int, Field(alias="catalog_generation")]]
+    completed_catalog_generation: NotRequired[Annotated[int, Field(alias="completed_catalog_generation")]]
+    completed_fingerprint: NotRequired[Annotated[str, Field(alias="completed_fingerprint")]]
+    completed_revision: NotRequired[Annotated[int, Field(alias="completed_revision")]]
+    cursor: NotRequired[Annotated[int, Field(alias="cursor")]]
+    desired_revision: NotRequired[Annotated[int, Field(alias="desired_revision")]]
+    fingerprint: NotRequired[Annotated[str, Field(alias="fingerprint")]]
+    job_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="job_ids")]]
+    last_error_code: NotRequired[Annotated[Optional[str], Field(alias="last_error_code")]]
+    needs_embedding: NotRequired[Annotated[bool, Field(alias="needs_embedding")]]
+    retry_at: NotRequired[Annotated[datetime.datetime, Field(alias="retry_at")]]
+    shortlist_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="shortlist_ids")]]
+    state: NotRequired[Annotated[str, Field(alias="state")]]
+    top_k: NotRequired[Annotated[int, Field(alias="top_k")]]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+    user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
+
+
+class PublicCatalogStats(BaseModel):
+    computed_at: datetime.datetime = Field(alias="computed_at")
+    id: bool = Field(alias="id")
+    is_valid: bool = Field(alias="is_valid")
+    job_count: int = Field(alias="job_count")
+    locations: Json[Any] = Field(alias="locations")
+    sectors: Json[Any] = Field(alias="sectors")
+
+
+class PublicCatalogStatsInsert(TypedDict):
+    computed_at: NotRequired[Annotated[datetime.datetime, Field(alias="computed_at")]]
+    id: NotRequired[Annotated[bool, Field(alias="id")]]
+    is_valid: NotRequired[Annotated[bool, Field(alias="is_valid")]]
+    job_count: NotRequired[Annotated[int, Field(alias="job_count")]]
+    locations: NotRequired[Annotated[Json[Any], Field(alias="locations")]]
+    sectors: NotRequired[Annotated[Json[Any], Field(alias="sectors")]]
+
+
+class PublicCatalogStatsUpdate(TypedDict):
+    computed_at: NotRequired[Annotated[datetime.datetime, Field(alias="computed_at")]]
+    id: NotRequired[Annotated[bool, Field(alias="id")]]
+    is_valid: NotRequired[Annotated[bool, Field(alias="is_valid")]]
+    job_count: NotRequired[Annotated[int, Field(alias="job_count")]]
+    locations: NotRequired[Annotated[Json[Any], Field(alias="locations")]]
+    sectors: NotRequired[Annotated[Json[Any], Field(alias="sectors")]]
+
+
+class PublicCrawlRuns(BaseModel):
+    attempt: int = Field(alias="attempt")
+    finished_at: Optional[datetime.datetime] = Field(alias="finished_at")
+    id: uuid.UUID = Field(alias="id")
+    lease_token: uuid.UUID = Field(alias="lease_token")
+    result: Json[Any] = Field(alias="result")
+    started_at: datetime.datetime = Field(alias="started_at")
+    status: str = Field(alias="status")
+    task_id: uuid.UUID = Field(alias="task_id")
+
+
+class PublicCrawlRunsInsert(TypedDict):
+    attempt: Annotated[int, Field(alias="attempt")]
+    finished_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="finished_at")]]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    lease_token: Annotated[uuid.UUID, Field(alias="lease_token")]
+    result: NotRequired[Annotated[Json[Any], Field(alias="result")]]
+    started_at: NotRequired[Annotated[datetime.datetime, Field(alias="started_at")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    task_id: Annotated[uuid.UUID, Field(alias="task_id")]
+
+
+class PublicCrawlRunsUpdate(TypedDict):
+    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
+    finished_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="finished_at")]]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    lease_token: NotRequired[Annotated[uuid.UUID, Field(alias="lease_token")]]
+    result: NotRequired[Annotated[Json[Any], Field(alias="result")]]
+    started_at: NotRequired[Annotated[datetime.datetime, Field(alias="started_at")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    task_id: NotRequired[Annotated[uuid.UUID, Field(alias="task_id")]]
+
+
+class PublicCrawlSnapshots(BaseModel):
+    body_bytes: int = Field(alias="body_bytes")
+    body_key: str = Field(alias="body_key")
+    content_hash: str = Field(alias="content_hash")
+    fetched_at: datetime.datetime = Field(alias="fetched_at")
+    http_status: int = Field(alias="http_status")
+    id: uuid.UUID = Field(alias="id")
+    parser_version: str = Field(alias="parser_version")
+    replay_key: Optional[str] = Field(alias="replay_key")
+    run_id: Optional[uuid.UUID] = Field(alias="run_id")
+    source_key: str = Field(alias="source_key")
+    url: str = Field(alias="url")
+
+
+class PublicCrawlSnapshotsInsert(TypedDict):
+    body_bytes: Annotated[int, Field(alias="body_bytes")]
+    body_key: Annotated[str, Field(alias="body_key")]
+    content_hash: Annotated[str, Field(alias="content_hash")]
+    fetched_at: NotRequired[Annotated[datetime.datetime, Field(alias="fetched_at")]]
+    http_status: Annotated[int, Field(alias="http_status")]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    parser_version: Annotated[str, Field(alias="parser_version")]
+    replay_key: NotRequired[Annotated[Optional[str], Field(alias="replay_key")]]
+    run_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="run_id")]]
+    source_key: Annotated[str, Field(alias="source_key")]
+    url: Annotated[str, Field(alias="url")]
+
+
+class PublicCrawlSnapshotsUpdate(TypedDict):
+    body_bytes: NotRequired[Annotated[int, Field(alias="body_bytes")]]
+    body_key: NotRequired[Annotated[str, Field(alias="body_key")]]
+    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
+    fetched_at: NotRequired[Annotated[datetime.datetime, Field(alias="fetched_at")]]
+    http_status: NotRequired[Annotated[int, Field(alias="http_status")]]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    parser_version: NotRequired[Annotated[str, Field(alias="parser_version")]]
+    replay_key: NotRequired[Annotated[Optional[str], Field(alias="replay_key")]]
+    run_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="run_id")]]
+    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
+    url: NotRequired[Annotated[str, Field(alias="url")]]
+
+
+class PublicCrawlTasks(BaseModel):
+    attempt: int = Field(alias="attempt")
+    created_at: datetime.datetime = Field(alias="created_at")
+    id: uuid.UUID = Field(alias="id")
+    last_succeeded_at: Optional[datetime.datetime] = Field(alias="last_succeeded_at")
+    lease_token: Optional[uuid.UUID] = Field(alias="lease_token")
+    lease_until: Optional[datetime.datetime] = Field(alias="lease_until")
+    max_attempts: int = Field(alias="max_attempts")
+    next_fetch_at: datetime.datetime = Field(alias="next_fetch_at")
+    priority: int = Field(alias="priority")
+    source_key: str = Field(alias="source_key")
+    status: str = Field(alias="status")
+    target: Json[Any] = Field(alias="target")
+    updated_at: datetime.datetime = Field(alias="updated_at")
+
+
+class PublicCrawlTasksInsert(TypedDict):
+    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
+    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    last_succeeded_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_succeeded_at")]]
+    lease_token: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="lease_token")]]
+    lease_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="lease_until")]]
+    max_attempts: NotRequired[Annotated[int, Field(alias="max_attempts")]]
+    next_fetch_at: NotRequired[Annotated[datetime.datetime, Field(alias="next_fetch_at")]]
+    priority: NotRequired[Annotated[int, Field(alias="priority")]]
+    source_key: Annotated[str, Field(alias="source_key")]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    target: Annotated[Json[Any], Field(alias="target")]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+
+
+class PublicCrawlTasksUpdate(TypedDict):
+    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
+    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
+    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
+    last_succeeded_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_succeeded_at")]]
+    lease_token: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="lease_token")]]
+    lease_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="lease_until")]]
+    max_attempts: NotRequired[Annotated[int, Field(alias="max_attempts")]]
+    next_fetch_at: NotRequired[Annotated[datetime.datetime, Field(alias="next_fetch_at")]]
+    priority: NotRequired[Annotated[int, Field(alias="priority")]]
+    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+    target: NotRequired[Annotated[Json[Any], Field(alias="target")]]
+    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
+
+
+class PublicEmployerOfficeLookups(BaseModel):
+    checked_at: datetime.datetime = Field(alias="checked_at")
+    employer_id: int = Field(alias="employer_id")
+    employer_name: str = Field(alias="employer_name")
+    location: str = Field(alias="location")
+    office_place_ids: Json[Any] = Field(alias="office_place_ids")
+    retry_after: datetime.datetime = Field(alias="retry_after")
+    status: str = Field(alias="status")
+
+
+class PublicEmployerOfficeLookupsInsert(TypedDict):
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    employer_id: Annotated[int, Field(alias="employer_id")]
+    employer_name: Annotated[str, Field(alias="employer_name")]
+    location: Annotated[str, Field(alias="location")]
+    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
+    retry_after: Annotated[datetime.datetime, Field(alias="retry_after")]
+    status: Annotated[str, Field(alias="status")]
+
+
+class PublicEmployerOfficeLookupsUpdate(TypedDict):
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
+    employer_name: NotRequired[Annotated[str, Field(alias="employer_name")]]
+    location: NotRequired[Annotated[str, Field(alias="location")]]
+    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
+    retry_after: NotRequired[Annotated[datetime.datetime, Field(alias="retry_after")]]
+    status: NotRequired[Annotated[str, Field(alias="status")]]
+
+
+class PublicEmployerOffices(BaseModel):
+    address: str = Field(alias="address")
+    categories: Json[Any] = Field(alias="categories")
+    checked_at: datetime.datetime = Field(alias="checked_at")
+    city: Optional[str] = Field(alias="city")
+    country_code: Optional[str] = Field(alias="country_code")
+    employer_id: int = Field(alias="employer_id")
+    latitude: float = Field(alias="latitude")
+    longitude: float = Field(alias="longitude")
+    name: str = Field(alias="name")
+    place_id: str = Field(alias="place_id")
+    source: str = Field(alias="source")
+    website: Optional[str] = Field(alias="website")
+    website_domain: Optional[str] = Field(alias="website_domain")
+
+
+class PublicEmployerOfficesInsert(TypedDict):
+    address: Annotated[str, Field(alias="address")]
+    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
+    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
+    employer_id: Annotated[int, Field(alias="employer_id")]
+    latitude: Annotated[float, Field(alias="latitude")]
+    longitude: Annotated[float, Field(alias="longitude")]
+    name: Annotated[str, Field(alias="name")]
+    place_id: Annotated[str, Field(alias="place_id")]
+    source: NotRequired[Annotated[str, Field(alias="source")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
+    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
+
+
+class PublicEmployerOfficesUpdate(TypedDict):
+    address: NotRequired[Annotated[str, Field(alias="address")]]
+    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
+    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
+    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
+    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
+    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
+    latitude: NotRequired[Annotated[float, Field(alias="latitude")]]
+    longitude: NotRequired[Annotated[float, Field(alias="longitude")]]
+    name: NotRequired[Annotated[str, Field(alias="name")]]
+    place_id: NotRequired[Annotated[str, Field(alias="place_id")]]
+    source: NotRequired[Annotated[str, Field(alias="source")]]
+    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
+    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
+
+
 class PublicEmployers(BaseModel):
     careers_url: str = Field(alias="careers_url")
     description: Optional[str] = Field(alias="description")
@@ -143,6 +503,42 @@ class PublicEmployersUpdate(TypedDict):
     size: NotRequired[Annotated[Optional[str], Field(alias="size")]]
     status: NotRequired[Annotated[Optional[str], Field(alias="status")]]
     website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
+
+
+class PublicJobOccurrences(BaseModel):
+    content_hash: str = Field(alias="content_hash")
+    external_id: str = Field(alias="external_id")
+    first_seen_at: datetime.datetime = Field(alias="first_seen_at")
+    id: int = Field(alias="id")
+    job_id: int = Field(alias="job_id")
+    last_seen_at: datetime.datetime = Field(alias="last_seen_at")
+    snapshot_id: Optional[uuid.UUID] = Field(alias="snapshot_id")
+    source_key: str = Field(alias="source_key")
+    source_url: str = Field(alias="source_url")
+
+
+class PublicJobOccurrencesInsert(TypedDict):
+    content_hash: Annotated[str, Field(alias="content_hash")]
+    external_id: Annotated[str, Field(alias="external_id")]
+    first_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="first_seen_at")]]
+    id: NotRequired[Annotated[int, Field(alias="id")]]
+    job_id: Annotated[int, Field(alias="job_id")]
+    last_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="last_seen_at")]]
+    snapshot_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="snapshot_id")]]
+    source_key: Annotated[str, Field(alias="source_key")]
+    source_url: Annotated[str, Field(alias="source_url")]
+
+
+class PublicJobOccurrencesUpdate(TypedDict):
+    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
+    external_id: NotRequired[Annotated[str, Field(alias="external_id")]]
+    first_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="first_seen_at")]]
+    id: NotRequired[Annotated[int, Field(alias="id")]]
+    job_id: NotRequired[Annotated[int, Field(alias="job_id")]]
+    last_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="last_seen_at")]]
+    snapshot_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="snapshot_id")]]
+    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
+    source_url: NotRequired[Annotated[str, Field(alias="source_url")]]
 
 
 class PublicJobScoringEmbeddings(BaseModel):
@@ -263,6 +659,21 @@ class PublicProfileScoringEmbeddingsUpdate(TypedDict):
     embedding: NotRequired[Annotated[list[Any], Field(alias="embedding")]]
     model_version: NotRequired[Annotated[str, Field(alias="model_version")]]
     user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
+
+
+class PublicScoringCatalogGeneration(BaseModel):
+    generation: int = Field(alias="generation")
+    id: bool = Field(alias="id")
+
+
+class PublicScoringCatalogGenerationInsert(TypedDict):
+    generation: NotRequired[Annotated[int, Field(alias="generation")]]
+    id: NotRequired[Annotated[bool, Field(alias="id")]]
+
+
+class PublicScoringCatalogGenerationUpdate(TypedDict):
+    generation: NotRequired[Annotated[int, Field(alias="generation")]]
+    id: NotRequired[Annotated[bool, Field(alias="id")]]
 
 
 class PublicSources(BaseModel):
@@ -527,414 +938,3 @@ class PublicUserProfilesUpdate(TypedDict):
     user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
     work_authorization: NotRequired[Annotated[Optional[str], Field(alias="work_authorization")]]
     work_mode: NotRequired[Annotated[Optional[str], Field(alias="work_mode")]]
-
-
-class PublicScoringCatalogGeneration(BaseModel):
-    generation: int = Field(alias="generation")
-    id: bool = Field(alias="id")
-
-
-class PublicScoringCatalogGenerationInsert(TypedDict):
-    generation: NotRequired[Annotated[int, Field(alias="generation")]]
-    id: NotRequired[Annotated[bool, Field(alias="id")]]
-
-
-class PublicScoringCatalogGenerationUpdate(TypedDict):
-    generation: NotRequired[Annotated[int, Field(alias="generation")]]
-    id: NotRequired[Annotated[bool, Field(alias="id")]]
-
-
-class PublicCandidateScoringWork(BaseModel):
-    attempts: int = Field(alias="attempts")
-    catalog_generation: int = Field(alias="catalog_generation")
-    completed_catalog_generation: int = Field(alias="completed_catalog_generation")
-    completed_fingerprint: str = Field(alias="completed_fingerprint")
-    completed_revision: int = Field(alias="completed_revision")
-    cursor: int = Field(alias="cursor")
-    desired_revision: int = Field(alias="desired_revision")
-    fingerprint: str = Field(alias="fingerprint")
-    job_ids: Optional[List[int]] = Field(alias="job_ids")
-    last_error_code: Optional[str] = Field(alias="last_error_code")
-    needs_embedding: bool = Field(alias="needs_embedding")
-    retry_at: datetime.datetime = Field(alias="retry_at")
-    shortlist_ids: Optional[List[int]] = Field(alias="shortlist_ids")
-    state: str = Field(alias="state")
-    top_k: int = Field(alias="top_k")
-    updated_at: datetime.datetime = Field(alias="updated_at")
-    user_id: uuid.UUID = Field(alias="user_id")
-
-
-class PublicCandidateScoringWorkInsert(TypedDict):
-    attempts: NotRequired[Annotated[int, Field(alias="attempts")]]
-    catalog_generation: NotRequired[Annotated[int, Field(alias="catalog_generation")]]
-    completed_catalog_generation: NotRequired[Annotated[int, Field(alias="completed_catalog_generation")]]
-    completed_fingerprint: NotRequired[Annotated[str, Field(alias="completed_fingerprint")]]
-    completed_revision: NotRequired[Annotated[int, Field(alias="completed_revision")]]
-    cursor: NotRequired[Annotated[int, Field(alias="cursor")]]
-    desired_revision: NotRequired[Annotated[int, Field(alias="desired_revision")]]
-    fingerprint: Annotated[str, Field(alias="fingerprint")]
-    job_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="job_ids")]]
-    last_error_code: NotRequired[Annotated[Optional[str], Field(alias="last_error_code")]]
-    needs_embedding: NotRequired[Annotated[bool, Field(alias="needs_embedding")]]
-    retry_at: NotRequired[Annotated[datetime.datetime, Field(alias="retry_at")]]
-    shortlist_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="shortlist_ids")]]
-    state: NotRequired[Annotated[str, Field(alias="state")]]
-    top_k: NotRequired[Annotated[int, Field(alias="top_k")]]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-    user_id: Annotated[uuid.UUID, Field(alias="user_id")]
-
-
-class PublicCandidateScoringWorkUpdate(TypedDict):
-    attempts: NotRequired[Annotated[int, Field(alias="attempts")]]
-    catalog_generation: NotRequired[Annotated[int, Field(alias="catalog_generation")]]
-    completed_catalog_generation: NotRequired[Annotated[int, Field(alias="completed_catalog_generation")]]
-    completed_fingerprint: NotRequired[Annotated[str, Field(alias="completed_fingerprint")]]
-    completed_revision: NotRequired[Annotated[int, Field(alias="completed_revision")]]
-    cursor: NotRequired[Annotated[int, Field(alias="cursor")]]
-    desired_revision: NotRequired[Annotated[int, Field(alias="desired_revision")]]
-    fingerprint: NotRequired[Annotated[str, Field(alias="fingerprint")]]
-    job_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="job_ids")]]
-    last_error_code: NotRequired[Annotated[Optional[str], Field(alias="last_error_code")]]
-    needs_embedding: NotRequired[Annotated[bool, Field(alias="needs_embedding")]]
-    retry_at: NotRequired[Annotated[datetime.datetime, Field(alias="retry_at")]]
-    shortlist_ids: NotRequired[Annotated[Optional[List[int]], Field(alias="shortlist_ids")]]
-    state: NotRequired[Annotated[str, Field(alias="state")]]
-    top_k: NotRequired[Annotated[int, Field(alias="top_k")]]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-    user_id: NotRequired[Annotated[uuid.UUID, Field(alias="user_id")]]
-
-
-class PublicEmployerOffices(BaseModel):
-    address: str = Field(alias="address")
-    categories: Json[Any] = Field(alias="categories")
-    checked_at: datetime.datetime = Field(alias="checked_at")
-    city: Optional[str] = Field(alias="city")
-    country_code: Optional[str] = Field(alias="country_code")
-    employer_id: int = Field(alias="employer_id")
-    latitude: float = Field(alias="latitude")
-    longitude: float = Field(alias="longitude")
-    name: str = Field(alias="name")
-    place_id: str = Field(alias="place_id")
-    source: str = Field(alias="source")
-    website: Optional[str] = Field(alias="website")
-    website_domain: Optional[str] = Field(alias="website_domain")
-
-
-class PublicEmployerOfficesInsert(TypedDict):
-    address: Annotated[str, Field(alias="address")]
-    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
-    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
-    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
-    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
-    employer_id: Annotated[int, Field(alias="employer_id")]
-    latitude: Annotated[float, Field(alias="latitude")]
-    longitude: Annotated[float, Field(alias="longitude")]
-    name: Annotated[str, Field(alias="name")]
-    place_id: Annotated[str, Field(alias="place_id")]
-    source: NotRequired[Annotated[str, Field(alias="source")]]
-    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
-    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
-
-
-class PublicEmployerOfficesUpdate(TypedDict):
-    address: NotRequired[Annotated[str, Field(alias="address")]]
-    categories: NotRequired[Annotated[Json[Any], Field(alias="categories")]]
-    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
-    city: NotRequired[Annotated[Optional[str], Field(alias="city")]]
-    country_code: NotRequired[Annotated[Optional[str], Field(alias="country_code")]]
-    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
-    latitude: NotRequired[Annotated[float, Field(alias="latitude")]]
-    longitude: NotRequired[Annotated[float, Field(alias="longitude")]]
-    name: NotRequired[Annotated[str, Field(alias="name")]]
-    place_id: NotRequired[Annotated[str, Field(alias="place_id")]]
-    source: NotRequired[Annotated[str, Field(alias="source")]]
-    website: NotRequired[Annotated[Optional[str], Field(alias="website")]]
-    website_domain: NotRequired[Annotated[Optional[str], Field(alias="website_domain")]]
-
-
-class PublicEmployerOfficeLookups(BaseModel):
-    checked_at: datetime.datetime = Field(alias="checked_at")
-    employer_id: int = Field(alias="employer_id")
-    employer_name: str = Field(alias="employer_name")
-    location: str = Field(alias="location")
-    office_place_ids: Json[Any] = Field(alias="office_place_ids")
-    retry_after: datetime.datetime = Field(alias="retry_after")
-    status: str = Field(alias="status")
-
-
-class PublicEmployerOfficeLookupsInsert(TypedDict):
-    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
-    employer_id: Annotated[int, Field(alias="employer_id")]
-    employer_name: Annotated[str, Field(alias="employer_name")]
-    location: Annotated[str, Field(alias="location")]
-    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
-    retry_after: Annotated[datetime.datetime, Field(alias="retry_after")]
-    status: Annotated[str, Field(alias="status")]
-
-
-class PublicEmployerOfficeLookupsUpdate(TypedDict):
-    checked_at: NotRequired[Annotated[datetime.datetime, Field(alias="checked_at")]]
-    employer_id: NotRequired[Annotated[int, Field(alias="employer_id")]]
-    employer_name: NotRequired[Annotated[str, Field(alias="employer_name")]]
-    location: NotRequired[Annotated[str, Field(alias="location")]]
-    office_place_ids: NotRequired[Annotated[Json[Any], Field(alias="office_place_ids")]]
-    retry_after: NotRequired[Annotated[datetime.datetime, Field(alias="retry_after")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-
-
-class PublicBoards(BaseModel):
-    board: str = Field(alias="board")
-    careers_url: str = Field(alias="careers_url")
-    company: str = Field(alias="company")
-    consecutive_failures: int = Field(alias="consecutive_failures")
-    cooldown_until: Optional[datetime.datetime] = Field(alias="cooldown_until")
-    created_at: datetime.datetime = Field(alias="created_at")
-    discovery_source: str = Field(alias="discovery_source")
-    employer_id: Optional[int] = Field(alias="employer_id")
-    enabled: bool = Field(alias="enabled")
-    id: int = Field(alias="id")
-    last_crawled_at: Optional[datetime.datetime] = Field(alias="last_crawled_at")
-    last_error: Optional[str] = Field(alias="last_error")
-    last_ingested_count: int = Field(alias="last_ingested_count")
-    last_verified_at: Optional[datetime.datetime] = Field(alias="last_verified_at")
-    metadata: Json[Any] = Field(alias="metadata")
-    priority: int = Field(alias="priority")
-    provider: str = Field(alias="provider")
-    region: str = Field(alias="region")
-    sector: str = Field(alias="sector")
-    status: str = Field(alias="status")
-    updated_at: datetime.datetime = Field(alias="updated_at")
-
-
-class PublicBoardsInsert(TypedDict):
-    board: Annotated[str, Field(alias="board")]
-    careers_url: Annotated[str, Field(alias="careers_url")]
-    company: Annotated[str, Field(alias="company")]
-    consecutive_failures: NotRequired[Annotated[int, Field(alias="consecutive_failures")]]
-    cooldown_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="cooldown_until")]]
-    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
-    discovery_source: NotRequired[Annotated[str, Field(alias="discovery_source")]]
-    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
-    enabled: NotRequired[Annotated[bool, Field(alias="enabled")]]
-    id: NotRequired[Annotated[int, Field(alias="id")]]
-    last_crawled_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_crawled_at")]]
-    last_error: NotRequired[Annotated[Optional[str], Field(alias="last_error")]]
-    last_ingested_count: NotRequired[Annotated[int, Field(alias="last_ingested_count")]]
-    last_verified_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_verified_at")]]
-    metadata: NotRequired[Annotated[Json[Any], Field(alias="metadata")]]
-    priority: NotRequired[Annotated[int, Field(alias="priority")]]
-    provider: Annotated[str, Field(alias="provider")]
-    region: NotRequired[Annotated[str, Field(alias="region")]]
-    sector: NotRequired[Annotated[str, Field(alias="sector")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-
-
-class PublicBoardsUpdate(TypedDict):
-    board: NotRequired[Annotated[str, Field(alias="board")]]
-    careers_url: NotRequired[Annotated[str, Field(alias="careers_url")]]
-    company: NotRequired[Annotated[str, Field(alias="company")]]
-    consecutive_failures: NotRequired[Annotated[int, Field(alias="consecutive_failures")]]
-    cooldown_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="cooldown_until")]]
-    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
-    discovery_source: NotRequired[Annotated[str, Field(alias="discovery_source")]]
-    employer_id: NotRequired[Annotated[Optional[int], Field(alias="employer_id")]]
-    enabled: NotRequired[Annotated[bool, Field(alias="enabled")]]
-    id: NotRequired[Annotated[int, Field(alias="id")]]
-    last_crawled_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_crawled_at")]]
-    last_error: NotRequired[Annotated[Optional[str], Field(alias="last_error")]]
-    last_ingested_count: NotRequired[Annotated[int, Field(alias="last_ingested_count")]]
-    last_verified_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_verified_at")]]
-    metadata: NotRequired[Annotated[Json[Any], Field(alias="metadata")]]
-    priority: NotRequired[Annotated[int, Field(alias="priority")]]
-    provider: NotRequired[Annotated[str, Field(alias="provider")]]
-    region: NotRequired[Annotated[str, Field(alias="region")]]
-    sector: NotRequired[Annotated[str, Field(alias="sector")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-
-
-class PublicCatalogStats(BaseModel):
-    computed_at: datetime.datetime = Field(alias="computed_at")
-    id: bool = Field(alias="id")
-    is_valid: bool = Field(alias="is_valid")
-    job_count: int = Field(alias="job_count")
-    locations: Json[Any] = Field(alias="locations")
-    sectors: Json[Any] = Field(alias="sectors")
-
-
-class PublicCatalogStatsInsert(TypedDict):
-    computed_at: NotRequired[Annotated[datetime.datetime, Field(alias="computed_at")]]
-    id: NotRequired[Annotated[bool, Field(alias="id")]]
-    is_valid: NotRequired[Annotated[bool, Field(alias="is_valid")]]
-    job_count: NotRequired[Annotated[int, Field(alias="job_count")]]
-    locations: NotRequired[Annotated[Json[Any], Field(alias="locations")]]
-    sectors: NotRequired[Annotated[Json[Any], Field(alias="sectors")]]
-
-
-class PublicCatalogStatsUpdate(TypedDict):
-    computed_at: NotRequired[Annotated[datetime.datetime, Field(alias="computed_at")]]
-    id: NotRequired[Annotated[bool, Field(alias="id")]]
-    is_valid: NotRequired[Annotated[bool, Field(alias="is_valid")]]
-    job_count: NotRequired[Annotated[int, Field(alias="job_count")]]
-    locations: NotRequired[Annotated[Json[Any], Field(alias="locations")]]
-    sectors: NotRequired[Annotated[Json[Any], Field(alias="sectors")]]
-
-
-class PublicCrawlTasks(BaseModel):
-    attempt: int = Field(alias="attempt")
-    created_at: datetime.datetime = Field(alias="created_at")
-    id: uuid.UUID = Field(alias="id")
-    last_succeeded_at: Optional[datetime.datetime] = Field(alias="last_succeeded_at")
-    lease_token: Optional[uuid.UUID] = Field(alias="lease_token")
-    lease_until: Optional[datetime.datetime] = Field(alias="lease_until")
-    max_attempts: int = Field(alias="max_attempts")
-    next_fetch_at: datetime.datetime = Field(alias="next_fetch_at")
-    priority: int = Field(alias="priority")
-    source_key: str = Field(alias="source_key")
-    status: str = Field(alias="status")
-    target: Json[Any] = Field(alias="target")
-    updated_at: datetime.datetime = Field(alias="updated_at")
-
-
-class PublicCrawlTasksInsert(TypedDict):
-    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
-    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    last_succeeded_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_succeeded_at")]]
-    lease_token: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="lease_token")]]
-    lease_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="lease_until")]]
-    max_attempts: NotRequired[Annotated[int, Field(alias="max_attempts")]]
-    next_fetch_at: NotRequired[Annotated[datetime.datetime, Field(alias="next_fetch_at")]]
-    priority: NotRequired[Annotated[int, Field(alias="priority")]]
-    source_key: Annotated[str, Field(alias="source_key")]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    target: Annotated[Json[Any], Field(alias="target")]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-
-
-class PublicCrawlTasksUpdate(TypedDict):
-    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
-    created_at: NotRequired[Annotated[datetime.datetime, Field(alias="created_at")]]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    last_succeeded_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="last_succeeded_at")]]
-    lease_token: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="lease_token")]]
-    lease_until: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="lease_until")]]
-    max_attempts: NotRequired[Annotated[int, Field(alias="max_attempts")]]
-    next_fetch_at: NotRequired[Annotated[datetime.datetime, Field(alias="next_fetch_at")]]
-    priority: NotRequired[Annotated[int, Field(alias="priority")]]
-    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    target: NotRequired[Annotated[Json[Any], Field(alias="target")]]
-    updated_at: NotRequired[Annotated[datetime.datetime, Field(alias="updated_at")]]
-
-
-class PublicCrawlRuns(BaseModel):
-    attempt: int = Field(alias="attempt")
-    finished_at: Optional[datetime.datetime] = Field(alias="finished_at")
-    id: uuid.UUID = Field(alias="id")
-    lease_token: uuid.UUID = Field(alias="lease_token")
-    result: Json[Any] = Field(alias="result")
-    started_at: datetime.datetime = Field(alias="started_at")
-    status: str = Field(alias="status")
-    task_id: uuid.UUID = Field(alias="task_id")
-
-
-class PublicCrawlRunsInsert(TypedDict):
-    attempt: Annotated[int, Field(alias="attempt")]
-    finished_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="finished_at")]]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    lease_token: Annotated[uuid.UUID, Field(alias="lease_token")]
-    result: NotRequired[Annotated[Json[Any], Field(alias="result")]]
-    started_at: NotRequired[Annotated[datetime.datetime, Field(alias="started_at")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    task_id: Annotated[uuid.UUID, Field(alias="task_id")]
-
-
-class PublicCrawlRunsUpdate(TypedDict):
-    attempt: NotRequired[Annotated[int, Field(alias="attempt")]]
-    finished_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="finished_at")]]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    lease_token: NotRequired[Annotated[uuid.UUID, Field(alias="lease_token")]]
-    result: NotRequired[Annotated[Json[Any], Field(alias="result")]]
-    started_at: NotRequired[Annotated[datetime.datetime, Field(alias="started_at")]]
-    status: NotRequired[Annotated[str, Field(alias="status")]]
-    task_id: NotRequired[Annotated[uuid.UUID, Field(alias="task_id")]]
-
-
-class PublicCrawlSnapshots(BaseModel):
-    body_bytes: int = Field(alias="body_bytes")
-    body_key: str = Field(alias="body_key")
-    content_hash: str = Field(alias="content_hash")
-    fetched_at: datetime.datetime = Field(alias="fetched_at")
-    http_status: int = Field(alias="http_status")
-    id: uuid.UUID = Field(alias="id")
-    parser_version: str = Field(alias="parser_version")
-    replay_key: Optional[str] = Field(alias="replay_key")
-    run_id: Optional[uuid.UUID] = Field(alias="run_id")
-    source_key: str = Field(alias="source_key")
-    url: str = Field(alias="url")
-
-
-class PublicCrawlSnapshotsInsert(TypedDict):
-    body_bytes: Annotated[int, Field(alias="body_bytes")]
-    body_key: Annotated[str, Field(alias="body_key")]
-    content_hash: Annotated[str, Field(alias="content_hash")]
-    fetched_at: NotRequired[Annotated[datetime.datetime, Field(alias="fetched_at")]]
-    http_status: Annotated[int, Field(alias="http_status")]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    parser_version: Annotated[str, Field(alias="parser_version")]
-    replay_key: NotRequired[Annotated[Optional[str], Field(alias="replay_key")]]
-    run_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="run_id")]]
-    source_key: Annotated[str, Field(alias="source_key")]
-    url: Annotated[str, Field(alias="url")]
-
-
-class PublicCrawlSnapshotsUpdate(TypedDict):
-    body_bytes: NotRequired[Annotated[int, Field(alias="body_bytes")]]
-    body_key: NotRequired[Annotated[str, Field(alias="body_key")]]
-    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
-    fetched_at: NotRequired[Annotated[datetime.datetime, Field(alias="fetched_at")]]
-    http_status: NotRequired[Annotated[int, Field(alias="http_status")]]
-    id: NotRequired[Annotated[uuid.UUID, Field(alias="id")]]
-    parser_version: NotRequired[Annotated[str, Field(alias="parser_version")]]
-    replay_key: NotRequired[Annotated[Optional[str], Field(alias="replay_key")]]
-    run_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="run_id")]]
-    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
-    url: NotRequired[Annotated[str, Field(alias="url")]]
-
-
-class PublicJobOccurrences(BaseModel):
-    content_hash: str = Field(alias="content_hash")
-    external_id: str = Field(alias="external_id")
-    first_seen_at: datetime.datetime = Field(alias="first_seen_at")
-    id: int = Field(alias="id")
-    job_id: int = Field(alias="job_id")
-    last_seen_at: datetime.datetime = Field(alias="last_seen_at")
-    snapshot_id: Optional[uuid.UUID] = Field(alias="snapshot_id")
-    source_key: str = Field(alias="source_key")
-    source_url: str = Field(alias="source_url")
-
-
-class PublicJobOccurrencesInsert(TypedDict):
-    content_hash: Annotated[str, Field(alias="content_hash")]
-    external_id: Annotated[str, Field(alias="external_id")]
-    first_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="first_seen_at")]]
-    id: NotRequired[Annotated[int, Field(alias="id")]]
-    job_id: Annotated[int, Field(alias="job_id")]
-    last_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="last_seen_at")]]
-    snapshot_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="snapshot_id")]]
-    source_key: Annotated[str, Field(alias="source_key")]
-    source_url: Annotated[str, Field(alias="source_url")]
-
-
-class PublicJobOccurrencesUpdate(TypedDict):
-    content_hash: NotRequired[Annotated[str, Field(alias="content_hash")]]
-    external_id: NotRequired[Annotated[str, Field(alias="external_id")]]
-    first_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="first_seen_at")]]
-    id: NotRequired[Annotated[int, Field(alias="id")]]
-    job_id: NotRequired[Annotated[int, Field(alias="job_id")]]
-    last_seen_at: NotRequired[Annotated[datetime.datetime, Field(alias="last_seen_at")]]
-    snapshot_id: NotRequired[Annotated[Optional[uuid.UUID], Field(alias="snapshot_id")]]
-    source_key: NotRequired[Annotated[str, Field(alias="source_key")]]
-    source_url: NotRequired[Annotated[str, Field(alias="source_url")]]

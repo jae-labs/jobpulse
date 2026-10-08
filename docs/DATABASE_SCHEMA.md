@@ -279,6 +279,8 @@ These checks enforce their tested contracts; they do not verify hosted schema, b
 `make db-types` generates both languages into ignored temporary files, validates
 the output and atomically replaces each complete model. Failed generation retains
 the existing files; readers never see an empty redirected output.
+Python model declarations use deterministic name order so database discovery order
+does not affect parity. Field or type changes remain visible to the CI drift check.
 
 ## Durable scraper writes
 
