@@ -32,7 +32,13 @@ def main() -> None:
         "--employers", type=Path, help="JSON public employer records; otherwise read catalog identities"
     )
     parser.add_argument("--limit", type=int, default=200)
+    parser.add_argument("--fuzzy", action="store_true", help="Review close names for otherwise unmatched employers")
+    parser.add_argument(
+        "--similarity-threshold", type=float, default=85, help="Name score cutoff (0–100), not an identity probability"
+    )
     args = parser.parse_args()
+    if not 0 <= args.similarity_threshold <= 100:
+        parser.error("similarity-threshold must be 0–100")
     if not 1 <= args.limit <= 10000:
         parser.error("limit must be 1–10000")
     started = time.monotonic()
@@ -87,16 +93,32 @@ def main() -> None:
                         cursor = rows[-1]["id"]
                 if not index.metadata():
                     raise ValueError("Import a snapshot before running the pilot")
+                if args.fuzzy:
+                    event("fuzzy_index_preparing")
+                    index.prepare_fuzzy()
+                    event("fuzzy_index_ready")
                 results = [
                     {
                         "employer_id": e.get("id"),
-                        **index.match(e["name"], e.get("website") or "", str(e.get("company_number") or "")),
+                        **index.match(
+                            e["name"],
+                            e.get("website") or "",
+                            str(e.get("company_number") or ""),
+                            fuzzy=args.fuzzy,
+                            threshold=args.similarity_threshold,
+                        ),
                     }
                     for e in employers
                 ]
                 summary = dict(Counter(r["status"] for r in results))
                 report = {
                     "snapshots": index.metadata(),
+                    "fuzzy_enabled": args.fuzzy,
+                    "similarity_threshold": args.similarity_threshold,
+                    "fuzzy_only_employers": sum(
+                        any("similar_name" in c["match_reasons"] for c in r["candidates"]) for r in results
+                    ),
+                    "fuzzy_searches_truncated": sum(r["fuzzy_search_truncated"] for r in results),
                     "checked": len(results),
                     "summary": summary,
                     "candidate_sources": dict(Counter(c["source"] for r in results for c in r["candidates"])),
@@ -107,10 +129,11 @@ def main() -> None:
                     "accuracy": "requires human review; candidate coverage is not match accuracy",
                     "results": results,
                 }
-                temporary = args.root / "pilot.json.partial"
+                report_path = args.root / ("pilot-fuzzy.json" if args.fuzzy else "pilot.json")
+                temporary = report_path.with_suffix(".json.partial")
                 temporary.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-                temporary.replace(args.root / "pilot.json")
-                event("pilot_complete", checked=len(results), summary=summary, report=str(args.root / "pilot.json"))
+                temporary.replace(report_path)
+                event("pilot_complete", checked=len(results), summary=summary, report=str(report_path))
         finally:
             index.close()
     event("company_index_complete", elapsed_seconds=round(time.monotonic() - started, 3))

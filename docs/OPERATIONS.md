@@ -478,3 +478,35 @@ preserves the previous index; legal addresses remain separate from operating pla
 ambiguous identity evidence remains review-only; the bounded 200-employer pilot
 reports coverage and runtime with zero catalog writes. Synthetic tests enforce the
 matching and recovery contracts in `services/scraper/tests/test_company_index.py`.
+
+### Close company-name matches
+
+`make scrape-company-pilot ARGS="--fuzzy"` checks otherwise unmatched employer names
+and writes `.backups/company-index/pilot-fuzzy.json`, preserving the exact-only
+`pilot.json`. `--similarity-threshold 85` selects the default 0–100 score cutoff.
+The score measures spelling/token-order similarity; it is not a calibrated
+identity probability. Short normalized names below six characters and names over
+128 characters receive no fuzzy search. Exact name/domain/number evidence takes
+precedence and is not displaced by fuzzy candidates.
+
+The first fuzzy pilot builds a local SQLite FTS5 trigram index atomically. Snapshot
+insert/delete/update triggers maintain it in the same transaction as the records;
+failed refreshes preserve both records and search evidence. Subsequent pilots reuse
+it without another snapshot download. Up to 24 three-character query terms retrieve
+at most 1,000 candidates; Python compares symmetric character sequences and sorted
+token sequences, retains scores at the configured cutoff and reports the best ten.
+Search/result truncation remains explicit. Common names, abbreviations and heavily
+changed spellings can be missed by these bounds; an empty fuzzy search does not
+prove absence from the datasets. See [SQLite FTS5](https://www.sqlite.org/fts5.html)
+for tokenizer and external-content indexing requirements.
+
+Fuzzy candidates carry `similar_name`, the score, extra/missing name tokens,
+source evidence, domain conflicts, closed state and mandatory review. The
+`spelling_only` flag identifies suggestions without shared non-generic name tokens;
+shared generic terms such as Ireland, Group or Services do not establish identity. Geographic
+and business-unit words remain in the comparison. Fuzzy matches never establish
+`identity_supported`, merge employers, write offices or change vacancy locations.
+Reports separate fuzzy-only employer coverage and truncated searches. Review
+actual identities and first-party operating-office evidence before accepting a
+proposal. Synthetic typo, token-order, country/domain conflict, acronym, refresh
+rollback and result-bound tests live in `services/scraper/tests/test_company_index.py`.

@@ -447,3 +447,10 @@ number lookups retain ambiguity, source conflicts and closed status. All returne
 candidates require review; identity support is not office verification.
 See [local index operations](OPERATIONS.md#local-irish-company-index) for download,
 refresh, attribution and coverage acceptance contracts.
+
+Optional close-name review uses an external-content SQLite FTS5 trigram index
+maintained by transactional snapshot triggers. Bounded retrieval feeds pure Python
+character/token similarity in `company_index/similarity.py`. Scores explain name
+resemblance without asserting identity; exact evidence remains authoritative and
+all fuzzy results remain review-only. The pilot retains the exact-only report and
+writes fuzzy coverage separately.

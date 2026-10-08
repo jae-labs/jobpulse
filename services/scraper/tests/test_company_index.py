@@ -269,3 +269,104 @@ def test_unicode_business_names_remain_searchable(tmp_path):
     publish(index, "overture", [row])
     assert index.match("Συνθετική")["status"] == "review"
     index.close()
+
+
+def test_fuzzy_typo_and_reordered_tokens_are_review_only(tmp_path):
+    index = CompanyIndex(tmp_path / "index.sqlite")
+    row = Place("cro", "1", "Synthetic Harbour Technologies", "registered_address", "")
+    publish(index, "cro", [row])
+    assert index.match("Synthetic Harbor Technologies")["status"] == "unmatched"
+    result = index.match("Synthetic Harbor Technologies", fuzzy=True)
+    assert result["status"] == "review"
+    assert result["candidates"][0]["match_reasons"] == ["similar_name"]
+    assert result["candidates"][0]["name_similarity"] > 90
+    assert result["candidates"][0]["extra_name_tokens"] == ["harbour"]
+    assert result["automatic_office_writes"] == 0
+    reordered = index.match("Harbour Synthetic Technologies", fuzzy=True)
+    assert reordered["candidates"][0]["name_similarity"] == 100
+    index.close()
+
+
+def test_fuzzy_never_promotes_country_or_business_unit_similarity(tmp_path):
+    index = CompanyIndex(tmp_path / "index.sqlite")
+    row = Place(
+        "overture",
+        "1",
+        "Synthetic Ireland Services",
+        "operating_place_candidate",
+        "",
+        websites=("https://foreign.example",),
+        status="permanently_closed",
+    )
+    publish(index, "overture", [row])
+    result = index.match("Synthetic Iceland Services", "https://synthetic.example", fuzzy=True)
+    assert result["status"] == "review"
+    candidate = result["candidates"][0]
+    assert candidate["missing_name_tokens"] == ["iceland"]
+    assert candidate["extra_name_tokens"] == ["ireland"]
+    assert candidate["closed"] and candidate["domain_conflict"] and candidate["review_required"]
+    assert index.match("SYN", fuzzy=True)["status"] == "unmatched"
+    assert index.match("Unrelated Example Labs", fuzzy=True)["status"] == "unmatched"
+    index.close()
+
+
+def test_fuzzy_index_tracks_commits_and_rollbacks(tmp_path):
+    index = CompanyIndex(tmp_path / "index.sqlite")
+    row = Place("cro", "1", "Synthetic Harbour Technologies", "registered_address", "")
+    publish(index, "cro", [row])
+    index.prepare_fuzzy()
+
+    def crash():
+        yield replace(row, name="Different Harbour Technologies")
+        raise RuntimeError("interrupted")
+
+    with pytest.raises(RuntimeError):
+        publish(index, "cro", crash())
+    assert index.match("Synthetic Harbor Technologies", fuzzy=True)["candidates"][0]["name"] == row.name
+    publish(index, "cro", [replace(row, name="Different Harbour Technologies")])
+    assert index.match("Synthetic Harbor Technologies", fuzzy=True)["status"] == "unmatched"
+    assert index.match("Different Harbor Technologies", fuzzy=True)["status"] == "review"
+    index.close()
+    reopened = CompanyIndex(tmp_path / "index.sqlite")
+    assert reopened.match("Different Harbor Technologies", fuzzy=True)["status"] == "review"
+    reopened.close()
+
+
+def test_fuzzy_bounds_and_literal_syntax(tmp_path):
+    index = CompanyIndex(tmp_path / "index.sqlite")
+    rows = [Place("cro", str(i), "Synthetic Harbour", "registered_address", "") for i in range(1002)]
+    publish(index, "cro", rows)
+    result = index.match("Synthetic Harbor", fuzzy=True)
+    assert len(result["candidates"]) == 10
+    assert result["fuzzy_search_truncated"]
+    assert index.close_matches("a" * 129) == ([], False)
+    with pytest.raises(ValueError):
+        index.close_matches("Synthetic", threshold=101)
+    index.match('Synthetic "Harbor" OR NOT *', fuzzy=True)
+    index.close()
+
+
+def test_fuzzy_does_not_displace_exact_evidence(tmp_path):
+    index = CompanyIndex(tmp_path / "index.sqlite")
+    publish(
+        index,
+        "cro",
+        [
+            Place("cro", "1", "Synthetic Harbor", "registered_address", ""),
+            Place("cro", "2", "Synthetic Harbour", "registered_address", ""),
+        ],
+    )
+    result = index.match("Synthetic Harbor", fuzzy=True)
+    assert len(result["candidates"]) == 1
+    assert result["candidates"][0]["match_reasons"] == ["normalized_name"]
+    index.close()
+
+
+def test_fuzzy_spelling_only_lookalikes_are_explicit():
+    from jobpulse_scraper.company_index.similarity import name_similarity
+
+    result = name_similarity("aramark ireland", "caremark ireland")
+    assert result["name_similarity"] > 85
+    assert result["spelling_only"]
+    assert result["shared_non_generic_name_tokens"] == []
+    assert not name_similarity("johnson johnson", "johnson and johnson")["spelling_only"]
