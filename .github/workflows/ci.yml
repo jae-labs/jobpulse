@@ -139,5 +139,8 @@ jobs:
       - name: Verify installed package
         run: make scrape-package
 
+      - name: Install scraper browser test runtime
+        run: cd services/scraper && uv run --locked python -m playwright install --with-deps chromium
+
       - name: Run unit tests
         run: cd services/scraper && uv run --locked pytest

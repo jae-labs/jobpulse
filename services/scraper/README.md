@@ -130,3 +130,8 @@ Shared HTTP requests use a certificate-error fallback; review the
 [network policy](../../docs/SCRAPER_ARCHITECTURE.md#network-policy) and its security tradeoff.
 
 After schema changes, run `make db-types` from the repository root to regenerate both language models.
+
+The scraper CI job installs Chromium and Linux system dependencies through the
+locked Python Playwright package before pytest. Browser runtime tests exercise
+real rendering and request budgets; the frontend browser installation belongs to
+a separate CI job and does not provide the scraper runtime.

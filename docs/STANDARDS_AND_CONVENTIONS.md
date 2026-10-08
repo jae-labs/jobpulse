@@ -103,7 +103,7 @@ installation uses the committed lockfiles. All of these CI jobs must pass for re
 | --- | --- | --- |
 | `check` | Code Quality & Build Check | History secret scan, JavaScript audit, lint, TypeScript, coverage tests, production build, Storybook build, browser accessibility/interaction coverage and pinned Linux visual tests |
 | `tenant-isolation` | Tenant Isolation Guardrails | Disposable Supabase rebuild, migration lint, all SQL suites, crawl concurrency/recovery, TypeScript/Python schema parity, real account-deletion isolation |
-| `scraper-check` | Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, installed wheel verification, pytest |
+| `scraper-check` | Scraper Quality & Tests | Ruff lint/format, Pyright, locked Python dependency audit, installed wheel verification, locked Playwright Chromium/system dependencies, pytest |
 
 CI resets its disposable stack. Local checks never reset a developer database.
 Migration lint is part of Tenant Isolation Guardrails. GitHub settings are configured outside the workflow;
