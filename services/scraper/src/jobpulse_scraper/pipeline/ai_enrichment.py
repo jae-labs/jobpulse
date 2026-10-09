@@ -122,12 +122,18 @@ def enrich_companies_with_ai(
     model: str = "gemini-3.8-flash-low",
     agy_path: str | None = None,
     timeout_seconds: int = 120,
+    provider: str = "agy",
+    fallback_model: str | None = None,
+    allow_paid: bool = False,
+    provider_runs: list[dict] | None = None,
 ) -> list[EnrichedCompany]:
-    """Enrich a batch of company names with sector, size, and Ireland offices via agy CLI."""
+    """Propose company metadata through the selected provider without catalog writes."""
     if not company_names:
         return []
 
-    binary = find_agy_binary(agy_path)
+    if provider not in {"agy", "opencode", "opencode-go"}:
+        raise ValueError("Unknown research provider")
+    binary = find_agy_binary(agy_path) if provider == "agy" else ""
     companies_str = ", ".join(f'"{name}"' for name in company_names)
 
     prompt = (
@@ -151,38 +157,56 @@ def enrich_companies_with_ai(
         f"   If the company has no known physical office in Ireland (e.g. purely remote or US-only), return an empty list [].\n"
     )
 
-    cmd = [
-        binary,
-        "-p",
-        prompt,
-        "--json-schema",
-        json.dumps(ENRICHMENT_SCHEMA),
-        "--output-format",
-        "json",
-        "--model",
-        model,
-        "--effort",
-        "low",
-        "--disable-slash-commands",
-    ]
+    if provider != "agy":
+        from jobpulse_scraper.pipeline.research_provider import request_json
 
-    try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
+        acquisition = request_json(
+            prompt,
+            ENRICHMENT_SCHEMA,
+            model=model,
             timeout=timeout_seconds,
-            check=True,
+            fallback_model=fallback_model,
+            allow_paid=allow_paid,
+            provider=provider,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(f"agy prompt timed out after {timeout_seconds}s for batch: {company_names}") from exc
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(f"agy CLI failed with code {exc.returncode}: {exc.stderr}") from exc
+        raw_output = {"structured_output": acquisition.pop("data")}
+        if provider_runs is not None:
+            provider_runs.append(acquisition)
+    else:
+        cmd = [
+            binary,
+            "-p",
+            prompt,
+            "--json-schema",
+            json.dumps(ENRICHMENT_SCHEMA),
+            "--output-format",
+            "json",
+            "--model",
+            model,
+            "--effort",
+            "low",
+            "--disable-slash-commands",
+        ]
 
-    try:
-        raw_output = json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Failed to decode agy CLI stdout as JSON: {proc.stdout[:200]}") from exc
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                check=True,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"agy prompt timed out after {timeout_seconds}s for batch: {company_names}") from exc
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(f"agy CLI failed with code {exc.returncode}: {exc.stderr}") from exc
+
+        try:
+            raw_output = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Failed to decode agy CLI stdout as JSON: {proc.stdout[:200]}") from exc
+        if provider_runs is not None:
+            provider_runs.append({"provider": "agy", "model": model, "fallback_used": False})
 
     structured = raw_output.get("structured_output")
     if not structured and "response" in raw_output:

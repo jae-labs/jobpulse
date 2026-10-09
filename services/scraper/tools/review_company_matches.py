@@ -11,10 +11,11 @@ from pathlib import Path
 
 from jobpulse_scraper.company_index.download import event, index_lock
 from jobpulse_scraper.company_index.evidence import EvidenceFetcher, EvidenceProvider, failure_category
-from jobpulse_scraper.company_index.review import AgyReviewer, comparison_pair
+from jobpulse_scraper.company_index.review import PROMPT_VERSION, AgyReviewer, comparison_pair
 from jobpulse_scraper.company_index.store import CompanyIndex, domain, name_key
 from jobpulse_scraper.paths import REPO_ROOT
 from jobpulse_scraper.pipeline.research_progress import progress
+from jobpulse_scraper.pipeline.research_provider import add_provider_arguments, resolve_provider_arguments
 
 
 def public_employers(path: Path | None, limit: int) -> list[dict]:
@@ -146,10 +147,14 @@ def main() -> None:
     )
     parser.add_argument("--limit", type=int, default=20, help="Total employer budget (1–10000)")
     parser.add_argument("--report", type=Path, help="Identity report and journal destination")
-    parser.add_argument("--model", default="gemini-3.8-flash-low")
+    add_provider_arguments(parser)
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--no-fetch", action="store_true", help="Use snapshot facts only; no first-party HTTP")
     args = parser.parse_args()
+    try:
+        resolve_provider_arguments(args)
+    except ValueError as exc:
+        parser.error(str(exc))
     if not 1 <= args.limit <= 10000 or not 1 <= args.timeout <= 300:
         parser.error("limit must be 1–10000 and timeout 1–300")
     started = time.monotonic()
@@ -162,7 +167,16 @@ def main() -> None:
         try:
             if not index.metadata():
                 raise ValueError("Download snapshots before comparison")
-            reviewer = AgyReviewer(args.root / "identity-reviews", model=args.model, timeout=args.timeout)
+            reviewer = AgyReviewer(
+                args.root / "identity-reviews",
+                model=args.model,
+                timeout=args.timeout,
+                **(
+                    {"provider": args.provider, "fallback_model": args.fallback_model, "allow_paid": args.allow_paid}
+                    if args.provider != "agy"
+                    else {}
+                ),
+            )
             fetcher = None if args.no_fetch else EvidenceFetcher(args.root / "first-party-evidence")
             records = []
             report_path = args.report or args.root / "identity-review.json"
@@ -195,8 +209,10 @@ def main() -> None:
                     journal.flush()
                     os.fsync(journal.fileno())
                 report = {
-                    "prompt_version": "company-identity-evidence-v1",
+                    "prompt_version": PROMPT_VERSION,
                     "model": args.model,
+                    "provider": args.provider,
+                    "provider_runs": getattr(reviewer, "provider_runs", []),
                     "snapshots": index.metadata(),
                     "checked": len(records),
                     "total": len(employers),

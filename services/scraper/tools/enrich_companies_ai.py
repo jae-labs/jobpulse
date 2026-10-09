@@ -16,6 +16,7 @@ from jobpulse_scraper.database.client import get_supabase, retry_supabase
 from jobpulse_scraper.database.records import response_records
 from jobpulse_scraper.pipeline.ai_enrichment import enrich_companies_with_ai
 from jobpulse_scraper.pipeline.research_progress import progress
+from jobpulse_scraper.pipeline.research_provider import add_provider_arguments, resolve_provider_arguments
 from tools.review_company_matches import public_employers
 
 
@@ -23,10 +24,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=20, help="Employers to propose (1-25)")
     parser.add_argument("--report", type=Path, required=True, help="Unverified JSON proposal destination")
-    parser.add_argument("--model", default="gemini-3.8-flash-low", help="agy model")
+    add_provider_arguments(parser)
     parser.add_argument("--employers", type=Path, help="Public employer JSON cohort instead of catalog selection")
     parser.add_argument("--timeout", type=int, default=120, help="Provider deadline in seconds (1-300)")
     args = parser.parse_args()
+    try:
+        resolve_provider_arguments(args)
+    except ValueError as exc:
+        parser.error(str(exc))
     if not 1 <= args.timeout <= 300:
         parser.error("--timeout must be between 1 and 300")
     if not 1 <= args.limit <= 25:
@@ -48,12 +53,19 @@ def main() -> None:
                 )
             ).data
         )
+    provider_runs: list[dict] = []
     try:
         if len({e["name"].casefold() for e in employers}) != len(employers):
             raise ValueError("Employer names must be unique within an AI batch")
         with progress("ai_metadata", employers=len(employers), model=args.model):
             proposals = enrich_companies_with_ai(
-                [employer["name"] for employer in employers], model=args.model, timeout_seconds=args.timeout
+                [employer["name"] for employer in employers],
+                model=args.model,
+                timeout_seconds=args.timeout,
+                provider=args.provider,
+                fallback_model=args.fallback_model,
+                allow_paid=args.allow_paid,
+                provider_runs=provider_runs,
             )
         names = {employer["name"].casefold(): employer for employer in employers}
         results = []
@@ -75,6 +87,9 @@ def main() -> None:
         json.dumps(
             {
                 "status": "unverified_proposals",
+                "provider": args.provider,
+                "model": args.model,
+                "provider_runs": provider_runs,
                 "review_required": "Review field evidence before using enrich_employers.py --registry",
                 "results": results,
             },

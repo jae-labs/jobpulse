@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from jobpulse_scraper.paths import REPO_ROOT, SERVICE_ROOT
 from jobpulse_scraper.pipeline.company_campaign import run_stage
 from jobpulse_scraper.pipeline.research_progress import event, progress
+from jobpulse_scraper.pipeline.research_provider import add_provider_arguments, resolve_provider_arguments
 from tools.review_company_matches import public_employers
 
 
@@ -32,12 +33,16 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups/company-index")
     parser.add_argument("--refresh-index", action="store_true", help="Download and import CRO/Overture snapshots")
     parser.add_argument("--release", default="2026-09-23.1", help="Explicit Overture release for refresh")
-    parser.add_argument("--model", default="gemini-3.8-flash-low")
+    add_provider_arguments(parser)
     parser.add_argument("--timeout", type=int, default=120, help="Each AI request deadline (1-300 seconds)")
     parser.add_argument("--no-ai", action="store_true", help="Only exact local snapshot lookup")
     parser.add_argument("--no-fetch", action="store_true", help="Skip identity-review first-party HTTP evidence")
     parser.add_argument("--aliases", type=Path, help="Reviewed first-party alias witness inputs")
     args = parser.parse_args()
+    try:
+        resolve_provider_arguments(args)
+    except ValueError as exc:
+        parser.error(str(exc))
     if not 1 <= args.limit <= 10000 or not 1 <= args.batch_size <= 25 or not 1 <= args.timeout <= 300:
         parser.error("limit must be 1-10000, batch-size 1-25 and timeout 1-300")
     if not args.refresh_index and not (args.root / "companies.sqlite3").is_file():
@@ -49,7 +54,16 @@ def main() -> None:
     campaign.mkdir(parents=True, mode=0o700)
     report_path = campaign / "report.json"
     started = time.monotonic()
+    provider_options = ["--provider", args.provider, "--model", args.model]
+    if args.fallback_model:
+        provider_options.extend(["--fallback-model", args.fallback_model])
+    if args.allow_paid:
+        provider_options.append("--allow-paid")
     report: dict = {
+        "provider": args.provider,
+        "model": args.model,
+        "fallback_model": args.fallback_model,
+        "allow_paid": args.allow_paid,
         "completed": False,
         "automatic_writes": 0,
         "checked": 0,
@@ -105,6 +119,7 @@ def main() -> None:
                 identity_path = batch_dir / "identity.json"
                 review = [
                     *common,
+                    *provider_options,
                     "--report",
                     str(identity_path),
                     "--model",
@@ -120,7 +135,7 @@ def main() -> None:
                     "review_company_matches.py",
                     review,
                     "identity_evidence_review",
-                    len(cohort) * (args.timeout + 120) + 60,
+                    len(cohort) * (args.timeout * (2 if args.fallback_model else 1) + 120) + 60,
                 )
                 batch["stages"]["identity"] = "complete" if ok else "failed"
                 if ok:
@@ -129,6 +144,7 @@ def main() -> None:
                 ok = stage(
                     "enrich_companies_ai.py",
                     [
+                        *provider_options,
                         "--employers",
                         str(cohort_path),
                         "--limit",
@@ -141,7 +157,7 @@ def main() -> None:
                         str(args.timeout),
                     ],
                     "ai_metadata_proposals",
-                    args.timeout + 30,
+                    args.timeout * (2 if args.fallback_model else 1) + 30,
                 )
                 batch["stages"]["ai"] = "complete" if ok else "failed"
                 if ok:

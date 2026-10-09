@@ -177,3 +177,7 @@ scrape-verify-availability: ## Verify up to ten public postings; ARGS='--apply' 
 .PHONY: scrape-company-research
 scrape-company-research: ## Research CRO/Overture identities and AI office/staff proposals with live progress; no writes.
 	cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked --group company-index python tools/research_companies.py $(ARGS)
+
+.PHONY: scrape-company-benchmark
+scrape-company-benchmark: ## Compare free OpenCode Go and Gemini on 32 synthetic identity cases; no catalog writes.
+	cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/benchmark_company_models.py $(ARGS)

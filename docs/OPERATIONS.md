@@ -614,6 +614,62 @@ applying metadata through `scrape-enrich-employers` and its reviewed registry.
 Geoapify office discovery remains available separately through
 `make scrape-enrich-offices`; this research command does not invoke or replace it.
 
+### Company research providers
+
+The combined command and standalone AI/review commands accept `--provider agy`,
+`--provider opencode` (Zen), or `--provider opencode-go` (Go). The default remains
+agy/Gemini. OpenCode defaults to `longcat-2.5-preview-free`; the provider and actual
+model remain visible in acquisition reports. Go and Zen use distinct configured
+credentials and model namespaces.
+
+```bash
+make scrape-company-research ARGS="--provider opencode-go --limit 20 --batch-size 4"
+make scrape-company-review ARGS="--provider opencode-go --limit 5"
+make scrape-company-benchmark ARGS="--batch-size 4"
+# Recheck only the free model without repeating Gemini calls:
+make scrape-company-benchmark ARGS="--only opencode --batch-size 4"
+# Explicitly permit a paid Zen model:
+make scrape-company-research ARGS="--provider opencode --model glm-5.3-flash --allow-paid --limit 5"
+```
+
+Go models and free Zen models run through the genuine installed OpenCode v2 client in a fresh
+standalone session. The client uses its normal credential store; it does not
+continue existing conversations. The working directory, configuration and cache
+are temporary. Global/project instructions, external plugins and sharing are
+excluded, tool permissions are denied, and the child environment excludes
+Supabase credentials. Public research sessions can remain in OpenCode's normal
+local state; local campaign reports remain under ignored `.backups/`. The
+operator configures Go/Zen sign-in through OpenCode's own authentication UI.
+A free-tier access denial stops research; the scripts do not fabricate client or
+session identifiers.
+
+Paid Zen requests use the official HTTPS API with the configured Zen key (or
+`OPENCODE_API_KEY`). Both model selection and optional `--fallback-model
+glm-5.3-flash` require `--allow-paid`. There is no automatic paid fallback. An
+explicit fallback applies only to transient network failures, throttling or
+selected gateway failures; authorization, malformed claims and citation/schema
+failures stop the stage. Only the documented LongCat Free and GLM Flash models
+are allowed. Free availability is provider-controlled and can change.
+
+OpenCode identity calls contain at most four candidate pairs, matching the bounded
+benchmark configuration; metadata proposals retain the explicit employer batch budget.
+Provider events record latency, model, transport, fallback use and available token
+usage without logging keys, prompts or raw errors. Missing usage remains unknown;
+cache hits do not count original request tokens as newly consumed. Client calls
+have process-group deadlines and bounded output. API calls use connection/read
+timeouts, elapsed response checks and a 256 KiB response cap; the combined command
+also bounds each child stage. The CLI accepts a bare JSON object or one complete
+JSON code fence, then applies the same identity/citation validators. It rejects
+unexpected tool events, extra prose, malformed/truncated output and invented IDs.
+
+The benchmark uses thirty-two synthetic cases covering company numbers, trading
+names, subsidiaries, name/domain ambiguity, closed records and prompt injection.
+It records validated and raw correctness, false-positive identities, downgraded
+unsupported claims, schema failures and timings. These cases test evidence
+handling; they do not establish real-world office/headcount accuracy. Reports
+live under `.backups/company-index/model-benchmark/`. Benchmark reports retain
+current measurements locally rather than asserting an enduring model ranking.
+
 ### Evidence-based company comparison
 
 `make scrape-company-review` compares exact snapshot candidates through the

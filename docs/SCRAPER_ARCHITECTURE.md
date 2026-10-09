@@ -515,3 +515,16 @@ The coordinator keeps snapshot facts, identity decisions and unsourced AI leads
 separate and performs no catalog writes. Global employee brackets do not establish
 Irish staff counts. See [combined research operations](OPERATIONS.md#combined-company-research)
 for commands and review constraints.
+
+`pipeline/research_provider.py` enforces the OpenCode model/cost allowlist and
+explicit fallback policy. `pipeline/research_opencode.py` runs free Go/Zen models
+through a fresh genuine client session with denied tools and disposable working
+configuration; paid Zen calls use bounded HTTPS. Go/Zen credential stores and
+namespaces remain distinct. The existing identity reviewer reuses its strict
+citation/identity validation for every provider, bounds OpenCode comparisons to
+four pairs per call, and caches bind prompt version,
+provider, model, fallback policy and complete evidence. Acquisition metadata
+preserves actual fallback models and distinguishes cached history from current
+usage. `company_index/benchmark.py` supplies synthetic ground truth for
+`tools/benchmark_company_models.py`; model suitability remains a measured
+operational decision. See [provider operations](OPERATIONS.md#company-research-providers).

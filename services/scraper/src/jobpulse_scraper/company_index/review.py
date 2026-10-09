@@ -1,4 +1,4 @@
-"""Evidence-bound agy identity proposals, separate from catalog and office writes."""
+"""Evidence-bound provider identity proposals, separate from catalog and office writes."""
 
 from __future__ import annotations
 
@@ -17,8 +17,9 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from jobpulse_scraper.company_index.download import event
 from jobpulse_scraper.company_index.store import name_key
 from jobpulse_scraper.pipeline.ai_enrichment import find_agy_binary
+from jobpulse_scraper.pipeline.research_provider import request_json, validate_policy
 
-PROMPT_VERSION = "company-identity-evidence-v1"
+PROMPT_VERSION = "company-identity-evidence-v2"
 
 
 class Citation(BaseModel):
@@ -150,7 +151,23 @@ def validate_decisions(response: object, pairs: list[dict]) -> list[dict]:
 
 
 class AgyReviewer:
-    def __init__(self, root: Path, model: str = "gemini-3.8-flash-low", timeout: int = 120):
+    def __init__(
+        self,
+        root: Path,
+        model: str = "gemini-3.8-flash-low",
+        timeout: int = 120,
+        provider: str = "agy",
+        fallback_model: str | None = None,
+        allow_paid: bool = False,
+    ):
+        if provider not in {"agy", "opencode", "opencode-go"}:
+            raise ValueError("Unknown research provider")
+        if provider != "agy":
+            validate_policy(model, fallback_model, allow_paid)
+        elif fallback_model or allow_paid:
+            raise ValueError("Paid fallback policy is available only for OpenCode")
+        self.provider, self.fallback_model, self.allow_paid = provider, fallback_model, allow_paid
+        self.provider_runs: list[dict] = []
         self.root, self.model, self.timeout = root, model, timeout
         root.mkdir(parents=True, exist_ok=True)
         paths = sorted(root.glob("*.json"), key=lambda p: p.stat().st_mtime)
@@ -169,8 +186,11 @@ class AgyReviewer:
             raise ValueError("Comparison batch must contain 1–20 identity pairs")
         results = []
         batch = []
+        pair_budget = 4 if self.provider != "agy" else 20
         for pair in pairs:
-            if batch and len(json.dumps([*batch, pair], ensure_ascii=False).encode()) > 128 * 1024:
+            if batch and (
+                len(batch) >= pair_budget or len(json.dumps([*batch, pair], ensure_ascii=False).encode()) > 128 * 1024
+            ):
                 results.extend(self._compare_batch(batch))
                 batch = []
             batch.append(pair)
@@ -182,11 +202,24 @@ class AgyReviewer:
         payload = json.dumps(pairs, ensure_ascii=False, sort_keys=True)
         if len(payload.encode()) > 128 * 1024:
             raise ValueError("Comparison evidence exceeds 128 KiB")
-        digest = hashlib.sha256(json.dumps([PROMPT_VERSION, self.model, payload]).encode()).hexdigest()
+        digest = hashlib.sha256(
+            json.dumps(
+                [PROMPT_VERSION, self.provider, self.model, self.fallback_model, self.allow_paid, payload]
+            ).encode()
+        ).hexdigest()
         path = self.root / (digest + ".json")
         if path.exists():
             raw = json.loads(path.read_text())
-            results = validate_decisions(raw, pairs)
+            results = validate_decisions(raw["response"], pairs)
+            self.provider_runs.append(
+                {
+                    "provider": raw["acquisition"]["provider"],
+                    "model": raw["acquisition"]["model"],
+                    "cache_hit": True,
+                    "usage": {},
+                    "original_acquisition": raw["acquisition"],
+                }
+            )
             self.cache_hits += 1
             return results
         prompt = (
@@ -199,65 +232,86 @@ class AgyReviewer:
             "equal company number on both sides or first-party text explicitly linking both names to the "
             "same entity. Cite candidate.name too when using first-party text. Use exact fact IDs and "
             "verbatim quote substrings from that pair; never invent identities, addresses or sources. "
-            "When facts are insufficient say so. No actions or catalog changes are authorized.\nDATA:\n" + payload
+            "When facts are insufficient say so. For insufficient_evidence use an empty citations array "
+            "unless a nonempty supplied fact is relevant. Never cite an empty fact or return an empty quote. "
+            "Each citation quote must be a nonempty exact substring of its cited fact. "
+            "Relationship must be exactly same_entity, subsidiary, department, unrelated or unknown; "
+            "closed is a status, not a relationship. Every decision requires pair_id, decision, relationship, "
+            "reason and citations. No actions or catalog changes are authorized.\nDATA:\n" + payload
         )
-        env = {k: v for k, v in os.environ.items() if k in {"HOME", "PATH", "LANG", "LC_ALL", "TMPDIR", "SHELL"}}
-        event("company_comparison_started", pairs=len(pairs), provider_call=self.calls + 1)
-        with tempfile.TemporaryDirectory(prefix="jobpulse-identity-") as workspace:
+        if self.provider != "agy":
             self.calls += 1
-            command = [
-                find_agy_binary(),
-                "-p",
+            acquisition = request_json(
                 prompt,
-                "--json-schema",
-                json.dumps(inline_schema()),
-                "--output-format",
-                "json",
-                "--model",
-                self.model,
-                "--effort",
-                "low",
-                "--disable-slash-commands",
-                "--mode",
-                "plan",
-                "--sandbox",
-            ]
-            output_path, error_path = Path(workspace) / "output.json", Path(workspace) / "errors.txt"
-            with output_path.open("w") as output, error_path.open("w") as errors:
-                process = subprocess.Popen(
-                    command, cwd=workspace, env=env, stdout=output, stderr=errors, start_new_session=True
-                )
-                started, last = time.monotonic(), time.monotonic()
-                try:
-                    while process.poll() is None:
-                        elapsed = time.monotonic() - started
-                        if elapsed >= self.timeout:
-                            raise RuntimeError("Company comparison provider timed out")
-                        if output_path.stat().st_size > 256 * 1024 or error_path.stat().st_size > 64 * 1024:
-                            raise ValueError("Comparison provider output exceeds budget")
-                        if time.monotonic() - last >= 15:
-                            event("company_comparison_running", elapsed_seconds=round(elapsed), pairs=len(pairs))
-                            last = time.monotonic()
-                        time.sleep(0.1)
-                    if process.returncode != 0:
-                        raise RuntimeError("Company comparison provider failed")
-                finally:
-                    # A timed-out provider/tool cannot remain running after its workspace is removed.
+                inline_schema(),
+                model=self.model,
+                timeout=self.timeout,
+                fallback_model=self.fallback_model,
+                allow_paid=self.allow_paid,
+                provider=self.provider,
+            )
+            self.calls += int(acquisition["fallback_used"])
+            raw = acquisition.pop("data")
+        else:
+            env = {k: v for k, v in os.environ.items() if k in {"HOME", "PATH", "LANG", "LC_ALL", "TMPDIR", "SHELL"}}
+            event("company_comparison_started", pairs=len(pairs), provider_call=self.calls + 1)
+            with tempfile.TemporaryDirectory(prefix="jobpulse-identity-") as workspace:
+                self.calls += 1
+                command = [
+                    find_agy_binary(),
+                    "-p",
+                    prompt,
+                    "--json-schema",
+                    json.dumps(inline_schema()),
+                    "--output-format",
+                    "json",
+                    "--model",
+                    self.model,
+                    "--effort",
+                    "low",
+                    "--disable-slash-commands",
+                    "--mode",
+                    "plan",
+                    "--sandbox",
+                ]
+                output_path, error_path = Path(workspace) / "output.json", Path(workspace) / "errors.txt"
+                with output_path.open("w") as output, error_path.open("w") as errors:
+                    process = subprocess.Popen(
+                        command, cwd=workspace, env=env, stdout=output, stderr=errors, start_new_session=True
+                    )
+                    started, last = time.monotonic(), time.monotonic()
                     try:
-                        os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
-                    process.wait()
-            if output_path.stat().st_size > 256 * 1024 or error_path.stat().st_size > 64 * 1024:
-                raise ValueError("Comparison provider output exceeds budget")
-            provider_output = output_path.read_text(encoding="utf-8")
-        event("company_comparison_finished", pairs=len(pairs))
-        wrapper = json.loads(provider_output)
-        raw = wrapper.get("structured_output") or wrapper.get("response")
-        if isinstance(raw, str):
-            raw = json.loads(raw)
+                        while process.poll() is None:
+                            elapsed = time.monotonic() - started
+                            if elapsed >= self.timeout:
+                                raise RuntimeError("Company comparison provider timed out")
+                            if output_path.stat().st_size > 256 * 1024 or error_path.stat().st_size > 64 * 1024:
+                                raise ValueError("Comparison provider output exceeds budget")
+                            if time.monotonic() - last >= 15:
+                                event("company_comparison_running", elapsed_seconds=round(elapsed), pairs=len(pairs))
+                                last = time.monotonic()
+                            time.sleep(0.1)
+                        if process.returncode != 0:
+                            raise RuntimeError("Company comparison provider failed")
+                    finally:
+                        # A timed-out provider/tool cannot remain running after its workspace is removed.
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                        process.wait()
+                if output_path.stat().st_size > 256 * 1024 or error_path.stat().st_size > 64 * 1024:
+                    raise ValueError("Comparison provider output exceeds budget")
+                provider_output = output_path.read_text(encoding="utf-8")
+            event("company_comparison_finished", pairs=len(pairs))
+            wrapper = json.loads(provider_output)
+            raw = wrapper.get("structured_output") or wrapper.get("response")
+            if isinstance(raw, str):
+                raw = json.loads(raw)
+            acquisition = {"provider": "agy", "model": self.model, "fallback_used": False}
+        self.provider_runs.append({**acquisition, "cache_hit": False})
         results = validate_decisions(raw, pairs)
-        encoded = json.dumps(raw)
+        encoded = json.dumps({"response": raw, "acquisition": acquisition})
         if self.cache_count >= 5000 or self.cache_bytes + len(encoded.encode()) > 100 * 1024**2:
             return results
         self.cache_count += 1
