@@ -86,7 +86,12 @@ def run_metadata(args: argparse.Namespace) -> None:
     except Exception as exc:
         cause = exc.__cause__
         if isinstance(cause, subprocess.CalledProcessError):
-            event("provider_failed", provider=args.provider, exit_code=cause.returncode)
+            event(
+                "provider_failed",
+                provider=args.provider,
+                exit_code=cause.returncode,
+                category=getattr(exc, "category", "provider_cli_failed"),
+            )
         elif isinstance(cause, subprocess.TimeoutExpired):
             event("provider_failed", provider=args.provider, reason="deadline")
         print(f"Company research failed: {type(exc).__name__}; no catalog writes performed", file=sys.stderr)

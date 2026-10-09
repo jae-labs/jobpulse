@@ -256,7 +256,7 @@ def research_batch(
                         raise ValueError("Model omitted requested employer identities")
                     store.save(records)
                 except Exception as exc:
-                    store.fail(pending, type(exc).__name__)
+                    store.fail(pending, getattr(exc, "category", type(exc).__name__))
                     raise
             event(
                 "proposal_cache_outcome",

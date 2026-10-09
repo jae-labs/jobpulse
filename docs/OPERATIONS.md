@@ -653,7 +653,14 @@ large snapshots again. `--release` selects the Overture refresh release.
 `--employers` supplies public IDs/names/websites/company numbers; unrelated fields
 are discarded. `--aliases`, `--no-fetch`, `--model` and `--timeout` configure the
 identity/evidence stages. AI requests default to a 120-second deadline (maximum
-300 seconds). The refresh stage has a one-hour deadline.
+300 seconds). Metadata calls use an isolated temporary workspace, plan/sandbox
+mode and an environment allowlist that excludes backend credentials. The provider
+schema represents missing staff size as `unknown`; validated reports/cache retain
+an empty internal size rather than an invented headcount. Gemini enum values are
+nonempty. Failed metadata calls log a safe category such as
+`provider_invalid_schema`, `provider_rate_limited`, `provider_authorization_failed`
+or `provider_cli_failed`, alongside the CLI exit code; raw provider output and
+credentials remain out of terminal diagnostics. The refresh stage has a one-hour deadline.
 
 Live output includes stage starts, employer IDs/names, candidate counts, provider
 waiting heartbeats every fifteen seconds, elapsed time, batch counts, failures

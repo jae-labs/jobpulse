@@ -64,7 +64,7 @@ def test_enrich_companies_with_ai_empty() -> None:
     assert enrich_companies_with_ai([]) == []
 
 
-@pytest.mark.parametrize("size", ["11-50", None, "invented"])
+@pytest.mark.parametrize("size", ["11-50", None, "invented", "unknown"])
 @patch("jobpulse_scraper.pipeline.ai_enrichment.shutil.which", return_value="/fake/agy")
 @patch("jobpulse_scraper.pipeline.ai_enrichment.subprocess.run")
 def test_enrichment_discards_invalid_office_coordinates(
@@ -227,3 +227,60 @@ def test_company_research_failure_is_not_reported_as_success(monkeypatch, tmp_pa
         proposals.main()
     assert outcome.value.code == 1
     assert not (tmp_path / "report.json").exists()
+
+
+def test_metadata_schema_uses_nonempty_unknown_and_isolates_provider(monkeypatch):
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-backend-secret")
+    monkeypatch.setenv("JOBPULSE_PRIVATE_CONTEXT", "synthetic-private")
+    with (
+        patch("jobpulse_scraper.pipeline.ai_enrichment.shutil.which", return_value="/fake/agy"),
+        patch("jobpulse_scraper.pipeline.ai_enrichment.subprocess.run") as invoke,
+    ):
+        invoke.return_value = SimpleNamespace(
+            stdout=json.dumps(
+                {
+                    "structured_output": {
+                        "companies": [{"name": "Synthetic", "sector": "", "size": "unknown", "offices": []}]
+                    }
+                }
+            )
+        )
+        result = enrich_companies_with_ai(["Synthetic"])
+        command = invoke.call_args.args[0]
+        schema = json.loads(command[command.index("--json-schema") + 1])
+        choices = schema["properties"]["companies"]["items"]["properties"]["size"]["enum"]
+        assert choices == ["unknown", *VALID_SIZES] and all(choices)
+        assert result[0]["size"] == ""
+        assert "SUPABASE_SERVICE_ROLE_KEY" not in invoke.call_args.kwargs["env"]
+        assert "JOBPULSE_PRIVATE_CONTEXT" not in invoke.call_args.kwargs["env"]
+        assert not (Path(invoke.call_args.kwargs["cwd"]) / "AGENTS.md").exists()
+        assert "--sandbox" in command and command[command.index("--mode") + 1] == "plan"
+
+
+@pytest.mark.parametrize(
+    "error,category",
+    [
+        ("INVALID_ARGUMENT parameters enum cannot be empty", "provider_invalid_schema"),
+        ("RESOURCE_EXHAUSTED 429", "provider_rate_limited"),
+        ("UNAUTHENTICATED", "provider_authorization_failed"),
+        ("private text must not escape", "provider_cli_failed"),
+    ],
+)
+def test_metadata_errors_expose_categories_without_raw_provider_content(error, category):
+    import subprocess
+
+    from jobpulse_scraper.pipeline.research_provider import ProviderFailure
+
+    with (
+        patch("jobpulse_scraper.pipeline.ai_enrichment.shutil.which", return_value="/fake/agy"),
+        patch(
+            "jobpulse_scraper.pipeline.ai_enrichment.subprocess.run",
+            side_effect=subprocess.CalledProcessError(
+                3, "synthetic", output=json.dumps({"error": error}), stderr="synthetic-secret"
+            ),
+        ),
+    ):
+        with pytest.raises(ProviderFailure) as failure:
+            enrich_companies_with_ai(["Synthetic"])
+        assert failure.value.category == category and str(failure.value) == category
+        assert "synthetic-secret" not in str(failure.value)

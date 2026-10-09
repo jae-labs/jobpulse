@@ -519,7 +519,11 @@ validation. `tools/enrich_companies_ai.py` is a thin compatibility delegate.
 vacancies and persists validated metadata proposals in a shared ignored SQLite
 store. Identity-bound cache keys, checksum revalidation, process-safe request
 serialization, transactional batch writes and six-hour failed-batch deferrals
-protect repeated research. Successful unknown fields remain explicit and cached;
+protect repeated research. Metadata provider schemas use a nonempty `unknown` staff-size marker, normalized
+to the existing empty internal value. agy metadata runs in an isolated workspace
+with plan/sandbox mode and an environment allowlist; failure categories preserve
+diagnostic distinctions without emitting raw provider output.
+Successful unknown fields remain explicit and cached;
 refresh is an operator decision. The store contains public research only and
 performs no catalog or candidate writes. See [company research operations](OPERATIONS.md#combined-company-research)
 for cache export, refresh and selection controls.
