@@ -8,7 +8,7 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-MAX_WORKER_TASKS = 10_000
+MAX_WORKER_TASKS = 50_000
 
 
 class ResponseBudgetExceeded(ValueError):

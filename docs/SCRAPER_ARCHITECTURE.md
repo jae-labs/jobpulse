@@ -154,7 +154,16 @@ first. Source selection gives registered adapters three turns before yielding to
 generic discovery when both queues have work; concurrent claims can share a turn.
 The service-only scheduling query uses the indexed run history.
 
-Automatic drains use four concurrent task slots sharing one 10,000-task budget.
+Catalog consolidation groups canonical posting URLs and requires agreeing titles,
+locations and closure states. Provider-native posting references permit source
+aliases to converge while conflicting URL groups remain separate. Ingestion reuses
+a confirmed existing key and existing employer label; automatic drains run a
+bounded consolidation pass through the service-only tracking-preserving merge RPC.
+Python never reads or rewrites private tracking to decide a merge. Tracking conflicts
+and RPC failures are reported; age and source failures never authorize retirement.
+Concurrent initial publication can create alias copies until post-drain maintenance.
+
+Automatic drains use four concurrent task slots sharing one 50,000-task budget.
 `--concurrency` accepts one to four slots; explicit workers default to one.
 Each slot owns a reusable spawned process, preserving warm clients/models and
 setting the current lease/source context for each task. A 120-second default hard

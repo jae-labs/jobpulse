@@ -79,7 +79,8 @@ INSERT INTO public.jobs(id,dedupe_key,title,company,location,description,url,sou
 VALUES(-970001,'synthetic-crawl-keeper','Synthetic Engineer','Synthetic','Dublin','Synthetic body','https://example.invalid/merge','Synthetic'),
 (-970002,'synthetic-crawl-duplicate','Synthetic Engineer','Synthetic','Dublin','Synthetic body','https://example.invalid/merge','Synthetic');
 INSERT INTO public.user_job_statuses(user_id,job_id,status,is_saved)
-VALUES('a1111111-1111-4111-8111-111111111111',-970002,'applied',true);
+VALUES('a1111111-1111-4111-8111-111111111111',-970002,'applied',true),
+('b2222222-2222-4222-8222-222222222222',-970002,'not_interested',false);
 INSERT INTO public.job_occurrences(job_id,source_key,external_id,source_url,content_hash)
 VALUES(-970002,'synthetic:merge','2','https://example.invalid/merge',repeat('b',64));
 SET LOCAL ROLE service_role;
@@ -96,12 +97,40 @@ BEGIN
  END IF;
 END $$;
 RESET ROLE;
+INSERT INTO public.jobs(id,dedupe_key,title,company,location,description,url,source)
+VALUES(-970003,'synthetic-conflict-keeper','Synthetic role','Synthetic','Dublin','Synthetic body','https://example.invalid/job/2','Synthetic'),
+(-970004,'synthetic-conflict-duplicate','Synthetic role','Synthetic','Dublin','Synthetic body','https://example.invalid/job/2','Synthetic');
+INSERT INTO public.user_job_statuses(user_id,job_id,status,is_saved)
+VALUES('a1111111-1111-4111-8111-111111111111',-970003,'applied',false),
+('a1111111-1111-4111-8111-111111111111',-970004,'rejected',true),
+('b2222222-2222-4222-8222-222222222222',-970004,'interviewing',true);
+SET LOCAL ROLE service_role;
+DO $$
+BEGIN
+ IF public.merge_duplicate_catalog_jobs(-970003,ARRAY[-970004]::bigint[],'synthetic-conflict-keeper')<>0 THEN
+  RAISE EXCEPTION 'Conflicting candidate stages merged';
+ END IF;
+ IF (SELECT count(*) FROM public.jobs WHERE id IN (-970003,-970004))<>2
+ OR (SELECT count(*) FROM public.user_job_statuses WHERE job_id IN (-970003,-970004))<>3 THEN
+  RAISE EXCEPTION 'Blocked merge changed jobs or another candidate tracking';
+ END IF;
+END $$;
+RESET ROLE;
 DO $$
 DECLARE uid uuid; relation_name text; function_name text;
 BEGIN
  FOREACH uid IN ARRAY ARRAY['a1111111-1111-4111-8111-111111111111'::uuid,'b2222222-2222-4222-8222-222222222222'::uuid] LOOP
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',uid,'role','authenticated')::text,true);
   SET LOCAL ROLE authenticated;
+  IF (SELECT count(*) FROM public.user_job_statuses WHERE job_id=-970001 AND user_id=uid)<>1 THEN
+   RAISE EXCEPTION 'Candidate lost own tracking during source alias merge';
+  END IF;
+  IF EXISTS(SELECT 1 FROM public.user_job_statuses WHERE job_id=-970001 AND user_id<>uid) THEN
+   RAISE EXCEPTION 'Merged tracking exposed another candidate';
+  END IF;
+  BEGIN PERFORM public.merge_duplicate_catalog_jobs(-970003,ARRAY[-970004]::bigint[],'forged-merge');
+   RAISE EXCEPTION 'Browser merged guessed catalog identities';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   FOREACH relation_name IN ARRAY ARRAY['crawl_tasks','crawl_runs','crawl_snapshots','job_occurrences'] LOOP
    BEGIN EXECUTE format('SELECT * FROM public.%I',relation_name); RAISE EXCEPTION 'Browser read allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
    BEGIN EXECUTE format('UPDATE public.%I SET source_key=source_key',relation_name); RAISE EXCEPTION 'Browser update allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; WHEN undefined_column THEN
@@ -116,6 +145,8 @@ BEGIN
   RESET ROLE;
  END LOOP;
  SET LOCAL ROLE anon;
+ BEGIN PERFORM public.merge_duplicate_catalog_jobs(-970003,ARRAY[-970004]::bigint[],'anonymous-merge');
+  RAISE EXCEPTION 'Anonymous catalog merge allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  BEGIN PERFORM public.claim_crawl(120); RAISE EXCEPTION 'Anonymous claim allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  BEGIN PERFORM public.enqueue_crawls_if_idle('[]'); RAISE EXCEPTION 'Anonymous auto-start allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  BEGIN PERFORM public.enqueue_crawl('forged','{}'); RAISE EXCEPTION 'Anonymous enqueue allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;

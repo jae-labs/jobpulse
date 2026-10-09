@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any
 
 from jobpulse_scraper.config.loader import (
@@ -108,84 +107,58 @@ def update_employer_status(
         print(f"  [SUPABASE] Warning: Could not update employer '{name}': {exc}")
 
 
-def deduplicate_database_jobs() -> dict[str, Any]:
-    """
-    Scan all jobs in Supabase and consolidate duplicate records sharing
-    the same canonical employer and title.
+def deduplicate_database_jobs(*, apply: bool = True) -> dict[str, Any]:
+    """Consolidate verified shared posting identities through the tracking-preserving RPC."""
+    from jobpulse_scraper.database.deduplication import merge_plans
 
-    Safely transfers user_job_statuses to the primary record before deleting duplicate rows.
-    """
     supabase = get_supabase()
-    print("  [DEDUPE] Scanning database for existing duplicates...")
-
     all_jobs: list[dict[str, Any]] = []
-    page_size = 1000
-    start = 0
-    while True:
-        res = retry_supabase(
+    for start in range(0, 100_000, 1000):
+        response = retry_supabase(
             lambda s=start: (
                 supabase.table("jobs")
-                .select("id, title, company, location, employment_type, url, description, last_seen_at, dedupe_key")
-                .range(s, s + page_size - 1)
+                .select("id,title,company,location,employment_type,url,description,dedupe_key,closed_at")
+                .order("id")
+                .range(s, s + 999)
                 .execute()
             )
         )
-        data = response_records(res.data)
-        all_jobs.extend(data)
-        if len(data) < page_size:
+        rows = response_records(response.data)
+        all_jobs.extend(rows)
+        if len(rows) < 1000:
             break
-        start += page_size
-
-    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for j in all_jobs:
-        key = normalized_key(
-            j.get("company", ""),
-            j.get("title", ""),
-            j.get("url", ""),
-            j.get("location", ""),
-            j.get("employment_type", ""),
-        )
-        groups[key].append(j)
-
-    duplicate_groups = {k: v for k, v in groups.items() if len(v) > 1}
-    if not duplicate_groups:
-        print("  [DEDUPE] No duplicates found in database.")
-        return {"groups": 0, "deleted_rows": 0}
-
-    print(f"  [DEDUPE] Found {len(duplicate_groups)} duplicate group(s). Consolidating...")
-    deleted_total = 0
-
-    for job_list in duplicate_groups.values():
-        sorted_jobs = sorted(job_list, key=lambda x: len(x.get("description") or ""), reverse=True)
-        keeper = sorted_jobs[0]
-        duplicates = sorted_jobs[1:]
-        dup_ids = [d["id"] for d in duplicates]
-        keeper_id = keeper["id"]
-
-        correct_key = normalized_key(
-            keeper["company"],
-            keeper["title"],
-            keeper.get("url", ""),
-            keeper.get("location", ""),
-            keeper.get("employment_type", ""),
-        )
-        try:
-            response = retry_supabase(
-                lambda keeper_id=keeper_id, dup_ids=dup_ids, correct_key=correct_key: supabase.rpc(
-                    "merge_duplicate_catalog_jobs",
-                    {
-                        "p_keeper_id": keeper_id,
-                        "p_duplicate_ids": dup_ids,
-                        "p_dedupe_key": correct_key,
-                    },
-                ).execute()
-            )
-            deleted_total += response_count(response.data)
-        except Exception as exc:
-            print(f"  [DEDUPE] Could not merge duplicate jobs: {exc}")
-
-    print(f"  [DEDUPE] Consolidated {len(duplicate_groups)} duplicate groups; removed {deleted_total} duplicate jobs.")
-    return {"groups": len(duplicate_groups), "deleted_rows": deleted_total}
+    else:
+        raise RuntimeError("Catalog deduplication scan budget exceeded")
+    plans, skipped = merge_plans(all_jobs)
+    stats = {
+        "groups": len(plans),
+        "candidate_rows": sum(len(plan.duplicate_ids) for plan in plans),
+        "deleted_rows": 0,
+        "blocked_groups": 0,
+        "failed_groups": 0,
+        "skipped_groups": skipped,
+    }
+    if apply:
+        for plan in plans:
+            try:
+                response = retry_supabase(
+                    lambda p=plan: supabase.rpc(
+                        "merge_duplicate_catalog_jobs",
+                        {
+                            "p_keeper_id": p.keeper["id"],
+                            "p_duplicate_ids": list(p.duplicate_ids),
+                            "p_dedupe_key": p.dedupe_key,
+                        },
+                    ).execute()
+                )
+                removed = response_count(response.data)
+                stats["deleted_rows"] += removed
+                stats["blocked_groups"] += removed == 0
+            except Exception:
+                # SQL owns private tracking. Log only aggregate failure counts.
+                stats["failed_groups"] += 1
+    print("[DEDUPE] " + str(stats), flush=True)
+    return stats
 
 
 def get_employer(name: str) -> dict[str, Any] | None:

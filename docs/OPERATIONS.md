@@ -97,7 +97,7 @@ block new or refresh-eligible peers. Completed sources refresh after at least si
 hours from `last_succeeded_at`. Failed source crawls wait at least six hours before
 retrying; longer remote delays remain authoritative. Detail/vector tasks retain
 their separate backoff. Exhausted (`dead`) tasks require explicit enqueueing.
-`make scrape` defaults to 10,000 due tasks, the supported maximum, and stops early
+`make scrape` defaults to 50,000 due tasks, the supported maximum, and stops early
 when no work is due. `--limit` sets a smaller task budget.
 Automatic drains use four task slots; `--concurrency 1` selects a single slot and
 `--concurrency 4` is the maximum. The budget is shared across slots. Tasks have a
@@ -108,6 +108,22 @@ The shared local host ledger coordinates pacing across slots and worker processe
 Apply the forward claim migrations to the selected database before relying on
 source/detail/vector fairness. Source publication and hosted migration application
 remain separate operations.
+Automatic drains finish with a bounded catalog duplicate sweep. It merges only
+same-URL postings with agreeing titles, locations and closure states. Different
+company labels require a provider-native posting reference; conflicting URL
+populations remain separate. Candidate tracking transfers through the service-only
+merge RPC, and conflicting tracked stages leave records intact. Merge failures and
+tracking conflicts remain visible in the exit status. This maintenance never closes
+or removes vacancies based on age, absence or acquisition failure.
+
+Preview without catalog writes: `make scrape ARGS="--dedupe-preview"`.
+Apply only consolidation without crawling: `make scrape ARGS="--dedupe-only"`.
+Ingestion reuses an existing confirmed posting identity across source aliases,
+preserving its employer label and published body. Concurrent first publication can
+still create alias copies; the post-drain sweep consolidates compatible copies.
+The scan is ordered and capped at 100,000 catalog rows; exceeding the bound fails
+before merges. Each merge contains at most 100 duplicate IDs.
+
 Explicit `make scrape-worker` defaults to 20 tasks and one slot. Use it to process only existing
 work, or `make scrape-enqueue` to deliberately request a source refresh, bypassing
 the successful freshness interval while retaining failed retry dates and transport
@@ -211,7 +227,7 @@ elapsed run time separately and never sum nested stages into a wall-time estimat
 The full-cycle performance target is two hours for eligible listing acquisition,
 available detail hydration and vector work. Measure source coverage, detail coverage,
 queue growth and completed tasks alongside elapsed time. A drain that reaches its
-10,000-task budget or finds only future retries is not complete source coverage.
+50,000-task budget or finds only future retries is not complete source coverage.
 Four slots improve overlap across hosts; host pacing and cooldowns still apply.
 Keep the 120-second hard deadline for paginated sources: shortening it without
 continuation evidence can lose completeness. Diagnose repeated deadlines using

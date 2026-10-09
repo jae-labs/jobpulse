@@ -123,6 +123,9 @@ def main() -> None:
         help="Run only the database deduplication sweep without scraping",
     )
     parser.add_argument(
+        "--dedupe-preview", action="store_true", help="Preview confirmed duplicate groups without writes"
+    )
+    parser.add_argument(
         "--backfill-embeddings",
         action="store_true",
         help="Generate missing job vectors for an existing catalog without crawling",
@@ -145,6 +148,22 @@ def main() -> None:
         "--crawl-report", action="store_true", help="Compare the latest 100 durable runs; --employer filters a company"
     )
     args = parser.parse_args()
+
+    if args.dedupe_preview and any(
+        (
+            args.worker,
+            args.enqueue,
+            args.sync,
+            args.dedupe_only,
+            args.backfill_embeddings,
+            args.employer,
+            args.no_core,
+            args.core_only,
+            args.server,
+            args.replay,
+        )
+    ):
+        parser.error("--dedupe-preview cannot be combined with work or mutation modes")
 
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
@@ -186,6 +205,7 @@ def main() -> None:
             args.list_websites,
             args.validate_config,
             args.dedupe_only,
+            args.dedupe_preview,
             args.backfill_embeddings,
         )
     )
@@ -220,8 +240,22 @@ def main() -> None:
                         file=sys.stderr,
                         flush=True,
                     )
+            maintenance_failed = False
+            if auto:
+                from jobpulse_scraper.database.repository import deduplicate_database_jobs
+
+                try:
+                    stats = deduplicate_database_jobs()
+                    print(json.dumps({"dedupe": stats}), flush=True)
+                    maintenance_failed = bool(stats["failed_groups"] or stats["blocked_groups"])
+                except Exception:
+                    maintenance_failed = True
+                    print(
+                        json.dumps({"crawl_event": "dedupe_failed", "error_code": "catalog_deduplication_unavailable"}),
+                        flush=True,
+                    )
             print(json.dumps(result))
-            if result["incomplete"] or result["lease_lost"] or report_failed:
+            if maintenance_failed or result["incomplete"] or result["lease_lost"] or report_failed:
                 raise SystemExit(1)
         return
 
@@ -237,10 +271,13 @@ def main() -> None:
         validate_config_cli()
         return
 
-    if args.dedupe_only:
+    if args.dedupe_only or args.dedupe_preview:
         from jobpulse_scraper.database.repository import deduplicate_database_jobs
 
-        deduplicate_database_jobs()
+        stats = deduplicate_database_jobs(apply=not args.dedupe_preview)
+        print(json.dumps({"dedupe": stats}))
+        if stats["failed_groups"] or stats["blocked_groups"]:
+            raise SystemExit(1)
         return
 
     if args.backfill_embeddings:

@@ -11,6 +11,10 @@ from jobpulse_scraper.config.loader import load_websites_config
 @pytest.fixture(autouse=True)
 def isolate_automatic_reports(monkeypatch):
     monkeypatch.setattr(
+        "jobpulse_scraper.database.repository.deduplicate_database_jobs",
+        Mock(return_value={"failed_groups": 0, "blocked_groups": 0}),
+    )
+    monkeypatch.setattr(
         "jobpulse_scraper.runtime.reporting.save_crawl_report",
         Mock(return_value={"crawl_report": "synthetic-report.json"}),
     )
@@ -195,7 +199,7 @@ def test_invalid_auto_worker_bound_is_rejected_before_enqueuing(monkeypatch):
     from jobpulse_scraper.runtime import queue as runtime
 
     enqueue = Mock()
-    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--limit", "10001"])
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--limit", "50001"])
     monkeypatch.setattr(runtime, "enqueue_configured", enqueue)
     with pytest.raises(SystemExit) as result:
         app.main()
@@ -213,4 +217,36 @@ def test_auto_start_defaults_to_the_supported_maximum(monkeypatch):
     monkeypatch.setattr(runtime, "enqueue_configured", Mock(return_value=0))
     monkeypatch.setattr(runtime, "run_worker", worker)
     app.main()
-    worker.assert_called_once_with(queue, max_tasks=10_000, concurrency=4, task_timeout=120)
+    worker.assert_called_once_with(queue, max_tasks=50_000, concurrency=4, task_timeout=120)
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_auto_drain_runs_catalog_maintenance_and_surfaces_failure(monkeypatch, failed):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    maintenance = Mock(return_value={"failed_groups": int(failed), "blocked_groups": 0})
+    monkeypatch.setattr("jobpulse_scraper.database.repository.deduplicate_database_jobs", maintenance)
+    monkeypatch.setattr(runtime, "CrawlQueue", Mock())
+    monkeypatch.setattr(runtime, "enqueue_configured", Mock(return_value=0))
+    monkeypatch.setattr(runtime, "run_worker", Mock(return_value={"complete": 1, "incomplete": 0, "lease_lost": 0}))
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto"])
+    if failed:
+        with pytest.raises(SystemExit) as caught:
+            app.main()
+        assert caught.value.code == 1
+    else:
+        app.main()
+    maintenance.assert_called_once_with()
+
+
+@pytest.mark.parametrize("mode", ["--worker", "--enqueue", "--sync", "--dedupe-only", "--backfill-embeddings"])
+def test_duplicate_preview_rejects_mutating_mode_before_database_access(monkeypatch, mode):
+    from jobpulse_scraper.runtime import queue as runtime
+
+    queue = Mock()
+    monkeypatch.setattr(runtime, "CrawlQueue", queue)
+    monkeypatch.setattr("sys.argv", ["scraper", "--auto", "--dedupe-preview", mode])
+    with pytest.raises(SystemExit) as caught:
+        app.main()
+    assert caught.value.code == 2
+    queue.assert_not_called()

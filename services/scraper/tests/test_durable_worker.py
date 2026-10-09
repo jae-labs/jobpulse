@@ -215,7 +215,7 @@ def test_concurrent_slots_share_one_task_budget_and_overlap(task, capsys):
     assert "no_due_tasks" not in events
 
 
-@pytest.mark.parametrize("max_tasks,lease", [(0, 120), (10_001, 120), (1, 9), (1, 3601)])
+@pytest.mark.parametrize("max_tasks,lease", [(0, 120), (50_001, 120), (1, 9), (1, 3601)])
 def test_worker_bounds(max_tasks, lease):
     with pytest.raises(ValueError):
         run_worker(MagicMock(spec=CrawlQueue), max_tasks=max_tasks, lease_seconds=lease)
@@ -299,7 +299,7 @@ def test_idle_enqueue_database_failure_cannot_be_treated_as_empty(monkeypatch):
 def test_worker_accepts_ten_thousand_tasks_and_stops_when_nothing_is_due():
     queue = MagicMock(spec=CrawlQueue)
     queue.claim.return_value = None
-    assert run_worker(queue, max_tasks=10_000) == {"complete": 0, "incomplete": 0, "lease_lost": 0}
+    assert run_worker(queue, max_tasks=50_000) == {"complete": 0, "incomplete": 0, "lease_lost": 0}
     queue.claim.assert_called_once()
 
 

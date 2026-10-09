@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from jobpulse_scraper.database.client import get_supabase, retry_supabase, utc_now
+from jobpulse_scraper.database.deduplication import same_posting
 from jobpulse_scraper.database.embeddings import prepare_embeddings
 from jobpulse_scraper.database.records import response_records
 from jobpulse_scraper.engine.description_quality import has_closed_notice, has_description_body
@@ -197,6 +198,31 @@ def save_jobs_batch(jobs: list[dict[str, Any]], *, enrich: bool = True) -> int:
 
     for i in range(0, len(payloads_to_save), batch_size):
         chunk = payloads_to_save[i : i + batch_size]
+        url_rows = response_records(
+            retry_supabase(
+                lambda c=chunk: (
+                    supabase.table("jobs")
+                    .select("id,title,company,url,location,closed_at,dedupe_key,employer_id,description")
+                    .in_("url", [item["url"] for item in c])
+                    .execute()
+                )
+            ).data
+        )
+        by_url: dict[str, list[dict[str, Any]]] = {}
+        for row in url_rows:
+            by_url.setdefault(canonical_job_url(str(row.get("url") or "")), []).append(row)
+        for item in chunk:
+            matches = by_url.get(canonical_job_url(item["url"]), [])
+            if matches and all(same_posting(row, item) for row in matches):
+                keeper = max(matches, key=lambda row: (has_description_body(row.get("description")), -int(row["id"])))
+                original_key = item["dedupe_key"]
+                item["dedupe_key"] = keeper["dedupe_key"]
+                item["company"] = keeper["company"]
+                item["employer_id"] = keeper.get("employer_id") or item["employer_id"]
+                if original_key in identities:
+                    identities[item["dedupe_key"]] = identities[original_key]
+        # Confirmed source aliases can converge on one existing catalog identity.
+        chunk = list({item["dedupe_key"]: item for item in chunk}.values())
         # A detail failure must never replace a hydrated body with listing metadata.
         existing_rows = response_records(
             retry_supabase(

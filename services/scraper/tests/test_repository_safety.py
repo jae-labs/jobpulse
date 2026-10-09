@@ -68,16 +68,34 @@ def test_ingestion_writes_only_vacancy_facts_and_job_embeddings(monkeypatch: pyt
 
 def test_deduplication_uses_database_rpc(monkeypatch: pytest.MonkeyPatch) -> None:
     client = MagicMock()
-    client.table.return_value.select.return_value.range.return_value.execute.return_value = SimpleNamespace(
-        data=[
-            {"id": 1, "title": "Engineer", "company": "Acme", "url": "https://example.com/job", "description": "long"},
-            {"id": 2, "title": "Engineer", "company": "Acme", "url": "https://example.com/job", "description": ""},
-        ]
+    client.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = (
+        SimpleNamespace(
+            data=[
+                {
+                    "id": 1,
+                    "title": "Engineer",
+                    "company": "Acme",
+                    "url": "https://example.com/job",
+                    "description": "long",
+                    "location": "Dublin",
+                },
+                {
+                    "id": 2,
+                    "title": "Engineer",
+                    "company": "Acme",
+                    "url": "https://example.com/job",
+                    "description": "",
+                    "location": "Dublin",
+                },
+            ]
+        )
     )
     client.rpc.return_value.execute.return_value = SimpleNamespace(data=1)
     monkeypatch.setattr(repository, "get_supabase", lambda: client)
     monkeypatch.setattr(repository, "retry_supabase", lambda fn: fn())
-    assert repository.deduplicate_database_jobs() == {"groups": 1, "deleted_rows": 1}
+    stats = repository.deduplicate_database_jobs()
+    assert stats["groups"] == 1
+    assert stats["deleted_rows"] == 1
     client.rpc.assert_called_once_with(
         "merge_duplicate_catalog_jobs",
         {
