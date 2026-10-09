@@ -190,3 +190,12 @@ ignored `storybook-static/` build. Install Chromium with
 `npm run test:ui:visual` requires Docker and the built catalog; it uses a pinned Linux browser environment
 and a container-local port 6007. Follow the
 [UI verification guide](../packages/ui/DESIGN.md#storybook-and-verification) for reviewed fixture updates.
+
+## Local company datasets
+
+Company snapshots, SQLite indexes and persistent AI research proposals live in
+Git-ignored `.data/company-index/` and `.data/company-research/`. These are runtime
+datasets, independent of `.backups/jobpulse-*` database/Storage recovery exports.
+Keep entire SQLite directories together, including WAL/SHM sidecars. Stop company
+commands before moving or copying them. See [company research operations](OPERATIONS.md#combined-company-research)
+for default-path relocation, explicit storage roots, cache export and refresh.

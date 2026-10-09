@@ -480,8 +480,11 @@ See [the operational guide](OPERATIONS.md#employer-research-and-offices) for con
 `company_index/` owns public snapshot acquisition, streaming source import and
 transactional SQLite indexing. `tools/company_index.py` composes refresh and
 review-only coverage commands. Its default state lives under the Git-ignored
-`.backups/company-index/`; it does not participate in candidate matching or
-catalog writes. CRO legal registered addresses and Overture operating-place
+`.data/company-index/`; `paths.py` defines company data defaults and `local_data.py`
+relocates default legacy directories with writer locks and collision refusal.
+Relocation retains SQLite sidecars and never merges or resets existing databases.
+Explicit roots bypass relocation. The index does not participate in candidate
+matching or catalog writes. CRO legal registered addresses and Overture operating-place
 candidates carry separate kinds and provenance. Indexed name, domain and legal
 number lookups retain ambiguity, source conflicts and closed status. All returned
 candidates require review; identity support is not office verification.

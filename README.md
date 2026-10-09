@@ -88,7 +88,7 @@ These are the most common entry points:
 | Operations and standards | [Board and catalog operations](docs/OPERATIONS.md) · [Performance](docs/PERFORMANCE_AND_SCALABILITY.md) · [Monitoring](docs/ERROR_TRACKING_AND_MONITORING.md) · [Conventions and CI](docs/STANDARDS_AND_CONVENTIONS.md) |
 | Preventing regressions | [Failure contracts, code smells and safe cleanup](docs/REGRESSION_PREVENTION.md) |
 
-The browser uses a publishable Supabase key; only the scraper and Edge Function use service-role credentials. Keep `.env` files and `.backups/` out of Git.
+The browser uses a publishable Supabase key; only the scraper and Edge Function use service-role credentials. Keep `.env` files, `.backups/` recovery exports and `.data/` local company datasets out of Git.
 
 ## Contributing
 

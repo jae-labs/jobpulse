@@ -15,11 +15,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from jobpulse_scraper.company_index.download import index_lock
 from jobpulse_scraper.database.client import retry_supabase
 from jobpulse_scraper.database.records import response_records
-from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.local_data import prepare_company_root
+from jobpulse_scraper.paths import COMPANY_RESEARCH_ROOT
 from jobpulse_scraper.pipeline.ai_enrichment import VALID_SIZES, is_valid_ireland_coordinate
 from jobpulse_scraper.pipeline.research_progress import event, progress
 
-CACHE_ROOT = REPO_ROOT / ".backups/company-research"
+CACHE_ROOT = COMPANY_RESEARCH_ROOT
 SCHEMA_VERSION = 1
 
 
@@ -62,6 +63,7 @@ def identity_key(employer: dict) -> str:
 
 class ProposalStore:
     def __init__(self, root: Path = CACHE_ROOT):
+        prepare_company_root(root)
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.root = root
         self.connection = sqlite3.connect(root / "proposals.sqlite3", timeout=30)
@@ -204,6 +206,7 @@ def research_batch(
     refresh: bool = False,
 ) -> dict:
     # The process-safe writer lock releases on interruption; no paid request is duplicated by concurrent runs.
+    prepare_company_root(root)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     with progress("proposal_cache_lock"), index_lock(root):
         store = ProposalStore(root)

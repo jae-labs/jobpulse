@@ -42,6 +42,9 @@ Desktop.ini
 .doppler/
 .backups/
 
+# Persistent local datasets, SQLite databases, sidecars and research artifacts
+/.data/
+
 # Logs and debug output
 logs/
 *.log

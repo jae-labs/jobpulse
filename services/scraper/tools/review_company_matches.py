@@ -13,7 +13,8 @@ from jobpulse_scraper.company_index.download import event, index_lock
 from jobpulse_scraper.company_index.evidence import EvidenceFetcher, EvidenceProvider, failure_category
 from jobpulse_scraper.company_index.review import PROMPT_VERSION, AgyReviewer, comparison_pair
 from jobpulse_scraper.company_index.store import CompanyIndex, domain, name_key
-from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.local_data import prepare_company_root
+from jobpulse_scraper.paths import COMPANY_INDEX_ROOT
 from jobpulse_scraper.pipeline.research_progress import progress
 from jobpulse_scraper.pipeline.research_provider import add_provider_arguments, resolve_provider_arguments
 
@@ -140,7 +141,7 @@ def gather(index: CompanyIndex, employer: dict, fetcher: EvidenceProvider | None
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups" / "company-index")
+    parser.add_argument("--root", type=Path, default=COMPANY_INDEX_ROOT)
     parser.add_argument("--employers", type=Path, help="Public employer JSON; otherwise read configured catalog")
     parser.add_argument(
         "--aliases", type=Path, help="First-party alias source URLs; aliases must occur in fetched text"
@@ -157,6 +158,7 @@ def main() -> None:
         parser.error(str(exc))
     if not 1 <= args.limit <= 10000 or not 1 <= args.timeout <= 300:
         parser.error("limit must be 1–10000 and timeout 1–300")
+    prepare_company_root(args.root)
     started = time.monotonic()
     employers = public_employers(args.employers, args.limit)
     if not employers:

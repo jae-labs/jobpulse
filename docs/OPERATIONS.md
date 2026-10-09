@@ -483,7 +483,7 @@ retention and backup-restore checks.
 ## Local Irish company index
 
 `make scrape-company-index` downloads public CRO and regional Overture Places
-snapshots and builds `.backups/company-index/companies.sqlite3`. The raw ZIP,
+snapshots and builds `.data/company-index/companies.sqlite3`. The raw ZIP,
 regional JSONL, SQLite index, lock and pilot report are Git-ignored. Imports use a
 process lock and replace each source in one SQLite transaction; interruption or
 invalid/empty imports retain the previous indexed snapshot. Downloads publish
@@ -542,7 +542,7 @@ matching and recovery contracts in `services/scraper/tests/test_company_index.py
 ### Close company-name matches
 
 `make scrape-company-pilot ARGS="--fuzzy"` checks otherwise unmatched employer names
-and writes `.backups/company-index/pilot-fuzzy.json`, preserving the exact-only
+and writes `.data/company-index/pilot-fuzzy.json`, preserving the exact-only
 `pilot.json`. `--similarity-threshold 85` selects the default 0–100 score cutoff.
 The score measures spelling/token-order similarity; it is not a calibrated
 identity probability. Short normalized names below six characters and names over
@@ -601,7 +601,7 @@ the limit is a batch budget, not a fixed first page. An explicit `--employers` f
 overrides active-job selection for bounded audits; unrelated fields are discarded.
 
 Validated metadata responses persist transactionally in ignored
-`.backups/company-research/proposals.sqlite3`, shared by both commands. Records
+`.data/company-research/proposals.sqlite3`, shared by both commands. Records
 include public employer identity, offices, sector, global staff-size bracket,
 provider/model, acquisition information, research time and explicit unknown fields.
 Successful responses, including unknown fields, are skipped on subsequent runs.
@@ -622,14 +622,31 @@ make scrape-enrich-ai ARGS="--limit 1 --refresh"
 `--proposal-cache` and its `--cache` alias override the local cache directory.
 Reports retain proposals for review; caching does not verify
 claims or apply them to the hosted catalog. `--show-cache` exports stored proposals
-to `.backups/company-proposals.json`; `--report` overrides the destination.
+to `.data/company-research/proposals.json`; `--report` overrides the destination.
 Ordinary runs retain per-batch proposals in their unique campaign directories.
 The compatibility `tools/enrich_companies_ai.py` entry delegates one metadata
 batch to the same parser; it contains no separate research implementation.
 Cached unknown fields require
 explicit refresh rather than repeated automatic model calls.
 
-The default index stays in ignored `.backups/company-index/companies.sqlite3`.
+Company datasets and runtime research live under the repository's Git-ignored
+`.data/`, separate from recovery exports. The default index stays in
+`.data/company-index/companies.sqlite3`; the proposal store stays in
+`.data/company-research/proposals.sqlite3`. Raw snapshots, provider caches,
+campaign checkpoints and SQLite WAL/SHM sidecars stay with their owning dataset.
+`make backup` exports database/Storage recovery snapshots and does not back up
+these local datasets. Preserve the proposal directory separately if paid research
+must survive loss of this machine.
+
+Default-path commands relocate existing `.backups/company-index/` and
+`.backups/company-research/` directories with a same-filesystem directory rename.
+Stop existing company commands before the first run. Relocation preserves the
+entire directory, performs no download or model call, and fails promptly when a
+writer holds its lock. Both old and new locations existing is a conflict: inspect
+them and use an explicit `--root`/`--cache` instead of overwriting or merging
+SQLite files. Explicit custom roots remain unchanged. Older exported JSON reports
+outside these directories remain untouched. Ordinary commands print relocation
+paths in their ignored logs.
 Snapshot modes require `--refresh-index` when the index is missing; `--ai-only`
 and `--show-cache` do not require an index. Ordinary research does not download
 large snapshots again. `--release` selects the Overture refresh release.
@@ -641,7 +658,7 @@ identity/evidence stages. AI requests default to a 120-second deadline (maximum
 Live output includes stage starts, employer IDs/names, candidate counts, provider
 waiting heartbeats every fifteen seconds, elapsed time, batch counts, failures
 and report paths. The logged Make wrapper archives terminal output under `logs/`.
-Unique campaign directories under `.backups/company-index/campaigns/` retain
+Unique campaign directories under `.data/company-index/campaigns/` retain
 cohort files, per-stage reports, identity journals and an atomic `report.json`.
 Completed batches survive interruption; active child process groups are terminated.
 After a failure, inspect the saved stage evidence and use its public cohort file
@@ -713,7 +730,7 @@ names, subsidiaries, name/domain ambiguity, closed records and prompt injection.
 It records validated and raw correctness, false-positive identities, downgraded
 unsupported claims, schema failures and timings. These cases test evidence
 handling; they do not establish real-world office/headcount accuracy. Reports
-live under `.backups/company-index/model-benchmark/`. Benchmark reports retain
+live under `.data/company-index/model-benchmark/`. Benchmark reports retain
 current measurements locally rather than asserting an enduring model ranking.
 
 ### Evidence-based company comparison
@@ -721,7 +738,7 @@ current measurements locally rather than asserting an enduring model ranking.
 `make scrape-company-review` compares exact snapshot candidates through the
 operator-installed `agy` CLI. Fuzzy name retrieval is not used. The command reads
 public employer IDs/names/websites only, fetches bounded first-party text, and
-writes `.backups/company-index/identity-review.json`. The default budget is twenty
+writes `.data/company-index/identity-review.json`. The default budget is twenty
 employers; `--limit` accepts 1–10000. Reports and caches remain Git-ignored.
 
 ```bash

@@ -138,7 +138,7 @@ Consult the relevant guides progressively based on the task domain:
 | **Performance & Scalability** | [`docs/PERFORMANCE_AND_SCALABILITY.md`](docs/PERFORMANCE_AND_SCALABILITY.md) | Tuning virtualization, main-thread performance, reflows, or caching | Zero forced reflows; stable virtual refs; memoized trees; single-pass $O(N)$ loops. |
 | **Standards & Conventions** | [`docs/STANDARDS_AND_CONVENTIONS.md`](docs/STANDARDS_AND_CONVENTIONS.md) | Reviewing code style, TanStack Query patterns, git hooks, or CI | Strict TypeScript; no `any`; typed query keys; automated git hooks and CI. |
 | **Accessibility & Quality** | [`docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md`](docs/QUALITY_ACCESSIBILITY_AND_COMPATIBILITY.md) | Modifying keyboard navigation, focus management, or i18n | WCAG 2.1 AA baseline; keyboard shortcuts (`↑`/`↓`, `Cmd+K`); full i18n strings. |
-| **Local Workflow & Backups** | [`docs/LOCAL_DEVELOPMENT.md`](docs/LOCAL_DEVELOPMENT.md) | Working with local Supabase, Docker, seed data, or backups | Use local credentials; never commit `.backups/` or secrets. |
+| **Local Workflow & Backups** | [`docs/LOCAL_DEVELOPMENT.md`](docs/LOCAL_DEVELOPMENT.md) | Working with local Supabase, Docker, seed data, company datasets, or backups | Use local credentials; never commit `.data/`, `.backups/` or secrets. |
 | **Release & Recovery** | [`docs/RELEASE_AND_RECOVERY.md`](docs/RELEASE_AND_RECOVERY.md) | Pre-deployment verification, launch gates, or incident response | Follow Required Verification; verify backup snapshots before schema changes. |
 | **Regression Prevention** | [`docs/REGRESSION_PREVENTION.md`](docs/REGRESSION_PREVENTION.md) | Changing private data flows, matching, telemetry, catalog queries, or removing old code | Preserve the behavior-to-test matrix; remove redundant paths without removing safety evidence. |
 
@@ -240,6 +240,7 @@ Progressive discovery index: [`docs/`](docs/).
 
 - Do not commit `.env` or sensitive Supabase auth tokens.
 - Do not commit `.backups/`; it can contain production database and Storage data.
+- Company runtime datasets, SQLite sidecars and AI research caches live in Git-ignored `.data/`, separate from recovery exports. Use the defaults in `services/scraper/src/jobpulse_scraper/paths.py`; do not put new company runtime state in `.backups/`.
 - Do not let TypeScript and Python database types drift out of lockstep; always run `make db-types` when migrations change.
 - Do not downgrade compiler or linting settings to bypass errors.
 - Do not introduce server-only packages into client bundle.

@@ -11,7 +11,7 @@ repository execution contract; this index records the maintained documentation t
 | [Design system](DESIGN_SYSTEM.md) | Integrating app UI with shared primitives or chart rendering rules | `packages/ui/DESIGN.md` is the detailed design authority | Current policy |
 | [`packages/ui` design](../packages/ui/DESIGN.md) | Changing a reusable primitive, token, interaction treatment, Storybook state, accessibility gate or visual baseline | `packages/ui/` | Current policy |
 | [`packages/ui` agent rules](../packages/ui/AGENTS.md) | Editing the UI package | `packages/ui/` execution boundary | Current policy |
-| [Local development](LOCAL_DEVELOPMENT.md) | Starting local services, migrations, backups, restores, or scraper development | Local workflow and recovery procedures | Current policy |
+| [Local development](LOCAL_DEVELOPMENT.md) | Starting local services, migrations, company datasets, backups, restores, or scraper development | Local workflow, dataset storage and recovery procedures | Current policy |
 | [Database schema](DATABASE_SCHEMA.md) | Changing schema, migrations, RPCs, triggers, generated models, or indexes | `supabase/migrations/` | Current policy |
 | [Security and multi-tenancy](SECURITY_AND_MULTI_TENANCY.md) | Changing RLS, Storage, Auth, invitations, browser RPCs, or private data paths | Database authorization contract and tests | Current policy |
 | [Regression prevention](REGRESSION_PREVENTION.md) | Removing code or changing matching, caching, telemetry, catalog, or failure behavior | Behavior-to-test matrix and cleanup contract | Current policy |

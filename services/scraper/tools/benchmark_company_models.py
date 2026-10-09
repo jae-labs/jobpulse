@@ -11,14 +11,15 @@ from pydantic import ValidationError
 
 from jobpulse_scraper.company_index.benchmark import identity_cases, score
 from jobpulse_scraper.company_index.review import PROMPT_VERSION, AgyReviewer
-from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.local_data import prepare_company_root
+from jobpulse_scraper.paths import COMPANY_INDEX_ROOT
 from jobpulse_scraper.pipeline.research_progress import event, progress
 from jobpulse_scraper.pipeline.research_provider import FREE_MODEL, FREE_MODELS, PAID_MODELS, validate_policy
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups/company-index/model-benchmark")
+    parser.add_argument("--root", type=Path, default=COMPANY_INDEX_ROOT / "model-benchmark")
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--opencode-provider", choices=["opencode", "opencode-go"], default="opencode-go")
@@ -38,6 +39,8 @@ def main() -> None:
         parser.error(str(exc))
     if not 1 <= args.timeout <= 300 or not 1 <= args.batch_size <= 20:
         parser.error("timeout must be 1–300 and batch-size 1–20")
+    if args.root == COMPANY_INDEX_ROOT / "model-benchmark":
+        prepare_company_root(COMPANY_INDEX_ROOT)
     args.root.mkdir(parents=True, exist_ok=True)
     cases = identity_cases()
     report: dict = {

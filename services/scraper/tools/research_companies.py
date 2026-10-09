@@ -14,7 +14,8 @@ from uuid import uuid4
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from jobpulse_scraper.database.client import get_supabase
-from jobpulse_scraper.paths import REPO_ROOT, SERVICE_ROOT
+from jobpulse_scraper.local_data import prepare_company_root
+from jobpulse_scraper.paths import COMPANY_INDEX_ROOT, COMPANY_RESEARCH_ROOT, SERVICE_ROOT
 from jobpulse_scraper.pipeline.ai_enrichment import enrich_companies_with_ai
 from jobpulse_scraper.pipeline.company_campaign import run_stage
 from jobpulse_scraper.pipeline.company_proposals import (
@@ -119,7 +120,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--limit", type=int, default=20, help="Total employers (1-10000)")
     parser.add_argument("--batch-size", type=int, default=5, help="Employers per checkpoint and AI call (1-25)")
     parser.add_argument("--employers", type=Path, help="Public JSON cohort; otherwise select catalog employers")
-    parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups/company-index")
+    parser.add_argument("--root", type=Path, default=COMPANY_INDEX_ROOT)
     parser.add_argument("--refresh-index", action="store_true", help="Download and import CRO/Overture snapshots")
     parser.add_argument("--release", default="2026-09-23.1", help="Explicit Overture release for refresh")
     parser.add_argument("--proposal-cache", "--cache", dest="proposal_cache", type=Path, default=CACHE_ROOT)
@@ -145,11 +146,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.metadata_batch or args.show_cache:
         if args.metadata_batch and args.limit > 25:
             parser.error("Metadata batches must contain at most 25 employers")
-        args.report = args.report or REPO_ROOT / ".backups/company-proposals.json"
+        args.report = args.report or COMPANY_RESEARCH_ROOT / "proposals.json"
         run_metadata(args)
         return
     if args.ai_only and args.refresh_index:
         parser.error("--ai-only cannot refresh the snapshot index")
+    prepare_company_root(args.root)
     if not args.ai_only and not args.refresh_index and not (args.root / "companies.sqlite3").is_file():
         parser.error("Local company index missing; use --refresh-index to download it")
     args.root = args.root.resolve()

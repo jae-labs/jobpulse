@@ -18,13 +18,14 @@ from jobpulse_scraper.company_index.importers import (
     overture_rows,
 )
 from jobpulse_scraper.company_index.store import CompanyIndex
-from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.local_data import prepare_company_root
+from jobpulse_scraper.paths import COMPANY_INDEX_ROOT
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["refresh", "pilot"])
-    parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups" / "company-index")
+    parser.add_argument("--root", type=Path, default=COMPANY_INDEX_ROOT)
     parser.add_argument("--source", choices=["cro", "overture", "both"], default="both")
     parser.add_argument("--release", default="2026-09-23.1", help="Explicit Overture snapshot release")
     parser.add_argument("--local", action="store_true", help="Import downloaded snapshots without network")
@@ -42,6 +43,7 @@ def main() -> None:
         parser.error("similarity-threshold must be 0–100")
     if not 1 <= args.limit <= 10000:
         parser.error("limit must be 1–10000")
+    prepare_company_root(args.root)
     started = time.monotonic()
     with index_lock(args.root):
         index = CompanyIndex(args.root / "companies.sqlite3")
