@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { JobFilterStatus } from '../../types/job';
+import type { JobFilterStatus, JobAvailability } from '../../types/job';
+import { availabilityScope } from '../../lib/jobsRpcArgs';
 import { isJobStatus } from '../../types/job';
 
 export type SortField = 'match' | 'location' | 'category' | 'salary';
@@ -37,6 +38,8 @@ export function useJobFilters({
     ? initialStatusFilter : statusParam === 'all' || statusParam === 'saved' || isJobStatus(statusParam)
       ? statusParam : 'all';
 
+  const rawAvailability = searchParams.get('availability');
+  const availability: JobAvailability | 'all' = rawAvailability === 'active' || rawAvailability === 'closed' || rawAvailability === 'unverified' || rawAvailability === 'all' ? rawAvailability : availabilityScope({ status: statusFilter });
   const sectorParam = searchParams.get('sector');
   const sectorFilter = sectorParam || initialSectorFilter || 'all';
 
@@ -93,6 +96,8 @@ export function useJobFilters({
     },
     [updateUrlParam]
   );
+
+  const setAvailability = useCallback((value: JobAvailability | 'all') => updateUrlParam('availability', value), [updateUrlParam]);
 
   const setSectorFilter = useCallback(
     (sector: string) => {
@@ -158,6 +163,7 @@ export function useJobFilters({
   const queryParams = useMemo(
     () => ({
       status: statusFilter,
+      availability,
       sector: sectorFilter.slice(0, 100),
       minMatch,
       location: locationFilter.slice(0, 80),
@@ -166,7 +172,7 @@ export function useJobFilters({
       sortBy: sortField,
       sortDir,
     }),
-    [statusFilter, sectorFilter, minMatch, locationFilter, salaryFilter, activeSearch, sortField, sortDir]
+    [statusFilter, availability, sectorFilter, minMatch, locationFilter, salaryFilter, activeSearch, sortField, sortDir]
   );
 
   const resetFilters = useCallback(() => {
@@ -179,7 +185,7 @@ export function useJobFilters({
     setSearchParams(
       (previous) => {
         const next = new URLSearchParams(previous);
-        for (const key of ['q', 'status', 'match', 'location', 'sector', 'salary']) {
+        for (const key of ['availability', 'q', 'status', 'match', 'location', 'sector', 'salary']) {
           next.delete(key);
         }
         next.set('status', 'all');
@@ -196,6 +202,8 @@ export function useJobFilters({
     searchParams,
     statusFilter,
     setStatusFilter,
+    availability,
+    setAvailability,
     sectorFilter,
     setSectorFilter,
     minMatch,

@@ -21,4 +21,17 @@ describe('job filter URL contract', () => {
     expect(result.current.queryParams).toMatchObject({ status: 'all', minMatch: 0 });
     expect(result.current.urlJobId).toBeNull();
   });
+  it('defaults to active browsing, retains history, and persists explicit availability', () => {
+    const { result } = renderHook(() => useJobFilters(), { wrapper });
+    expect(result.current.queryParams.availability).toBe('active');
+    act(() => result.current.setStatusFilter('saved'));
+    expect(result.current.queryParams.availability).toBe('all');
+    act(() => result.current.setAvailability('unverified'));
+    expect(result.current.searchParams.get('availability')).toBe('unverified');
+    act(() => result.current.setStatusFilter('applied'));
+    expect(result.current.queryParams.availability).toBe('unverified');
+    act(() => result.current.resetFilters());
+    expect(result.current.queryParams.availability).toBe('active');
+  });
+
 });

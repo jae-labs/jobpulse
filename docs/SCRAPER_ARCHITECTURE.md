@@ -163,6 +163,24 @@ Python never reads or rewrites private tracking to decide a merge. Tracking conf
 and RPC failures are reported; age and source failures never authorize retirement.
 Concurrent initial publication can create alias copies until post-drain maintenance.
 
+Posting availability is independent of candidate stages and `last_seen_at`.
+`availability_status`, `availability_checked_at` and `availability_evidence` store
+public evidence. PostgreSQL computes active confirmation expiry after 24 hours;
+uncertainty and failed sources never authorize closure. Live fenced source writes
+confirm observed listings; detail/vector persistence cannot invent confirmation or
+reopen a closed posting. The service-only `record_job_availability` RPC guards the
+original URL/title and retains closure when a later acquisition fails.
+
+`scrapers/parsers/availability.py` classifies synthetic or acquired pages without
+network/database imports. `engine/html_body.py` supplies shared pure description
+containers. `network/posting_transport.py` validates and pins public DNS addresses,
+preserves host pacing/cooldowns, caps responses at 2 MiB and refuses redirects.
+`pipeline/job_availability.py` runs at most four reusable subprocess slots with
+20-second deadlines and a single parent database writer. Its bounded preview/apply
+command archives public outcome IDs, evidence and timings alongside ignored logs.
+The parser confirms only a matching posting; generic pages, ambiguous identities,
+unsupported bodies and denials remain unverified.
+
 Automatic drains use four concurrent task slots sharing one 50,000-task budget.
 `--concurrency` accepts one to four slots; explicit workers default to one.
 Each slot owns a reusable spawned process, preserving warm clients/models and

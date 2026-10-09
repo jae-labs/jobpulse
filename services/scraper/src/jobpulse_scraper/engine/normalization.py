@@ -116,3 +116,17 @@ def normalized_key(
         )
     # Match PostgreSQL's md5() re-key format; this is not a security hash.
     return hashlib.md5(f"{norm_comp}::{identity}".encode(), usedforsecurity=False).hexdigest()
+
+
+def posting_url(url: str) -> bool:
+    """Require a public posting reference before joining different company labels."""
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        return False
+    query = urllib.parse.parse_qs(parsed.query)
+    if any(query.get(key) for key in ("id", "jobid", "reqid", "opportunityid", "p_recruitment_id", "jid")):
+        return True
+    return bool(
+        re.search(r"/(?:jobs?|careers|requisitions/preview)/[^?#]*\d", parsed.path, re.IGNORECASE)
+        or re.search(r"/[0-9a-f]{8}-[0-9a-f-]{27,}(?:/|$)", parsed.path, re.IGNORECASE)
+    )

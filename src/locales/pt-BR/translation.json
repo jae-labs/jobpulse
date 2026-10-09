@@ -333,7 +333,15 @@
     "mapPostingLayer": "Locais dos anúncios",
     "mapOfficeLayer": "Escritórios das empresas",
     "openDetails": "Abrir detalhes",
-    "salary": "Salário"
+    "salary": "Salário",
+    "availability": {
+      "label": "Disponibilidade da vaga",
+      "active": "Ativa verificada",
+      "unverified": "Não verificada",
+      "closed": "Encerramento confirmado",
+      "all": "Todas as disponibilidades",
+      "checked": "Verificada em {{date}}"
+    }
   },
   "charts": {
     "categoryBreakdown": {

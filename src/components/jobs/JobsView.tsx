@@ -87,6 +87,8 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const {
     statusFilter,
     setStatusFilter,
+    availability,
+    setAvailability,
     sectorFilter,
     setSectorFilter,
     minMatch,
@@ -546,6 +548,14 @@ export const JobsView: React.FC<JobsViewProps> = ({
 
         <div className="flex flex-col gap-2.5 pt-2 border-t border-ds-border text-xs">
           <div className={`${isFiltersOpen ? 'grid' : 'hidden lg:grid'} grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-1.5`}>
+            <div className="ds-field-shell rounded-ds-control border px-2">
+              <select aria-label={t('jobs.availability.label')} value={availability}
+                onChange={(event) => { const value = event.target.value; if (value === 'active' || value === 'closed' || value === 'unverified' || value === 'all') setAvailability(value); }}
+                className="ds-control-focus h-8 pointer-coarse:h-11 w-full bg-transparent text-xs text-ds-text-secondary outline-none">
+                {(['active', 'unverified', 'closed', 'all'] as const).map((state) => <option key={state} value={state} className="bg-ds-panel">{t(`jobs.availability.${state}`)}</option>)}
+              </select>
+            </div>
+
             <div className="ds-field-shell flex w-full items-center justify-between rounded-ds-control border px-2 py-0">
               <div className="flex items-center min-w-0 flex-1 gap-2 w-full">
                 <span className="text-xs text-ds-text-secondary leading-none shrink-0">{t('jobs.match')}</span>

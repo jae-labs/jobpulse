@@ -563,6 +563,9 @@ class PublicJobScoringEmbeddingsUpdate(TypedDict):
 
 
 class PublicJobs(BaseModel):
+    availability_checked_at: Optional[datetime.datetime] = Field(alias="availability_checked_at")
+    availability_evidence: Optional[str] = Field(alias="availability_evidence")
+    availability_status: str = Field(alias="availability_status")
     closed_at: Optional[datetime.datetime] = Field(alias="closed_at")
     closed_reason: Optional[str] = Field(alias="closed_reason")
     company: str = Field(alias="company")
@@ -589,6 +592,9 @@ class PublicJobs(BaseModel):
 
 
 class PublicJobsInsert(TypedDict):
+    availability_checked_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="availability_checked_at")]]
+    availability_evidence: NotRequired[Annotated[Optional[str], Field(alias="availability_evidence")]]
+    availability_status: NotRequired[Annotated[str, Field(alias="availability_status")]]
     closed_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="closed_at")]]
     closed_reason: NotRequired[Annotated[Optional[str], Field(alias="closed_reason")]]
     company: Annotated[str, Field(alias="company")]
@@ -615,6 +621,9 @@ class PublicJobsInsert(TypedDict):
 
 
 class PublicJobsUpdate(TypedDict):
+    availability_checked_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="availability_checked_at")]]
+    availability_evidence: NotRequired[Annotated[Optional[str], Field(alias="availability_evidence")]]
+    availability_status: NotRequired[Annotated[str, Field(alias="availability_status")]]
     closed_at: NotRequired[Annotated[Optional[datetime.datetime], Field(alias="closed_at")]]
     closed_reason: NotRequired[Annotated[Optional[str], Field(alias="closed_reason")]]
     company: NotRequired[Annotated[str, Field(alias="company")]]

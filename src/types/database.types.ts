@@ -612,6 +612,9 @@ export type Database = {
       }
       jobs: {
         Row: {
+          availability_checked_at: string | null
+          availability_evidence: string | null
+          availability_status: string
           closed_at: string | null
           closed_reason: string | null
           company: string
@@ -637,6 +640,9 @@ export type Database = {
           url: string
         }
         Insert: {
+          availability_checked_at?: string | null
+          availability_evidence?: string | null
+          availability_status?: string
           closed_at?: string | null
           closed_reason?: string | null
           company: string
@@ -662,6 +668,9 @@ export type Database = {
           url: string
         }
         Update: {
+          availability_checked_at?: string | null
+          availability_evidence?: string | null
+          availability_status?: string
           closed_at?: string | null
           closed_reason?: string | null
           company?: string
@@ -1084,6 +1093,21 @@ export type Database = {
         Returns: boolean
       }
       fit_tier_for_score: { Args: { p_score: number }; Returns: string }
+      get_active_overview_metrics: { Args: never; Returns: Json }
+      get_job_availability_map: {
+        Args: {
+          p_availability?: string
+          p_bounds?: number[]
+          p_location?: string
+          p_min_match?: number
+          p_salary?: string
+          p_search?: string
+          p_sector?: string
+          p_status?: string
+          p_zoom?: number
+        }
+        Returns: Json
+      }
       get_job_map: {
         Args: {
           p_bounds?: number[]
@@ -1094,6 +1118,22 @@ export type Database = {
           p_sector?: string
           p_status?: string
           p_zoom?: number
+        }
+        Returns: Json
+      }
+      get_jobs_availability_page: {
+        Args: {
+          p_availability?: string
+          p_limit?: number
+          p_location?: string
+          p_min_match?: number
+          p_offset?: number
+          p_salary?: string
+          p_search?: string
+          p_sector?: string
+          p_sort_by?: string
+          p_sort_dir?: string
+          p_status?: string
         }
         Returns: Json
       }
@@ -1115,6 +1155,10 @@ export type Database = {
       get_overview_metrics: { Args: never; Returns: Json }
       get_profile_embedding_state: { Args: never; Returns: Json }
       is_authorized_user: { Args: never; Returns: boolean }
+      jobpulse_availability_status: {
+        Args: { p_checked_at: string; p_status: string }
+        Returns: string
+      }
       jobpulse_catalog_sectors: {
         Args: never
         Returns: {
@@ -1147,6 +1191,9 @@ export type Database = {
       persist_crawl_jobs: {
         Args: { p_jobs: Json; p_task_id: string; p_token: string }
         Returns: {
+          availability_checked_at: string | null
+          availability_evidence: string | null
+          availability_status: string
           closed_at: string | null
           closed_reason: string | null
           company: string
@@ -1204,6 +1251,16 @@ export type Database = {
       record_crawl_snapshot: {
         Args: { p_snapshot: Json; p_task_id: string; p_token: string }
         Returns: string
+      }
+      record_job_availability: {
+        Args: {
+          p_evidence: string
+          p_expected_title: string
+          p_expected_url: string
+          p_job_id: number
+          p_status: string
+        }
+        Returns: boolean
       }
       refresh_catalog_stats: { Args: never; Returns: undefined }
       renew_crawl: {

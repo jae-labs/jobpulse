@@ -19,6 +19,7 @@ import { formatCompactSalary } from '../../lib/formatSalary';
 import { cn } from '@jae-labs/ui';
 import { toSafeHttpUrl } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { effectiveAvailability } from '../../lib/jobAvailability';
 import { formatDate } from '../../lib/i18n';
 import { Button, EmptyState, Tooltip } from '@jae-labs/ui';
 
@@ -111,6 +112,10 @@ const JobDetailInspectorComponent: React.FC<JobDetailInspectorProps> = ({
               <h2 className={cn('font-semibold tracking-tight text-ds-text-primary leading-snug', isFullScreen ? 'text-xl sm:text-2xl' : 'text-lg')}>
                 {job.title}
               </h2>
+              <p className="mt-1 text-xs text-ds-text-muted">
+                {t(`jobs.availability.${effectiveAvailability(detail ?? job)}`)}
+                {(detail ?? job).availability_checked_at && <> · {t('jobs.availability.checked', { date: formatDate((detail ?? job).availability_checked_at!, i18n.language) })}</>}
+              </p>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">

@@ -28,6 +28,38 @@ never candidate records. `FREEHIRE_API_URL` only configures the optional discove
 source; the scrape pipeline does not call it. See
 [scraper architecture](SCRAPER_ARCHITECTURE.md#board-catalog) for outcome and cooldown rules.
 
+## Posting availability
+
+Normal job browsing defaults to **Verified active**: the posting appears in a fenced
+source observation or a matching public detail page within the last 24 hours.
+Confirmation expiry changes the effective state to **Unverified**, never closed.
+Existing rows start unverified. **Confirmed closed** requires a matching posting's
+explicit closure notice or published expiry. Saved and application-stage views
+include every availability state so candidate history remains accessible. The
+availability selector can override this scope; list and map apply the same filter.
+
+`make scrape` confirms observed listings through its existing fenced persistence.
+It does not close missing postings, prune old rows or automatically probe every
+historical job. Use `make scrape-verify-availability` for a preview of ten due public
+postings with two concurrent slots. Review the ignored log and
+`logs/availability-report-*.json`, then use
+`make scrape-verify-availability ARGS="--apply --limit 10 --concurrency 2"` to save
+evidence. Bounds are 50 postings and four slots; each probe has a 20-second hard
+deadline and a 2 MiB response budget. Closed postings are excluded from routine
+probes; a new fenced source observation can confirm a reopened listing.
+
+Probes do not follow redirects or use browser fallback: those results remain
+unverified until the source route/parser is reviewed. Errors, throttling, challenges,
+unsupported content and generic careers pages never confirm closure. Host pacing,
+request measurements and remote cooldowns use the shared ledger. Preview still
+makes public requests and records measurements, but does not update availability.
+Writes guard the original URL and title and preserve explicit closure on a failed
+request. Job IDs, saved flags, stages and evaluations are retained.
+
+The availability RPCs require their forward migrations before frontend release.
+Local schema application, hosted schema application and frontend publishing are
+separate steps in [Release & Recovery](RELEASE_AND_RECOVERY.md#deployment-steps).
+
 ## Scraping and matching workflow
 
 ### Request pacing and bounded observations

@@ -8,6 +8,12 @@ const job = {
 };
 
 describe('employer RPC boundary', () => {
+  it('requires valid availability evidence fields without changing candidate status', () => {
+    const row = { ...job, availability_status: 'closed', availability_checked_at: '2026-10-09T12:00:00Z', availability_evidence: 'explicit_closure' };
+    expect(validateJobsPageResult({ total: 1, items: [row] }).items[0]).toMatchObject({ availability_status: 'closed', status: 'new' });
+    expect(() => validateJobsPageResult({ total: 1, items: [{ ...row, availability_status: 'invented' }] })).toThrow();
+    expect(() => validateJobsPageResult({ total: 1, items: [{ ...row, availability_checked_at: 'invalid' }] })).toThrow();
+  });
   it.each(['new', 'applied', 'interviewing', 'rejected', 'not_interested'])('preserves pipeline status %s', status => {
     expect(validateJobsPageResult({ total: 1, items: [{ ...job, status }] }).items[0].status).toBe(status);
   });

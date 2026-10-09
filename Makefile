@@ -169,3 +169,7 @@ scrape-company-pilot: ## Review-only coverage report for 200 catalog employers; 
 .PHONY: scrape-company-review
 scrape-company-review: ## Compare exact company candidates through agy using cited public evidence; no writes.
 	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/review_company_matches.py $(ARGS)
+
+.PHONY: scrape-verify-availability
+scrape-verify-availability: ## Verify up to ten public postings; ARGS='--apply' saves availability evidence.
+	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/verify_availability.py $(ARGS)

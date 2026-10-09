@@ -44,7 +44,11 @@ export interface AiAnalysis {
   sub_scores?: SubScores;
 }
 
+export type JobAvailability = 'active' | 'closed' | 'unverified';
 export interface Job {
+  availability_status?: JobAvailability;
+  availability_checked_at?: string | null;
+  availability_evidence?: string | null;
   is_saved?: boolean;
   id: number;
   title: string;
@@ -188,6 +192,7 @@ export interface OverviewCategory {
 }
 
 export interface OverviewMetrics {
+  availability_counts?: Record<string, number>;
   /** Total registered employers; absent until the database migration is available. */
   companies?: number;
   evaluated: number;
@@ -202,6 +207,7 @@ export interface OverviewMetrics {
 }
 
 export interface JobsPageParams {
+  availability?: JobAvailability | 'all';
   status?: string;
   sector?: string;
   minMatch?: number;

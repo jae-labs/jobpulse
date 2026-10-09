@@ -2,6 +2,23 @@
 
 PostgreSQL tables, RLS policies, and procedures are managed via Supabase CLI in `supabase/migrations/`.
 
+## Posting availability
+
+`jobs.availability_status` is `active`, `closed` or `unverified`; checked time and
+public evidence remain separate from owner-only candidate stages. Existing rows
+start unverified. `jobpulse_availability_status` computes effective uncertainty
+when active evidence is older than 24 hours. Explicit closure does not expire.
+`get_jobs_availability_page`, `get_job_availability_map` and
+`get_active_overview_metrics` use this scope; the legacy RPC contracts remain
+available. History queries explicitly request all availability states.
+
+Only service-role acquisition can call `record_job_availability`; it compares the
+expected URL/title and validates evidence/state pairs. Fenced source publication
+records active listing evidence under a live lease. Detail writes preserve existing
+closure. Availability updates never delete jobs, statuses or evaluations.
+`tenant_job_availability.sql` verifies scope/count parity, closure evidence,
+identity guards, two-member history isolation and browser/anonymous write denial.
+
 ## Architecture & Relationships
 
 ```mermaid

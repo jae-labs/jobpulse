@@ -63,6 +63,10 @@ export function validateOverviewMetrics(data: unknown): OverviewMetrics {
   )
     throw new Error("Invalid overview stage count");
   return {
+    availability_counts: obj.availability_counts === undefined ? undefined : Object.fromEntries(Object.entries(record(obj.availability_counts)).map(([state, value]) => {
+      if (!['active', 'closed', 'unverified'].includes(state) || !Number.isSafeInteger(value)) throw new Error('Invalid availability count');
+      return [state, count(value)];
+    })),
     companies: obj.companies as number | undefined,
     evaluated: obj.evaluated as number,
     locations: obj.locations.map((value) => {
@@ -122,6 +126,11 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
     throw new Error("Invalid jobs total");
   const items: Job[] = rawItems.map((raw) => {
     const item = record(raw);
+    const availability = item.availability_status ?? 'unverified';
+    if (availability !== 'active' && availability !== 'closed' && availability !== 'unverified') throw new Error('Invalid posting availability');
+    const checkedAt = item.availability_checked_at == null ? null : string(item.availability_checked_at);
+    if (checkedAt !== null && !Number.isFinite(Date.parse(checkedAt))) throw new Error('Invalid availability timestamp');
+    const evidence = item.availability_evidence == null ? null : string(item.availability_evidence);
     const status = item.status === 'interested' ? 'new' : item.status;
     if (!isJobStatus(status)) throw new Error('Invalid job status');
     if (
@@ -149,6 +158,9 @@ export function validateJobsPageResult(data: unknown): JobsPageResult {
     const longitude = nullableCoordinate(item.longitude, 180);
     if ((latitude === null) !== (longitude === null)) throw new Error("Incomplete RPC coordinates");
     return {
+      availability_status: availability,
+      availability_checked_at: checkedAt,
+      availability_evidence: evidence,
       employer_id: item.employer_id == null ? null : Number(item.employer_id),
       sector: item.sector === undefined
         ? (item.employer_sector === undefined ? 'Uncategorized' : string(item.employer_sector))

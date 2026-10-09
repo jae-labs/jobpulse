@@ -9,7 +9,7 @@ import { candidateEvaluationFields } from "../lib/candidateEvaluation";
 import { queryKeys } from "../lib/queryKeys";
 import { validateJobMapResult, validateOverviewMetrics, validateJobsPageResult } from '../lib/rpcValidation';
 import { withActiveUser } from './withActiveUser';
-import { jobsRpcArgs } from '../lib/jobsRpcArgs';
+import { jobsRpcArgs, availabilityScope } from '../lib/jobsRpcArgs';
 
 async function reconcileJobTracking(client: QueryClient, userId: string | null | undefined, update: JobTrackingUpdate, error: unknown) {
   await Promise.all([
@@ -35,7 +35,7 @@ export function useOverviewMetricsQuery(activeUserId?: string | null, enabled = 
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
-      const { data, error } = await supabase.rpc("get_overview_metrics");
+      const { data, error } = await supabase.rpc("get_active_overview_metrics");
       if (error) throw new Error(error.message);
       return validateOverviewMetrics(data);
     }),
@@ -58,7 +58,7 @@ export function useJobsPageQuery(
       if (!supabase) {
         throw new Error("Supabase is not initialized. Check your environment variables.");
       }
-      const { data, error } = await supabase.rpc("get_jobs_page", jobsRpcArgs(params)).abortSignal(signal);
+      const { data, error } = await supabase.rpc("get_jobs_availability_page", jobsRpcArgs(params)).abortSignal(signal);
 
       if (error) throw new Error(error.message);
       return validateJobsPageResult(data);
@@ -84,7 +84,7 @@ export function useJobsInfiniteQuery(
     enabled: Boolean(supabase) && Boolean(activeUserId) && enabled,
     queryFn: async ({ pageParam, signal }): Promise<JobsPageResult> => withActiveUser(activeUserId, async () => {
       if (!supabase) throw new Error('Supabase is not initialized. Check your environment variables.');
-      const { data, error } = await supabase.rpc('get_jobs_page', jobsRpcArgs(params, PAGE_LIMIT, pageParam)).abortSignal(signal);
+      const { data, error } = await supabase.rpc('get_jobs_availability_page', jobsRpcArgs(params, PAGE_LIMIT, pageParam)).abortSignal(signal);
       if (error) throw new Error(error.message);
       return validateJobsPageResult(data);
     }),
@@ -119,7 +119,7 @@ export function useScoringPreviewJobsQuery(activeUserId?: string | null, enabled
       for (let offset = 0; offset < candidateLimit; offset += pageSize) {
         const { data, error } = await supabase
           .from("user_job_evaluations")
-          .select("job_id, relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, last_seen_at)")
+          .select("job_id, relevance, fit_tier, matched_skills, ai_analysis, jobs!inner(id, title, company, location, employment_type, salary_text, salary_min_amount, salary_max_amount, salary_currency, salary_period, url, source, last_seen_at, availability_status, availability_checked_at, availability_evidence)")
           .eq("user_id", userId)
           .order("relevance", { ascending: false })
           .order("job_id", { ascending: false })
@@ -130,6 +130,7 @@ export function useScoringPreviewJobsQuery(activeUserId?: string | null, enabled
           if (!job) continue;
           jobs.push({
             ...job,
+            availability_status: availabilityValue(job.availability_status),
             ...candidateEvaluationFields(evaluation),
             status: 'new',
             last_seen_at: job.last_seen_at ?? '',
@@ -189,6 +190,7 @@ export function useJobByIdQuery(jobId?: number | null, activeUserId?: string | n
         : null;
       return {
         ...jobResult.data,
+        availability_status: availabilityValue(jobResult.data.availability_status),
         employer,
         sector: rawEmployer && ['curated', 'verified', 'watchlist'].includes(rawEmployer.metadata_source)
           ? rawEmployer.sector || 'Uncategorized' : 'Uncategorized',
@@ -244,9 +246,10 @@ export function useJobMapQuery(userId: string | null | undefined, params: import
     enabled: Boolean(supabase) && Boolean(userId),
     queryFn: ({ signal }) => withActiveUser(userId, async () => {
       if (!supabase) throw new Error('Supabase is not initialized');
-      const { data, error } = await supabase.rpc('get_job_map', {
+      const { data, error } = await supabase.rpc('get_job_availability_map', {
         p_status: params.status || 'all', p_sector: params.sector || 'all', p_min_match: params.minMatch || 0,
         p_location: params.location || 'all', p_salary: params.salary || 'all', p_search: params.search || undefined,
+        p_availability: availabilityScope(params),
         p_bounds: bounds, p_zoom: zoom,
       }).abortSignal(signal);
       if (error) throw new Error(error.message);
@@ -289,4 +292,8 @@ export function useUpdateJobSavedMutation(activeUserId?: string | null) {
     }),
     onSettled: (_data, error, update) => reconcileJobTracking(client, activeUserId, update, error),
   });
+}
+
+function availabilityValue(value: string): import('../types/job').JobAvailability {
+  return value === 'active' || value === 'closed' ? value : 'unverified';
 }

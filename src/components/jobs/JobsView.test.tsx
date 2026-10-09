@@ -77,6 +77,15 @@ describe('JobsView Search Input', () => {
     );
   };
 
+  it('exposes an accessible posting availability filter with explicit history scope', () => {
+    renderJobsView(['/opportunities']);
+    const filter = screen.getByRole('combobox', { name: 'Posting availability' });
+    expect(filter).toHaveValue('active');
+    fireEvent.change(filter, { target: { value: 'unverified' } });
+    expect(filter).toHaveValue('unverified');
+    expect(screen.getByRole('option', { name: 'Confirmed closed' })).toBeInTheDocument();
+  });
+
   it('refreshes the inspector heart from the owner-scoped job query instead of a stale selected snapshot', () => {
     const snapshot: Job = { id: 1, title: 'Synthetic job', company: 'Synthetic company', status: 'applied', is_saved: false, relevance: 0, location: 'Dublin', employment_type: 'Full time', salary_text: null, matched_skills: [], url: 'https://example.invalid', source: 'Synthetic', last_seen_at: '2026-01-01' };
     linked.data = { ...snapshot, is_saved: true };

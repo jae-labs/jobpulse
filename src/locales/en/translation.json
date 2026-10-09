@@ -333,7 +333,15 @@
     "mapPostingLayer": "Posting locations",
     "mapOfficeLayer": "Company offices",
     "openDetails": "Open details",
-    "salary": "Salary"
+    "salary": "Salary",
+    "availability": {
+      "label": "Posting availability",
+      "active": "Verified active",
+      "unverified": "Unverified",
+      "closed": "Confirmed closed",
+      "all": "All availability",
+      "checked": "Checked {{date}}"
+    }
   },
   "charts": {
     "categoryBreakdown": {

@@ -6,28 +6,14 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
 
 from jobpulse_scraper.engine.description_quality import has_description_body
 from jobpulse_scraper.engine.normalization import canonical_job_url, normalize_company_name, normalized_key
+from jobpulse_scraper.engine.normalization import posting_url as posting_url
 
 
 def _text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip().casefold()
-
-
-def posting_url(url: str) -> bool:
-    """Require a public posting reference before joining different company labels."""
-    parsed = urlsplit(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
-        return False
-    query = parse_qs(parsed.query)
-    if any(query.get(key) for key in ("id", "jobid", "reqid", "opportunityid", "p_recruitment_id", "jid")):
-        return True
-    return bool(
-        re.search(r"/(?:jobs?|careers|requisitions/preview)/[^?#]*\d", parsed.path, re.IGNORECASE)
-        or re.search(r"/[0-9a-f]{8}-[0-9a-f-]{27,}(?:/|$)", parsed.path, re.IGNORECASE)
-    )
 
 
 def same_posting(left: dict[str, Any], right: dict[str, Any]) -> bool:
