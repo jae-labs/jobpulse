@@ -14,6 +14,7 @@ from jobpulse_scraper.company_index.evidence import EvidenceFetcher, EvidencePro
 from jobpulse_scraper.company_index.review import AgyReviewer, comparison_pair
 from jobpulse_scraper.company_index.store import CompanyIndex, domain, name_key
 from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.pipeline.research_progress import progress
 
 
 def public_employers(path: Path | None, limit: int) -> list[dict]:
@@ -144,6 +145,7 @@ def main() -> None:
         "--aliases", type=Path, help="First-party alias source URLs; aliases must occur in fetched text"
     )
     parser.add_argument("--limit", type=int, default=20, help="Total employer budget (1–10000)")
+    parser.add_argument("--report", type=Path, help="Identity report and journal destination")
     parser.add_argument("--model", default="gemini-3.8-flash-low")
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--no-fetch", action="store_true", help="Use snapshot facts only; no first-party HTTP")
@@ -163,22 +165,25 @@ def main() -> None:
             reviewer = AgyReviewer(args.root / "identity-reviews", model=args.model, timeout=args.timeout)
             fetcher = None if args.no_fetch else EvidenceFetcher(args.root / "first-party-evidence")
             records = []
-            report_path = args.root / "identity-review.json"
+            report_path = args.report or args.root / "identity-review.json"
+            report_path.parent.mkdir(parents=True, exist_ok=True)
             failures = 0
             report: dict = {}
-            journal_path = args.root / "identity-review.jsonl"
+            journal_path = report_path.with_suffix(".jsonl")
             journal_path.write_text("", encoding="utf-8")
             initial = report_path.with_suffix(".partial")
             initial.write_text(json.dumps({"completed": False, "checked": 0, "results": []}), encoding="utf-8")
             initial.replace(report_path)
             decision_counts: Counter[str] = Counter()
             for employer in employers:
-                record = gather(index, employer, fetcher, aliases.get(employer["id"], []))
+                with progress("first_party_evidence", employer_id=employer["id"], name=employer["name"]):
+                    record = gather(index, employer, fetcher, aliases.get(employer["id"], []))
                 pairs = [
                     comparison_pair(employer, candidate, record["witnesses"]) for candidate in record["candidates"]
                 ]
                 try:
-                    record["decisions"] = reviewer.compare(pairs) if pairs else []
+                    with progress("identity_review", employer_id=employer["id"], candidates=len(pairs)):
+                        record["decisions"] = reviewer.compare(pairs) if pairs else []
                     record["status"] = "review_required" if pairs else "no_candidates"
                 except Exception as exc:
                     record.update(status="provider_failed", error_category=failure_category(exc), decisions=[])
@@ -205,7 +210,7 @@ def main() -> None:
                     "provider_failed": failures,
                     "results": records,
                 }
-                progress_path = args.root / "identity-review-progress.json"
+                progress_path = report_path.with_name(report_path.stem + "-progress.json")
                 temporary = progress_path.with_suffix(".partial")
                 temporary.write_text(
                     json.dumps(

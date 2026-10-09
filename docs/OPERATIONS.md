@@ -570,6 +570,50 @@ actual identities and first-party operating-office evidence before accepting a
 proposal. Synthetic typo, token-order, country/domain conflict, acronym, refresh
 rollback and result-bound tests live in `services/scraper/tests/test_company_index.py`.
 
+### Combined company research
+
+`make scrape-company-research` runs exact CRO/Overture lookup, evidence-bound agy
+identity review and AI office/sector/global employee-size proposals for the same
+public employer cohort. It defaults to twenty employers in batches of five.
+`--limit` accepts 1–10000 and `--batch-size` accepts 1–25. Each batch checkpoints
+before scheduling more work; a failed stage stops subsequent batches and returns
+nonzero. This workflow performs no catalog writes.
+
+```bash
+make scrape-company-research
+make scrape-company-research ARGS="--limit 100 --batch-size 5"
+# Download/import both snapshots explicitly; ordinary runs reuse the local index:
+make scrape-company-research ARGS="--refresh-index --limit 20"
+# Local exact lookup without provider calls or first-party requests:
+make scrape-company-research ARGS="--no-ai --employers /tmp/public-employers.json"
+```
+
+The default index stays in ignored `.backups/company-index/companies.sqlite3`.
+A missing index requires `--refresh-index`; ordinary research does not download
+large snapshots again. `--release` selects the Overture refresh release.
+`--employers` supplies public IDs/names/websites/company numbers; unrelated fields
+are discarded. `--aliases`, `--no-fetch`, `--model` and `--timeout` configure the
+identity/evidence stages. AI requests default to a 120-second deadline (maximum
+300 seconds). The refresh stage has a one-hour deadline.
+
+Live output includes stage starts, employer IDs/names, candidate counts, provider
+waiting heartbeats every fifteen seconds, elapsed time, batch counts, failures
+and report paths. The logged Make wrapper archives terminal output under `logs/`.
+Unique campaign directories under `.backups/company-index/campaigns/` retain
+cohort files, per-stage reports, identity journals and an atomic `report.json`.
+Completed batches survive interruption; active child process groups are terminated.
+After a failure, inspect the saved stage evidence and use its public cohort file
+for a bounded rerun. A checked employer is an attempted research record, not a
+verified office or successful match.
+
+CRO addresses are legal registered addresses; Overture records are place
+candidates; AI offices and employee-size brackets are unverified proposals.
+The size bracket describes global staff, not a measured Irish headcount. Unknown
+headcount remains unknown. Verify field-specific first-party evidence before
+applying metadata through `scrape-enrich-employers` and its reviewed registry.
+Geoapify office discovery remains available separately through
+`make scrape-enrich-offices`; this research command does not invoke or replace it.
+
 ### Evidence-based company comparison
 
 `make scrape-company-review` compares exact snapshot candidates through the

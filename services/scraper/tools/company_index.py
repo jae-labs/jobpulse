@@ -32,6 +32,7 @@ def main() -> None:
         "--employers", type=Path, help="JSON public employer records; otherwise read catalog identities"
     )
     parser.add_argument("--limit", type=int, default=200)
+    parser.add_argument("--report", type=Path, help="Pilot report destination")
     parser.add_argument("--fuzzy", action="store_true", help="Review close names for otherwise unmatched employers")
     parser.add_argument(
         "--similarity-threshold", type=float, default=85, help="Name score cutoff (0–100), not an identity probability"
@@ -129,7 +130,8 @@ def main() -> None:
                     "accuracy": "requires human review; candidate coverage is not match accuracy",
                     "results": results,
                 }
-                report_path = args.root / ("pilot-fuzzy.json" if args.fuzzy else "pilot.json")
+                report_path = args.report or args.root / ("pilot-fuzzy.json" if args.fuzzy else "pilot.json")
+                report_path.parent.mkdir(parents=True, exist_ok=True)
                 temporary = report_path.with_suffix(".json.partial")
                 temporary.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
                 temporary.replace(report_path)

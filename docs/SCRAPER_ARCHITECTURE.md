@@ -504,3 +504,14 @@ checkpoints. Company numbers and first-party identity statements remain distinct
 from name/domain clues. Subsidiaries, departments, closed records and unsupported
 claims retain uncertainty. This path invokes no fuzzy retrieval and performs no
 Supabase writes or automatic office/location inference.
+
+`tools/research_companies.py` composes snapshot lookup, identity review and AI
+metadata proposals using one sanitized public cohort per bounded batch.
+`pipeline/company_campaign.py` owns child process deadlines and process-group
+cleanup; `pipeline/research_progress.py` emits stage/heartbeat events without
+provider payloads. Per-campaign report destinations avoid shared report overwrites.
+Failures stop later batches while atomic checkpoints retain completed results.
+The coordinator keeps snapshot facts, identity decisions and unsourced AI leads
+separate and performs no catalog writes. Global employee brackets do not establish
+Irish staff counts. See [combined research operations](OPERATIONS.md#combined-company-research)
+for commands and review constraints.
