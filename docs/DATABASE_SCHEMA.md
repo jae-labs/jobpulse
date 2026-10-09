@@ -13,8 +13,10 @@ when active evidence is older than 24 hours. Explicit closure does not expire.
 available. History queries explicitly request all availability states.
 
 Only service-role acquisition can call `record_job_availability`; it compares the
-expected URL/title and validates evidence/state pairs. Fenced source publication
-records active listing evidence under a live lease. Detail writes preserve existing
+expected URL/title and validates closure/uncertainty evidence pairs; it rejects
+active promotion. Fenced source publication
+alone records active listing evidence under a live lease. The active evidence
+constraint requires `published_listing`. Detail writes preserve existing
 closure. Availability updates never delete jobs, statuses or evaluations.
 `tenant_job_availability.sql` verifies scope/count parity, closure evidence,
 identity guards, two-member history isolation and browser/anonymous write denial.

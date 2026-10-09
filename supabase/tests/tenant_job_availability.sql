@@ -1,18 +1,34 @@
 -- Public availability and private candidate history are independent contracts.
 RESET ROLE;
+DO $$ BEGIN
+ IF (SELECT availability_status FROM public.jobs WHERE id=-910002)<>'unverified' THEN
+  RAISE EXCEPTION 'Existing fixture did not default to unverified'; END IF;
+END $$;
 UPDATE public.jobs SET availability_status='unverified',availability_checked_at=NULL,availability_evidence=NULL
  WHERE id IN (-910001,-910002);
 SET LOCAL ROLE service_role;
 SELECT set_config('request.jwt.claims','{"role":"service_role"}',true);
 DO $$ BEGIN
- IF public.record_job_availability(-910001,'https://example.invalid/wrong','TenantGuardVacancy','active','published_listing') THEN
+ IF public.record_job_availability(-910001,'https://example.invalid/wrong','TenantGuardVacancy','closed','explicit_closure') THEN
   RAISE EXCEPTION 'Changed posting identity accepted'; END IF;
  IF NOT public.record_job_availability(-910001,'https://example.invalid/1','TenantGuardVacancy','closed','explicit_closure') THEN
   RAISE EXCEPTION 'Explicit closure not recorded'; END IF;
  IF public.record_job_availability(-910001,'https://example.invalid/1','TenantGuardVacancy','unverified','acquisition_failed') THEN
   RAISE EXCEPTION 'Request failure erased closure'; END IF;
- IF NOT public.record_job_availability(-910002,'https://example.invalid/2','TenantGuardVacancy','active','published_listing') THEN
-  RAISE EXCEPTION 'Published listing not confirmed'; END IF;
+ BEGIN
+  PERFORM public.record_job_availability(-910002,'https://example.invalid/2','TenantGuardVacancy','active','published_listing');
+  RAISE EXCEPTION 'Verifier promoted job without fenced scraping';
+ EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+ BEGIN
+  PERFORM public.record_job_availability(-910002,'https://example.invalid/2','TenantGuardVacancy','active','published_detail');
+  RAISE EXCEPTION 'Detail verification promoted job';
+ EXCEPTION WHEN invalid_parameter_value THEN NULL; END;
+ BEGIN
+  UPDATE public.jobs SET availability_status='active',availability_checked_at=now(),availability_evidence=NULL WHERE id=-910002;
+  RAISE EXCEPTION 'Missing scrape evidence can activate job';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ -- Synthetic active fixture supplies list/map filter coverage; fenced promotion is tested below.
+ UPDATE public.jobs SET availability_status='active',availability_checked_at=now(),availability_evidence='published_listing' WHERE id=-910002;
  BEGIN
   PERFORM public.record_job_availability(-910002,'https://example.invalid/2','TenantGuardVacancy','closed','acquisition_failed');
   RAISE EXCEPTION 'Failure used as closure evidence';
@@ -92,12 +108,12 @@ INSERT INTO public.crawl_tasks(source_key,target,status,lease_token,lease_until)
 DO $$ DECLARE task_id uuid; BEGIN
  SELECT id INTO task_id FROM public.crawl_tasks WHERE source_key='synthetic:availability-detail';
  PERFORM public.persist_crawl_jobs(task_id,'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
- '[{"job":{"dedupe_key":"tenant-guard-job-one","title":"TenantGuardVacancy","company":"Fixture","description":"Synthetic description","url":"https://example.invalid/1","source":"test"},"external_id":"availability-one"}]');
+ '[{"job":{"dedupe_key":"tenant-guard-job-one","title":"TenantGuardVacancy","company":"Fixture","location":"Dublin","employment_type":"Permanent","description":"Synthetic description","url":"https://example.invalid/1","source":"test"},"external_id":"availability-one","content_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]');
  IF (SELECT availability_status FROM public.jobs WHERE id=-910001)<>'closed'
  OR (SELECT closed_at FROM public.jobs WHERE id=-910001) IS NULL THEN RAISE EXCEPTION 'Detail update reopened closed posting'; END IF;
  UPDATE public.crawl_tasks SET target='{"kind":"source"}' WHERE id=task_id;
  PERFORM public.persist_crawl_jobs(task_id,'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
- '[{"job":{"dedupe_key":"tenant-guard-job-one","title":"TenantGuardVacancy","company":"Fixture","description":"Synthetic description","url":"https://example.invalid/1","source":"test"},"external_id":"availability-one"}]');
+ '[{"job":{"dedupe_key":"tenant-guard-job-one","title":"TenantGuardVacancy","company":"Fixture","location":"Dublin","employment_type":"Permanent","description":"Synthetic description","url":"https://example.invalid/1","source":"test"},"external_id":"availability-one","content_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]');
  IF (SELECT availability_status FROM public.jobs WHERE id=-910001)<>'active'
  OR (SELECT closed_at FROM public.jobs WHERE id=-910001) IS NOT NULL THEN RAISE EXCEPTION 'Fenced source does not confirm current listing'; END IF;
 END $$;

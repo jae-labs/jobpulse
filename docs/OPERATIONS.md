@@ -31,7 +31,8 @@ source; the scrape pipeline does not call it. See
 ## Posting availability
 
 Normal job browsing defaults to **Verified active**: the posting appears in a fenced
-source observation or a matching public detail page within the last 24 hours.
+source observation within the last 24 hours. Only source scraping promotes a job
+to active; verification, details, vectors and candidate changes do not.
 Confirmation expiry changes the effective state to **Unverified**, never closed.
 Existing rows start unverified. **Confirmed closed** requires a matching posting's
 explicit closure notice or published expiry. Saved and application-stage views
@@ -44,7 +45,9 @@ historical job. Use `make scrape-verify-availability` for a preview of ten due p
 postings with two concurrent slots. Review the ignored log and
 `logs/availability-report-*.json`, then use
 `make scrape-verify-availability ARGS="--apply --limit 10 --concurrency 2"` to save
-evidence. Bounds are 50 postings and four slots; each probe has a 20-second hard
+closure or uncertainty evidence. A positive detail probe is reported as an active
+observation and skipped on apply; it never promotes or refreshes active status.
+Scrape the source to confirm it. Bounds are 50 postings and four slots; each probe has a 20-second hard
 deadline and a 2 MiB response budget. Closed postings are excluded from routine
 probes; a new fenced source observation can confirm a reopened listing.
 

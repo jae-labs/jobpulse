@@ -144,10 +144,12 @@ def test_bounded_verification_preserves_preview_and_guards_apply(monkeypatch):
     monkeypatch.setattr(module, "get_supabase", lambda: Client())
     monkeypatch.setattr(module, "TaskProcess", Slot)
     preview = module.verify_availability(limit=6, concurrency=2)
-    assert preview["checked"] == 6 and preview["active"] == 5 and preview["unverified"] == 1
+    assert preview["checked"] == 6 and preview["active_observations"] == 5 and preview["unverified"] == 1
     assert not writes and maximum == 2
     applied = module.verify_availability(apply=True, limit=6, concurrency=2)
-    assert applied["updated"] == 6 and len(writes) == 6
+    assert applied["updated"] == 1 and len(writes) == 1
+    assert applied["activation_skipped"] == 5
+    assert all(write["p_status"] != "active" for write in writes)
     timeout_write = next(write for write in writes if write["p_job_id"] == 6)
     assert timeout_write["p_status"] == "unverified" and timeout_write["p_evidence"] == "deadline_exceeded"
 

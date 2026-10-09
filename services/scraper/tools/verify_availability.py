@@ -1,4 +1,4 @@
-"""Verify a bounded batch of public posting availability; preview by default."""
+"""Inspect public postings; apply saves closure or uncertainty, never active promotion."""
 
 from __future__ import annotations
 

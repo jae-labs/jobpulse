@@ -169,7 +169,9 @@ public evidence. PostgreSQL computes active confirmation expiry after 24 hours;
 uncertainty and failed sources never authorize closure. Live fenced source writes
 confirm observed listings; detail/vector persistence cannot invent confirmation or
 reopen a closed posting. The service-only `record_job_availability` RPC guards the
-original URL/title and retains closure when a later acquisition fails.
+original URL/title and retains closure when a later acquisition fails. It rejects
+active writes even from service role. Only live fenced source publication promotes
+a job to active; positive standalone verification remains an observation.
 
 `scrapers/parsers/availability.py` classifies synthetic or acquired pages without
 network/database imports. `engine/html_body.py` supplies shared pure description

@@ -58,7 +58,15 @@ def verify_availability(*, apply: bool = False, limit: int = 10, concurrency: in
     )
     slots = [TaskProcess(20, entrypoint=_probe_process) for _ in range(concurrency)]
     records: list[dict[str, Any]] = []
-    counts = {"checked": 0, "active": 0, "closed": 0, "unverified": 0, "updated": 0, "conflicts": 0}
+    counts = {
+        "checked": 0,
+        "active_observations": 0,
+        "closed": 0,
+        "unverified": 0,
+        "updated": 0,
+        "conflicts": 0,
+        "activation_skipped": 0,
+    }
 
     def check(row: dict[str, Any], slot: TaskProcess) -> tuple[dict[str, Any], AvailabilityResult, float]:
         began = time.monotonic()
@@ -86,10 +94,12 @@ def verify_availability(*, apply: bool = False, limit: int = 10, concurrency: in
                 slot = futures.pop(future)
                 row, result, elapsed = future.result()
                 counts["checked"] += 1
-                counts[result.state] += 1
+                counts["active_observations" if result.state == "active" else result.state] += 1
                 counts[result.evidence] = counts.get(result.evidence, 0) + 1
                 records.append({"job_id": row["id"], **result.model_dump(), "elapsed_seconds": round(elapsed, 3)})
-                if apply:
+                if apply and result.state == "active":
+                    counts["activation_skipped"] += 1
+                if apply and result.state != "active":
                     updated = (
                         client.rpc(
                             "record_job_availability",
@@ -113,6 +123,7 @@ def verify_availability(*, apply: bool = False, limit: int = 10, concurrency: in
                             **result.model_dump(),
                             "elapsed_seconds": round(elapsed, 3),
                             "apply": apply,
+                            "activation_skipped": result.state == "active",
                         }
                     ),
                     flush=True,
