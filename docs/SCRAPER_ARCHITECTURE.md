@@ -506,7 +506,12 @@ claims retain uncertainty. This path invokes no fuzzy retrieval and performs no
 Supabase writes or automatic office/location inference.
 
 `tools/research_companies.py` composes snapshot lookup, identity review and AI
-metadata proposals using one sanitized public cohort per bounded batch.
+metadata proposals using one sanitized public cohort per bounded batch. Both
+company research Make commands invoke this entry point. Its `--ai-only` mode
+retains batching/checkpoints while skipping snapshot and identity stages;
+`--show-cache` performs an offline export. Metadata child processes re-enter the
+same parser in a bounded internal batch mode, retaining deadlines and cache
+validation. `tools/enrich_companies_ai.py` is a thin compatibility delegate.
 `pipeline/company_proposals.py` selects employers through freshly active public
 vacancies and persists validated metadata proposals in a shared ignored SQLite
 store. Identity-bound cache keys, checksum revalidation, process-safe request

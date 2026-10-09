@@ -115,8 +115,7 @@ scrape-verify-locations: ## Preview vacancy geocoding; ARGS="--apply --limit 100
 scrape-enrich-offices: ## Preview company office research; set ARGS="--apply --report /tmp/offices.json" to save.
 	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/enrich_offices.py --report ../../.backups/employer-offices-report.json $(ARGS)
 
-scrape-enrich-ai: ## Propose company metadata via agy (no writes); report in .backups.
-	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/enrich_companies_ai.py --report ../../.backups/company-proposals.json $(ARGS)
+scrape-enrich-ai: scrape-company-research ## Alias for the complete company research workflow.
 
 scrape-package: ## Build and verify the installed scraper wheel.
 	@mkdir -p .backups/scraper-dist

@@ -92,13 +92,13 @@ def test_live_heartbeat_stops_on_error(capsys):
 
 
 def test_ai_cohort_rejects_foreign_identity_without_report(tmp_path, monkeypatch):
-    from tools import enrich_companies_ai
+    from tools import research_companies as enrich_companies_ai
 
     monkeypatch.setattr(enrich_companies_ai, "CACHE_ROOT", tmp_path / "cache")
     cohort = tmp_path / "public.json"
     cohort.write_text(json.dumps([{"id": 8, "name": "Synthetic Eight", "private": "discard"}]))
     report = tmp_path / "ai.json"
-    monkeypatch.setattr(sys, "argv", ["ai", "--employers", str(cohort), "--report", str(report)])
+    monkeypatch.setattr(sys, "argv", ["ai", "--metadata-batch", "--employers", str(cohort), "--report", str(report)])
     monkeypatch.setattr(enrich_companies_ai, "get_supabase", lambda: pytest.fail("File cohort must not query Supabase"))
     monkeypatch.setattr(enrich_companies_ai, "enrich_companies_with_ai", lambda names, **kwargs: [{"name": "Foreign"}])
     with pytest.raises(SystemExit) as exc:
@@ -108,13 +108,13 @@ def test_ai_cohort_rejects_foreign_identity_without_report(tmp_path, monkeypatch
 
 
 def test_ai_cohort_preserves_requested_employer_id(tmp_path, monkeypatch):
-    from tools import enrich_companies_ai
+    from tools import research_companies as enrich_companies_ai
 
     monkeypatch.setattr(enrich_companies_ai, "CACHE_ROOT", tmp_path / "cache")
     cohort = tmp_path / "public.json"
     cohort.write_text(json.dumps([{"id": 8, "name": "Synthetic Eight"}]))
     report = tmp_path / "ai.json"
-    monkeypatch.setattr(sys, "argv", ["ai", "--employers", str(cohort), "--report", str(report)])
+    monkeypatch.setattr(sys, "argv", ["ai", "--metadata-batch", "--employers", str(cohort), "--report", str(report)])
     monkeypatch.setattr(enrich_companies_ai, "get_supabase", lambda: pytest.fail("No database access"))
     monkeypatch.setattr(
         enrich_companies_ai,
@@ -126,3 +126,51 @@ def test_ai_cohort_preserves_requested_employer_id(tmp_path, monkeypatch):
     assert proposal["status"] == "unverified_proposals"
     assert proposal["results"][0]["employer_id"] == 8
     assert proposal["results"][0]["proposal"]["size"] == ""
+
+
+def test_ai_only_batches_without_snapshot_index(tmp_path, monkeypatch):
+    root, calls = setup_campaign(tmp_path, monkeypatch)
+    (root / "companies.sqlite3").unlink()
+    monkeypatch.setattr(sys, "argv", [*sys.argv, "--ai-only"])
+    research_companies.main()
+    assert len(calls) == 2
+    assert all(script == "research_companies.py" for script, _ in calls)
+    report = json.loads(next(root.glob("campaigns/*/report.json")).read_text())
+    assert report["completed"] and report["checked"] == 3
+    assert all(set(batch["stages"]) == {"ai"} for batch in report["batches"])
+
+
+def test_snapshot_only_skips_both_model_stages(tmp_path, monkeypatch):
+    root, calls = setup_campaign(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", [*sys.argv, "--no-ai"])
+    research_companies.main()
+    assert len(calls) == 2
+    assert all(script == "company_index.py" for script, _ in calls)
+    report = json.loads(next(root.glob("campaigns/*/report.json")).read_text())
+    assert report["completed"] and all(set(b["stages"]) == {"snapshot"} for b in report["batches"])
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [
+        ["--ai-only", "--no-ai"],
+        ["--show-cache", "--no-ai"],
+        ["--ai-only", "--refresh-index"],
+        ["--metadata-batch", "--limit", "26"],
+    ],
+)
+def test_conflicting_modes_rejected_before_work(monkeypatch, flags):
+    monkeypatch.setattr(research_companies, "get_supabase", lambda: pytest.fail("Invalid modes must not query"))
+    with pytest.raises(SystemExit) as exc:
+        research_companies.main(flags)
+    assert exc.value.code == 2
+
+
+def test_legacy_ai_entry_delegates_to_canonical_parser(monkeypatch):
+    from tools import enrich_companies_ai
+
+    calls = []
+    monkeypatch.setattr(enrich_companies_ai, "research_main", calls.append)
+    monkeypatch.setattr(sys, "argv", ["legacy-ai", "--show-cache", "--cache", "synthetic"])
+    enrich_companies_ai.main()
+    assert calls == [["--metadata-batch", "--show-cache", "--cache", "synthetic"]]

@@ -335,7 +335,7 @@ source identity, and cookie-based ATS sessions share the public request gate.
 | `make scrape-backfill-employers` | Link stored jobs to exact employer identities |
 | `make scrape-enrich-offices` | Company office directory; separate from vacancy workplaces |
 | `make scrape-verify-locations` | Verify posting locations and precision |
-| `make scrape-enrich-ai` | Optional operator-installed CLI proposals; no database writes |
+| `make scrape-enrich-ai` | Alias for the complete company research workflow; no database writes |
 
 Report helpers default to `.backups/`, which stays out of Git. `ARGS` can override
 limits, source filters and report destinations. `make scrape-descriptions` and
@@ -444,8 +444,9 @@ identity/location compare-and-set writes. It refreshes scoring documents/hashes 
 `prepare_embeddings`; a retry refreshes already restored matching facts too. No private
 snapshot data is imported or used as fixtures.
 
-`make scrape-enrich-ai` optionally uses the operator-installed `agy` CLI to generate
-unverified JSON proposals. It has no apply mode, never writes employer/office records,
+`make scrape-enrich-ai` aliases `make scrape-company-research`. The workflow uses
+the configured provider to generate unverified JSON proposals; `--ai-only` skips
+snapshot lookup and identity review. It has no apply mode, never writes employer/office records,
 rejects incomplete or non-exact identities, and leaves unknown sizes empty. Its report
 is not a reviewed registry: verify first-party field evidence before adding reviewed
 records to `enrich_employers.py --registry`. Programme classification requires reviewing each placement witness through `--stored-evidence`.
@@ -574,7 +575,9 @@ rollback and result-bound tests live in `services/scraper/tests/test_company_ind
 
 `make scrape-company-research` runs exact CRO/Overture lookup, evidence-bound agy
 identity review and AI office/sector/global employee-size proposals for the same
-public employer cohort. It defaults to twenty employers in batches of five.
+public employer cohort. `make scrape-enrich-ai` is an alias for this same command.
+Both execute `tools/research_companies.py` with one parser, selection policy and
+proposal cache. The workflow defaults to twenty employers in batches of five.
 `--limit` accepts 1–10000 and `--batch-size` accepts 1–25. Each batch checkpoints
 before scheduling more work; a failed stage stops subsequent batches and returns
 nonzero. This workflow performs no catalog writes.
@@ -582,6 +585,8 @@ nonzero. This workflow performs no catalog writes.
 ```bash
 make scrape-company-research
 make scrape-company-research ARGS="--limit 100 --batch-size 5"
+# Only metadata AI, without loading the snapshot index or reviewing identities:
+make scrape-company-research ARGS="--ai-only --limit 100 --batch-size 5"
 # Download/import both snapshots explicitly; ordinary runs reuse the local index:
 make scrape-company-research ARGS="--refresh-index --limit 20"
 # Local exact lookup without provider calls or first-party requests:
@@ -602,7 +607,7 @@ provider/model, acquisition information, research time and explicit unknown fiel
 Successful responses, including unknown fields, are skipped on subsequent runs.
 Changing an employer name, website or supplied company number invalidates reuse.
 There is no automatic expiry; use `--refresh-proposals` on the combined command
-or `--refresh` on standalone AI to research again. Failed batches defer their
+or its `--refresh` alias to research again. Failed batches defer their
 employers for six hours and never mark them complete. Interrupted requests remain
 eligible. A process lock prevents concurrent commands from issuing duplicate
 metadata calls; transactional writes prevent partially cached batches.
@@ -614,14 +619,19 @@ make scrape-enrich-ai ARGS="--show-cache"
 make scrape-enrich-ai ARGS="--limit 1 --refresh"
 ```
 
-`--proposal-cache` (combined) and `--cache` (standalone AI) override the local
-cache directory. Reports retain proposals for review; caching does not verify
-claims or apply them to the hosted catalog. The standalone command exports its
-latest report to `.backups/company-proposals.json`. Cached unknown fields require
+`--proposal-cache` and its `--cache` alias override the local cache directory.
+Reports retain proposals for review; caching does not verify
+claims or apply them to the hosted catalog. `--show-cache` exports stored proposals
+to `.backups/company-proposals.json`; `--report` overrides the destination.
+Ordinary runs retain per-batch proposals in their unique campaign directories.
+The compatibility `tools/enrich_companies_ai.py` entry delegates one metadata
+batch to the same parser; it contains no separate research implementation.
+Cached unknown fields require
 explicit refresh rather than repeated automatic model calls.
 
 The default index stays in ignored `.backups/company-index/companies.sqlite3`.
-A missing index requires `--refresh-index`; ordinary research does not download
+Snapshot modes require `--refresh-index` when the index is missing; `--ai-only`
+and `--show-cache` do not require an index. Ordinary research does not download
 large snapshots again. `--release` selects the Overture refresh release.
 `--employers` supplies public IDs/names/websites/company numbers; unrelated fields
 are discarded. `--aliases`, `--no-fetch`, `--model` and `--timeout` configure the

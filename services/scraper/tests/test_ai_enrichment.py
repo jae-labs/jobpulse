@@ -18,7 +18,7 @@ from jobpulse_scraper.pipeline.ai_enrichment import (
     is_valid_ireland_coordinate,
     slugify_name,
 )
-from tools import enrich_companies_ai as proposals
+from tools import research_companies as proposals
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ def test_proposals_never_write_catalog_and_require_exact_identity(monkeypatch, t
         lambda names, **kwargs: [{"name": "Example", "sector": "Unverified lead", "size": "", "offices": []}],
     )
     report = tmp_path / "proposals.json"
-    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(report)])
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--metadata-batch", "--report", str(report)])
     proposals.main()
     assert json.loads(report.read_text())["status"] == "unverified_proposals"
     client.table.return_value.update.assert_not_called()
@@ -209,7 +209,7 @@ def test_proposals_never_write_catalog_and_require_exact_identity(monkeypatch, t
     )
     proposals.main()
     assert json.loads(report.read_text())["selection"]["cached_skipped"] == 1
-    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(report), "--refresh"])
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--metadata-batch", "--report", str(report), "--refresh"])
     with pytest.raises(SystemExit) as outcome:
         proposals.main()
     assert outcome.value.code == 1
@@ -220,7 +220,9 @@ def test_company_research_failure_is_not_reported_as_success(monkeypatch, tmp_pa
     monkeypatch.setattr(
         proposals, "enrich_companies_with_ai", MagicMock(side_effect=RuntimeError("Synthetic provider failure"))
     )
-    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(tmp_path / "report.json")])
+    monkeypatch.setattr(
+        "sys.argv", ["company-proposals", "--metadata-batch", "--report", str(tmp_path / "report.json")]
+    )
     with pytest.raises(SystemExit) as outcome:
         proposals.main()
     assert outcome.value.code == 1

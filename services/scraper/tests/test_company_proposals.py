@@ -214,7 +214,7 @@ def test_invalid_office_is_not_cached(tmp_path):
 
 
 def test_export_cli_uses_no_database_or_provider(tmp_path, monkeypatch):
-    from tools import enrich_companies_ai
+    from tools import research_companies as enrich_companies_ai
 
     run(tmp_path / "cache")
     report = tmp_path / "report.json"
@@ -225,3 +225,38 @@ def test_export_cli_uses_no_database_or_provider(tmp_path, monkeypatch):
     )
     enrich_companies_ai.main()
     assert json.loads(report.read_text())["results"][0]["employer_id"] == 1
+
+
+def test_canonical_metadata_child_reuses_cache_without_index_or_provider(tmp_path):
+    import subprocess
+    import sys
+
+    from jobpulse_scraper.paths import SERVICE_ROOT
+
+    root = tmp_path / "cache"
+    employer = {**EMPLOYER, "company_number": ""}
+    run(root, employers=[employer])
+    cohort = tmp_path / "employers.json"
+    cohort.write_text(json.dumps([employer]))
+    report = tmp_path / "proposals.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SERVICE_ROOT / "tools/research_companies.py"),
+            "--metadata-batch",
+            "--employers",
+            str(cohort),
+            "--cache",
+            str(root),
+            "--report",
+            str(report),
+        ],
+        cwd=SERVICE_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    outcome = json.loads(report.read_text())
+    assert outcome["cache_hits"] == 1 and outcome["requested"] == 0
+    assert outcome["provider_runs"] == []
