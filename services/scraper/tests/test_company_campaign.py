@@ -157,6 +157,7 @@ def test_snapshot_only_skips_both_model_stages(tmp_path, monkeypatch):
         ["--show-cache", "--no-ai"],
         ["--ai-only", "--refresh-index"],
         ["--metadata-batch", "--limit", "26"],
+        ["--limit", "50001"],
     ],
 )
 def test_conflicting_modes_rejected_before_work(monkeypatch, flags):

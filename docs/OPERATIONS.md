@@ -577,8 +577,9 @@ rollback and result-bound tests live in `services/scraper/tests/test_company_ind
 identity review and AI office/sector/global employee-size proposals for the same
 public employer cohort. `make scrape-enrich-ai` is an alias for this same command.
 Both execute `tools/research_companies.py` with one parser, selection policy and
-proposal cache. The workflow defaults to twenty employers in batches of five.
-`--limit` accepts 1–10000 and `--batch-size` accepts 1–25. Each batch checkpoints
+proposal cache. The workflow defaults to a 50,000-employer budget in batches of five, stopping
+when eligible uncached employers run out. This budget does not increase concurrency.
+`--limit` accepts 1–50000 and `--batch-size` accepts 1–25. Each batch checkpoints
 before scheduling more work; a failed stage stops subsequent batches and returns
 nonzero. This workflow performs no catalog writes.
 

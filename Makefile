@@ -174,7 +174,7 @@ scrape-verify-availability: ## Verify up to ten public postings; ARGS='--apply' 
 	@cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked python tools/verify_availability.py $(ARGS)
 
 .PHONY: scrape-company-research
-scrape-company-research: ## Research CRO/Overture identities and AI office/staff proposals with live progress; no writes.
+scrape-company-research: ## Research up to 50,000 eligible employers in batches of five; cached results skip; no catalog writes.
 	cd services/scraper && node ../../scripts/run-scraper.mjs $@ uv run --locked --group company-index python tools/research_companies.py $(ARGS)
 
 .PHONY: scrape-company-benchmark

@@ -122,7 +122,7 @@ def run_metadata(args: argparse.Namespace) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--limit", type=int, default=20, help="Total employers (1-10000)")
+    parser.add_argument("--limit", type=int, help="Total employers (1-50000; default 50000, metadata batch 20)")
     parser.add_argument("--batch-size", type=int, default=5, help="Employers per checkpoint and AI call (1-25)")
     parser.add_argument("--employers", type=Path, help="Public JSON cohort; otherwise select catalog employers")
     parser.add_argument("--root", type=Path, default=COMPANY_INDEX_ROOT)
@@ -140,12 +140,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--no-fetch", action="store_true", help="Skip identity-review first-party HTTP evidence")
     parser.add_argument("--aliases", type=Path, help="Reviewed first-party alias witness inputs")
     args = parser.parse_args(argv)
+    if args.limit is None:
+        args.limit = 20 if args.metadata_batch else 50000
     try:
         resolve_provider_arguments(args)
     except ValueError as exc:
         parser.error(str(exc))
-    if not 1 <= args.limit <= 10000 or not 1 <= args.batch_size <= 25 or not 1 <= args.timeout <= 300:
-        parser.error("limit must be 1-10000, batch-size 1-25 and timeout 1-300")
+    if not 1 <= args.limit <= 50000 or not 1 <= args.batch_size <= 25 or not 1 <= args.timeout <= 300:
+        parser.error("limit must be 1-50000, batch-size 1-25 and timeout 1-300")
     if args.no_ai and (args.ai_only or args.show_cache or args.metadata_batch):
         parser.error("--no-ai cannot be combined with AI-only/cache modes")
     if args.metadata_batch or args.show_cache:
