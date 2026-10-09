@@ -4,6 +4,7 @@ import json
 import threading
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
 
 from jobpulse_scraper.runtime.lease import active_lease
@@ -213,6 +214,51 @@ def test_concurrent_slots_share_one_task_budget_and_overlap(task, capsys):
     events = [json.loads(line)["crawl_event"] for line in capsys.readouterr().err.splitlines()]
     assert "task_budget_exhausted" in events
     assert "no_due_tasks" not in events
+
+
+@pytest.mark.parametrize("concurrency", [1, 2, 4])
+def test_lost_claim_response_reserves_budget_and_recovers_without_releasing_lease(task, capsys, concurrency):
+    queue = MagicMock(spec=CrawlQueue)
+    # The server can commit a lease before the client loses its response.
+    queue.claim.side_effect = [httpx.ReadTimeout("synthetic private transport text"), task, task, task]
+    queue.finish.return_value = True
+
+    result = run_worker(queue, max_tasks=3, concurrency=concurrency, execute=lambda _: {"status": "complete"})
+
+    assert result == {"complete": 2, "incomplete": 0, "lease_lost": 0}
+    assert queue.claim.call_count == 3
+    assert queue.finish.call_count == 2
+    assert all(call.args[0] is task for call in queue.finish.call_args_list)
+    output = capsys.readouterr().err
+    assert "synthetic private transport text" not in output
+    errors = [json.loads(line) for line in output.splitlines() if '"claim_transport_error"' in line]
+    assert len(errors) == 1
+    assert errors[0]["reserved_tasks"] == 1 and errors[0]["retry_in_seconds"] == 0.4
+    progress = [json.loads(line) for line in output.splitlines() if '"batch_progress"' in line]
+    assert progress[-1]["claimed_tasks"] == 2 and progress[-1]["unknown_claims"] == 1
+
+
+@pytest.mark.parametrize("budget,expected_calls", [(1, 1), (2, 2), (10, 3)])
+def test_claim_transport_failure_is_bounded_and_never_reports_empty_or_success(budget, expected_calls, capsys):
+    queue = MagicMock(spec=CrawlQueue)
+    queue.claim.side_effect = httpx.ReadTimeout("synthetic private transport text")
+    with pytest.raises(httpx.ReadTimeout):
+        run_worker(queue, max_tasks=budget, execute=lambda _: {"status": "complete"})
+    assert queue.claim.call_count == expected_calls
+    queue.finish.assert_not_called()
+    output = capsys.readouterr().err
+    assert "no_due_tasks" not in output and "worker_finished" not in output
+    assert "synthetic private transport text" not in output
+    assert json.loads(output.splitlines()[-1])["retry_in_seconds"] == 0
+
+
+def test_claim_database_error_is_not_retried_or_treated_as_empty(capsys):
+    queue = MagicMock(spec=CrawlQueue)
+    queue.claim.side_effect = RuntimeError("synthetic database contract failure")
+    with pytest.raises(RuntimeError):
+        run_worker(queue, execute=lambda _: {"status": "complete"})
+    queue.claim.assert_called_once()
+    assert "claim_transport_error" not in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("max_tasks,lease", [(0, 120), (50_001, 120), (1, 9), (1, 3601)])

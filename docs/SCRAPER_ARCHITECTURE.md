@@ -194,6 +194,17 @@ partial catalog facts remain intact and retries keep their existing policy.
 Synthetic cancellation, crash recovery, asset rendering and pool-budget tests
 enforce these contracts. Candidate matching is independent of these slots.
 
+The shared Supabase HTTP client uses a twenty-second transport timeout. Claims
+retry transient HTTP transport errors at most three times, with 0.4- and
+0.8-second backoff. Each failed request reserves a shared task-budget slot because
+its database claim can commit without a delivered response. Unknown leases recover
+through normal expiry; workers never release them without a fencing token.
+`claim_transport_error` reports bounded retry progress without exception content.
+Exhausted retries or claim budget raise the transport failure; database contract
+errors fail immediately. `services/scraper/tests/test_durable_worker.py` verifies
+bounded claims, concurrent recovery and failure visibility;
+`services/scraper/tests/test_database_client.py` verifies the transport timeout.
+
 Source acquisition measurements live in the shared local SQLite ledger and in
 `crawl_runs.result.acquisition_metrics`, linked through each task to its configured
 source and company. Sent attempts, replies, transport/resource counts, wall-time

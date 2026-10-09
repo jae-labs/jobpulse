@@ -44,7 +44,7 @@ def get_supabase() -> Client:
                 )
 
             limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
-            http_client = httpx.Client(limits=limits)
+            http_client = httpx.Client(limits=limits, timeout=20)
             options = SyncClientOptions(postgrest_client_timeout=20, httpx_client=http_client)
             try:
                 _supabase_client = create_client(supabase_url, supabase_key, options=options)

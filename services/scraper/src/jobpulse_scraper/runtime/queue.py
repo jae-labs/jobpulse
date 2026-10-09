@@ -13,6 +13,7 @@ from typing import Any, Protocol
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from jobpulse_scraper.config import load_board_config
@@ -525,6 +526,7 @@ def run_worker(
     queue.purge_history()
     lock = threading.Lock()
     claimed = 0
+    unknown_claims = 0
     completed = 0
     cancelled = threading.Event()
     processes: set[TaskProcess] = set()
@@ -538,23 +540,48 @@ def run_worker(
             pass
 
         def claim(self, lease_seconds: int) -> CrawlTask | None:
-            nonlocal claimed
-            with lock:
-                if cancelled.is_set() or claimed >= max_tasks:
-                    self.stop_reason = "worker_cancelled" if cancelled.is_set() else "task_budget_exhausted"
+            nonlocal claimed, unknown_claims
+            for attempt in range(1, 4):
+                with lock:
+                    if cancelled.is_set() or claimed + unknown_claims >= max_tasks:
+                        self.stop_reason = "worker_cancelled" if cancelled.is_set() else "task_budget_exhausted"
+                        return None
+                    try:
+                        task = queue.claim(lease_seconds)
+                    except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError):
+                        # A lost response can hide a committed claim. Reserve its budget
+                        # slot and let the unknown lease expire instead of releasing it.
+                        unknown_claims += 1
+                        exhausted = attempt == 3 or claimed + unknown_claims >= max_tasks
+                        delay = 0.4 * (2 ** (attempt - 1))
+                        report_progress(
+                            "claim_transport_error",
+                            attempt=attempt,
+                            max_attempts=3,
+                            reserved_tasks=claimed + unknown_claims,
+                            unknown_claims=unknown_claims,
+                            max_tasks=max_tasks,
+                            retry_in_seconds=0 if exhausted else delay,
+                            error_code="queue_transport_failed",
+                        )
+                        if exhausted:
+                            raise
+                    else:
+                        if task is not None:
+                            claimed += 1
+                            report_progress(
+                                "task_claimed",
+                                task,
+                                task_number=claimed,
+                                max_tasks=max_tasks,
+                                concurrency=concurrency,
+                                completed_tasks=completed,
+                            )
+                        return task
+                if cancelled.wait(delay):
+                    self.stop_reason = "worker_cancelled"
                     return None
-                task = queue.claim(lease_seconds)
-                if task is not None:
-                    claimed += 1
-                    report_progress(
-                        "task_claimed",
-                        task,
-                        task_number=claimed,
-                        max_tasks=max_tasks,
-                        concurrency=concurrency,
-                        completed_tasks=completed,
-                    )
-                return task
+            raise AssertionError("Claim retry bound must return or raise")
 
         def finish(self, task: CrawlTask, result: dict[str, Any]) -> bool:
             nonlocal completed
@@ -567,6 +594,7 @@ def run_worker(
                     task,
                     completed_tasks=completed,
                     claimed_tasks=claimed,
+                    unknown_claims=unknown_claims,
                     max_tasks=max_tasks,
                     concurrency=concurrency,
                     status=result.get("status", "incomplete"),

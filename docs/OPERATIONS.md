@@ -171,6 +171,14 @@ long operations during lease renewal, normally every thirty seconds.
 `task_finished` follows fenced completion and reports outcome counts; failed
 source tasks include a minimum retry delay, while the database run history owns
 the scheduled retry date. Final aggregate JSON stays on stdout.
+`claim_transport_error` reports a transient database transport failure and its
+bounded retry delay. The worker retries claims at most three times; failed claims
+consume budget because a response can be lost after the database leases a task.
+Persistent transport failures stop the command with a nonzero exit status.
+Committed catalog facts remain saved. Resume existing due work with
+`make scrape-worker ARGS="--limit 10 --concurrency 2"`; unknown claims become
+eligible through normal lease expiry. Inspect the log and generated report before
+increasing the batch, and preserve source retry dates and remote cooldowns.
 Every Make scraper command uses `scripts/run-scraper.mjs` to save both streams
 to an owner-readable, unique log in the Git-ignored repository `logs/` directory.
 The terminal prints `[LOG]` with the absolute file path. Logs retain live output,
