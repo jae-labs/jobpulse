@@ -13,7 +13,7 @@ from jobpulse_scraper.company_index.benchmark import identity_cases, score
 from jobpulse_scraper.company_index.review import PROMPT_VERSION, AgyReviewer
 from jobpulse_scraper.paths import REPO_ROOT
 from jobpulse_scraper.pipeline.research_progress import event, progress
-from jobpulse_scraper.pipeline.research_provider import FREE_MODEL
+from jobpulse_scraper.pipeline.research_provider import FREE_MODEL, FREE_MODELS, PAID_MODELS, validate_policy
 
 
 def main() -> None:
@@ -23,7 +23,19 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--opencode-provider", choices=["opencode", "opencode-go"], default="opencode-go")
     parser.add_argument("--only", choices=["all", "opencode", "agy"], default="all")
+    parser.add_argument(
+        "--models", nargs="+", choices=sorted(FREE_MODELS | PAID_MODELS), help="OpenCode models to compare"
+    )
+    parser.add_argument("--allow-paid", action="store_true", help="Explicitly permit paid-model benchmarks")
     args = parser.parse_args()
+    models = args.models or [FREE_MODEL]
+    if len(models) != len(set(models)):
+        parser.error("Model selection must be unique")
+    try:
+        for model in models:
+            validate_policy(model, None, args.allow_paid)
+    except ValueError as exc:
+        parser.error(str(exc))
     if not 1 <= args.timeout <= 300 or not 1 <= args.batch_size <= 20:
         parser.error("timeout must be 1–300 and batch-size 1–20")
     args.root.mkdir(parents=True, exist_ok=True)
@@ -36,21 +48,25 @@ def main() -> None:
         "providers": {},
     }
     failed = False
-    for provider, model in [(args.opencode_provider, FREE_MODEL), ("agy", "gemini-3.8-flash-low")]:
+    for provider, model in [*[(args.opencode_provider, m) for m in models], ("agy", "gemini-3.8-flash-low")]:
         if args.only != "all" and ((args.only == "agy") != (provider == "agy")):
             continue
         # Fresh caches keep measured provider latency separate from reuse.
         reviewer = AgyReviewer(
-            args.root / f"{provider}-{time.time_ns()}", provider=provider, model=model, timeout=args.timeout
+            args.root / f"{provider}-{time.time_ns()}",
+            provider=provider,
+            model=model,
+            timeout=args.timeout,
+            allow_paid=args.allow_paid if provider != "agy" else False,
         )
         measured = []
         provider_report: dict = {"model": model, "completed": False, "batches": [], "automatic_writes": 0}
-        report["providers"][provider] = provider_report
+        report["providers"][f"{provider}:{model}" if len(models) > 1 else provider] = provider_report
         started = time.monotonic()
         for offset in range(0, len(cases), args.batch_size):
             batch = cases[offset : offset + args.batch_size]
             try:
-                with progress("model_benchmark", provider=provider, batch=offset // args.batch_size + 1):
+                with progress("model_benchmark", provider=provider, model=model, batch=offset // args.batch_size + 1):
                     results = reviewer.compare([c["pair"] for c in batch])
                 measured.extend(results)
                 provider_report["batches"].append({"score": score(results, batch), "results": results})
@@ -72,7 +88,7 @@ def main() -> None:
                 temporary = args.root / "report.partial"
                 temporary.write_text(json.dumps(report, indent=2))
                 temporary.replace(args.root / "report.json")
-            event("benchmark_progress", provider=provider, **provider_report["score"])
+            event("benchmark_progress", provider=provider, model=model, **provider_report["score"])
         provider_report["completed"] = len(measured) == len(cases)
         (args.root / "report.json").write_text(json.dumps(report, indent=2))
         event(

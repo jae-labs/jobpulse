@@ -628,6 +628,10 @@ make scrape-company-review ARGS="--provider opencode-go --limit 5"
 make scrape-company-benchmark ARGS="--batch-size 4"
 # Recheck only the free model without repeating Gemini calls:
 make scrape-company-benchmark ARGS="--only opencode --batch-size 4"
+# Compare free models in the same run:
+make scrape-company-benchmark ARGS="--only opencode --models longcat-2.5-preview-free step-5-preview-free --batch-size 4"
+# Benchmark a specific paid Go model without enabling fallback:
+make scrape-company-benchmark ARGS="--only opencode --models deepseek-v4.1-flash --allow-paid --batch-size 4"
 # Explicitly permit a paid Zen model:
 make scrape-company-research ARGS="--provider opencode --model glm-5.3-flash --allow-paid --limit 5"
 ```
@@ -648,8 +652,8 @@ Paid Zen requests use the official HTTPS API with the configured Zen key (or
 glm-5.3-flash` require `--allow-paid`. There is no automatic paid fallback. An
 explicit fallback applies only to transient network failures, throttling or
 selected gateway failures; authorization, malformed claims and citation/schema
-failures stop the stage. Only the documented LongCat Free and GLM Flash models
-are allowed. Free availability is provider-controlled and can change.
+failures stop the stage. The allowlist includes LongCat Free, Step 5 Preview Free, GLM Flash, MiMo
+V2.6 Flash and DeepSeek V4.1 Flash. Paid Flash models require explicit opt-in. Free availability is provider-controlled and can change.
 
 OpenCode identity calls contain at most four candidate pairs, matching the bounded
 benchmark configuration; metadata proposals retain the explicit employer batch budget.

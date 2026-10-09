@@ -12,7 +12,9 @@ import httpx
 from jobpulse_scraper.pipeline.research_progress import event, progress
 
 FREE_MODEL = "longcat-2.5-preview-free"
+FREE_MODELS = frozenset({FREE_MODEL, "step-5-preview-free"})
 PAID_MODEL = "glm-5.3-flash"
+PAID_MODELS = frozenset({PAID_MODEL, "mimo-v2.6-flash", "deepseek-v4.1-flash"})
 ZEN_ENDPOINT = "https://opencode.ai/zen/v1/chat/completions"
 
 
@@ -28,9 +30,9 @@ def model_id(model: str) -> str:
 
 def validate_policy(model: str, fallback_model: str | None, allow_paid: bool) -> None:
     for selected in [model, *([fallback_model] if fallback_model else [])]:
-        if model_id(selected) not in {FREE_MODEL, PAID_MODEL}:
+        if model_id(selected) not in FREE_MODELS | PAID_MODELS:
             raise ValueError("Unsupported research model; use the supported allowlist")
-        if model_id(selected) != FREE_MODEL and not allow_paid:
+        if model_id(selected) not in FREE_MODELS and not allow_paid:
             raise ValueError("Paid research models require --allow-paid")
 
 
@@ -111,7 +113,7 @@ def _request(prompt: str, schema: dict, model: str, timeout: int) -> dict:
 
 
 def _dispatch(prompt: str, schema: dict, model: str, timeout: int, provider: str = "opencode") -> dict:
-    if provider == "opencode-go" or model_id(model) == FREE_MODEL:
+    if provider == "opencode-go" or model_id(model) in FREE_MODELS:
         from jobpulse_scraper.pipeline.research_opencode import request
 
         return request(prompt, schema, model, timeout, provider=provider)

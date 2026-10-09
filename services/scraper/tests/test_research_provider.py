@@ -296,3 +296,60 @@ def test_opencode_candidate_budget_preserves_complete_pair_coverage(tmp_path, mo
     assert observed == [p["pair_id"] for p in pairs]
     assert [r["pair_id"] for r in results] == observed
     assert reviewer.calls == 3
+
+
+def test_other_free_models_do_not_require_paid_opt_in(monkeypatch):
+    observed = []
+
+    def request(prompt, schema, model, timeout, selected):
+        observed.append(model)
+        return {"data": {}, "model": model, "provider": selected}
+
+    monkeypatch.setattr(provider, "_dispatch", request)
+    for model in provider.FREE_MODELS:
+        assert not provider.request_json("synthetic", {}, model=model, provider="opencode-go")["fallback_used"]
+    assert set(observed) == provider.FREE_MODELS
+    for model in provider.PAID_MODELS:
+        with pytest.raises(ValueError, match="require --allow-paid"):
+            provider.request_json("synthetic", {}, model=model, provider="opencode-go")
+    assert len(observed) == len(provider.FREE_MODELS)
+
+
+def test_multi_model_benchmark_retains_each_model_report(tmp_path, monkeypatch):
+    import sys
+
+    from tools import benchmark_company_models as command
+
+    cases = identity_cases()
+    expected = {c["pair"]["pair_id"]: c["expected"] for c in cases}
+
+    class Reviewer:
+        def __init__(self, root, **kwargs):
+            self.model = kwargs["model"]
+            self.calls = 0
+            self.provider_runs = []
+
+        def compare(self, pairs):
+            self.calls += 1
+            return [{"pair_id": p["pair_id"], "decision": expected[p["pair_id"]]} for p in pairs]
+
+    monkeypatch.setattr(command, "AgyReviewer", Reviewer)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "benchmark",
+            "--root",
+            str(tmp_path),
+            "--only",
+            "opencode",
+            "--models",
+            *sorted(provider.FREE_MODELS),
+            "--batch-size",
+            "4",
+        ],
+    )
+    command.main()
+    report = json.loads((tmp_path / "report.json").read_text())
+    assert set(report["providers"]) == {"opencode-go:" + model for model in provider.FREE_MODELS}
+    assert all(r["completed"] and r["score"]["checked"] == 32 for r in report["providers"].values())
