@@ -13,6 +13,7 @@ from tools import research_companies
 
 
 def setup_campaign(tmp_path, monkeypatch, *, fail=False):
+    monkeypatch.setattr(research_companies, "CACHE_ROOT", tmp_path / "cache")
     root = tmp_path / "index"
     root.mkdir()
     (root / "companies.sqlite3").touch()
@@ -93,6 +94,7 @@ def test_live_heartbeat_stops_on_error(capsys):
 def test_ai_cohort_rejects_foreign_identity_without_report(tmp_path, monkeypatch):
     from tools import enrich_companies_ai
 
+    monkeypatch.setattr(enrich_companies_ai, "CACHE_ROOT", tmp_path / "cache")
     cohort = tmp_path / "public.json"
     cohort.write_text(json.dumps([{"id": 8, "name": "Synthetic Eight", "private": "discard"}]))
     report = tmp_path / "ai.json"
@@ -108,6 +110,7 @@ def test_ai_cohort_rejects_foreign_identity_without_report(tmp_path, monkeypatch
 def test_ai_cohort_preserves_requested_employer_id(tmp_path, monkeypatch):
     from tools import enrich_companies_ai
 
+    monkeypatch.setattr(enrich_companies_ai, "CACHE_ROOT", tmp_path / "cache")
     cohort = tmp_path / "public.json"
     cohort.write_text(json.dumps([{"id": 8, "name": "Synthetic Eight"}]))
     report = tmp_path / "ai.json"
@@ -116,7 +119,7 @@ def test_ai_cohort_preserves_requested_employer_id(tmp_path, monkeypatch):
     monkeypatch.setattr(
         enrich_companies_ai,
         "enrich_companies_with_ai",
-        lambda names, **kwargs: [{"name": names[0], "size": "", "offices": []}],
+        lambda names, **kwargs: [{"name": names[0], "sector": "", "size": "", "offices": []}],
     )
     enrich_companies_ai.main()
     proposal = json.loads(report.read_text())

@@ -22,13 +22,14 @@ from tools import enrich_companies_ai as proposals
 
 
 @pytest.fixture
-def proposal_client(monkeypatch) -> MagicMock:
+def proposal_client(monkeypatch, tmp_path) -> MagicMock:
     client = MagicMock()
     client.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
         {"id": 7, "name": "Example"}
     ]
     monkeypatch.setattr(proposals, "get_supabase", lambda: client)
-    monkeypatch.setattr(proposals, "retry_supabase", lambda fn: fn())
+    monkeypatch.setattr(proposals, "active_employers", lambda client: [{"id": 7, "name": "Example"}])
+    monkeypatch.setattr(proposals, "CACHE_ROOT", tmp_path / "cache")
     return client
 
 
@@ -206,6 +207,9 @@ def test_proposals_never_write_catalog_and_require_exact_identity(monkeypatch, t
         "enrich_companies_with_ai",
         lambda names, **kwargs: [{"name": "Example UK", "sector": "Unverified lead", "size": "", "offices": []}],
     )
+    proposals.main()
+    assert json.loads(report.read_text())["selection"]["cached_skipped"] == 1
+    monkeypatch.setattr("sys.argv", ["company-proposals", "--report", str(report), "--refresh"])
     with pytest.raises(SystemExit) as outcome:
         proposals.main()
     assert outcome.value.code == 1

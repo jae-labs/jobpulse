@@ -588,6 +588,38 @@ make scrape-company-research ARGS="--refresh-index --limit 20"
 make scrape-company-research ARGS="--no-ai --employers /tmp/public-employers.json"
 ```
 
+Both `make scrape-company-research` and `make scrape-enrich-ai` select employers
+with at least one active vacancy checked within the last 24 hours. Selection scans
+all eligible jobs with stable ID pagination, then chooses uncached employers up to
+`--limit`. Repeating the default command advances through the remaining employers;
+the limit is a batch budget, not a fixed first page. An explicit `--employers` file
+overrides active-job selection for bounded audits; unrelated fields are discarded.
+
+Validated metadata responses persist transactionally in ignored
+`.backups/company-research/proposals.sqlite3`, shared by both commands. Records
+include public employer identity, offices, sector, global staff-size bracket,
+provider/model, acquisition information, research time and explicit unknown fields.
+Successful responses, including unknown fields, are skipped on subsequent runs.
+Changing an employer name, website or supplied company number invalidates reuse.
+There is no automatic expiry; use `--refresh-proposals` on the combined command
+or `--refresh` on standalone AI to research again. Failed batches defer their
+employers for six hours and never mark them complete. Interrupted requests remain
+eligible. A process lock prevents concurrent commands from issuing duplicate
+metadata calls; transactional writes prevent partially cached batches.
+
+```bash
+# Inspect all saved AI proposals without contacting the database or model:
+make scrape-enrich-ai ARGS="--show-cache"
+# Explicitly refresh one active employer's proposal:
+make scrape-enrich-ai ARGS="--limit 1 --refresh"
+```
+
+`--proposal-cache` (combined) and `--cache` (standalone AI) override the local
+cache directory. Reports retain proposals for review; caching does not verify
+claims or apply them to the hosted catalog. The standalone command exports its
+latest report to `.backups/company-proposals.json`. Cached unknown fields require
+explicit refresh rather than repeated automatic model calls.
+
 The default index stays in ignored `.backups/company-index/companies.sqlite3`.
 A missing index requires `--refresh-index`; ordinary research does not download
 large snapshots again. `--release` selects the Overture refresh release.

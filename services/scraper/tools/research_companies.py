@@ -12,8 +12,10 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from jobpulse_scraper.database.client import get_supabase
 from jobpulse_scraper.paths import REPO_ROOT, SERVICE_ROOT
 from jobpulse_scraper.pipeline.company_campaign import run_stage
+from jobpulse_scraper.pipeline.company_proposals import CACHE_ROOT, ProposalStore, active_employers, select_pending
 from jobpulse_scraper.pipeline.research_progress import event, progress
 from jobpulse_scraper.pipeline.research_provider import add_provider_arguments, resolve_provider_arguments
 from tools.review_company_matches import public_employers
@@ -33,6 +35,8 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=REPO_ROOT / ".backups/company-index")
     parser.add_argument("--refresh-index", action="store_true", help="Download and import CRO/Overture snapshots")
     parser.add_argument("--release", default="2026-09-23.1", help="Explicit Overture release for refresh")
+    parser.add_argument("--proposal-cache", type=Path, default=CACHE_ROOT)
+    parser.add_argument("--refresh-proposals", action="store_true")
     add_provider_arguments(parser)
     parser.add_argument("--timeout", type=int, default=120, help="Each AI request deadline (1-300 seconds)")
     parser.add_argument("--no-ai", action="store_true", help="Only exact local snapshot lookup")
@@ -97,7 +101,19 @@ def main() -> None:
         else:
             event("snapshot_reused", root=str(args.root))
         with progress("select_public_employers"):
-            employers = public_employers(args.employers, args.limit)
+            employers = (
+                public_employers(args.employers, args.limit) if args.employers else active_employers(get_supabase())
+            )
+            if not args.no_ai:
+                store = ProposalStore(args.proposal_cache)
+                try:
+                    employers, selection = select_pending(employers, store, args.limit, refresh=args.refresh_proposals)
+                    report["selection"] = selection
+                    event("research_selection", **selection)
+                finally:
+                    store.close()
+            else:
+                employers = employers[: args.limit]
         report["total"] = len(employers)
         for offset in range(0, len(employers), args.batch_size):
             cohort = employers[offset : offset + args.batch_size]
@@ -145,6 +161,9 @@ def main() -> None:
                     "enrich_companies_ai.py",
                     [
                         *provider_options,
+                        "--cache",
+                        str(args.proposal_cache.resolve()),
+                        *(["--refresh"] if args.refresh_proposals else []),
                         "--employers",
                         str(cohort_path),
                         "--limit",

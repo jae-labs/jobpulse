@@ -507,6 +507,14 @@ Supabase writes or automatic office/location inference.
 
 `tools/research_companies.py` composes snapshot lookup, identity review and AI
 metadata proposals using one sanitized public cohort per bounded batch.
+`pipeline/company_proposals.py` selects employers through freshly active public
+vacancies and persists validated metadata proposals in a shared ignored SQLite
+store. Identity-bound cache keys, checksum revalidation, process-safe request
+serialization, transactional batch writes and six-hour failed-batch deferrals
+protect repeated research. Successful unknown fields remain explicit and cached;
+refresh is an operator decision. The store contains public research only and
+performs no catalog or candidate writes. See [company research operations](OPERATIONS.md#combined-company-research)
+for cache export, refresh and selection controls.
 `pipeline/company_campaign.py` owns child process deadlines and process-group
 cleanup; `pipeline/research_progress.py` emits stage/heartbeat events without
 provider payloads. Per-campaign report destinations avoid shared report overwrites.
