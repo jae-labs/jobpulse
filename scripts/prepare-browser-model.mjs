@@ -56,7 +56,7 @@ const packageRoot = resolve(dirname(transformerRequire.resolve('onnxruntime-web'
 const installed = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'));
 if (installed.version !== '1.31.0-dev.20260914-8d85527a0') throw new Error('Unexpected ONNX Runtime version');
 const transformer = JSON.parse(await readFile(join(transformerRoot, 'package.json'), 'utf8'));
-if (transformer.version !== '4.3.0') throw new Error('Unexpected Transformers.js version');
+if (transformer.version !== '4.3.1') throw new Error('Unexpected Transformers.js version');
 // Remove superseded runtime files so old vulnerable assets are not deployed.
 await rm(join(root, 'public/wasm'), { recursive: true, force: true });
 await Promise.all([
