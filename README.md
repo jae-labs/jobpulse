@@ -110,4 +110,3 @@ local data. Browser tripwires and cache/session tests run with `npm run check`.
 Lefthook requires the database gate before push; CI rebuilds the database and runs
 it on every PR. See [Security & Multi-Tenancy](docs/SECURITY_AND_MULTI_TENANCY.md#6-tenant-regression-guardrails)
 for the access inventory, new-feature requirements, and CI publishing checks.
-
