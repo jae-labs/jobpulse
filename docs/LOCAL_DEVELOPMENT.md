@@ -3,6 +3,9 @@
 ## Default Development Workflow
 
 Normal development uses local Supabase for database, Auth, and Storage requests.
+The Node release in `mise.toml` matches CI and satisfies the DOM test runtime's
+Node engine requirements. Use `mise install` to install the pinned toolchain.
+`node --test scripts/node-toolchain.node-test.mjs` verifies the local and CI pins.
 
 ```bash
 mise install
