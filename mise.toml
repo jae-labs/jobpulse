@@ -2,7 +2,7 @@
 # CI should use this file as the source of truth where possible.
 
 [tools]
-node = "22.12.0"
+node = "22.22.2"
 "npm:pnpm" = "10.29.3"
 lefthook = "2.1.9"
 "aqua:BurntSushi/ripgrep" = "14.1.1"
