@@ -6,3 +6,9 @@ overrides:
 
   # Vitest 5 bundles its runner; Storybook does not use this optional legacy peer.
   "@storybook/addon-vitest>@vitest/runner": "-"
+
+  # Storybook's docgen plugin resolves sources with glob 13, which ships a
+  # minimatch range that fails `pnpm audit --audit-level moderate`. The plugin
+  # only calls globSync with absolute/cwd/ignore/nodir, none of which changed
+  # in glob 14.
+  "@joshwooding/vite-plugin-react-docgen-typescript>glob": "^14.0.3"
