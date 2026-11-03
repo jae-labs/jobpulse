@@ -1,7 +1,13 @@
 import React from 'react';
 import { vi } from 'vitest';
+import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import '../lib/i18n';
+
+// Widget mounts that read layout state complete well inside this budget on a
+// developer machine but not on a two-core CI runner, where the 1s default
+// expires first and `findBy*` queries fail without the assertion being wrong.
+configure({ asyncUtilTimeout: 3000 });
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
