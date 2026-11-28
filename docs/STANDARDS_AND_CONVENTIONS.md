@@ -95,8 +95,10 @@ Use focused commit subjects that identify the behavior changed.
 
 ### CI gates
 
-[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every PR to `main`,
-pushes to `main`, and manual dispatch. Actions are pinned to commits; dependency
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on PRs to any branch
+when opened, synchronized, reopened, or edited, on pushes to `main`, and on manual
+dispatch. PRs from forks or automation can require GitHub workflow approval; repository
+settings and GitHub event restrictions still apply. Actions are pinned to commits; dependency
 installation uses the committed lockfiles. All of these CI jobs must pass for release:
 
 | CI job | Name | Verification |
@@ -108,6 +110,12 @@ installation uses the committed lockfiles. All of these CI jobs must pass for re
 CI resets its disposable stack. Local checks never reset a developer database.
 Migration lint is part of Tenant Isolation Guardrails. GitHub settings are configured outside the workflow;
 do not assume the workflow enforces branch protection. See [Release and recovery](RELEASE_AND_RECOVERY.md).
+
+Dependabot uses the `npm` ecosystem for the pnpm workspace and `uv` for the scraper's
+`pyproject.toml` and `uv.lock`. CI verifies the Python lock with `uv lock --check` and
+installs JavaScript dependencies with `pnpm install --frozen-lockfile`. If a Python
+update produces a stale lock, run `uv lock` in `services/scraper` and commit the
+reviewed lockfile; Dependabot's uv support has limitations and can fail to resolve an update.
 
 Keep dependency audits enabled. `pnpm-workspace.yaml` pins patched transitive
 versions when an upstream dependency still resolves a vulnerable release.

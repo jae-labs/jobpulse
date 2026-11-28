@@ -5,7 +5,7 @@ name: CI
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch: {}
 
 permissions:
@@ -122,6 +122,9 @@ jobs:
 
       - name: Set up Python
         run: uv python install 3.12
+
+      - name: Verify Python lockfile
+        run: cd services/scraper && uv lock --check
 
       - name: Lint and format check
         run: |
