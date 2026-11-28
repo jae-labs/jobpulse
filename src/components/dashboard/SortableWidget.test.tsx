@@ -21,7 +21,7 @@ describe('SortableWidget', () => {
     render(<SortableWidget id="small" className="" reorderLabel="Reorder Small" resizeLabel="Resize Small"
       resizeInstructions="Resize instructions" minHeight={100} size={{ columns: 4, height: 110 }} onResize={vi.fn()}><div>Small</div></SortableWidget>);
     const widget = screen.getByText('Small').closest('section')!;
-    expect(widget.style.transform).toBe('translate3d(30px, 40px, 0)');
+    expect(widget.style.transform).toMatch(/^translate3d\(30px, 40px, 0(?:px)?\)$/);
     expect(widget.style.height).toBe('110px');
     expect(widget.style.getPropertyValue('--widget-columns')).toBe('4');
     expect(screen.getByRole('button', { name: 'Resize Small' })).toBeDisabled();
