@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // Keep the rendering OS, browser and fonts identical on workstations and CI.
-const image = 'mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f';
+const image = 'mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const update = process.argv.includes('--update');
 const result = spawnSync('docker', [
