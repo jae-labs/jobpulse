@@ -1,0 +1,21 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+import SavedJobButton from './SavedJobButton';
+import type { Job } from '../../types/job';
+const mutate = vi.hoisted(() => vi.fn());
+vi.mock('../../hooks/useQueries', () => ({ useUpdateJobSavedMutation: () => ({ mutate, isPending: false, isError: false }) }));
+const job: Job = { id: 1, title: 'Synthetic role', company: 'Synthetic company', status: 'applied', matched_skills: [], location: 'Dublin', employment_type: 'Full time', relevance: 0, salary_text: null, url: 'https://example.invalid', source: 'synthetic', last_seen_at: '2026-01-01' };
+it('saves and unsaves through the star without changing application status', () => {
+ const { rerender } = render(<SavedJobButton job={job} userId="synthetic-user" />);
+ const heart = screen.getByRole('button', { name: 'Star job' });
+ expect(heart).toHaveAttribute('aria-pressed','false');
+ fireEvent.click(heart);
+ expect(mutate).toHaveBeenLastCalledWith({ job, saved: true });
+ expect(job.status).toBe('applied');
+ rerender(<SavedJobButton job={{ ...job, is_saved: true }} userId="synthetic-user" />);
+ const saved = screen.getByRole('button', { name: 'Unstar job' });
+ expect(saved).toHaveAttribute('aria-pressed','true');
+ expect(saved.querySelector('svg')).toHaveClass('fill-current');
+ fireEvent.click(saved);
+ expect(mutate).toHaveBeenLastCalledWith({ job: { ...job, is_saved: true }, saved: false });
+});

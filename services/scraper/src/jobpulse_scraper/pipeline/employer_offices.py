@@ -1,0 +1,338 @@
+"""Bounded post-scrape company-place discovery, independent of vacancy coordinates."""
+
+from __future__ import annotations
+
+import ipaddress
+import math
+import os
+import re
+import time
+from collections.abc import Iterator
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from datetime import UTC, datetime
+from itertools import islice
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlsplit
+
+import httpx
+from supabase import Client
+
+from jobpulse_scraper.database.client import get_supabase, retry_supabase
+from jobpulse_scraper.database.records import response_records
+from jobpulse_scraper.paths import REPO_ROOT
+from jobpulse_scraper.pipeline.company_research import (
+    BLOCKED_NAMES,
+    GEOAPIFY_API,
+    ResearchClient,
+    ResearchError,
+    ResearchProvider,
+)
+from jobpulse_scraper.pipeline.stored_employer_evidence import company_identity_key
+
+PLACES_API = "https://api.geoapify.com/v2/places"
+DETAILS_API = "https://api.geoapify.com/v2/place-details"
+
+
+def website_domain(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    host = None
+    try:
+        parsed = urlsplit(value)
+        host = parsed.hostname
+        if parsed.scheme not in {"http", "https"} or not host or parsed.username or parsed.password:
+            return None
+        ipaddress.ip_address(host)
+        return None
+    except ValueError:
+        return host.lower().removeprefix("www.") if host and "." in host else None
+
+
+def discover_offices(researcher: ResearchProvider, employer: dict[str, Any], key: str) -> dict[str, Any]:
+    name, location = employer["name"], employer["location"]
+    record = {**employer, "status": "unresolved", "offices": []}
+    if re.search(r"\b(remote|worldwide|anywhere)\b", location, re.I):
+        return {**record, "status": "remote"}
+    if " ".join(name.casefold().split()) in BLOCKED_NAMES:
+        return record
+    places = researcher.get(GEOAPIFY_API, {"text": location, "format": "json", "limit": "2", "apiKey": key})
+    regions = places.get("results")
+    if not isinstance(regions, list):
+        raise ResearchError("Invalid place boundary response")
+    if not regions:
+        return record
+    if any(not isinstance(r, dict) or not isinstance(r.get("rank", {}), dict) for r in regions):
+        raise ResearchError("Invalid place boundary response")
+    region = regions[0]
+    confidence = region.get("rank", {}).get("confidence", 0)
+    if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0.8 <= confidence <= 1:
+        return record
+    other_confidence = regions[1].get("rank", {}).get("confidence", 0) if len(regions) > 1 else 0
+    if not isinstance(other_confidence, (int, float)) or isinstance(other_confidence, bool):
+        raise ResearchError("Invalid place boundary confidence")
+    if len(regions) > 1 and other_confidence >= confidence - 0.05:
+        return {**record, "status": "ambiguous"}
+    # A provider boundary, not a radius around a city centroid, prevents nearby-city matches.
+    if not region.get("place_id") or region.get("result_type") not in {
+        "city",
+        "district",
+        "county",
+        "state",
+        "country",
+    }:
+        return record
+    data = researcher.get(
+        PLACES_API,
+        {
+            "name": name,
+            "categories": "office,commercial,education,healthcare,production",
+            "filter": f"place:{region['place_id']}",
+            "limit": "20",
+            "apiKey": key,
+        },
+    )
+    features = data.get("features")
+    if not isinstance(features, list):
+        raise ResearchError("Invalid business search response")
+    if any(
+        not isinstance(f, dict)
+        or not isinstance(f.get("properties"), dict)
+        or not isinstance(f["properties"].get("name", ""), str)
+        for f in features
+    ):
+        raise ResearchError("Invalid business search response")
+    if len(features) >= 20:
+        return {**record, "status": "ambiguous"}  # Do not present a truncated search as exhaustive.
+    matches = [
+        f
+        for f in features
+        if company_identity_key(f.get("properties", {}).get("name", "")) == company_identity_key(name)
+    ]
+    if len(matches) > 5:
+        return {**record, "status": "ambiguous"}
+    known_domain = website_domain(employer.get("website"))
+    offices = {}
+    for feature in matches:
+        props = feature.get("properties", {})
+        if company_identity_key(props.get("name", "")) != company_identity_key(name):
+            continue
+        place_id = props.get("place_id")
+        if not isinstance(place_id, str) or not place_id:
+            continue
+        details = researcher.get(DETAILS_API, {"id": place_id, "features": "details", "apiKey": key})
+        detail_features = details.get("features")
+        if not isinstance(detail_features, list) or not detail_features:
+            raise ResearchError("Invalid business details response")
+        if not isinstance(detail_features[0], dict) or not isinstance(detail_features[0].get("properties"), dict):
+            raise ResearchError("Invalid business details response")
+        detail = detail_features[0]["properties"]
+        website = detail.get("website")
+        domain = website_domain(website)
+        if known_domain and domain and domain != known_domain:
+            continue
+        lat, lon = props.get("lat"), props.get("lon")
+        if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in (lat, lon)):
+            continue
+        # A POI coordinate without a numbered street address is not a precise office address.
+        if not -90 <= lat <= 90 or not -180 <= lon <= 180 or not props.get("street") or not props.get("housenumber"):
+            continue
+        address = props.get("formatted")
+        if not isinstance(address, str) or not address:
+            continue
+        categories = props.get("categories", [])
+        if not isinstance(categories, list):
+            raise ResearchError("Invalid business categories")
+        offices[place_id] = {
+            "place_id": place_id,
+            "name": props["name"],
+            "address": address,
+            "city": props.get("city"),
+            "country_code": props.get("country_code"),
+            "latitude": lat,
+            "longitude": lon,
+            "website": website if domain else employer.get("website") if known_domain else None,
+            "website_domain": domain or known_domain,
+            "categories": [c for c in categories if isinstance(c, str)],
+        }
+    return {**record, "status": "found" if offices else "unresolved", "offices": list(offices.values())}
+
+
+def pending_office_rows(client: Client) -> Iterator[dict[str, Any]]:
+    """Page public catalog identities without repeating pairs in preview or apply mode."""
+    cursor = 0
+    seen: set[tuple[int, str]] = set()
+    while True:
+        query = (
+            client.table("jobs")
+            .select("id,location,employers!inner(id,name,website)")
+            .order("id")
+            .gt("id", cursor)
+            .limit(100)
+        )
+        jobs = response_records(retry_supabase(query.execute).data)
+        if not jobs:
+            return
+        cursor = jobs[-1]["id"]
+        candidates: dict[tuple[int, str], dict[str, Any]] = {}
+        for job in jobs:
+            employer, location = job["employers"], job.get("location")
+            if (
+                not isinstance(employer, dict)
+                or not isinstance(location, str)
+                or not 1 <= len(location.strip(" ")) <= 500
+            ):
+                continue
+            identity = (employer["id"], location)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            candidates[identity] = {
+                "employer_id": employer["id"],
+                "name": employer["name"],
+                "website": employer.get("website"),
+                "location": location,
+            }
+        previous: dict[tuple[int, str], dict[str, Any]] = {}
+        if candidates:
+            offset = 0
+            while True:
+                lookup = (
+                    client.table("employer_office_lookups")
+                    .select("employer_id,location,employer_name,retry_after")
+                    .in_("employer_id", list({identity[0] for identity in candidates}))
+                    .in_("location", list({identity[1] for identity in candidates}))
+                    .order("employer_id")
+                    .order("location")
+                    .range(offset, offset + 99)
+                )
+                outcomes = response_records(retry_supabase(lookup.execute).data)
+                previous.update({(row["employer_id"], row["location"]): row for row in outcomes})
+                if len(outcomes) < 100:
+                    break
+                offset += 100
+        now = datetime.now(UTC)
+        for identity, row in candidates.items():
+            outcome = previous.get(identity)
+            if (
+                outcome is None
+                or outcome["employer_name"] != row["name"]
+                or datetime.fromisoformat(outcome["retry_after"].replace("Z", "+00:00")) <= now
+            ):
+                yield row
+        if len(jobs) < 100:
+            return
+
+
+def enrich_offices(
+    *, apply: bool = False, limit: int = 25, report: Path | None = None, concurrency: int = 4
+) -> dict[str, int]:
+    import json
+
+    client = get_supabase()  # Loads backend credentials before checking the provider key.
+    key = os.environ.get("GEOAPIFY_API_KEY", "")
+    if not key:
+        raise ValueError("GEOAPIFY_API_KEY is not configured")
+    if not 1 <= limit <= 10000:
+        raise ValueError("limit must be between 1 and 10000")
+    if not 1 <= concurrency <= 8:
+        raise ValueError("concurrency must be between 1 and 8")
+    counts = dict(checked=0, found=0, unresolved=0, ambiguous=0, remote=0, provider_failed=0, updated=0, conflicts=0)
+    records = []
+    cache = REPO_ROOT / ".backups/employer-office-cache"
+    started = time.monotonic()
+    print(
+        json.dumps({"research_event": "office_pool_start", "concurrency": concurrency, "max_pairs": limit}), flush=True
+    )
+    with httpx.Client(
+        timeout=httpx.Timeout(30, connect=10),
+        headers={"User-Agent": "JobPulseEmployerOffices/1.0"},
+        limits=httpx.Limits(max_connections=concurrency, max_keepalive_connections=concurrency),
+    ) as http:
+        researcher = ResearchClient(cache, http)
+
+        def lookup(row: dict[str, Any]) -> dict[str, Any]:
+            task_started = time.monotonic()
+            try:
+                record = discover_offices(researcher, row, key)
+            except ResearchError:
+                record = {**row, "status": "provider_failed", "offices": []}
+            return {**record, "elapsed_seconds": round(time.monotonic() - task_started, 3)}
+
+        rows = iter(islice(pending_office_rows(client), limit))
+        exhausted = False
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            pending: set[Future[dict[str, Any]]] = set()
+            while pending or not exhausted:
+                while not exhausted and len(pending) < concurrency and counts["provider_failed"] < 5:
+                    row = next(rows, None)
+                    if row is None:
+                        exhausted = True
+                        break
+                    pending.add(pool.submit(lookup, row))
+                if not pending:
+                    break
+                ready, pending = wait(pending, timeout=15, return_when=FIRST_COMPLETED)
+                if not ready:
+                    print(
+                        json.dumps(
+                            {
+                                "research_event": "office_pool_progress",
+                                "active": len(pending),
+                                "counts": counts,
+                                "metrics": researcher.metrics(),
+                            }
+                        ),
+                        flush=True,
+                    )
+                for future in ready:
+                    record = future.result()
+                    counts["checked"] += 1
+                    counts[record["status"]] += 1
+                    if apply:
+                        saved = retry_supabase(
+                            lambda record=record: client.rpc(
+                                "save_employer_office_lookup", {"p_record": record}
+                            ).execute()
+                        ).data
+                        counts["updated" if saved else "conflicts"] += 1
+                    records.append(record)
+                    print(
+                        json.dumps(
+                            {
+                                "research_event": "office_lookup_finished",
+                                "employer_id": record["employer_id"],
+                                "status": record["status"],
+                                "elapsed_seconds": record["elapsed_seconds"],
+                                "counts": counts,
+                            }
+                        ),
+                        flush=True,
+                    )
+                    if report:
+                        report.parent.mkdir(parents=True, exist_ok=True)
+                        temporary = report.with_suffix(f".{os.getpid()}.tmp")
+                        temporary.write_text(
+                            json.dumps(
+                                {"counts": counts, "metrics": researcher.metrics(), "records": records}, indent=2
+                            )
+                            + "\n"
+                        )
+                        temporary.replace(report)
+                if counts["provider_failed"] >= 5:
+                    exhausted = True  # Save completed in-flight work; schedule no more pairs.
+        print(
+            json.dumps(
+                {
+                    "research_event": "office_pool_finished",
+                    "counts": counts,
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "metrics": researcher.metrics(),
+                }
+            ),
+            flush=True,
+        )
+    if report and not records:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps({"counts": counts, "records": []}, indent=2) + "\n")
+    return counts

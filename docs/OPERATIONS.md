@@ -1,0 +1,809 @@
+# Catalog operations and verification
+
+## Board catalog
+
+Generic crawls use enabled `pending`/`active` rows in `public.boards`. Changes reload
+on the next sync. Disable a board in the database to pause it; an available empty
+catalog does not fall back to YAML. Cooldowns apply per board, not per company.
+Core feeds remain in `scrapers/registry.py` and run independently of board health.
+
+Run these Make targets from the repository root. They preview by default; pass
+`ARGS="--apply"` only after reviewing the proposed catalog changes. Use
+`ARGS="--help"` for the underlying tool's flags.
+
+| Command | Purpose |
+| --- | --- |
+| `make scrape-import-boards` | Import `config/websites.yaml` and optional `config/board_seeds.yaml`; update matching live boards |
+| `make scrape-harvest ARGS="--seeds PATH"` | Probe candidate ATS URLs from a supplied seed file for active Irish roles |
+| `make scrape-harvest-ats ARGS="--limit 100"` | Discover ATS boards from employer websites or `--companies PATH` seeds |
+| `make scrape-discover-boards ARGS="--source commoncrawl --limit 50"` | Discover board identities; also supports `--source jobs` and `--source freehire` |
+| `make scrape-backfill-board-employers` | Link exact employer identities; `--create` permits creating missing employers |
+
+`make scrape-list-boards` lists current targets, including disabled live boards,
+without writing metadata. `app.py --list-websites` still lists the YAML seed.
+All new wrappers delegate to existing tools; there is no second discovery pipeline.
+
+These commands use service-role credentials and shared public company facts,
+never candidate records. `FREEHIRE_API_URL` only configures the optional discovery
+source; the scrape pipeline does not call it. See
+[scraper architecture](SCRAPER_ARCHITECTURE.md#board-catalog) for outcome and cooldown rules.
+
+## Posting availability
+
+Normal job browsing defaults to **Verified active**: the posting appears in a fenced
+source observation within the last 24 hours. Only source scraping promotes a job
+to active; verification, details, vectors and candidate changes do not.
+Confirmation expiry changes the effective state to **Unverified**, never closed.
+Existing rows start unverified. **Confirmed closed** requires a matching posting's
+explicit closure notice or published expiry. Saved and application-stage views
+include every availability state so candidate history remains accessible. The
+availability selector can override this scope; list and map apply the same filter.
+
+`make scrape` confirms observed listings through its existing fenced persistence.
+It does not close missing postings, prune old rows or automatically probe every
+historical job. Use `make scrape-verify-availability` for a preview of ten due public
+postings with two concurrent slots. Review the ignored log and
+`logs/availability-report-*.json`, then use
+`make scrape-verify-availability ARGS="--apply --limit 10 --concurrency 2"` to save
+closure or uncertainty evidence. A positive detail probe is reported as an active
+observation and skipped on apply; it never promotes or refreshes active status.
+Scrape the source to confirm it. Bounds are 50 postings and four slots; each probe has a 20-second hard
+deadline and a 2 MiB response budget. Closed postings are excluded from routine
+probes; a new fenced source observation can confirm a reopened listing.
+
+Probes do not follow redirects or use browser fallback: those results remain
+unverified until the source route/parser is reviewed. Errors, throttling, challenges,
+unsupported content and generic careers pages never confirm closure. Host pacing,
+request measurements and remote cooldowns use the shared ledger. Preview still
+makes public requests and records measurements, but does not update availability.
+Writes guard the original URL and title and preserve explicit closure on a failed
+request. Job IDs, saved flags, stages and evaluations are retained.
+
+The availability RPCs require their forward migrations before frontend release.
+Local schema application, hosted schema application and frontend publishing are
+separate steps in [Release & Recovery](RELEASE_AND_RECOVERY.md#deployment-steps).
+
+## Scraping and matching workflow
+
+### Request pacing and bounded observations
+
+`services/scraper/src/jobpulse_scraper/config/request_policy.yaml`, beside the source seed, stores
+host-wide operator pacing and the latest bounded audit. It also applies to hosts
+used by database-backed boards and API endpoints. Default pacing is one request
+start every three seconds per host; a denial pauses that host for at least fifteen
+minutes. [`Retry-After` delta-seconds and HTTP dates](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after)
+extend that pause. Cooldowns
+persist in `.backups/http-cooldowns.sqlite3`; `.backups/http-cooldowns.json` is the
+compatible diagnostic export. Worker processes share reservations and denials on
+one machine. Separate machines need coordinated host pacing. Do not remove either
+state file to bypass a denial. `make scrape-history` reports source/host observations;
+the ledger retains at most 10,000 events and thirty days of responses.
+
+```bash
+make scrape-request-audit
+make scrape-request-audit ARGS="--name JobsIreland.ie --run --apply"
+make scrape-request-audit ARGS="--limit 5 --samples 3 --interval 5 --run --apply"
+```
+
+The default command only lists enabled YAML seed targets, deduplicated by host.
+`--run` checks robots.txt then makes at most five career-page GETs per host, at
+least five seconds apart, on at most ten hosts. Robots exclusions stop the probe;
+crawl-delay/request-rate directives can only slow it. Required delays over sixty
+seconds stop the probe. It uses verified TLS, no retries, no redirect following,
+bounded response bodies, and stops at errors, denials or detected challenges.
+Redirected/failed robots checks require review; no career requests are sent.
+Reports go to `.backups/request-limits.json`; `--apply` records observations and
+slower pacing in the policy file without rewriting source identities.
+
+`blocking_threshold: null` is deliberate. Accepted samples are evidence of those
+requests at that timestamp, endpoint and audit user agent, not a safe rate ceiling.
+The audit does not test ATS API routes hidden behind career pages, all live catalog
+rows, or authenticated quotas. Inspect published provider limits before setting a
+host policy; a sample never authorizes increasing the request rate.
+
+Shared HTTP helpers pace initial requests, TLS retries and transient server retries.
+401/403/429 and server `Retry-After` responses stop immediately, preserve a cooldown
+and prevent browser fallback. The `fetch_via_browser` navigation helper respects
+those cooldowns. Specialized browser sessions, document/script/XHR requests and
+HTTP redirects also use host reservations; images, fonts and media are blocked. A challenge
+found by the audit also pauses its host. Existing board-health cooldowns remain
+separate from transport cooldowns, and failed crawls never imply vacancy closure.
+
+Local cooldown rejections use `source_cooldown` with `request_sent: false`; only an actual remote response contributes an HTTP status and denial observation.
+
+### Durable crawl workers
+
+```bash
+make scrape ARGS="--limit 100"
+make scrape-enqueue ARGS="--employer Tines"
+make scrape-worker ARGS="--limit 20"
+make scrape-history
+cd services/scraper
+uv run --locked jobpulse-scraper --replay <snapshot-metadata-key>
+```
+
+`make scrape` uses automatic durable startup: a service-only RPC serializes
+concurrent starters and queues sources independently when they are eligible.
+Large catalogs enqueue in bounded batches of at most 1,000 sources; this batch
+size is independent of the worker task budget. Rerun startup after a batch failure
+to enqueue remaining sources while preserving existing work.
+Pending/running sources keep their progress and retry dates. Future retries never
+block new or refresh-eligible peers. Completed sources refresh after at least six
+hours from `last_succeeded_at`. Failed source crawls wait at least six hours before
+retrying; longer remote delays remain authoritative. Detail/vector tasks retain
+their separate backoff. Exhausted (`dead`) tasks require explicit enqueueing.
+`make scrape` defaults to 50,000 due tasks, the supported maximum, and stops early
+when no work is due. `--limit` sets a smaller task budget.
+Automatic drains use four task slots; `--concurrency 1` selects a single slot and
+`--concurrency 4` is the maximum. The budget is shared across slots. Tasks have a
+120-second hard deadline; `--task-timeout 180` changes it, up to 3,600 seconds.
+Timed-out tasks record `task_deadline_exceeded`, retain committed partial facts
+and wait for their normal retry date. Interrupts stop active child processes.
+The shared local host ledger coordinates pacing across slots and worker processes.
+Apply the forward claim migrations to the selected database before relying on
+source/detail/vector fairness. Source publication and hosted migration application
+remain separate operations.
+Automatic drains finish with a bounded catalog duplicate sweep. It merges only
+same-URL postings with agreeing titles, locations and closure states. Different
+company labels require a provider-native posting reference; conflicting URL
+populations remain separate. Candidate tracking transfers through the service-only
+merge RPC, and conflicting tracked stages leave records intact. Merge failures and
+tracking conflicts remain visible in the exit status. This maintenance never closes
+or removes vacancies based on age, absence or acquisition failure.
+
+Preview without catalog writes: `make scrape ARGS="--dedupe-preview"`.
+Apply only consolidation without crawling: `make scrape ARGS="--dedupe-only"`.
+Ingestion reuses an existing confirmed posting identity across source aliases,
+preserving its employer label and published body. Concurrent first publication can
+still create alias copies; the post-drain sweep consolidates compatible copies.
+The scan is ordered and capped at 100,000 catalog rows; exceeding the bound fails
+before merges. Each merge contains at most 100 duplicate IDs.
+
+Explicit `make scrape-worker` defaults to 20 tasks and one slot. Use it to process only existing
+work, or `make scrape-enqueue` to deliberately request a source refresh, bypassing
+the successful freshness interval while retaining failed retry dates and transport
+cooldowns.
+`make scrape ARGS="--sync"` selects the synchronous pipeline.
+Durable workers emit flushed, timestamped `crawl_event` JSON lines on stderr.
+Task events identify the public source, kind and attempt; stage events show
+fetching, persistence and vector work. `task_active` reports elapsed time during
+long operations during lease renewal, normally every thirty seconds.
+`task_finished` follows fenced completion and reports outcome counts; failed
+source tasks include a minimum retry delay, while the database run history owns
+the scheduled retry date. Final aggregate JSON stays on stdout.
+`claim_transport_error` reports a transient database transport failure and its
+bounded retry delay. The worker retries claims at most three times; failed claims
+consume budget because a response can be lost after the database leases a task.
+Persistent transport failures stop the command with a nonzero exit status.
+Committed catalog facts remain saved. Resume existing due work with
+`make scrape-worker ARGS="--limit 10 --concurrency 2"`; unknown claims become
+eligible through normal lease expiry. Inspect the log and generated report before
+increasing the batch, and preserve source retry dates and remote cooldowns.
+Every Make scraper command uses `scripts/run-scraper.mjs` to save both streams
+to an owner-readable, unique log in the Git-ignored repository `logs/` directory.
+The terminal prints `[LOG]` with the absolute file path. Logs retain live output,
+completion status and interruptions without changing stdout/stderr routing or exit
+codes. Tail the printed path with `tail -f` to monitor a run from another terminal.
+Log files require local cleanup and have independent retention from database
+history and replay snapshots. Commands started before the wrapper is loaded keep
+their existing output behavior; direct Python commands do not use this wrapper.
+
+Enqueue selects enabled live boards, preserving the authoritative empty/disabled
+catalog behavior. Workers claim at most the requested task count and renew leases;
+source, detail and vector tasks share the durable queue. A failed task receives a
+retry date and bounded attempts. Re-enqueue deliberately requests another source
+crawl; it does not clear transport cooldowns. Independent processes can drain the
+same queue safely. Replay reads the configured state directory without database writes.
+
+Protected operator API routes include `POST /api/crawl/enqueue`,
+`GET /api/crawl/runs` and `GET /api/crawl/requests`. They use the same loopback/token
+and origin checks as synchronization. Run history returns at most 100 rows.
+Workers require service credentials; browser roles cannot call queue/snapshot/vector
+RPCs. Keep source implementation, local schema application and hosted deployment
+as separate operations. The [architecture guide](SCRAPER_ARCHITECTURE.md#durable-work-provenance-and-replay)
+defines fencing, provenance and snapshot bounds.
+
+Use `make scrape-report` for the latest 100 finished runs or
+`make scrape-report ARGS='--employer "Company"'` for one company. The report is
+read-only and its JSON stdout is also saved by the normal log wrapper. Per-source
+results include average duration, measured/unmeasured run counts, sent requests,
+weighted requests per second, denials, ingestion-input body coverage and the two
+latest measured runs. Host details retain requests sent before a denial,
+preceding-minute host traffic, retry delay and the learned pacing interval.
+Request-level JSON diagnostics show transport and resource type without URLs,
+payloads or lease credentials. Local cooldown skips do not count as sent requests.
+Generic acquisition failures retain sanitized HTTP, timeout, DNS and cooldown
+categories. Reaching the shared task limit emits `task_budget_exhausted`;
+`no_due_tasks` indicates an empty due-work claim rather than a completed campaign.
+
+`make scrape` and `make scrape-worker` automatically save a unique owner-readable
+`logs/crawl-report-*.json` after each drain, including drains with failed tasks.
+The terminal prints its path and a compact report summary. The report covers the
+latest 100 finished runs, not an unlimited campaign history. A report failure
+emits `report_failed` and fails the command; already finished tasks remain saved.
+
+Start a review campaign with `make scrape ARGS="--limit 10 --concurrency 2"`.
+After reviewing outcomes with no new denials or worsening failures, increase to
+bounded batches of at most 50 tasks and four concurrent slots. Review the printed
+log and report before increasing either bound. Capture the configured source set and initial
+queue state in an ignored campaign manifest, track attempts and outstanding
+source/detail/vector work, and retain batch reports. Attempt coverage is separate
+from successful extraction: failures, deferred retries and unverified empty pages
+remain unresolved. A complete campaign verifies supported listing pagination and
+available detail data for the selected sources, records unpublished fields as
+unknown, and reviews remaining source limitations explicitly. Respect future retry dates.
+When a source route changes, verify its replacement on the employer's first-party
+careers page. Challenges and captchas remain blocked outcomes; do not bypass them.
+Use the maintained [agent process](../AGENTS.md#scraper-measurement-and-improvement-process)
+for evidence-driven changes and remeasurement between batches.
+
+At each checkpoint, record batch outcomes by status, sent requests and observed
+rate, denials/cooldowns, and extraction inputs. Label opportunity and write sums
+as source observations because the same job can appear at multiple employers.
+Classify blocked, unsupported, failed and verified-empty boards separately;
+only bounded source evidence justifies route or parser changes. Do not override
+retry dates to accelerate a campaign.
+
+Generic sources reuse a successful browser preference for up to seven days,
+probe HTTP again after expiry or three failures, and fall back once when the
+preferred transport fails. Known adapters stay authoritative. Durable run history
+keeps positive source evidence available when local state is absent.
+
+Generic sources also retain verified query-free HTTP(S) destinations in the local
+ledger for seven days. Successful extraction or an explicit empty signal establishes
+the route; failed use removes it. Configured source identities and ATS adapters remain
+authoritative. Query-bearing destinations are rediscovered to avoid retaining session
+parameters. Route evidence is local to the scraper machine.
+
+JobsIreland uses three-second host spacing supported by a bounded public-detail
+pilot, with automatic 429 backoff and remote cooldowns preserved. This observation
+does not establish a quota. Six-hour positive detail caching avoids repeated public
+body requests; stale detail tasks also reuse usable catalog bodies. Listing responses
+provide metadata and still need separate detail acquisition when bodies are absent.
+iCIMS sources use the direct server-rendered listing adapter, including current
+location labels and bounded published-link pagination. Synthetic multi-country
+and continuation tests verify that faster acquisition retains Irish coverage.
+Stage totals in reports separate host pacing, HTTP acquisition, catalog operations,
+detail extraction and vectors. These inclusive worker durations overlap; compare
+elapsed run time separately and never sum nested stages into a wall-time estimate.
+
+The full-cycle performance target is two hours for eligible listing acquisition,
+available detail hydration and vector work. Measure source coverage, detail coverage,
+queue growth and completed tasks alongside elapsed time. A drain that reaches its
+50,000-task budget or finds only future retries is not complete source coverage.
+Four slots improve overlap across hosts; host pacing and cooldowns still apply.
+Keep the 120-second hard deadline for paginated sources: shortening it without
+continuation evidence can lose completeness. Diagnose repeated deadlines using
+request counts, page continuations and bounded snapshot replay before changing budgets.
+
+Failure remediation follows the error classification:
+
+| Outcome | Required next action and acceptance evidence |
+| --- | --- |
+| Invalid payload | Verify provider/tenant route and schema; add synthetic malformed and pagination fixtures; retain failure until valid published data is parsed. |
+| Unsupported or generic failure | Verify the first-party careers/ATS link, install a focused parser or configured adapter, and compare published counts and fields. |
+| HTTP failure / DNS | Separate removed routes from transient outages; repair verified targets, retain backoff, and never turn an error page into an empty board. |
+| Denial / challenge / auth wall | Stop acquisition, preserve remote cooldown and host measurements, and use an authorized public feed only when available. |
+| Deadline / response budget | Inspect slow pages and oversized feeds; use supported filters and resumable pagination instead of raising limits blindly. |
+| Missing detail body | Replay the correct vacancy page, preserve concise verified text, and keep vector quality thresholds independent. |
+
+Each unsuccessful source needs a private action record keyed by configured source
+identity, including error, evidence, proposed route/parser change, executable test and
+validation status. Reports and observations remain in ignored logs or recovery files;
+maintained guides describe the current contracts. Compare a representative bounded
+sample after each change before estimating a full-cycle duration.
+
+For optimization, capture a source report, change one adapter or host setting,
+run a bounded sample, then compare duration, request mix, failure rate and field
+coverage. Compare similar source/detail workloads; a faster failed or empty run
+does not establish improved extraction. Validate counts and identities against
+synthetic pagination fixtures and selected published listings. Review detail body
+coverage with `make scrape-description-audit`. Rate-limit observations do not
+establish a guaranteed request allowance; automatic learning increases backoff
+on repeated 429 responses and respects longer remote cooldowns.
+
+Schedule bounded worker invocations with the deployment's existing scheduler, with SQL history maintenance performed at the start of each drain. The
+CLI does not create a hosted schedule or deploy workers. Inspect incomplete/dead
+work and source cooldowns before retrying; increasing concurrency does not establish
+provider permission or a higher safe request rate. Request history includes the latest
+denial status, response ordinal within retained source history, preceding-minute host
+response count, Retry-After, learned interval and cooldown. These are observations,
+not a published or guaranteed quota. Browser callback observations retain the
+source identity, and cookie-based ATS sessions share the public request gate.
+
+1. Import or discover boards in preview mode, review identities, then apply the
+   chosen changes. Link board employers separately if needed.
+2. Run `make scrape-boards ARGS="--limit 50"` for a bounded board-only crawl,
+   `make scrape-core` for specialized feeds, or `make scrape` for automatic durable
+   execution. In synchronous mode, `--limit` bounds board targets, not postings or
+   core feeds; in durable worker mode it bounds tasks. Nonpositive limits are rejected.
+3. Ingestion validates and saves vacancy facts, links employers, retrieves missing
+   descriptions and prepares job vectors. A full or board-only run also deduplicates
+   through the candidate-safe RPC and refreshes shared overview facets.
+4. Job-vector writes advance catalog generation. The PostgreSQL worker updates
+   candidate matching asynchronously; do not add a scraper scoring loop or browser
+   enqueue after ingestion. `make scrape-backfill` repairs missing/changed job vectors
+   without crawling; it does not generate profile vectors.
+5. When `GEOAPIFY_API_KEY` is configured, sync also runs bounded office research
+   (25 employers) and posting-location verification (100 jobs). Provider failures
+   retain ingested vacancies. Standalone helpers below preview before applying.
+
+| Command | Separate enrichment operation |
+| --- | --- |
+| `make scrape-research-employers` | Public company research proposals; no apply mode |
+| `make scrape-enrich-employers` | Preview up to 100 reviewed employer sectors/metadata; `ARGS="--apply --limit 50"` persists a bounded scan |
+| `make scrape-backfill-employers` | Link stored jobs to exact employer identities |
+| `make scrape-enrich-offices` | Company office directory; separate from vacancy workplaces |
+| `make scrape-verify-locations` | Verify posting locations and precision |
+| `make scrape-enrich-ai` | Alias for the complete company research workflow; no database writes |
+
+Report helpers default to `.backups/`, which stays out of Git. `ARGS` can override
+limits, source filters and report destinations. `make scrape-descriptions` and
+`make scrape-description-audit` handle body repair/coverage independently of discovery.
+
+## Published descriptions
+
+JobsIreland ingestion first saves listing pages without visiting detail URLs, then
+fetches missing descriptions sequentially. `JOBSIRELAND_REQUEST_DELAY_SECONDS`
+sets the delay between listing pages and before each detail request (default 3 seconds,
+minimum 1). The detail phase stops at the first failed or unusable response, retains
+all discovered listings and completed descriptions, and reports the run incomplete.
+Rerunning `make scrape` rediscovers listings and skips stored usable bodies, retrying
+missing descriptions. A listing failure retains saved pages and reports incomplete
+without starting details. This reduces request pressure; it cannot guarantee source access.
+
+Vacancy descriptions must contain published source text. Listing summaries, login walls,
+access denial and generated metadata are not complete bodies. Failed detail fetches retain
+existing descriptions and candidate tracking. `make scrape-descriptions` runs the repair
+worker in preview mode and writes `.backups/descriptions.csv`. Set `ARGS="--apply"`
+only after reviewing it. `make scrape-description-audit` writes its CSV and JSON
+summary under `.backups/`; `ARGS` can override report paths. `make scrape-backfill`
+retries missing vectors. Ingestion preserves persisted rows and reports incomplete writes or
+pending embeddings as failure; an empty crawl never proves vacancy closure.
+
+Job and profile embeddings use token windows so trailing requirements contribute. Browser
+profile preprocessing is versioned in the content hash. Model weights and browser runtime
+assets are pinned; after an upgrade verify finite 384-dimensional output under production
+CSP and compare reference vectors before keeping the same vector-space version.
+
+## Employer research and offices
+
+Employer metadata is shared catalog data. Sectors need curated or reviewed public evidence;
+candidate-private classifications never supply a shared sector. Research stored employers
+using `make scrape-research-employers ARGS="--help"` for report and provider
+limits. Keep public company evidence in `services/scraper/src/jobpulse_scraper/config/employer_evidence.json`.
+Ambiguous names, job-board platforms and feed placeholders must stay unresolved.
+
+`make scrape-enrich-offices` performs bounded office research. Provider credentials stay in
+the scraper environment. `ARGS="--apply --limit 10000"` processes up to 10,000 distinct
+eligible company/location pairs, using database pages of at most 100. The default is 25;
+preview mode advances through the same distinct pairs without writing outcomes. The command
+uses four lookup slots by default (`--concurrency 1` through `8`). Request starts share
+one-second pacing and provider cooldowns across local processes; cache locks coalesce
+identical requests. Lookup completions, 15-second heartbeats and credential-free request
+timings go to the automatic log. Five provider failures stop new scheduling; in-flight
+outcomes finish and are saved. Successful saved lookups
+retain their existing refresh intervals. Provider request budgets and identity checks remain active.
+The report includes request counts, cache hits, accumulated request time and rate-limit counts.
+Concurrency overlaps provider latency; it does not establish a higher permitted request rate.
+Apply only reviewed identity/address evidence with source, confidence
+and review metadata. A company office is a separate map layer and never establishes a vacancy's
+work location. Provider failure must retain already ingested vacancies.
+
+### Reviewed employer metadata
+
+`make scrape-backfill-employers` is read-only by default. Set `ARGS="--apply --limit 100"`
+to link a bounded scan. It uses ID keyset pagination, counts unresolved rows toward the
+limit, and guards writes against concurrent company/link changes. It never substitutes
+headquarters or increments scoring generations.
+
+Employer linking and metadata enrichment are separate operations. Run
+`cd services/scraper && uv run --locked python tools/enrich_employers.py --report /tmp/employers.csv`
+to preview all unverified employer records, including those already referenced by jobs.
+Use `--apply` to persist the reviewed registry; `--limit N` bounds scanned records.
+Updates preserve the existing employer ID and compare its ID, name and metadata source
+before writing. A concurrent upgrade or rename is reported as a conflict. Unknown
+identities and placeholder employers remain unresolved in the report. No jobs, candidate
+data, coordinates from postings, vectors or scoring generations are changed.
+
+`config/employer_evidence.json` records explicit full aliases, first-party evidence URLs
+and review dates for additions to the curated registry. Only documented employer addresses
+are supplied; conflicting addresses and coordinates without evidence stay null. Employer
+coordinates are separate from posting coordinates. Do not assign a hiring platform's
+industry to vacancies belonging to its clients. Automatic employer research remains outside ingestion; extending company coverage
+requires reviewed identity and field evidence. Vacancy geocoding runs separately
+after persistence when the backend key is configured.
+
+To reconcile using the live database only, add `--database-only`. This mode does not
+use the external-source registry or fetch any websites. It matches trusted employer
+records using punctuation and legal suffix differences, retaining geography and
+business-unit names, and rejects conflicting trusted sectors. Optional
+`--stored-evidence PATH` accepts reviewed employer self-descriptions from stored jobs:
+each JSON record supplies `employer_name`, `sector`, `job_id`, `description_sha256`,
+`excerpt` and `reviewed_on`. The job must still belong to that employer, its company
+name must match, and its complete body hash and excerpt must remain unchanged.
+These records are explicit evidence reviews, not automatic role-keyword classifications.
+Keep operational witnesses with the ignored recovery snapshot and retain the outcome report.
+
+Reviewed witnesses can also supply an optional `description`, which must be an exact
+substring of the validated business excerpt. Unsupported description claims are rejected.
+Explicitly named Community Employment programmes can be individually reviewed as
+programme sponsors, with a stored placement witness; this does not classify their
+client organisations or introduce an automatic name-based classification rule.
+Database-only repairs clear unsupported employer location, coordinates and
+website fields before marking that employer metadata verified. They retain only the
+reviewed business description, when supplied, rather than promoting unsupported values.
+Vacancy records and coordinates remain untouched. Platform/account labels that contain
+postings for multiple hiring companies require separate job identity repairs; never
+apply one posting's industry to every vacancy in such an account.
+
+To repair a vacancy location substituted with an employer headquarters,
+`tools/repair_employer_locations.py` reads only the public catalog section of a recovery snapshot. Supply
+`--snapshot PATH --report PATH` to review proposed restorations, then `--apply` to perform
+identity/location compare-and-set writes. It refreshes scoring documents/hashes through
+`prepare_embeddings`; a retry refreshes already restored matching facts too. No private
+snapshot data is imported or used as fixtures.
+
+`make scrape-enrich-ai` aliases `make scrape-company-research`. The workflow uses
+the configured provider to generate unverified JSON proposals; `--ai-only` skips
+snapshot lookup and identity review. It has no apply mode, never writes employer/office records,
+rejects incomplete or non-exact identities, and leaves unknown sizes empty. Its report
+is not a reviewed registry: verify first-party field evidence before adding reviewed
+records to `enrich_employers.py --registry`. Programme classification requires reviewing each placement witness through `--stored-evidence`.
+
+## Vacancy location verification
+
+Posting coordinates and verified vacancy-location evidence may produce vacancy pins.
+Employer headquarters must never replace a vacancy location. Geocoding retains unresolved,
+remote and ambiguous states, uses bounded provider budgets, and checks the current location
+before applying a result. Run `services/scraper/tools/verify_job_locations.py --help` for the
+current repair interface. Review reports before applying public location changes.
+
+## Capacity verification
+
+Run synthetic probes only against a disposable local project:
+
+```bash
+make db-benchmark PROJECT=jobpulse-benchmark
+```
+
+`scripts/benchmark-database.mjs` rejects development and hosted Docker targets, creates
+synthetic fixtures, removes them after execution, and restores the scheduler's active state.
+Fixtures exercise normalized sectors, scoring factors and vectors. Inspect jobs, search,
+filter and overview latency alongside worker throughput and queue age.
+
+Local SQL probes exclude HTTP, hosted pooling/network, public-network model downloads,
+browser rendering and target-device GPU behavior. Validate hosted reads alongside catalog
+refresh and concurrent profile edits before setting capacity or freshness expectations.
+Measure cold and warm paths separately, including failures and retries. Increase worker
+concurrency only while catalog reads retain their latency budget and tenant work remains bounded.
+See [Release and recovery](RELEASE_AND_RECOVERY.md) for hosted load, alert delivery,
+retention and backup-restore checks.
+
+## Local Irish company index
+
+`make scrape-company-index` downloads public CRO and regional Overture Places
+snapshots and builds `.data/company-index/companies.sqlite3`. The raw ZIP,
+regional JSONL, SQLite index, lock and pilot report are Git-ignored. Imports use a
+process lock and replace each source in one SQLite transaction; interruption or
+invalid/empty imports retain the previous indexed snapshot. Downloads publish
+atomically, enforce size bounds, verify CRO ZIP checksums and log progress.
+Overture uses four DuckDB threads, a 1 GiB memory limit and a fifteen-minute query
+budget. The optional locked `company-index` dependency group provides DuckDB.
+
+```bash
+make scrape-company-index
+make scrape-company-pilot
+# Refresh one source, or rebuild from the downloaded files without network:
+make scrape-company-index ARGS="--source cro"
+make scrape-company-index ARGS="--source overture --release 2026-09-23.1"
+make scrape-company-index ARGS="--local"
+# Supply public employer JSON instead of reading the configured catalog:
+make scrape-company-pilot ARGS="--employers /tmp/public-employers.json --limit 200"
+```
+
+The pilot reads public employer IDs, names and websites in bounded pages; it does
+not read candidates or write Supabase. Its default sample is the first 200 employers
+by ID, not a statistically representative accuracy sample. `pilot.json` contains
+snapshot checksums, attribution, import timestamps, candidate evidence, matching
+reasons, conflicts, coverage counts and elapsed time. Exact domain/company-number
+support establishes an identity candidate, not a verified office. Name-only
+matches, conflicting domains, closed places and duplicate legal records require
+review. The match response retains at most 100 candidates and flags truncation.
+
+CRO supplies legal identities and **registered addresses**, which may belong to
+agents. Conflicting records for a company number remain separate variants.
+Overture supplies **operating-place candidates**, with source evidence, confidence,
+websites, categories, taxonomy and coordinates. The geographic extract includes the island bounding box;
+explicit non-IE address records are excluded, while unknown country records remain
+unverified candidates. This preserves missing-address coverage without asserting
+that every point lies in the Republic. Snapshot freshness and field evidence must
+be reviewed before any production use; no automatic office or vacancy updates are
+connected to this index. `make scrape-enrich-offices` keeps its existing provider
+workflow. Review correct identities, actual operating-office evidence, duplicate
+places and missing addresses before integrating a lookup shortcut.
+
+CRO attribution: Contains Irish Public Sector Data licensed under a Creative Commons
+Attribution 4.0 International (CC BY 4.0) licence; Companies Registration Office.
+Overture records retain upstream sources; redistribution must follow
+[Overture attribution and licensing](https://docs.overturemaps.org/attribution/).
+Source formats follow the [CRO dataset](https://opendata.cro.ie/dataset/companies)
+and [Overture DuckDB extraction guide](https://docs.overturemaps.org/getting-data/duckdb/).
+The local index keeps only the latest successful import per source; refreshes are
+operator-triggered. Local raw files contain public company data and are not a
+Supabase recovery backup.
+
+Acceptance contracts: both imports complete with provenance; source refresh failure
+preserves the previous index; legal addresses remain separate from operating places;
+ambiguous identity evidence remains review-only; the bounded 200-employer pilot
+reports coverage and runtime with zero catalog writes. Synthetic tests enforce the
+matching and recovery contracts in `services/scraper/tests/test_company_index.py`.
+
+### Close company-name matches
+
+`make scrape-company-pilot ARGS="--fuzzy"` checks otherwise unmatched employer names
+and writes `.data/company-index/pilot-fuzzy.json`, preserving the exact-only
+`pilot.json`. `--similarity-threshold 85` selects the default 0–100 score cutoff.
+The score measures spelling/token-order similarity; it is not a calibrated
+identity probability. Short normalized names below six characters and names over
+128 characters receive no fuzzy search. Exact name/domain/number evidence takes
+precedence and is not displaced by fuzzy candidates.
+
+The first fuzzy pilot builds a local SQLite FTS5 trigram index atomically. Snapshot
+insert/delete/update triggers maintain it in the same transaction as the records;
+failed refreshes preserve both records and search evidence. Subsequent pilots reuse
+it without another snapshot download. Up to 24 three-character query terms retrieve
+at most 1,000 candidates; Python compares symmetric character sequences and sorted
+token sequences, retains scores at the configured cutoff and reports the best ten.
+Search/result truncation remains explicit. Common names, abbreviations and heavily
+changed spellings can be missed by these bounds; an empty fuzzy search does not
+prove absence from the datasets. See [SQLite FTS5](https://www.sqlite.org/fts5.html)
+for tokenizer and external-content indexing requirements.
+
+Fuzzy candidates carry `similar_name`, the score, extra/missing name tokens,
+source evidence, domain conflicts, closed state and mandatory review. The
+`spelling_only` flag identifies suggestions without shared non-generic name tokens;
+shared generic terms such as Ireland, Group or Services do not establish identity. Geographic
+and business-unit words remain in the comparison. Fuzzy matches never establish
+`identity_supported`, merge employers, write offices or change vacancy locations.
+Reports separate fuzzy-only employer coverage and truncated searches. Review
+actual identities and first-party operating-office evidence before accepting a
+proposal. Synthetic typo, token-order, country/domain conflict, acronym, refresh
+rollback and result-bound tests live in `services/scraper/tests/test_company_index.py`.
+
+### Combined company research
+
+`make scrape-company-research` runs exact CRO/Overture lookup, evidence-bound agy
+identity review and AI office/sector/global employee-size proposals for the same
+public employer cohort. `make scrape-enrich-ai` is an alias for this same command.
+Both execute `tools/research_companies.py` with one parser, selection policy and
+proposal cache. The workflow defaults to a 50,000-employer budget in batches of five, stopping
+when eligible uncached employers run out. This budget does not increase concurrency.
+`--limit` accepts 1–50000 and `--batch-size` accepts 1–25. Each batch checkpoints
+before scheduling more work; a failed stage stops subsequent batches and returns
+nonzero. This workflow performs no catalog writes.
+
+```bash
+make scrape-company-research
+make scrape-company-research ARGS="--limit 100 --batch-size 5"
+# Only metadata AI, without loading the snapshot index or reviewing identities:
+make scrape-company-research ARGS="--ai-only --limit 100 --batch-size 5"
+# Download/import both snapshots explicitly; ordinary runs reuse the local index:
+make scrape-company-research ARGS="--refresh-index --limit 20"
+# Local exact lookup without provider calls or first-party requests:
+make scrape-company-research ARGS="--no-ai --employers /tmp/public-employers.json"
+```
+
+Both `make scrape-company-research` and `make scrape-enrich-ai` select employers
+with at least one active vacancy checked within the last 24 hours. Selection scans
+all eligible jobs with stable ID pagination, then chooses uncached employers up to
+`--limit`. Repeating the default command advances through the remaining employers;
+the limit is a batch budget, not a fixed first page. An explicit `--employers` file
+overrides active-job selection for bounded audits; unrelated fields are discarded.
+
+Validated metadata responses persist transactionally in ignored
+`.data/company-research/proposals.sqlite3`, shared by both commands. Records
+include public employer identity, offices, sector, global staff-size bracket,
+provider/model, acquisition information, research time and explicit unknown fields.
+Successful responses, including unknown fields, are skipped on subsequent runs.
+Changing an employer name, website or supplied company number invalidates reuse.
+There is no automatic expiry; use `--refresh-proposals` on the combined command
+or its `--refresh` alias to research again. Failed batches defer their
+employers for six hours and never mark them complete. Interrupted requests remain
+eligible. A process lock prevents concurrent commands from issuing duplicate
+metadata calls; transactional writes prevent partially cached batches.
+
+```bash
+# Inspect all saved AI proposals without contacting the database or model:
+make scrape-enrich-ai ARGS="--show-cache"
+# Explicitly refresh one active employer's proposal:
+make scrape-enrich-ai ARGS="--limit 1 --refresh"
+```
+
+`--proposal-cache` and its `--cache` alias override the local cache directory.
+Reports retain proposals for review; caching does not verify
+claims or apply them to the hosted catalog. `--show-cache` exports stored proposals
+to `.data/company-research/proposals.json`; `--report` overrides the destination.
+Ordinary runs retain per-batch proposals in their unique campaign directories.
+The compatibility `tools/enrich_companies_ai.py` entry delegates one metadata
+batch to the same parser; it contains no separate research implementation.
+Cached unknown fields require
+explicit refresh rather than repeated automatic model calls.
+
+Company datasets and runtime research live under the repository's Git-ignored
+`.data/`, separate from recovery exports. The default index stays in
+`.data/company-index/companies.sqlite3`; the proposal store stays in
+`.data/company-research/proposals.sqlite3`. Raw snapshots, provider caches,
+campaign checkpoints and SQLite WAL/SHM sidecars stay with their owning dataset.
+`make backup` exports database/Storage recovery snapshots and does not back up
+these local datasets. Preserve the proposal directory separately if paid research
+must survive loss of this machine.
+
+Default-path commands relocate existing `.backups/company-index/` and
+`.backups/company-research/` directories with a same-filesystem directory rename.
+Stop existing company commands before the first run. Relocation preserves the
+entire directory, performs no download or model call, and fails promptly when a
+writer holds its lock. Both old and new locations existing is a conflict: inspect
+them and use an explicit `--root`/`--cache` instead of overwriting or merging
+SQLite files. Explicit custom roots remain unchanged. Older exported JSON reports
+outside these directories remain untouched. Ordinary commands print relocation
+paths in their ignored logs.
+Snapshot modes require `--refresh-index` when the index is missing; `--ai-only`
+and `--show-cache` do not require an index. Ordinary research does not download
+large snapshots again. `--release` selects the Overture refresh release.
+`--employers` supplies public IDs/names/websites/company numbers; unrelated fields
+are discarded. `--aliases`, `--no-fetch`, `--model` and `--timeout` configure the
+identity/evidence stages. AI requests default to a 120-second deadline (maximum
+300 seconds). Metadata calls use an isolated temporary workspace, plan/sandbox
+mode and an environment allowlist that excludes backend credentials. The provider
+schema represents missing staff size as `unknown`; validated reports/cache retain
+an empty internal size rather than an invented headcount. Gemini enum values are
+nonempty. Failed metadata calls log a safe category such as
+`provider_invalid_schema`, `provider_rate_limited`, `provider_authorization_failed`
+or `provider_cli_failed`, alongside the CLI exit code; raw provider output and
+credentials remain out of terminal diagnostics. The refresh stage has a one-hour deadline.
+
+Live output includes stage starts, employer IDs/names, candidate counts, provider
+waiting heartbeats every fifteen seconds, elapsed time, batch counts, failures
+and report paths. The logged Make wrapper archives terminal output under `logs/`.
+Unique campaign directories under `.data/company-index/campaigns/` retain
+cohort files, per-stage reports, identity journals and an atomic `report.json`.
+Completed batches survive interruption; active child process groups are terminated.
+After a failure, inspect the saved stage evidence and use its public cohort file
+for a bounded rerun. A checked employer is an attempted research record, not a
+verified office or successful match.
+
+CRO addresses are legal registered addresses; Overture records are place
+candidates; AI offices and employee-size brackets are unverified proposals.
+The size bracket describes global staff, not a measured Irish headcount. Unknown
+headcount remains unknown. Verify field-specific first-party evidence before
+applying metadata through `scrape-enrich-employers` and its reviewed registry.
+Geoapify office discovery remains available separately through
+`make scrape-enrich-offices`; this research command does not invoke or replace it.
+
+### Company research providers
+
+The combined command and standalone AI/review commands accept `--provider agy`,
+`--provider opencode` (Zen), or `--provider opencode-go` (Go). The default remains
+agy/Gemini. OpenCode defaults to `longcat-2.5-preview-free`; the provider and actual
+model remain visible in acquisition reports. Go and Zen use distinct configured
+credentials and model namespaces.
+
+```bash
+make scrape-company-research ARGS="--provider opencode-go --limit 20 --batch-size 4"
+make scrape-company-review ARGS="--provider opencode-go --limit 5"
+make scrape-company-benchmark ARGS="--batch-size 4"
+# Recheck only the free model without repeating Gemini calls:
+make scrape-company-benchmark ARGS="--only opencode --batch-size 4"
+# Compare free models in the same run:
+make scrape-company-benchmark ARGS="--only opencode --models longcat-2.5-preview-free step-5-preview-free --batch-size 4"
+# Benchmark a specific paid Go model without enabling fallback:
+make scrape-company-benchmark ARGS="--only opencode --models deepseek-v4.1-flash --allow-paid --batch-size 4"
+# Explicitly permit a paid Zen model:
+make scrape-company-research ARGS="--provider opencode --model glm-5.3-flash --allow-paid --limit 5"
+```
+
+Go models and free Zen models run through the genuine installed OpenCode v2 client in a fresh
+standalone session. The client uses its normal credential store; it does not
+continue existing conversations. The working directory, configuration and cache
+are temporary. Global/project instructions, external plugins and sharing are
+excluded, tool permissions are denied, and the child environment excludes
+Supabase credentials. Public research sessions can remain in OpenCode's normal
+local state; local campaign reports remain under ignored `.backups/`. The
+operator configures Go/Zen sign-in through OpenCode's own authentication UI.
+A free-tier access denial stops research; the scripts do not fabricate client or
+session identifiers.
+
+Paid Zen requests use the official HTTPS API with the configured Zen key (or
+`OPENCODE_API_KEY`). Both model selection and optional `--fallback-model
+glm-5.3-flash` require `--allow-paid`. There is no automatic paid fallback. An
+explicit fallback applies only to transient network failures, throttling or
+selected gateway failures; authorization, malformed claims and citation/schema
+failures stop the stage. The allowlist includes LongCat Free, Step 5 Preview Free, GLM Flash, MiMo
+V2.6 Flash and DeepSeek V4.1 Flash. Paid Flash models require explicit opt-in. Free availability is provider-controlled and can change.
+
+OpenCode identity calls contain at most four candidate pairs, matching the bounded
+benchmark configuration; metadata proposals retain the explicit employer batch budget.
+Provider events record latency, model, transport, fallback use and available token
+usage without logging keys, prompts or raw errors. Missing usage remains unknown;
+cache hits do not count original request tokens as newly consumed. Client calls
+have process-group deadlines and bounded output. API calls use connection/read
+timeouts, elapsed response checks and a 256 KiB response cap; the combined command
+also bounds each child stage. The CLI accepts a bare JSON object or one complete
+JSON code fence, then applies the same identity/citation validators. It rejects
+unexpected tool events, extra prose, malformed/truncated output and invented IDs.
+
+The benchmark uses thirty-two synthetic cases covering company numbers, trading
+names, subsidiaries, name/domain ambiguity, closed records and prompt injection.
+It records validated and raw correctness, false-positive identities, downgraded
+unsupported claims, schema failures and timings. These cases test evidence
+handling; they do not establish real-world office/headcount accuracy. Reports
+live under `.data/company-index/model-benchmark/`. Benchmark reports retain
+current measurements locally rather than asserting an enduring model ranking.
+
+### Evidence-based company comparison
+
+`make scrape-company-review` compares exact snapshot candidates through the
+operator-installed `agy` CLI. Fuzzy name retrieval is not used. The command reads
+public employer IDs/names/websites only, fetches bounded first-party text, and
+writes `.data/company-index/identity-review.json`. The default budget is twenty
+employers; `--limit` accepts 1–10000. Reports and caches remain Git-ignored.
+
+```bash
+make scrape-company-review ARGS="--limit 20"
+make scrape-company-review ARGS="--limit 10000"
+# Supply public employer records or published alias witness URLs:
+make scrape-company-review ARGS="--employers /tmp/public-employers.json --aliases /tmp/company-aliases.json"
+# Snapshot facts alone usually cannot establish legal identity:
+make scrape-company-review ARGS="--no-fetch --limit 5"
+```
+
+Employer JSON supplies `id`, `name`, `website` and optional `company_number`.
+Private or unrelated input fields are discarded. Alias JSON is a list of records
+with `employer_id`, `url` and `aliases` (at most three aliases and one witness URL
+per employer). The URL must belong to the employer's exact website domain. Each
+alias must occur in fetched visible text before it participates in exact lookup.
+Published alias occurrence is a research lead, not automatic proof of identity.
+
+Acquisition admits at most two witness URLs and four same-domain redirects per
+employer page. Without an explicit alias page, it can follow one same-domain
+legal/terms/privacy/about/corporate link published on the homepage. It rejects credential/query URLs, non-public addresses and foreign
+redirects, pins validated public IPs, shares source pacing/cooldowns, and fails fast
+when pacing exceeds five seconds. Five-second socket timeouts and elapsed-time
+response/redirect checks bound slow responses. HTML bodies are capped at 1 MiB and
+visible witnesses at 12,000 characters. Unsupported encodings and source challenges
+remain failures; no browser fallback is used. Public-source TLS certificate failures
+retain the scraper's bounded fallback policy. Witnesses retain URL, content checksum,
+fetch time and truncation; their cache expires after seven days and is capped at
+3,000 entries/50 MiB. Missing/blocked text remains explicit evidence failure.
+
+Exact normalized names, website domains, supplied company numbers and witnessed
+aliases retrieve at most ten candidates, with truncation explicit. `agy` receives
+only the supplied public facts in an isolated temporary workspace with a minimal
+environment, sandbox/plan mode and instructions to use no tools or remembered facts.
+The default configured model is `gemini-3.8-flash-low`; `--model` selects an available
+operator model. `--timeout` accepts 1–300 seconds, default 120. Provider subprocess
+groups are terminated on exit/timeout. Logs report progress every fifteen seconds
+without printing prompts, response bodies or provider errors.
+
+Decisions are `same_company`, `different_company` or `insufficient_evidence`.
+Every pair must occur once; invented IDs, unsupported actions and invented quote
+citations fail validation. Positive proposals need matching cited company numbers
+or a cited first-party statement containing both names plus the candidate identity.
+Subsidiaries/departments and closed entities cannot pass that positive gate.
+Unsupported positive or uncited negative claims become `insufficient_evidence`.
+Exact quote validation checks supplied text, not the truth of the model's semantic
+interpretation. All outcomes require evidence review; the command has no apply
+mode and never writes catalog links, offices, coordinates or candidate records.
+
+Requests split at 128 KiB and at most twenty pairs. Response output is capped at
+256 KiB and provider stderr at 64 KiB. Model/prompt/evidence hashes key completed
+comparisons; cached outputs are revalidated. The cache expires after thirty days
+and retains at most 5,000 entries/100 MiB. Full caches skip new cache publication
+without changing validation. A flushed per-employer JSONL journal and atomic compact progress checkpoints retain
+partial results; the full JSON report is published once after the bounded run.
+a restart reuses completed comparisons. Three provider failures stop further work,
+and any provider failure exits nonzero. Cache reuse preserves public fact evidence
+but does not replace current employer/catalog checks before any future application.
+Synthetic citation, entity, privacy, acquisition, cache and timeout tests live in
+`services/scraper/tests/test_company_review.py`.

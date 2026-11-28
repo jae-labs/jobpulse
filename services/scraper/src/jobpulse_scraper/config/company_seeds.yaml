@@ -1,0 +1,144 @@
+# Starter company seeds for `tools/harvest_ats.py --companies config/company_seeds.yaml`.
+# Each entry is probed for an embedded ATS board (careers URL or common careers paths).
+# Extend freely; already-catalogued boards are skipped. Keep websites accurate.
+companies:
+  - { name: Microsoft Ireland, website: https://www.microsoft.com }
+  - { name: Google Ireland, website: https://www.google.com }
+  - { name: Meta Ireland, website: https://www.metacareers.com }
+  - { name: Apple Ireland, website: https://www.apple.com }
+  - { name: Intel Ireland, website: https://www.intel.com }
+  - { name: Pfizer Ireland, website: https://www.pfizer.com }
+  - { name: Dell Technologies, website: https://www.dell.com }
+  - { name: IBM Ireland, website: https://www.ibm.com }
+  - { name: Cisco Ireland, website: https://www.cisco.com }
+  - { name: Oracle Ireland, website: https://www.oracle.com }
+  - { name: SAP Ireland, website: https://www.sap.com }
+  - { name: Adobe Ireland, website: https://www.adobe.com }
+  - { name: NVIDIA Ireland, website: https://www.nvidia.com }
+  - { name: AMD Ireland, website: https://www.amd.com }
+  - { name: Stryker Ireland, website: https://www.stryker.com }
+  - { name: Boston Scientific Ireland, website: https://www.bostonscientific.com }
+  - { name: Johnson & Johnson Ireland, website: https://www.jnj.com }
+  - { name: Abbott Ireland, website: https://www.abbott.com }
+  - { name: Eli Lilly Ireland, website: https://www.lilly.com }
+  - { name: Novartis Ireland, website: https://www.novartis.com }
+  - { name: Roche Ireland, website: https://www.roche.com }
+  - { name: GSK Ireland, website: https://www.gsk.com }
+  - { name: AstraZeneca Ireland, website: https://www.astrazeneca.com }
+  - { name: Bristol Myers Squibb Ireland, website: https://www.bms.com }
+  - { name: Merck Ireland, website: https://www.merck.com }
+  - { name: Regeneron Ireland, website: https://www.regeneron.com }
+  - { name: Citigroup Ireland, website: https://www.citigroup.com }
+  - { name: JPMorgan Chase Ireland, website: https://www.jpmorganchase.com }
+  - { name: Bank of America Ireland, website: https://www.bankofamerica.com }
+  - { name: Visa Ireland, website: https://www.visa.com }
+  - { name: PayPal Ireland, website: https://www.paypal.com }
+  - { name: ServiceNow Ireland, website: https://www.servicenow.com }
+  - { name: Atlassian Ireland, website: https://www.atlassian.com }
+  - { name: Zoom Ireland, website: https://www.zoom.com }
+  - { name: EY Ireland, website: https://www.ey.com }
+  - { name: Grant Thornton Ireland, website: https://www.grantthornton.ie }
+  - { name: BearingPoint Ireland, website: https://www.bearingpoint.com }
+  - { name: Capgemini Ireland, website: https://www.capgemini.com }
+  - { name: Infosys Ireland, website: https://www.infosys.com }
+  - { name: Tata Consultancy Services Ireland, website: https://www.tcs.com }
+  - { name: Wipro Ireland, website: https://www.wipro.com }
+  - { name: Cognizant Ireland, website: https://www.cognizant.com }
+  - { name: HCLTech Ireland, website: https://www.hcltech.com }
+  - { name: LTIMindtree Ireland, website: https://www.ltimindtree.com }
+  - { name: Ergo Ireland, website: https://www.ergogroup.ie }
+  - { name: Fenergo, website: https://www.fenergo.com }
+  - { name: Wayflyer, website: https://www.wayflyer.com }
+  - { name: LetsGetChecked, website: https://www.letsgetchecked.com }
+  - { name: Fexco, website: https://www.fexco.com }
+  - { name: Ryanair, website: https://www.ryanair.com }
+  - { name: Aer Lingus, website: https://www.aerlingus.com }
+  - { name: An Post, website: https://www.anpost.com }
+  - { name: ESB, website: https://www.esb.ie }
+  - { name: Bord Gáis Energy, website: https://www.bordgaisenergy.ie }
+  - { name: EirGrid, website: https://www.eirgrid.ie }
+  - { name: Permanent TSB, website: https://www.permanenttsb.ie }
+  - { name: Bank of Ireland, website: https://www.bankofireland.com }
+  - { name: AIB, website: https://www.aib.ie }
+  - { name: Musgrave Group, website: https://www.musgravegroup.com }
+  - { name: Kerry Group, website: https://www.kerry.com }
+  - { name: Glanbia, website: https://www.glanbia.com }
+  - { name: Ornua, website: https://www.ornua.com }
+  - { name: DAA, website: https://www.daa.ie }
+  - { name: Bord na Móna, website: https://www.bordnamona.ie }
+  - { name: Coillte, website: https://www.coillte.ie }
+  - { name: Ervia, website: https://www.ervia.ie }
+  - { name: Uisce Éireann, website: https://www.water.ie }
+  - { name: HSE, website: https://www.hse.ie }
+  - { name: IDA Ireland, website: https://www.idaireland.com }
+  - { name: Enterprise Ireland, website: https://www.enterprise-ireland.com }
+  - { name: Failte Ireland, website: https://www.failteireland.ie }
+  - { name: Central Bank of Ireland, website: https://www.centralbank.ie }
+  - { name: Revenue Commissioners, website: https://www.revenue.ie }
+  - { name: An Garda Síochána, website: https://www.garda.ie }
+  - { name: Esri Ireland, website: https://www.esri.ie/careers }
+  - { name: University College Dublin, website: https://www.ucd.ie }
+  - { name: Trinity College Dublin, website: https://www.tcd.ie }
+  - { name: Dublin City University, website: https://www.dcu.ie }
+  - { name: University of Limerick, website: https://www.ul.ie }
+  - { name: University College Cork, website: https://www.ucc.ie }
+  - { name: University of Galway, website: https://www.universityofgalway.ie }
+  - { name: Maynooth University, website: https://www.maynoothuniversity.ie }
+  - { name: RCSI University of Medicine and Health Sciences, website: https://www.rcsi.com }
+  - { name: Technological University Dublin, website: https://www.tudublin.ie }
+  - { name: Munster Technological University, website: https://www.mtu.ie }
+  - { name: Children's Health Ireland, website: https://www.childrenshealthireland.ie }
+  - { name: Mater Misericordiae University Hospital, website: https://www.mater.ie }
+  - { name: St James's Hospital, website: https://www.stjames.ie }
+  - { name: Beaumont Hospital, website: https://www.beaumont.ie }
+  - { name: St Vincent's University Hospital, website: https://www.stvincents.ie }
+  - { name: Tallaght University Hospital, website: https://www.tuh.ie }
+  - { name: HSE, website: https://www.hse.ie }
+  - { name: VMware Ireland, website: https://www.vmware.com }
+  - { name: NetApp Ireland, website: https://www.netapp.com }
+  - { name: Pure Storage Ireland, website: https://www.purestorage.com }
+  - { name: Nutanix Ireland, website: https://www.nutanix.com }
+  - { name: HPE Ireland, website: https://www.hpe.com }
+  - { name: Dropbox Ireland, website: https://www.dropbox.com }
+  - { name: Box Ireland, website: https://www.box.com }
+  - { name: Twilio Ireland, website: https://www.twilio.com }
+  - { name: Zendesk Ireland, website: https://www.zendesk.com }
+  - { name: HubSpot Ireland, website: https://www.hubspot.com }
+  - { name: Intercom, website: https://www.intercom.com }
+  - { name: Stripe Ireland, website: https://stripe.com }
+  - { name: Adyen Ireland, website: https://www.adyen.com }
+  - { name: Klarna Ireland, website: https://www.klarna.com }
+  - { name: Revolut Ireland, website: https://www.revolut.com }
+  - { name: Coinbase Ireland, website: https://www.coinbase.com }
+  - { name: Kraken Ireland, website: https://www.kraken.com }
+  - { name: Glen Dimplex, website: https://www.glendimplex.com }
+  - { name: Greencore Group, website: https://www.greencore.com }
+  - { name: Aryzta, website: https://www.aryzta.com }
+  - { name: Kingspan Group, website: https://www.kingspan.com }
+  - { name: CRH, website: https://www.crh.com }
+  - { name: DCC plc, website: https://www.dcc.ie }
+  - { name: Smurfit Kappa, website: https://www.smurfitkappa.com }
+  - { name: Fyffes, website: https://www.fyffes.com }
+  - { name: Total Produce, website: https://www.totalproduce.com }
+  - { name: Dunnes Stores, website: https://www.dunnesstores.com }
+  - { name: Tesco Ireland, website: https://www.tesco.ie }
+  - { name: Lidl Ireland, website: https://www.lidl.ie }
+  - { name: Aldi Ireland, website: https://www.aldi.ie }
+  - { name: Vodafone Ireland, website: https://www.vodafone.ie }
+  - { name: Three Ireland, website: https://www.three.ie }
+  - { name: eir, website: https://www.eir.ie }
+  - { name: Virgin Media Ireland, website: https://www.virginmedia.ie }
+  - { name: AbbVie Ireland, website: https://www.abbvie.com }
+  - { name: Teva Ireland, website: https://www.tevapharm.com }
+  - { name: Jazz Pharmaceuticals Ireland, website: https://www.jazzpharma.com }
+  - { name: Alkermes Ireland, website: https://www.alkermes.com }
+  - { name: Horizon Therapeutics Ireland, website: https://www.horizontherapeutics.com }
+  - { name: DXC Technology Ireland, website: https://www.dxc.com }
+  - { name: Atos Ireland, website: https://atos.net }
+  - { name: NearForm, website: https://www.nearform.com }
+  - { name: Sidero, website: https://www.sidero.ie }
+  - { name: Workhuman, website: https://www.workhuman.com }
+  - { name: Poppulo, website: https://www.poppulo.com }
+  - { name: Cubic Telecom, website: https://www.cubictelecom.com }
+  - { name: LetsGetChecked, website: https://www.letsgetchecked.com }
+
