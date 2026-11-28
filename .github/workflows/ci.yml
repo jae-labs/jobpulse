@@ -72,7 +72,7 @@ jobs:
         with:
           node-version: "22.22.2"
       - name: Set up Supabase CLI
-        uses: supabase/setup-cli@d239d1052f6f024a8d746d7e5aeddead63b9cb53 # ratchet:supabase/setup-cli@v1
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # ratchet:supabase/setup-cli@v1
         with:
           version: 2.116.0
       - name: Rebuild schema and verify all database behavior
