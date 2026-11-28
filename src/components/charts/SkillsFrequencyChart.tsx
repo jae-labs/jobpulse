@@ -10,6 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { WidgetCard } from '@jae-labs/ui';
 
 export interface SkillFrequencyItem {
@@ -34,7 +35,7 @@ interface CustomTooltipProps {
   payload?: Array<{ payload: SkillDataPoint }>;
   label?: string;
   onSelectSkill?: (skill: string) => void;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  t: TFunction;
 }
 
 const CustomTooltip = ({ active, payload, label, onSelectSkill, t }: CustomTooltipProps) => {

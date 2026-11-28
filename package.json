@@ -59,7 +59,7 @@
     "maplibre-gl": "6.19.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-i18next": "^17.1.8",
+    "react-i18next": "^17.1.13",
     "react-router-dom": "^7.18.6",
     "recharts": "^3.11.0"
   },
@@ -73,7 +73,7 @@
     "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "^5.1.1",
     "axe-core": "^4.14.1",
-    "jsdom": "^30.1.3",
+    "jsdom": "^31.0.1",
     "lefthook": "^2.2.2",
     "oxlint": "^1.94.0",
     "rollup-plugin-visualizer": "^7.1.3",

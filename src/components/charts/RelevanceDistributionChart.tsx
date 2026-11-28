@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { WidgetCard } from '@jae-labs/ui';
 
 export interface RelevanceTier {
@@ -28,7 +29,7 @@ interface CustomTooltipProps {
   payload?: Array<{ payload: RelevanceTier }>;
   label?: string;
   onSelectTier?: (minMatch: number) => void;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  t: TFunction;
 }
 
 const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, onSelectTier, t }) => {
