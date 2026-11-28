@@ -3,6 +3,7 @@ import { HelpCircle } from 'lucide-react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
 import { Card, Pill, Range, Select, Tooltip, Button } from '@jae-labs/ui';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { DEFAULT_TAX_INPUTS, calculateIrishTax2026, type FilingStatus, type TaxInputs } from '../../lib/irishTax2026';
 import { getCachedCssVar } from '../../lib/chartTheme';
 
@@ -26,7 +27,7 @@ function TaxChartTooltip({ active, payload, t }: { active?: boolean; payload?: A
   return <div className="min-w-[180px] space-y-2 rounded-ds-card border border-ds-border-strong bg-ds-panel p-3 text-xs shadow-ds-overlay"><div className="flex items-center gap-2"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.fill }} /><span className="font-semibold text-ds-text-primary">{item.name}</span></div><div className="flex justify-between gap-4 border-t border-ds-border pt-2 text-ds-text-secondary"><span>{t('tax.chartAmount')}</span><span className="font-mono font-semibold text-ds-text-primary">{euro.format(item.value)}</span></div><div className="flex justify-between gap-4 text-ds-text-secondary"><span>{t('tax.chartShare')}</span><span className="font-mono font-semibold text-ds-text-primary">{number.format(item.percentage)}%</span></div></div>;
 }
 
-function ContractComparison({ inputs, permanentNet, permanentIncome, t }: { inputs: TaxInputs; permanentNet: number; permanentIncome: number; t: (key: string, options?: Record<string, string>) => string }) {
+function ContractComparison({ inputs, permanentNet, permanentIncome, t }: { inputs: TaxInputs; permanentNet: number; permanentIncome: number; t: TFunction }) {
   const [dailyRate, setDailyRate] = useState(500);
   const [billableDays, setBillableDays] = useState(220);
   const [umbrellaFee, setUmbrellaFee] = useState(125);
