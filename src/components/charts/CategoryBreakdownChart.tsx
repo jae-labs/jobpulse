@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { OverviewCategory } from '../../types/job';
 import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
@@ -49,7 +50,7 @@ interface CategoryDataPoint {
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{ payload: CategoryDataPoint }>;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  t: TFunction;
   onSelectCategory?: (category: string) => void;
 }
 

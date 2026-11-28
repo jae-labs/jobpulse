@@ -50,6 +50,14 @@ describe('i18n Internationalization', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
+  it('interpolates chart labels and falls back to English for unsupported languages', () => {
+    expect(i18n.t('charts.skills.presentIn', { lng: 'en', count: 2, percentage: 50 }))
+      .toBe('Present in 2 roles (50%)');
+    expect(i18n.t('charts.skills.presentIn', { lng: 'pt-BR', count: 2, percentage: 50 }))
+      .toBe('Presente em 2 vagas (50%)');
+    expect(i18n.t('nav.opportunities', { lng: 'fr' })).toBe('Opportunities');
+  });
+
   it('formats dates and numbers according to locale (l10n)', () => {
     const testDate = new Date(2026, 8, 10); // Sept 10, 2026
     const formattedEn = formatDate(testDate, 'en');

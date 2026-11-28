@@ -10,6 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { JobStatus } from '../../types/job';
 import { WidgetCard, Pill } from '@jae-labs/ui';
 import { formatNumber } from '../../lib/i18n';
@@ -61,7 +62,7 @@ interface CustomTooltipProps {
   payload?: Array<{ payload: PipelineDataPoint }>;
   label?: string;
   onSelectStatus?: (status: JobStatus) => void;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  t: TFunction;
 }
 
 const CustomTooltip = ({ active, payload, label, onSelectStatus, t }: CustomTooltipProps) => {
